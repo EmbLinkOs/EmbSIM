@@ -9,6 +9,12 @@
   "properties": {
     "schema_version": {"const": 1},
     "kind": {"const": "mcu"},
+    "fuses": {
+      "type": "object",
+      "description": "The part's fuse and lock bytes as shipped (factory); a board's mcu.fuses and a project's board settings.fuses replace them.",
+      "additionalProperties": false,
+      "properties": {"factory": {"$ref": "common.schema.json#/$defs/fuses"}}
+    },
     "id": {"$ref": "common.schema.json#/$defs/catalog_id"},
     "version": {"$ref": "common.schema.json#/$defs/semver"},
     "name": {"type": "string", "minLength": 1},

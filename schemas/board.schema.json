@@ -23,7 +23,8 @@
         "ref": {"$ref": "common.schema.json#/$defs/catalog_id"},
         "version": {"$ref": "common.schema.json#/$defs/version_range"},
         "package": {"type": "string", "pattern": "^[a-z][a-z0-9_-]*$"},
-        "instance": {"$ref": "common.schema.json#/$defs/instance_id"}
+        "instance": {"$ref": "common.schema.json#/$defs/instance_id"},
+        "fuses": {"$ref": "common.schema.json#/$defs/fuses"}
       }
     },
     "oscillators": {
@@ -120,6 +121,17 @@
           "additionalProperties": false,
           "properties": {
             "part": {"type": "string"},
+            "usb": {
+              "type": "object",
+              "description": "The bridge's USB identity, as a computer enumerates it (the IDE identifies the board by it)",
+              "required": ["vid", "pid"],
+              "additionalProperties": false,
+              "properties": {
+                "vid": {"type": "string", "pattern": "^0x[0-9a-fA-F]{4}$"},
+                "pid": {"type": "string", "pattern": "^0x[0-9a-fA-F]{4}$"},
+                "product": {"type": "string"}
+              }
+            },
             "dtr_reset": {
               "type": "object",
               "required": ["component", "ms"],

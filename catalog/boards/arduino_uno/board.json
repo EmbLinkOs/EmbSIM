@@ -15,7 +15,8 @@
   "mcu": {
     "ref": "microchip/atmega328p",
     "package": "dip28",
-    "instance": "U1"
+    "instance": "U1",
+    "fuses": {"low": "0xFF", "high": "0xDE", "extended": "0xFD", "lock": "0xCF"}
   },
   "oscillators": {
     "hse": {
@@ -537,6 +538,7 @@
     "baud": 9600,
     "bridge": {
       "part": "ATmega16U2",
+      "usb": {"vid": "0x2341", "pid": "0x0043", "product": "Arduino Uno"},
       "dtr_reset": {
         "component": "DTR_RESET",
         "ms": 0.7
@@ -808,11 +810,11 @@
   },
   "fidelity": {
     "functional": {
-      "claims": "Nets, ports, LEDs and the reset button as logic-level parts; the ATmega328P runs its firmware (see its description). The ATmega16U2 bridge is a serial port on the host (a pseudo-terminal): the host program's baud rate is the line's, a mismatch with the sketch's decodes as garbage both ways, and opening the port (DTR raised) resets the ATmega328P as the 100 nF auto-reset capacitor does.",
+      "claims": "Nets, ports, LEDs and the reset button as logic-level parts; the ATmega328P runs its firmware (see its description). The ATmega16U2 bridge is a serial port on the host (a pseudo-terminal): the host program's baud rate is the line's, a mismatch with the sketch's decodes as garbage both ways, and opening the port (DTR raised) resets the ATmega328P as the 100 nF auto-reset capacitor does; the bridge sends the host's bytes at the line's rate, whether the sketch reads them or not. The ATmega328P carries the Uno's fuses (low 0xFF, high 0xDE: a 256-word boot section, BOOTRST; extended 0xFD; lock 0xCF), so a project whose image holds Optiboot (ArduinoCore-avr's optiboot_atmega328.hex, or the IDE's .with_bootloader.hex) is programmed through the bridge by avrdude -c arduino, as the IDE's Upload button does; an image without a boot loader runs through the erased boot section to its application at 0.",
       "omissions": [
         "the 16U2's bytes reach USART0 directly, not as frames on PD0 through its 1 kOhm resistors (a shield driving D0 does not contend with it)",
         "DTR toggled by ioctl (avrdude's arduino programmer), RTS and breaks: a pseudo-terminal has no modem lines",
-        "Optiboot: the board is programmed by the session, not through the bridge (ADR-031)",
+        "Optiboot itself is not shipped (GPL-2.0, ADR-029): the project's image brings it",
         "the TX and RX LEDs",
         "the LMV358 buffer on the L LED",
         "ICSP headers"

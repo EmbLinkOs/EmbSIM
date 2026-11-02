@@ -951,6 +951,26 @@ static es_status attach_firmware(es_session *s, esk_board_inst *bi, const esk_ca
                 su.mac = mac_bytes;
             }
         }
+        {
+            /* the fuses as the board ships them, or as the project's board
+             * settings reprogrammed them */
+            static const char *const fname[4] = { "low", "high", "extended", "lock" };
+            const esk_json *fz[3];
+            int j;
+            fz[0] = esk_json_get(esk_json_get(mi->desc, "fuses"), "factory");
+            fz[1] = esk_json_get(esk_json_get(board->desc, "mcu"), "fuses");
+            fz[2] = bi->settings ? esk_json_get(bi->settings, "fuses") : NULL;
+            for (j = 0; j < 3; j++)
+                for (k = 0; fz[j] && k < 4; k++) {
+                    u64 v = 0;
+                    if (esk_json_get(fz[j], fname[k]) && !esk_json_to_u64(esk_json_get(fz[j], fname[k]), &v) &&
+                        v <= 0xff) {
+                        su.fuse[k] = (unsigned char)v;
+                        if (j)
+                            su.has_fuses = 1;
+                    }
+                }
+        }
         st = esk_mcu_attach(mc, &su, why, sizeof why);
         if (st != ES_OK)
             esk_diag_raise(&s->diag, ES_SEV_ERROR, "mcu.image", 0, "board", bi->id, NULL, 0, "%s: %s", bi->id, why);
@@ -1295,6 +1315,11 @@ static es_status project_load(es_session *s, const esk_json *project, const char
     }
     /* project nets */
     nets = esk_json_get(project, "nets");
+    if (nets && nets->type != ESK_JSON_OBJECT && esk_json_len(nets) && st == ES_OK) {
+        /* an array of nets is not the format: refused, not read */
+        ld_diag(s, ES_SEV_ERROR, "schema.type", "nets", "nets is an object of net names to pin lists%s%s", "", "");
+        st = ES_ESCHEMA;
+    }
     for (i = 0; i < esk_json_len(nets) && st == ES_OK; i++) {
         const esk_json *ne = esk_json_at(nets, i);
         int rec = rec_get(&g, ne->key, 1);

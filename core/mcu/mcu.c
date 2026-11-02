@@ -18,6 +18,7 @@
 #define MCU_PORTS 8
 #define MCU_UARTS 8
 #define MCU_TEXT_CAP 65536u
+#define MCU_RATES 16
 #define MCU_INQ_CAP 4096u
 #define MCU_TXQ_CAP 64u /* frames sent ahead of the scheduler, a quantum's worth */
 #define MCU_DEFAULT_QUANTUM_PS 10000000u /* 10 us */
@@ -54,6 +55,10 @@ typedef struct mcu_uart {
     char *text; /* what it sent, the last MCU_TEXT_CAP - 1 bytes */
     size_t text_len;
     u64 text_total; /* the bytes of text it ever sent */
+    /* the rate each byte went out at: where it changed (byte index into
+     * text_total), the last MCU_RATES changes */
+    struct { u64 from; u32 baud; } rate[MCU_RATES];
+    int nrate;
     u64 tx_bytes, rx_bytes;
     /* the TX pin's waveform: the frame on the line, then those the core
      * sent while running ahead of the scheduler, each at its own time */
@@ -73,6 +78,7 @@ typedef struct mcu_uart {
     /* bytes from the session's serial input */
     unsigned char inq[MCU_INQ_CAP];
     size_t inq_head, inq_len;
+    int in_wire; /* the queued bytes come at the line's rate, read or not (a host port's bridge) */
     esk_event_handle in_ev;
     /* bytes from the RX pin */
     esk_pin *rx_pin;
@@ -802,10 +808,10 @@ static mcu_uart *uart_named(mcu_state *st, const char *unit, int add)
     return &st->uart[st->nuart++];
 }
 
+/* the console's bytes, NULs too (a boot loader's binary replies reach
+ * the host port whole); text views skip them (text_view) */
 static void text_append(mcu_uart *u, int c)
 {
-    if (c == 0)
-        return; /* the text is a C string */
     if (u->text_len + 1 >= MCU_TEXT_CAP) {
         size_t drop = MCU_TEXT_CAP / 4;
         memmove(u->text, u->text + drop, u->text_len - drop);
@@ -817,6 +823,35 @@ static void text_append(mcu_uart *u, int c)
 }
 
 static void tx_bit_cb(void *ctx, void *arg, es_time_t now);
+
+/* the byte about to be appended went out at `baud` */
+static void text_rate(mcu_uart *u, u32 baud)
+{
+    if (u->nrate && u->rate[u->nrate - 1].baud == baud)
+        return;
+    if (u->nrate == MCU_RATES) {
+        memmove(&u->rate[0], &u->rate[1], sizeof u->rate[0] * (MCU_RATES - 1));
+        u->nrate--;
+    }
+    u->rate[u->nrate].from = u->text_total;
+    u->rate[u->nrate].baud = baud;
+    u->nrate++;
+}
+
+/* the console as text, its NULs left out; esk_free(a, p, len + 1) */
+static char *text_view(esk_alloc *a, const mcu_uart *u, size_t *len)
+{
+    char *p = (char *)esk_malloc(a, u->text_len + 1);
+    size_t i, n = 0;
+    if (p) {
+        for (i = 0; i < u->text_len; i++)
+            if (u->text[i])
+                p[n++] = u->text[i];
+        p[n] = 0;
+    }
+    *len = u->text_len;
+    return p;
+}
 
 /* the next queued frame onto the line, no earlier than its time and the end
  * of the frame before it */
@@ -871,7 +906,9 @@ static void h_uart_frame(void *ctx, const char *unit, int c, u32 bits, int nbits
     if (stop_halves < 1 || stop_halves > 4)
         stop_halves = 2;
     if (c >= 0) {
+        u64 hz = esk_mach_core_hz(&st->m);
         u->tx_bytes++;
+        text_rate(u, bit_cycles ? (u32)((hz + bit_cycles / 2) / bit_cycles) : 0);
         text_append(u, c);
     }
     /* the waveform, when the TX pin is the UART's */
@@ -944,8 +981,11 @@ static void in_cb(void *ctx, void *arg, es_time_t now)
         return;
     catch_up(st, now);
     esk_mach_outside(&st->m);
-    if (runnable(st) && u->rx->room(u->rx->ctx)) {
-        u->rx->put(u->rx->ctx, u->inq[u->inq_head]);
+    if (u->in_wire || (runnable(st) && u->rx->room(u->rx->ctx))) {
+        /* on the wire a frame goes by whether the receiver takes it or not
+         * (in reset, off, overrun: lost, as on the part) */
+        if (runnable(st))
+            u->rx->put(u->rx->ctx, u->inq[u->inq_head]);
         u->inq_head = (u->inq_head + 1) % MCU_INQ_CAP;
         u->inq_len--;
         u->rx_bytes++;
@@ -958,12 +998,14 @@ static void in_cb(void *ctx, void *arg, es_time_t now)
 static es_status serial_input(mcu_state *st, const char *unit, const esk_json *value)
 {
     esk_engine *e = st->c->e;
-    const char *text = esk_json_str(value), *b64 = esk_json_get_str(value, "base64", NULL);
+    const char *text = esk_json_str(value) ? esk_json_str(value) : esk_json_get_str(value, "text", NULL);
+    const char *b64 = esk_json_get_str(value, "base64", NULL);
     mcu_uart *u = uart_named(st, unit, 1);
     unsigned char bytes[1024];
     const unsigned char *data = (const unsigned char *)text;
     size_t i, n;
-    /* text, or {"base64": ...} for any byte (a host port's binary data) */
+    /* text, {"text": ...} or {"base64": ...} for any byte (a host port's
+     * binary data); "wire": true, the bytes at the line's rate */
     if ((!text && !b64) || !u || !u->rx)
         return ES_EINVAL;
     if (text) {
@@ -974,6 +1016,7 @@ static es_status serial_input(mcu_state *st, const char *unit, const esk_json *v
             return ES_EINVAL;
         data = bytes;
     }
+    u->in_wire = esk_json_get_bool(value, "wire", 0);
     for (i = 0; i < n && u->inq_len < MCU_INQ_CAP; i++) {
         u->inq[(u->inq_head + u->inq_len) % MCU_INQ_CAP] = data[i];
         u->inq_len++;
@@ -1243,7 +1286,7 @@ static void mcu_reset_now(mcu_state *st, int power_on)
     if (power_on)
         st->m.reset_cause = ESK_RESET_POWER;
     for (r = 0; power_on && r < st->m.bus.nrg; r++)
-        if (!st->m.bus.rg[r].mirror)
+        if (!st->m.bus.rg[r].mirror && !(st->m.flash_written && st->m.bus.rg[r].kind == ESK_MEM_FLASH))
             esk_bus_erase(&st->m.bus.rg[r]);
     if (!st->image && !esk_mach_store(&st->m, "flash")) {
         /* no image yet: the part sits blank, its pins inputs (a part that
@@ -1255,7 +1298,9 @@ static void mcu_reset_now(mcu_state *st, int power_on)
         st->t = e->sched.now;
         return;
     }
-    if (power_on && st->image &&
+    /* flash the program wrote itself (a boot loader's upload) stays
+     * through a power cycle, as flash does */
+    if (power_on && st->image && !st->m.flash_written &&
         esk_mach_load_image(&st->m, st->image, st->image_len, &entry, why, sizeof why) != ES_OK)
         raise(st, ES_SEV_ERROR, "mcu.image", "%s: %s", st->image_name, why);
     st->in_quantum = 0;
@@ -1469,6 +1514,7 @@ static void mcu_reset(esk_comp *c)
         u->text_len = 0;
         u->text[0] = 0;
         u->text_total = 0;
+        u->nrate = 0;
         u->tx_bytes = u->rx_bytes = 0;
         u->inq_len = u->inq_head = 0;
         u->rx_busy = 0;
@@ -1583,14 +1629,18 @@ static void mcu_observe(esk_comp *c, esk_json *out)
     if (st->stopped && st->stop_why)
         esk_json_set_string(a, out, "stop", st->stop_why);
     for (i = 0; i < st->nuart; i++) {
+        size_t n;
+        char *t = text_view(a, &st->uart[i], &n);
         snprintf(key, sizeof key, "serial.%s", st->uart[i].unit);
-        esk_json_set_string(a, out, key, st->uart[i].text);
+        esk_json_set_string(a, out, key, t ? t : "");
+        /* the console under the virtual terminal's name, for serial probes */
+        if (!strcmp(st->uart[i].unit, st->console))
+            esk_json_set_string(a, out, "rx_text", t ? t : "");
+        if (t)
+            esk_free(a, t, n + 1);
     }
-    /* the console under the virtual terminal's name, for serial probes */
-    {
-        mcu_uart *u = uart_named(st, st->console, 0);
-        esk_json_set_string(a, out, "rx_text", u ? u->text : "");
-    }
+    if (!uart_named(st, st->console, 0))
+        esk_json_set_string(a, out, "rx_text", "");
 }
 
 const esk_model_ops esk_mcu_ops = { "mcu", sizeof(mcu_state), mcu_create, mcu_destroy, mcu_reset,
@@ -1692,6 +1742,7 @@ es_status esk_mcu_set_image(esk_comp *c, const unsigned char *image, size_t len,
     if (st->an_what)
         (void)esk_mcu_analyze(c, st->an_what, why, cap); /* the new image's functions */
     catch_up(st, e->sched.now);
+    st->m.flash_written = 0; /* the new image replaces what the program wrote */
     mcu_reset_now(st, 1);
     return ES_OK;
 }
@@ -1788,6 +1839,23 @@ esk_json *esk_mcu_serial_json(esk_comp *c, esk_alloc *a)
     return o;
 }
 
+uint32_t esk_mcu_console_baud_of(esk_comp *c, uint64_t index, uint64_t *until)
+{
+    mcu_state *st = esk_mcu_is(c) ? state_of(c) : NULL;
+    mcu_uart *u = st && st->attached ? uart_named(st, st->console, 0) : NULL;
+    int i;
+    *until = UINT64_MAX;
+    for (i = u ? u->nrate - 1 : -1; i >= 0; i--)
+        if (u->rate[i].from <= index) {
+            if (i + 1 < u->nrate)
+                *until = u->rate[i + 1].from;
+            return u->rate[i].baud;
+        }
+    if (u && u->nrate)
+        *until = u->rate[0].from;
+    return esk_mcu_console_baud(c);
+}
+
 uint32_t esk_mcu_console_baud(esk_comp *c)
 {
     mcu_state *st = esk_mcu_is(c) ? state_of(c) : NULL;
@@ -1820,6 +1888,10 @@ es_status esk_mcu_attach(esk_comp *c, const esk_mcu_setup *su, char *why, size_t
     if (su->mac) {
         memcpy(st->m.factory_mac, su->mac, 6);
         st->m.has_factory_mac = 1;
+    }
+    if (su->has_fuses) {
+        memcpy(st->m.fuse, su->fuse, 4);
+        st->m.has_fuses = 1;
     }
     st->attached = 1;
     st->m.host.ctx = st;

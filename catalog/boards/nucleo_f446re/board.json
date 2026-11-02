@@ -1177,7 +1177,8 @@
     "rx": "PA3",
     "baud": 115200,
     "bridge": {
-      "part": "STM32F103CBT6 (ST-LINK/V2-1)"
+      "part": "STM32F103CBT6 (ST-LINK/V2-1)",
+      "usb": {"vid": "0x0483", "pid": "0x374B", "product": "STM32 STLink"}
     }
   },
   "bench": {

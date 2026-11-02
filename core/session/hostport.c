@@ -42,6 +42,7 @@
 typedef struct esk_host_port {
     char *target;      /* "B1" a board's console, "VT1" a terminal part */
     esk_host_pty *pty;
+    char *entry;       /* its file in the ports registry, or NULL */
     int peer;          /* a program had the port open at the last poll */
     uint32_t baud;     /* the program's line rate */
     uint64_t baud_ms;  /* when it was last read */
@@ -177,6 +178,51 @@ esk_json *esk_session_port_json(es_session *s, const struct esk_host_port *hp)
     return o;
 }
 
+/* The ports registry: a file a port in <temp>/embsim-ports, so a tool on
+ * the host finds the session's serial ports as it finds a board's (the
+ * Arduino IDE's discovery, tools/arduino): the device, the board, its
+ * bridge's USB identity, this process. Removed when the port closes; a
+ * reader skips entries whose process is gone. */
+static void registry_add(es_session *s, esk_host_port *hp, esk_board_inst *bi)
+{
+    char *dir = esk_host_temp_dir(s->a), *text;
+    const char *dev = esk_host_pty_path(hp->pty), *base;
+    const esk_json *usb = NULL;
+    esk_json *o = esk_json_new_object(s->a);
+    size_t len = 0;
+    char path[1024];
+    if (!dir || !o || !dev || strlen(dir) + strlen(dev) + 64 > sizeof path)
+        goto done;
+    esk_snprintf(path, sizeof path, "%s/embsim-ports", dir);
+    if (esk_host_mkdir_p(path) != ES_OK)
+        goto done;
+    base = strrchr(dev, '/') ? strrchr(dev, '/') + 1 : dev;
+    esk_snprintf(path, sizeof path, "%s/embsim-ports/%lu-%s.json", dir, esk_host_pid(), base);
+    (void)esk_json_set_string(s->a, o, "address", dev);
+    (void)esk_json_set_string(s->a, o, "target", hp->target);
+    (void)esk_json_set_number(s->a, o, "pid", (double)esk_host_pid());
+    if (s->project)
+        (void)esk_json_set_string(s->a, o, "project", esk_json_get_str(s->project, "name", ""));
+    if (bi && bi->item) {
+        (void)esk_json_set_string(s->a, o, "board", bi->board_id);
+        (void)esk_json_set_string(s->a, o, "board_name", esk_json_get_str(bi->item->desc, "name", bi->board_id));
+        usb = esk_json_get(esk_json_get(esk_json_get(bi->item->desc, "console"), "bridge"), "usb");
+        if (usb) {
+            (void)esk_json_set_string(s->a, o, "vid", esk_json_get_str(usb, "vid", ""));
+            (void)esk_json_set_string(s->a, o, "usb_pid", esk_json_get_str(usb, "pid", ""));
+            (void)esk_json_set_string(s->a, o, "product", esk_json_get_str(usb, "product", ""));
+        }
+    }
+    text = esk_json_format(s->a, o, 1, &len);
+    if (text && esk_host_write_file(path, text, len) == ES_OK)
+        hp->entry = esk_strdup(s->a, path);
+    if (text)
+        esk_free(s->a, text, len + 1);
+done:
+    esk_json_free(s->a, o);
+    esk_strfree(s->a, dir);
+}
+
 es_status esk_session_port_open(es_session *s, const char *target, const struct esk_host_port **out, char *why,
                                 size_t cap)
 {
@@ -212,6 +258,7 @@ es_status esk_session_port_open(es_session *s, const char *target, const struct 
                                                      : "the host could not open a pseudo-terminal");
         return st;
     }
+    registry_add(s, hp, bi);
     /* what the console already sent is not the new port's */
     if (bi && bi->mcu) {
         size_t len;
@@ -231,6 +278,10 @@ es_status esk_session_port_open(es_session *s, const char *target, const struct 
 
 static void port_free(es_session *s, esk_host_port *hp)
 {
+    if (hp->entry) {
+        (void)esk_host_remove(hp->entry);
+        esk_strfree(s->a, hp->entry);
+    }
     esk_host_pty_close(hp->pty);
     esk_strfree(s->a, hp->target);
     esk_free(s->a, hp, sizeof *hp);
@@ -277,7 +328,16 @@ static esk_json *bytes_value(es_session *s, const unsigned char *b, size_t n, in
             if (b[i] && b[i] < 0x80)
                 txt[k++] = (char)b[i];
         txt[k] = 0;
-        v = k ? esk_json_new_string(s->a, txt) : NULL;
+        if (text_only) {
+            v = k ? esk_json_new_string(s->a, txt) : NULL;
+        } else {
+            /* a board's bridge: the bytes at the line's rate (wire) */
+            v = k ? esk_json_new_object(s->a) : NULL;
+            if (v) {
+                esk_json_set_string(s->a, v, "text", txt);
+                esk_json_set_bool(s->a, v, "wire", 1);
+            }
+        }
         esk_free(s->a, txt, n + 1);
         return v;
     } else {
@@ -287,8 +347,10 @@ static esk_json *bytes_value(es_session *s, const unsigned char *b, size_t n, in
             return NULL;
         esk_base64_encode(b, n, b64, cap);
         v = esk_json_new_object(s->a);
-        if (v)
+        if (v) {
             esk_json_set_string(s->a, v, "base64", b64);
+            esk_json_set_bool(s->a, v, "wire", 1);
+        }
         esk_free(s->a, b64, cap);
         return v;
     }
@@ -342,6 +404,7 @@ void esk_session_ports_poll(es_session *s)
         unsigned char buf[512], conv[512];
         const unsigned char *out;
         uint32_t sketch;
+        uint64_t idx;
         esk_json *hold;
         size_t n;
         long got;
@@ -388,13 +451,25 @@ void esk_session_ports_poll(es_session *s)
 
         /* the MCU's bytes to the program, or dropped while none has the port */
         out = port_output(s, hp, &n, &hold);
+        idx = hp->sent - n; /* the first new byte's number */
         while (out && n) {
-            size_t chunk = n < sizeof buf ? n : sizeof buf, m = chunk;
+            size_t chunk = n < sizeof buf ? n : sizeof buf, m;
             const unsigned char *p = out;
-            if (mismatched(sketch, hp->baud)) {
-                m = esk_uart_rebaud(out, chunk, sketch, hp->baud, conv, sizeof conv);
+            uint32_t rate = sketch;
+            if (bi && bi->mcu) {
+                /* each byte at the rate it went out at: a reset or a new
+                 * UBRR since does not change what is already on the wire */
+                uint64_t until;
+                rate = esk_mcu_console_baud_of(bi->mcu, idx, &until);
+                if (until > idx && until - idx < chunk)
+                    chunk = (size_t)(until - idx);
+            }
+            m = chunk;
+            if (mismatched(rate, hp->baud)) {
+                m = esk_uart_rebaud(out, chunk, rate, hp->baud, conv, sizeof conv);
                 p = conv;
             }
+            idx += chunk;
             if (peer && m && esk_host_pty_write(hp->pty, p, m) > 0)
                 hp->to_host += m;
             out += chunk;

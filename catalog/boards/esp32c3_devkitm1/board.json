@@ -386,7 +386,8 @@
     "rx": "GPIO20",
     "baud": 115200,
     "bridge": {
-      "part": "CP2102N-A02-GQFN28"
+      "part": "CP2102N-A02-GQFN28",
+      "usb": {"vid": "0x10C4", "pid": "0xEA60", "product": "CP2102N USB to UART Bridge Controller"}
     }
   },
   "artwork": {

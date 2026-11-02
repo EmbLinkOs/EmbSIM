@@ -50,6 +50,8 @@ es_status esk_host_remove_tree(esk_alloc *a, const char *path);
 char *esk_host_user_data_dir(esk_alloc *a);
 /* The host's temporary directory. esk_strfree to release. */
 char *esk_host_temp_dir(esk_alloc *a);
+/* this process's id */
+unsigned long esk_host_pid(void);
 
 /* ---- time ---------------------------------------------------------------- */
 

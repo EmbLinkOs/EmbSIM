@@ -5,6 +5,35 @@ versions follow semantic versioning. There is no release yet.
 
 ## Unreleased
 
+### Programming the Uno the real way (ADR-031, ADR-032)
+
+- The ATmega328P's boot loader support: the fuses as the board programs
+  them (the Uno's 0xFF, 0xDE, 0xFD, lock 0xCF; a project's
+  `settings.fuses`), BOOTSZ's boot section and BOOTRST's reset vector,
+  CKDIV8, MCUCR's IVSEL with IVCE's timed sequence, and SPM from the boot
+  section: the page buffer, page erase and write in 4.1 ms, the RWW
+  section running on with RWWSB until RWWSRE, the NRWW section halting
+  the core, the boot lock bits, the SPM Ready interrupt, the signature row
+  and fuses read by LPM. Erased flash runs through to the application at
+  0. What the program writes stays in flash through a power cycle.
+- USART0's two-level receive FIFO and shift register, with DOR0 on an
+  overrun. A host port's bytes now come at the line's rate, as the 16U2
+  sends them, read or not; a session's text still waits for room.
+- The host port keeps the console's binary bytes (NULs included) and
+  re-times each byte at the rate it was sent at, so a reset or a new UBRR
+  no longer garbles what is already on the wire.
+- Unmodified Optiboot (ArduinoCore-avr's `optiboot_atmega328.hex`) runs on
+  the Uno and `avrdude -c arduino` uploads and verifies a sketch through it
+  over the board's serial port (`tests/vendor/arduino/optiboot.py`, in CI).
+- `embsim serve --run` runs at real time with no client. The open host
+  ports are listed in `<temp>/embsim-ports`, and
+  `tools/arduino/hardware/embsim` is a pluggable discovery for the Arduino
+  IDE and arduino-cli, so the IDE lists the simulated Uno (2341:0043) and
+  its Upload button uses it (`docs/user/arduino-ide.md`). Boards' bridges
+  carry their USB identity (`console.bridge.usb`).
+- A project whose `nets` is an array now gets a schema error instead of a
+  crash.
+
 ### AI assistants use the same session (ADR-035)
 
 - `embsim-mcp` (`python/embsim/mcp.py`): a Model Context Protocol server on

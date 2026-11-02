@@ -445,6 +445,14 @@ struct esk_mach {
      * settings.mac): the eFuse model's, otherwise its description's */
     u8 factory_mac[6];
     int has_factory_mac;
+    /* the fuse and lock bytes as programmed, when the board gives them (an
+     * AVR's: low, high, extended, lock); has_fuses 0 leaves the core's
+     * defaults */
+    u8 fuse[4];
+    int has_fuses;
+    /* the program wrote its own flash (an AVR's SPM): a power cycle keeps
+     * what it wrote rather than loading the image again */
+    int flash_written;
     /* set by a model when something outside the machine must see a change
      * now (a pin, the core clock): the runtime ends its quantum */
     int yield;

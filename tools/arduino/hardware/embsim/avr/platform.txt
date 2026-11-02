@@ -1,0 +1,15 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright 2026 Junior Deogracias
+#
+# EmbSIM for the Arduino IDE and arduino-cli (ADR-032): no boards of its own,
+# only a pluggable discovery that lists the serial ports of the boards an
+# EmbSIM session has open on this computer. Select the board's own entry
+# (Tools > Board > Arduino AVR Boards > Arduino Uno) and the EmbSIM port, and
+# Upload runs the platform's own avrdude through the simulated board's
+# Optiboot, as on a real board. Installed by copying this folder to
+# <sketchbook>/hardware/embsim/avr (docs/user/arduino-ide.md).
+
+name=EmbSIM serial ports
+version=0.1.0
+
+pluggable_discovery.embsim.pattern=python3 "{runtime.platform.path}/embsim-discovery.py"

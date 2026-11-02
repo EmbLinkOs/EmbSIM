@@ -1,6 +1,7 @@
 {
   "schema_version": 1,
   "kind": "mcu",
+  "fuses": {"factory": {"low": "0x62", "high": "0xD9", "extended": "0xFF", "lock": "0xFF"}},
   "id": "microchip/atmega328p",
   "version": "1.0.0",
   "name": "ATmega328P",
@@ -197,7 +198,7 @@
   },
   "fidelity": {
     "functional": {
-      "claims": "AVR5 instruction execution extracted from EmbCC (every instruction of the ATmega328P with SREG's flags, refereed there against QEMU), interrupts through the vector table with their priorities, SLEEP; every register of the datasheet's I/O space with its reset value and access; behavioural models of PORTB/C/D (DDR, PORT, PIN with the pull-ups and PUD), INT0/INT1 and the pin-change interrupts, Timer/Counter0, 1 and 2 (every waveform mode, double-buffered compare registers, the six OC pins switching at their clock), Timer/Counter1's input capture (ICP1 or the comparator, either edge, the noise canceler, ICR1 at the edge's clock), USART0 (frames at the baud rate on PD1, from PD0 and the session's serial input), the 10-bit ADC from the pins' voltages, the SPI as a master (modes 0 to 3, DORD, SPR and SPI2X, WCOL, SPIF cleared by SPSR then SPDR or by its vector, SS's mode fault) on PB2 to PB5, the TWI as a master (the datasheet's master transmitter and receiver statuses, repeated START, STOP with START, TWWC, TWBR and the prescaler's SCL) open-drain on PC4 and PC5, the 1 KiB EEPROM, the clock prescaler, and the watchdog (WDP's time-outs on its 128 kHz oscillator, WDR, interrupt and system reset modes, safety level 1's timed sequence, WDRF in MCUSR through its reset), MCUSR's reset flags (PORF at power-on; EXTRF from the RESET pin, the others kept), and the analog comparator (AIN0 or the bandgap against AIN1 or the ADC multiplexer's pin with ACME, ACO, ACI on its toggle, falling or rising edge, its vector, ACD; on an analog net each input pin is a threshold at the other's voltage, crossed in the analog solver at its time).",
+      "claims": "AVR5 instruction execution extracted from EmbCC (every instruction of the ATmega328P with SREG's flags, refereed there against QEMU), interrupts through the vector table with their priorities, SLEEP; every register of the datasheet's I/O space with its reset value and access; behavioural models of PORTB/C/D (DDR, PORT, PIN with the pull-ups and PUD), INT0/INT1 and the pin-change interrupts, Timer/Counter0, 1 and 2 (every waveform mode, double-buffered compare registers, the six OC pins switching at their clock), Timer/Counter1's input capture (ICP1 or the comparator, either edge, the noise canceler, ICR1 at the edge's clock), USART0 (frames at the baud rate on PD1, from PD0 and the session's serial input; the two-level receive FIFO and shift register, DOR0 on an overrun of a host port's bytes), the 10-bit ADC from the pins' voltages, the SPI as a master (modes 0 to 3, DORD, SPR and SPI2X, WCOL, SPIF cleared by SPSR then SPDR or by its vector, SS's mode fault) on PB2 to PB5, the TWI as a master (the datasheet's master transmitter and receiver statuses, repeated START, STOP with START, TWWC, TWBR and the prescaler's SCL) open-drain on PC4 and PC5, the 1 KiB EEPROM, the clock prescaler, and the watchdog (WDP's time-outs on its 128 kHz oscillator, WDR, interrupt and system reset modes, safety level 1's timed sequence, WDRF in MCUSR through its reset), MCUSR's reset flags (PORF at power-on; EXTRF from the RESET pin, the others kept), boot loader support (the fuses as the board programs them: BOOTSZ's boot section, BOOTRST's reset vector, CKDIV8; MCUCR's IVSEL with IVCE's timed sequence; SPM from the boot section: the temporary page buffer, page erase and write in 4.1 ms, the RWW section running on with RWWSB until RWWSRE, the NRWW section halting the core, the boot lock bits refusing writes, the SPM Ready interrupt, the signature row and the fuse and lock bits read by LPM; erased flash running through to address 0; what the program wrote kept through a power cycle), and the analog comparator (AIN0 or the bandgap against AIN1 or the ADC multiplexer's pin with ACME, ACO, ACI on its toggle, falling or rising edge, its vector, ACD; on an analog net each input pin is a threshold at the other's voltage, crossed in the analog solver at its time).",
       "omissions": [
         "SPI slave mode",
         "TWI slave mode, arbitration and bus errors",
@@ -206,14 +207,16 @@
         "the input capture synchroniser's constant delay",
         "the external clock inputs T0 and T1",
         "timer 2's asynchronous clock",
-        "self-programming (SPM)",
-        "fuses and lock bits",
+        "LPM's read protection by the boot lock bits and the interrupts they hold off; reading or running the RWW section while RWWSB is set (undefined on the part: LPM reads 0xff and warns, code runs as flash holds it)",
+        "the low fuse's clock selection (CKSEL, SUT: the board's description gives the clock) and the lock bits LB1 and LB2 (they guard external programming, not modelled)",
+        "frame and parity errors on bytes from the session's input",
         "brown-out detection"
       ],
       "validation": [
         "repo:tests/unit/test_avr.c",
         "repo:examples/uno-blink-serial",
-        "repo:tests/vendor/arduino/sketches/spi_wire"
+        "repo:tests/vendor/arduino/sketches/spi_wire",
+        "repo:tests/vendor/arduino/optiboot.py"
       ]
     },
     "timed": {

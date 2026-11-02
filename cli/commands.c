@@ -56,6 +56,7 @@ static void usage_to(FILE *out)
           "  validate PATH...            validate projects (descriptions: tools/validate.py)\n"
           "  serve PROJECT [--port N] [--host H] [--ui DIR] [--open] [--allow-origin ORIGIN]...\n"
           "        [--serial B1]...      a board's serial port on the host (a pseudo-terminal)\n"
+          "        [--run]               run at real time from the start, no client needed\n"
           "  sidecar [PROJECT]           speak the session protocol on stdin/stdout\n"
           "  gdb PROJECT [--board B] [--port N] [--host H]   a GDB server for a board's MCU\n"
           "  build PROJECT [--board B] [--toolchain T]   build a board's firmware\n"
@@ -1223,7 +1224,7 @@ static int cmd_serve(int argc, char **argv, const char *argv0, int sidecar)
 {
     const char *project = NULL, *host = "127.0.0.1", *ui = NULL, *policy = NULL, *library = NULL;
     const char *origins[8], *serials[4];
-    int port = 8765, open = 0, i, n_origins = 0, n_serials = 0;
+    int port = 8765, open = 0, i, n_origins = 0, n_serials = 0, run = 0;
     es_session *s;
     es_status st;
     for (i = 0; i < argc; i++) {
@@ -1243,6 +1244,7 @@ static int cmd_serve(int argc, char **argv, const char *argv0, int sidecar)
         else if (!strcmp(a, "--policy") && more) policy = argv[++i];
         else if (!strcmp(a, "--library") && more) library = argv[++i];
         else if (!strcmp(a, "--open")) open = 1;
+        else if (!strcmp(a, "--run")) run = 1;
         else if (a[0] == '-') { fprintf(stderr, EMBSIM_ID ": unknown option %s (embsim --help)\n", a); return 2; }
         else project = a;
     }
@@ -1269,6 +1271,16 @@ static int cmd_serve(int argc, char **argv, const char *argv0, int sidecar)
         o = esk_session_port_json(s, hp);
         fprintf(stderr, "embsim: %s's serial port is %s\n", serials[i], esk_json_get_str(o, "path", "?"));
         esk_json_free(s->a, o);
+    }
+    if (run && s->loaded) {
+        /* running at real time from the start, with nothing attached: the
+         * board on its host port as an IDE or a terminal finds it */
+        s->speed = 1.0;
+        s->run_until = ES_TIME_MAX;
+        s->running = 1;
+        s->last_host_ms = esk_host_monotonic_ms();
+        s->pace_carry_ps = 0;
+        fprintf(stderr, "embsim: running at real time\n");
     }
     esk_protocol_set_idle(serve_idle, s);
     if (sidecar) {

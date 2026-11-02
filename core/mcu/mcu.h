@@ -53,6 +53,10 @@ typedef struct esk_mcu_setup {
     const esk_mcu_file *files; /* the memory regions' factory files */
     int nfiles;
     const unsigned char *mac; /* this chip's factory MAC (6 bytes), or NULL */
+    /* the fuse and lock bytes as programmed (an AVR's low, high, extended,
+     * lock), when has_fuses */
+    unsigned char fuse[4];
+    int has_fuses;
 } esk_mcu_setup;
 
 /* Give a component made with esk_mcu_ops its machine and firmware. Errors
@@ -88,6 +92,9 @@ struct esk_an *esk_mcu_analysis(const esk_comp *c);
 const char *esk_mcu_console(esk_comp *c, size_t *len, u64 *total);
 /* the console's line rate as the firmware set its receiver (0: unknown) */
 uint32_t esk_mcu_console_baud(esk_comp *c);
+/* the rate the console's byte number `index` (counting every byte it sent)
+ * went out at, and in `until` the first byte sent at another rate after it */
+uint32_t esk_mcu_console_baud_of(esk_comp *c, uint64_t index, uint64_t *until);
 /* each UART's received text by unit, and "console": the console's unit */
 esk_json *esk_mcu_serial_json(esk_comp *c, esk_alloc *a);
 /* the registers of peripheral `periph` as they read now, each with its set

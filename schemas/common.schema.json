@@ -257,6 +257,17 @@
         }
       }
     },
+    "fuses": {
+      "type": "object",
+      "description": "Fuse and lock bytes as programmed (an AVR's: low, high, extended, lock), as numbers or hex strings.",
+      "additionalProperties": false,
+      "properties": {
+        "low": {"$ref": "#/$defs/hex_or_size"},
+        "high": {"$ref": "#/$defs/hex_or_size"},
+        "extended": {"$ref": "#/$defs/hex_or_size"},
+        "lock": {"$ref": "#/$defs/hex_or_size"}
+      }
+    },
     "hex_or_size": {
       "description": "An address or size: decimal, 0x hexadecimal, or decimal with a K/M/G power-of-two suffix.",
       "oneOf": [

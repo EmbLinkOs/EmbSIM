@@ -973,7 +973,8 @@
     "rx": "RF4",
     "baud": 115200,
     "bridge": {
-      "part": "MCP2221A"
+      "part": "MCP2221A",
+      "usb": {"vid": "0x04D8", "pid": "0x00DD", "product": "MCP2221 USB-I2C/UART Combo"}
     }
   },
   "artwork": {

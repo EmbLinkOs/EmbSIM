@@ -192,6 +192,8 @@ char *esk_host_temp_dir(esk_alloc *a)
 
 /* ---- time ---------------------------------------------------------------- */
 
+unsigned long esk_host_pid(void) { return (unsigned long)GetCurrentProcessId(); }
+
 uint64_t esk_host_monotonic_ms(void) { return (uint64_t)GetTickCount64(); }
 
 uint64_t esk_host_monotonic_ns(void)
