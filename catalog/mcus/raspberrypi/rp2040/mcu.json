@@ -178,7 +178,7 @@
     },
     {
       "match": "BUSCTRL",
-      "model": "storage"
+      "model": "rp2040-busctrl"
     },
     {
       "match": "VREG_AND_CHIP_RESET",
@@ -316,7 +316,7 @@
         "a debugger's choice of core (it sees the one that runs next)",
         "the XIP cache",
         "USB host mode",
-        "DMA: the bus's arbitration with the cores (a transfer takes no cycles from them), the XIP streaming DREQs, the debug registers (CHn_DBG_CTDREQ, CHn_DBG_TCR: plain), the DREQ counters' exact behaviour against a peripheral whose request drops between two transfers",
+        "DMA: the XIP streaming DREQs, the debug registers (CHn_DBG_CTDREQ, CHn_DBG_TCR: plain), the DREQ counters' exact behaviour against a peripheral whose request drops between two transfers",
         "the PIOs: the input synchroniser's two cycles (inputs are read at once), OUT_STICKY and INLINE_OUT_EN, the debug registers (DBG_PADOUT and DBG_PADOE give the outputs), a delay on an EXEC'd instruction taken as on any other",
         "SPI and I2C slave modes, TI's and Microwire's SPI formats, the SPI receive timeout, 10-bit I2C addresses, general call and START bytes, clock stretching by an I2C slave, arbitration, the I2C spike filter",
         "PWM's gated and edge-counting DIVMODEs and phase advance; the ADC's error flags",
@@ -337,10 +337,10 @@
       ]
     },
     "timed": {
-      "claims": "Instruction timing is the Cortex-M0+ TRM's Table 3-1 (ARM DDI 0484C, zero wait states): loads and stores 2 cycles, 1 on the SIO's single-cycle I/O port; a taken branch 2, BL 3, POP with PC 3+N; MULS 1 (the RP2040's fast multiplier). An exception's entry takes the TRM's worst-case 15 cycles, with late arrival. Flash runs at the core's speed (no cache misses). The timer counts the watchdog's microsecond tick of clk_ref exactly against clk_sys.",
+      "claims": "The bus fabric's arbitration (RP2040 datasheet 2.1): the four masters (both cores' fetches, loads and stores, the DMA's read and write ports) on the ROM, XIP, SRAM0-5 (striped), FASTPERI and APB ports, one access a port and a cycle; two in one cycle, BUS_PRIORITY's high level first, then round robin, the other waiting a cycle; BUSCTRL's PERFCTR0-3 counting the PERFSEL events (each port's accesses and contested accesses, 24-bit saturating, cleared by a write). Instruction timing is the Cortex-M0+ TRM's Table 3-1 (ARM DDI 0484C, zero wait states): loads and stores 2 cycles, 1 on the SIO's single-cycle I/O port; a taken branch 2, BL 3, POP with PC 3+N; MULS 1 (the RP2040's fast multiplier). An exception's entry takes the TRM's worst-case 15 cycles, with late arrival. Flash runs at the core's speed (no cache misses). The timer counts the watchdog's microsecond tick of clk_ref exactly against clk_sys.",
       "omissions": [
         "XIP cache misses",
-        "bus contention",
+        "the bus fabric: the APB bridge's and the XIP cache misses' wait states (an access is one cycle), the fetches the core's prefetch makes and does not use, an access seen more than 1024 cycles after another master's in the same cycle",
         "an exception's return and tail-chain cycles (no figure in the TRM)",
         "the divider's 8 cycles but in CSR.READY"
       ],

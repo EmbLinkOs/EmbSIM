@@ -5,6 +5,18 @@ versions follow semantic versioning. There is no release yet.
 
 ## Unreleased
 
+### The RP2040's bus fabric: contention between the cores and DMA
+
+- The crossbar's arbiters (`rp2040-busctrl`, RP2040 datasheet 2.1): both
+  cores' fetches, loads and stores and the DMA's read and write ports on
+  the ROM, XIP, SRAM0-5 (word-striped), FASTPERI and APB ports, one access
+  a port and a cycle. Two in one cycle: BUS_PRIORITY's high level first,
+  then round robin; the other waits a cycle. BUSCTRL's PERFCTR0-3 count the
+  events PERFSEL selects (the Pico SDK's `bus_ctrl_perf_counter_t`),
+  saturating at 24 bits and cleared by a write; BUS_PRIORITY_ACK
+  (`test_rp2040`'s `test_busctrl`). The SIO and the PPB stay off the
+  crossbar.
+
 ### The flash interfaces of the STM32F103 and the nRF52840
 
 - The nRF52840's NVMC (`nrf-nvmc`) and UICR (`nrf-uicr`): CONFIG's modes,

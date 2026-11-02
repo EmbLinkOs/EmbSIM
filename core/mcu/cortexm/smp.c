@@ -49,6 +49,7 @@ struct smp {
     struct smp_core self[SMP_MAX];
     int state[SMP_MAX];
     u64 lt[SMP_MAX]; /* each core's time */
+    u32 fword[SMP_MAX]; /* the word each core last fetched, for the bus's arbiter */
     int cur;         /* the core whose instruction is in progress */
     int stepping;
 };
@@ -161,6 +162,16 @@ static void smp_step(struct esk_cpu *cpu)
     m->asleep = 0;
     x->cur = i;
     x->stepping = 1;
+    if (m->bus.arb) {
+        /* the core fetches a word when its program counter enters another
+         * (the M0+ fetches 32 bits at a time): the crossbar sees it */
+        u32 pc = x->c[i]->cpu.ops->pc(&x->c[i]->cpu) & ~3u;
+        if (pc != x->fword[i]) {
+            x->fword[i] = pc;
+            m->bus.master = -1;
+            m->bus.arb(m->bus.arb_ctx, pc);
+        }
+    }
     esk_mach_step_core(m, i, &x->c[i]->cpu);
     x->stepping = 0;
     slept = m->asleep;
@@ -457,6 +468,24 @@ int esk_cortexm_cores(struct esk_mach *m)
 {
     struct smp *x = smp_of(m);
     return x ? x->n : 1;
+}
+
+/* core `core` waits `n` cycles more (the RP2040's crossbar made it wait):
+ * the instruction in progress takes them, or the core's time moves on */
+void esk_cortexm_core_stall(struct esk_mach *m, int core, u32 n)
+{
+    struct smp *x = smp_of(m);
+    if (!x) {
+        if (m->cpu && m->cpu->ops->step)
+            m->bus_stall += n;
+        return;
+    }
+    if (core < 0 || core >= x->n)
+        return;
+    if (x->stepping && x->cur == core)
+        x->c[core]->extra_cycles += n;
+    else
+        x->lt[core] += n;
 }
 
 int esk_cortexm_core(struct esk_mach *m)

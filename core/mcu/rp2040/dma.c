@@ -68,6 +68,8 @@ struct dma {
     u64 tacc[4];          /* the pacing timers' X/Y accumulators */
     int last_hi, last_lo; /* round robin */
     int irq0, irq1, was0, was1, running;
+    u32 stall; /* cycles the crossbar has made the DMA wait */
+    u64 at;    /* the cycle of the transfer in progress */
 };
 
 static struct esk_rf_reg *at(struct dma *d, u32 off)
@@ -257,7 +259,10 @@ static void transfer(struct dma *d, int n)
     if (size > 4)
         size = 4;
     (void)ready(d, sel, 1);
+    d->s->bus.master = 2; /* the DMA's read port, then its write port: the crossbar's masters */
+    d->s->bus.master_t = d->at;
     if (esk_bus_read(&d->s->bus, c->read & ~(size - 1u), (int)size, &v)) {
+        d->s->bus.master = -1;
         c->ctrl = (c->ctrl & ~CTRL_BUSY) | CTRL_RERR | CTRL_AHB;
         sync(d, n);
         return;
@@ -270,11 +275,15 @@ static void transfer(struct dma *d, int n)
     }
     if ((c->ctrl & CTRL_SNIFF) && (rv(d, 0x434) & 1u) && (int)(rv(d, 0x434) >> 1 & 15u) == n)
         sniff(d, v, (int)size);
+    d->s->bus.master = 3;
+    d->s->bus.master_t = d->at + 1;
     if (esk_bus_write(&d->s->bus, c->write & ~(size - 1u), (int)size, v)) {
+        d->s->bus.master = -1;
         c->ctrl = (c->ctrl & ~CTRL_BUSY) | CTRL_WERR | CTRL_AHB;
         sync(d, n);
         return;
     }
+    d->s->bus.master = -1;
     c->read = step_addr(c->read, size, (c->ctrl & CTRL_RING_SEL) ? 0 : ring, (c->ctrl & CTRL_INCR_READ) != 0);
     c->write = step_addr(c->write, size, (c->ctrl & CTRL_RING_SEL) ? ring : 0, (c->ctrl & CTRL_INCR_WRITE) != 0);
     if (--c->count == 0) {
@@ -332,9 +341,15 @@ static void dma_tick(void *ctx, u32 cycles)
     u32 k;
     pace(d, cycles);
     for (k = 0; k < cycles; k++) {
-        int n = pick(d);
+        int n;
+        if (d->stall) { /* the crossbar made it wait */
+            d->stall--;
+            continue;
+        }
+        n = pick(d);
         if (n < 0)
             break;
+        d->at = d->s->cycles - cycles + k;
         transfer(d, n);
     }
     clock_it(d);
@@ -458,4 +473,12 @@ void *esk_rp2040_dma_create(struct esk_mach *s, struct esk_rf_periph *p)
     d->irq0 = esk_rf_irq(p, "DMA_IRQ_0");
     d->irq1 = esk_rf_irq(p, "DMA_IRQ_1");
     return d;
+}
+
+/* the crossbar made the DMA wait `n` cycles (busctrl.c) */
+void esk_rp2040_dma_stall(struct esk_mach *m, u32 n)
+{
+    struct dma *d = m->rf ? (struct dma *)esk_rf_ctx_of(m->rf, &esk_rp2040_dma_ops) : 0;
+    if (d)
+        d->stall += n;
 }

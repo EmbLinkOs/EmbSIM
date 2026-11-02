@@ -288,6 +288,8 @@ ES_INLINE u32 esk_cm_ld(struct esk_cm_state *cs, u32 a, int n)
                 esk_cm_dbg_access(cs, a, n, 0);
             if (r->mem == cs->sim->ftime.mem && cs->sim->ftime.dread && cs->executing && cs->access == ACC_NORMAL)
                 cs->extra_cycles += cs->sim->ftime.dread(cs->sim->ftime.ctx, a - r->base); /* the flash's wait */
+            if (b->arb && !b->dap)
+                b->arb(b->arb_ctx, a); /* the crossbar's arbiter (an RP2040's) */
             return esk_mem_rd_le(r->mem + (a - r->base), n);
         }
     }
@@ -308,6 +310,8 @@ ES_INLINE void esk_cm_st(struct esk_cm_state *cs, u32 a, int n, u32 v)
                 esk_cm_dbg_access(cs, a, n, 1);
             if (cs->excl_valid && a - cs->excl_addr < 4)
                 cs->excl_valid = 0;
+            if (b->arb && !b->dap && !r->rom)
+                b->arb(b->arb_ctx, a); /* the crossbar's arbiter (an RP2040's) */
             if (!r->rom)
                 esk_mem_wr_le(r->mem + (a - r->base), n, v);
             else if (b->rom_write)

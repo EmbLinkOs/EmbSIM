@@ -134,6 +134,11 @@ void esk_rp2040_rom_install(struct esk_mach *m);
  * the caller's cache of the controller, 0 at first) */
 extern const struct esk_dev_ops esk_rp2040_dma_ops;
 void *esk_rp2040_dma_create(struct esk_mach *m, struct esk_rf_periph *p);
+/* the crossbar made the DMA wait (busctrl.c) */
+void esk_rp2040_dma_stall(struct esk_mach *m, u32 n);
+/* the bus fabric's arbiters and BUSCTRL's priorities and counters (busctrl.c) */
+extern const struct esk_dev_ops esk_rp2040_busctrl_ops;
+void *esk_rp2040_busctrl_create(struct esk_mach *m, struct esk_rf_periph *p);
 void esk_rp2040_dreq_pulse(struct esk_mach *m, void **dma, int dreq);
 int esk_rp2040_uart_dreq(struct esk_mach *m, int unit, int rx);
 int esk_rp2040_spi_dreq(struct esk_mach *m, int unit, int rx);

@@ -157,7 +157,10 @@ static struct esk_device *device_of(struct esk_bus *b, u32 a)
 
 static int rd(struct esk_bus *b, u32 a, int n, u32 *v)
 {
-    struct esk_region *r = esk_bus_region(b, a, (u32)n);
+    struct esk_region *r;
+    if (b->arb && !b->debug && !b->dap)
+        b->arb(b->arb_ctx, a);
+    r = esk_bus_region(b, a, (u32)n);
     if (r) {
         *v = esk_mem_rd_le(r->mem + (a - r->base), n);
         return 0;
@@ -194,6 +197,8 @@ static int wr(struct esk_bus *b, u32 a, int n, u32 v, int debug)
 {
     if (!debug && b->snoop)
         b->snoop(b->snoop_ctx, a);
+    if (b->arb && !debug && !b->dap)
+        b->arb(b->arb_ctx, a);
     struct esk_region *r = esk_bus_region(b, a, (u32)n);
     if (r) {
         if (!r->rom || debug)

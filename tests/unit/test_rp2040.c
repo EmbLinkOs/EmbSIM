@@ -722,8 +722,69 @@ static void test_spi_i2c(void)
 }
 
 
+
+/* ---- the bus fabric's arbiters and BUSCTRL (busctrl.c) ---- */
+
+#define BUSCTRL 0x40030000u
+
+/* master `m` (2: the DMA's read port, 3: its write port) reads `a` at cycle `t` */
+static void fabric_access(rp *f, int m, u32 a, u64 t)
+{
+    u32 v = 0;
+    f->m.bus.master = m;
+    f->m.bus.master_t = t;
+    CHECK_EQ(esk_bus_read(&f->m.bus, a, 4, &v), 0);
+    f->m.bus.master = -1;
+}
+
+/* two masters on one port in one cycle: one waits, counted as contested;
+ * the striped banks and the SIO apart; BUS_PRIORITY's high level wins over
+ * round robin; the counters' selection, clearing and BUS_PRIORITY_ACK */
+static void test_busctrl(void)
+{
+    rp f;
+    if (!rp_open(&f, 1))
+        return;
+    wr(&f, 0x4000c000u + 0x3000u, 1u << 1);               /* RESETS: BUSCTRL out of reset */
+    CHECK_EQ(rd(&f, BUSCTRL + 0x0cu), 0x1fu);            /* PERFSEL0's reset */
+    CHECK_EQ(rd(&f, BUSCTRL + 0x04u), 0u);               /* BUS_PRIORITY_ACK */
+    wr(&f, BUSCTRL + 0x0cu, 6u);                          /* PERFCTR0: sram4_contested */
+    wr(&f, BUSCTRL + 0x14u, 7u);                          /* PERFCTR1: sram4 */
+    wr(&f, BUSCTRL + 0x1cu, 15u);                         /* PERFCTR2: sram0 */
+    wr(&f, BUSCTRL + 0x24u, 14u);                         /* PERFCTR3: sram0_contested */
+    fabric_access(&f, 2, 0x20040000u, 1000);
+    fabric_access(&f, 3, 0x20040010u, 1000);             /* SRAM4 in the same cycle */
+    CHECK_EQ(rd(&f, BUSCTRL + 0x08u), 1u);               /* one contested */
+    CHECK_EQ(rd(&f, BUSCTRL + 0x10u), 2u);               /* two accesses */
+    fabric_access(&f, 2, 0x20040000u, 1001);             /* the write took 1001: again */
+    CHECK_EQ(rd(&f, BUSCTRL + 0x08u), 2u);
+    fabric_access(&f, 2, 0x20040000u, 1005);
+    CHECK_EQ(rd(&f, BUSCTRL + 0x08u), 2u);               /* alone */
+    /* the striped banks: SRAM0 and SRAM1 are two ports */
+    fabric_access(&f, 2, 0x20000000u, 2000);
+    fabric_access(&f, 3, 0x20000004u, 2000);
+    CHECK_EQ(rd(&f, BUSCTRL + 0x18u), 1u);
+    CHECK_EQ(rd(&f, BUSCTRL + 0x20u), 0u);
+    /* the SIO is not on the crossbar */
+    fabric_access(&f, 2, 0xd0000000u, 3000);
+    fabric_access(&f, 3, 0xd0000000u, 3000);
+    CHECK_EQ(rd(&f, BUSCTRL + 0x20u), 0u);
+    /* the DMA's write port at high priority wins whatever the round robin */
+    wr(&f, BUSCTRL, 1u << 12);
+    CHECK_EQ(rd(&f, BUSCTRL + 0x04u), 1u);               /* acknowledged */
+    wr(&f, BUSCTRL + 0x08u, 0u);                          /* a write clears */
+    CHECK_EQ(rd(&f, BUSCTRL + 0x08u), 0u);
+    fabric_access(&f, 3, 0x20040000u, 4000);
+    fabric_access(&f, 2, 0x20040000u, 4000);             /* low: waits */
+    fabric_access(&f, 2, 0x20040000u, 4010);
+    fabric_access(&f, 3, 0x20040000u, 4010);             /* high: the read port set back */
+    CHECK_EQ(rd(&f, BUSCTRL + 0x08u), 2u);
+    rp_close(&f);
+}
+
 TEST_MAIN_BEGIN
 RUN(test_boot);
+RUN(test_busctrl);
 RUN(test_no_boot2);
 RUN(test_bus_rules);
 RUN(test_resets);

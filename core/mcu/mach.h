@@ -116,6 +116,15 @@ struct esk_bus {
     int debug;     /* the access is a debugger's */
     int dap;       /* the access is the debug port's (a probe's MEM-AP), not the core's */
     int dev_fault; /* the device refused it: esk_bus_fault */
+    /* an arbiter between the bus's masters (the RP2040's crossbar,
+     * rp2040/busctrl.c): told of each access the core or a master makes to
+     * the memory or a device, not a debugger's. `master` names the master
+     * making it (-1: the core running, at the machine's time) and
+     * `master_t` its cycle */
+    void (*arb)(void *ctx, u32 a);
+    void *arb_ctx;
+    int master;
+    u64 master_t;
     int unmapped;  /* nothing answered the failed access */
     /* a device was accessed since esk_mach_event_coming last looked */
     int touched;
@@ -779,6 +788,8 @@ void esk_cortexm_event(struct esk_mach *m);
  * that runs next) */
 int esk_cortexm_cores(struct esk_mach *m);
 int esk_cortexm_core(struct esk_mach *m);
+/* core `core` waits `n` cycles more (a bus arbiter's) */
+void esk_cortexm_core_stall(struct esk_mach *m, int core, u32 n);
 /* the SW-DP IDCODE of the debug port in front of core 0 */
 u32 esk_cortexm_dp_idcode(struct esk_mach *m);
 /* exception n pends on one core's NVIC only */

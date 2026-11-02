@@ -350,9 +350,14 @@ code on a Cortex-M0+ and checks:
 **Not charged**, for want of a figure: the return and a tail-chain. Neither
 the TRM nor the RP2040 datasheet gives one, so an M0+ context switch reads
 short by whatever the return takes. Also not modelled:
-- XIP flash fetches, which run through the RP2040's cache;
-- bus contention between the two cores and DMA, which the datasheet (2.1)
-  says can add wait states on the AHB-Lite.
+- XIP flash fetches, which run through the RP2040's cache.
+
+Bus contention between the two cores and DMA is modelled (`rp2040/busctrl.c`,
+datasheet 2.1): two masters reaching one crossbar port in one cycle, the one
+BUS_PRIORITY sets high first, then round robin, the other waiting a cycle;
+BUSCTRL's performance counters count each port's accesses and contested
+accesses (`test_busctrl`). The ports' own wait states (the APB bridge's, the
+XIP cache's misses) are not.
 
 ### 4.6 Trace (step 3, continued)
 
