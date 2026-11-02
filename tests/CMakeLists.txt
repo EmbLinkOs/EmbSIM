@@ -52,6 +52,9 @@ if(Python3_Interpreter_FOUND)
   # a board's serial port on the host, paced (ADR-031, ADR-032)
   add_test(NAME host_serial COMMAND ${Python3_EXECUTABLE} ${CMAKE_SOURCE_DIR}/tests/protocol/test_host_serial.py
            --embsim $<TARGET_FILE:embsim_cli> WORKING_DIRECTORY ${CMAKE_SOURCE_DIR})
+  # the Pico programmed with BOOTSEL and a UF2 file on its USB drive (ADR-031)
+  add_test(NAME uf2 COMMAND ${Python3_EXECUTABLE} ${CMAKE_SOURCE_DIR}/tests/protocol/test_uf2.py
+           --embsim $<TARGET_FILE:embsim_cli> WORKING_DIRECTORY ${CMAKE_SOURCE_DIR})
   # the fault mode and damage (ADR-034)
   add_test(NAME faults COMMAND ${Python3_EXECUTABLE} ${CMAKE_SOURCE_DIR}/tests/protocol/test_faults.py
            --embsim $<TARGET_FILE:embsim_cli> WORKING_DIRECTORY ${CMAKE_SOURCE_DIR})

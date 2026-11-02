@@ -5,6 +5,19 @@ versions follow semantic versioning. There is no release yet.
 
 ## Unreleased
 
+### The Pico programmed with BOOTSEL and a UF2 file (ADR-031)
+
+- The RP2040's USB boot, as its bootrom does it: BOOTSEL held at reset (the
+  flash's chip select low), no boot2, or `reset_to_usb_boot` puts the part
+  on its USB cable as the RPI-RP2 drive (VID 0x2E8A, PID 0x0003, mass
+  storage over bulk-only SCSI, a 128 MiB FAT16 volume with INFO_UF2.TXT and
+  INDEX.HTM); UF2 blocks of the RP2040's family written to it go to flash
+  at the W25Q16JV's erase and program times, and with the last one the part
+  reboots into them. The Pico gains its `USB_DP` and `USB_DM` ports.
+- `emblink/usb_host` copies a file onto a mass storage drive (`copy_file`,
+  the `copy` input) as a file manager does on FAT16.
+- `tests/protocol/test_uf2.py`; `docs/user/pico-uf2.md`.
+
 ### The schematic's frame times measured (ADR-028)
 
 - `e2e/schematic-frame-budget.spec.ts`: a 500-part sheet (250 RC sections,

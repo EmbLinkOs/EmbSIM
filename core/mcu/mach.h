@@ -344,8 +344,10 @@ struct esk_radio_port {
  * (esk_mach.usb; engine/usb.h's answers, bus states and pull-ups) */
 struct esk_usb_port {
     void *ctx;
-    /* the pin D+ is on (port * 32 + bit, port 0 being A), the cable's end */
+    /* the pin D+ is on (port * 32 + bit, port 0 being A), the cable's end;
+     * or, for a dedicated pin (an RP2040's USB_DP), dp_at -1 and its name */
     int dp_at;
+    const char *dp_pin;
     int (*pullup)(void *ctx);
     void (*bus)(void *ctx, int ev, u32 frame);
     int (*setup)(void *ctx, int addr, int ep, const u8 data[8]);
@@ -483,6 +485,10 @@ struct esk_mach {
     void *access_ctx;
     /* the program asked for a system reset (AIRCR.SYSRESETREQ) */
     int reset_req;
+    /* a pin the boot reads once the circuit has settled after a reset
+     * (an RP2040's QSPI_SS, BOOTSEL's): strap_low is called when it is low */
+    const char *strap_pin;
+    void (*strap_low)(struct esk_mach *m);
     /* that reset is the core's alone (an ESP32-C3's CPU reset): the
      * devices keep their state */
     int reset_cpu_only;

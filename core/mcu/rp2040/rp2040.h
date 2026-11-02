@@ -128,4 +128,13 @@ void esk_rp2040_bootrom_resets(struct esk_mach *m);
 void esk_rp2040_rom(u8 *rom, u32 size);
 void esk_rp2040_rom_install(struct esk_mach *m);
 
+/* the USB boot (usbboot.c): the bootrom's drive on the USB cable */
+extern const struct esk_dev_ops esk_rp2040_usb_ops;
+void *esk_rp2040_usb_create(struct esk_mach *m, struct esk_rf_periph *p);
+void esk_rp2040_usb_boot(struct esk_mach *m);
+void esk_rp2040_usb_leave(struct esk_mach *m);
+int esk_rp2040_in_usb_boot(struct esk_mach *m);
+/* BOOTSEL held at reset (boot.c): the part goes to its USB boot */
+void esk_rp2040_enter_usb_boot(struct esk_mach *m);
+
 #endif

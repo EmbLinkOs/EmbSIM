@@ -79,6 +79,7 @@ void esk_rp2040_boot(struct esk_mach *s)
     int i;
     if (!rom || !f || !m)
         return;
+    esk_rp2040_usb_leave(s);
     memcpy(rom->mem + (0 - rom->base), rom_image, sizeof rom_image);
     esk_rp2040_rom(rom->mem + (0 - rom->base), 0x4000u);
     esk_rp2040_rom_install(s);
@@ -95,6 +96,7 @@ void esk_rp2040_boot(struct esk_mach *s)
                     "the RP2040's bootrom finds no boot2 in flash (the CRC-32 of its first 252 bytes is "
                     "0x%08lx, the word after them 0x%08lx): the part waits in its USB boot",
                     (unsigned long)sum, (unsigned long)want);
+        esk_rp2040_usb_boot(s);
         return;
     }
     memcpy(m->mem + (BOOT2_AT - m->base), b2, 256);
@@ -113,4 +115,20 @@ void esk_rp2040_boot(struct esk_mach *s)
         if (q)
             esk_rf_hw(q, q->value & ~esk_rf_mask(q, "IE"));
     }
+}
+
+/* BOOTSEL held as the bootrom looks (the flash's chip select low through
+ * R_BOOT): its USB boot, whatever flash holds */
+void esk_rp2040_enter_usb_boot(struct esk_mach *s)
+{
+    struct esk_region *rom = esk_bus_region(&s->bus, 0, 0x4000u);
+    if (!rom)
+        return;
+    rom->mem[4] = (u8)ROM_DEAD;
+    rom->mem[5] = rom->mem[6] = rom->mem[7] = 0;
+    esk_bus_code_changed(&s->bus);
+    s->cpu->ops->reset(s->cpu);
+    esk_rf_diag(s, ES_SEV_INFO, "mcu.usb_boot",
+                "BOOTSEL is held as the RP2040's bootrom starts: the part waits in its USB boot, a drive named RPI-RP2");
+    esk_rp2040_usb_boot(s);
 }

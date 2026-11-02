@@ -494,6 +494,8 @@ static void quantum_cb(void *ctx, void *arg, es_time_t now)
             st->held = 1;
             return;
         }
+        if (st->m.strap_pin && st->m.strap_low && !level_of(esk_comp_pin(st->c, st->m.strap_pin), 1))
+            st->m.strap_low(&st->m);
         if (level_of(st->boot0, 0)) {
             st->boot_fail = 1;
             raise(st, ES_SEV_WARNING, "mcu.boot_mode",
@@ -1979,12 +1981,16 @@ es_status esk_mcu_attach(esk_comp *c, const esk_mcu_setup *su, char *why, size_t
             return ES_ENOMEM;
         st->on_air = 1;
     }
-    if (st->m.usb.pullup && !st->on_usb && st->m.usb.dp_at >= 0 && st->m.usb.dp_at / 32 < MCU_PORTS &&
-        st->m.usb.dp_at % 32 < 16 && st->gpio[st->m.usb.dp_at / 32][st->m.usb.dp_at % 32]) {
-        /* its USB controller's end of a cable: its D+ pin */
+    if (st->m.usb.pullup && !st->on_usb &&
+        ((st->m.usb.dp_at < 0 && st->m.usb.dp_pin && esk_comp_pin(c, st->m.usb.dp_pin)) ||
+         (st->m.usb.dp_at >= 0 && st->m.usb.dp_at / 32 < MCU_PORTS && st->m.usb.dp_at % 32 < 16 &&
+          st->gpio[st->m.usb.dp_at / 32][st->m.usb.dp_at % 32]))) {
+        /* its USB controller's end of a cable: its D+ pin (a GPIO, or a
+         * dedicated one) */
         st->usb.ctx = st;
         st->usb.comp = c;
-        st->usb.dp = st->gpio[st->m.usb.dp_at / 32][st->m.usb.dp_at % 32];
+        st->usb.dp = st->m.usb.dp_at < 0 ? esk_comp_pin(c, st->m.usb.dp_pin)
+                                         : st->gpio[st->m.usb.dp_at / 32][st->m.usb.dp_at % 32];
         st->usb.pullup = usb_pullup;
         st->usb.bus = usb_bus;
         st->usb.setup = usb_setup;

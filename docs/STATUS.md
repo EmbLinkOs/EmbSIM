@@ -437,6 +437,28 @@ December, noon: the edge at x = -29 mm where the frame's top bar puts it at
 +24 mm, half a degree of elevation). Not yet: floor shadows outside the
 table's 2 m shadow frame, physics.
 
+## The Pico's USB boot and UF2 files (ADR-031, 2026-11-02)
+
+The Pico is programmed as a real one is: with BOOTSEL held at reset (the
+flash's chip select low through R_BOOT), with no valid boot2, or after
+`reset_to_usb_boot`, the RP2040 attaches to its USB cable as the bootrom's
+RPI-RP2 drive (VID 0x2E8A, PID 0x0003, "RP2 Boot", a mass storage interface
+and the PICOBOOT one), a 128 MiB FAT16 volume holding INFO_UF2.TXT and
+INDEX.HTM. A computer's port (`emblink/usb_host`) copies a file onto it as a
+file manager does on FAT16 (INQUIRY, READ CAPACITY, the boot sector, FAT and
+root directory read; the FAT's copies and the directory entry written; the
+data in WRITE(10) commands of up to 64 KiB); every 512-byte sector that is a
+UF2 block of the RP2040's family for flash is programmed, its 4 KiB sector
+erased first, at the W25Q16JV's times (the bulk endpoint NAKs meanwhile),
+and once every block of the file is in, the part reboots through the
+watchdog into it. Evidence: `tests/protocol/test_uf2.py` (a Pico running
+pico-dual-core plugged in with BOOTSEL held enumerates as 2e8a:0003, takes
+pico-blink-serial's UF2 file and reboots into it, printing its banner; a
+UF2 file of the nRF52840's family is ignored), the Pico SDK suite. Inside:
+the bootrom's code does not run; its USB device is done by the host, as its
+other functions are. Not yet: picotool's PICOBOOT commands, UF2 files for
+RAM, a blank board (no firmware entry) in its USB boot, MicroPython.
+
 ## The schematic's frame times (ADR-028, 2026-11-02)
 
 `e2e/schematic-frame-budget.spec.ts` measures the schematic on a 500-part

@@ -503,6 +503,7 @@ static int rom_call(struct esk_mach *s, u32 pc, unsigned n, struct esk_rom_call 
     case F_USB_BOOT:
         esk_rf_diag(s, ES_SEV_WARNING, "mcu.usb_boot",
                     "the program called the RP2040's reset_to_usb_boot: the part waits in its USB boot");
+        esk_rp2040_usb_boot(s);
         c->cycles = 10;
         break;
     default:

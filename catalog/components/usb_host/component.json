@@ -126,6 +126,11 @@
       "type": "boolean",
       "default": true,
       "doc": "As emblink/usb_host_controller's"
+    },
+    "copy_file": {
+      "type": "string",
+      "default": "",
+      "doc": "As emblink/usb_host_controller's"
     }
   },
   "outputs": [],
@@ -164,7 +169,8 @@
             "remote_wakeup": "$remote_wakeup",
             "dfu_file": "$dfu_file",
             "dfu_address": "$dfu_address",
-            "dfu_leave": "$dfu_leave"
+            "dfu_leave": "$dfu_leave",
+            "copy_file": "$copy_file"
           }
         }
       ],

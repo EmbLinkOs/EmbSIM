@@ -68,7 +68,7 @@
     {
       "id": "SW_BOOTSEL",
       "component": "emblink/push_button",
-      "doc": "BOOTSEL: pulls the flash's chip select low through R_BOOT (read by the bootrom at reset; the stand-in boots from flash whatever it reads)"
+      "doc": "BOOTSEL: pulls the flash's chip select low through R_BOOT; held as the bootrom starts (a reset, or power), the part goes to its USB boot, the RPI-RP2 drive"
     },
     {
       "id": "R_BOOT",
@@ -170,7 +170,7 @@
       "params": {
         "pins": 2
       },
-      "doc": "The micro-USB connector's data lines (USB is not modelled)"
+      "doc": "The micro-USB connector's data lines: the RP2040's USB device (its bootrom's USB boot, core/mcu/rp2040/usbboot.c; a program's own USB is plain registers)"
     },
     {
       "id": "J_SWD",
@@ -656,6 +656,18 @@
       "connector": "J2",
       "pin": 20,
       "doc": "Pin 40: 5 V in (USB's on a real board)"
+    },
+    "USB_DP": {
+      "net": "USB_DP",
+      "connector": "J_USB",
+      "pin": 1,
+      "doc": "Micro-USB D+ (the RP2040's USB_DP, 27 ohm on the real board)"
+    },
+    "USB_DM": {
+      "net": "USB_DM",
+      "connector": "J_USB",
+      "pin": 2,
+      "doc": "Micro-USB D- (the RP2040's USB_DM)"
     }
   },
   "leds": [
