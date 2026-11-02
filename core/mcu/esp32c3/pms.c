@@ -7,9 +7,10 @@
  * and memprot_defs.h.
  *
  *   - Internal SRAM: on the instruction bus (IRAM0, 0x40380000-0x403DFFFF)
- *     four areas cut by the split lines I0, I1 and the main I/D line, each
- *     with world 0's read, write and execute permissions (IRAM0
- *     PMS_CONSTRAIN_2); on the data bus (DRAM0, 0x3FC80000-0x3FCDFFFF) four
+ *     four areas cut by the split lines I0, I1 and the main I/D line (the
+ *     TRM's instr_region_0-2 and, above the main line, the data region),
+ *     each with the privileged environment's read, write and execute
+ *     permissions (IRAM0 PMS_CONSTRAIN_2, TRM tables 14.4-6 and 14.4-7); on the data bus (DRAM0, 0x3FC80000-0x3FCDFFFF) four
  *     areas cut by the main line, D0 and D1, with read and write (DRAM0
  *     PMS_CONSTRAIN_1). A split line register gives three 128 KB blocks a
  *     category each (0 below the line, 1 or 2 the block the line is in, at
@@ -18,13 +19,14 @@
  *     IRAM0's blocks (0x4037C000) has its own permissions
  *     (CACHEDATAARRAY_PMS_0), as have the ROM on both buses.
  *   - RTC memory (0x50000000-0x50001FFF): a low and a high area cut by
- *     RTCFAST_SPLTADDR_WORLD_0 x 4 (PIF PMS_CONSTRAIN_9), with world 0's
- *     write, read and execute permissions (PMS_CONSTRAIN_10).
- *   - A denied access is blocked: a load reads 0, a store writes nothing,
- *     a fetch reads 0 (an illegal instruction), with no exception of its
- *     own. The monitor of its bus, while its VIOLATE_EN is set and
+ *     RTCFAST_SPLTADDR_WORLD_0 x 4 (PIF PMS_CONSTRAIN_9), with the
+ *     privileged environment's write, read and execute permissions
+ *     (PMS_CONSTRAIN_10).
+ *   - A denied access is blocked (TRM 14.7): a load reads 0, a store
+ *     writes nothing, a fetch reads 0 (an illegal instruction), with no
+ *     exception of its own. The monitor of its bus, while its VIOLATE_EN is set and
  *     VIOLATE_CLR clear, latches the first: VIOLATE_INTR, the address, the
- *     world (1, world 0), whether it wrote, whether it was a load or store
+ *     environment (1, privileged), whether it wrote, whether it was a load or store
  *     rather than a fetch (IRAM0, the PIF's HPORT_0), the byte lanes
  *     (DRAM0) or the size (the PIF); VIOLATE_CLR clears it. VIOLATE_INTR
  *     drives the interrupt sources 56 (IRAM0), 57 (DRAM0) and 58 (the
@@ -32,10 +34,14 @@
  *   - The lock registers stick at 1 until a reset, and their constraints
  *     and monitor settings then ignore writes. A CPU reset resets it all
  *     (rtc.c).
- * Not yet: world 1 and the world controller (the CPU runs in world 0, as
- * ESP-IDF keeps it), the peripheral regions (REGION_PMS_*), the PIF's
- * non-word access monitor, the DMA and cache permission checks (their
- * registers keep what is written), the DRAM0 monitor's STATUS_LOCK. */
+ * The DRAM0 monitor's atomic-access flag reads 0: the core has no atomic
+ * instructions.
+ * Not yet: the unprivileged environment (the world controller's
+ * non-secure world, or user mode with PMS_PRIVILEGE_MODE_SEL; the CPU is
+ * always in the privileged environment, as ESP-IDF keeps it), the
+ * peripheral regions (REGION_PMS_*), the PIF's non-word access monitor,
+ * the GDMA and external memory permission checks (their registers keep
+ * what is written). */
 #include <string.h>
 
 #include "mcu/esp32c3/esp32c3.h"

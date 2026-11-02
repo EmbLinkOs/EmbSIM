@@ -3362,7 +3362,9 @@ static void test_uhci_slip(void)
     CHECK_EQ(rd(&f, drx), 1u << 30 | 4u << 12 | 64u); /* four bytes, suc_eof */
     got = rd(&f, rx);
     CHECK_EQ(got, 0x03DBC001u);
-    CHECK(rd(&f, UHCI0 + 0x04u) & 3u); /* RX_START and TX_START */
+    /* RX_START for the separators sent, TX_START for those the receiver
+     * found (TRM 26.4.12) */
+    CHECK_EQ(rd(&f, UHCI0 + 0x04u) & 3u, 3u);
     c3_close(&f);
 }
 

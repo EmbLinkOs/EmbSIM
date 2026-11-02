@@ -1,7 +1,7 @@
 /* SPDX-License-Identifier: Apache-2.0 */
 /* Copyright 2026 Junior Deogracias */
 /* twai.c -- the ESP32-C3's Two-Wire Automotive Interface (TWAI0 at
- * 0x6002B000, TRM v1.4 chapter 22): a CAN 2.0 controller compatible with
+ * 0x6002B000, TRM v1.4 chapter 31): a CAN 2.0 controller compatible with
  * the SJA1000 in PeliCAN mode, on the twai_tx and twai_rx signals of the
  * GPIO matrix (74) and matrix source 25. A transceiver on the bench, or a
  * jumper from TX to RX as ESP-IDF's twai_self_test allows, closes the bus.

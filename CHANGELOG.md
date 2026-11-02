@@ -7,12 +7,13 @@ versions follow semantic versioning. There is no release yet.
 
 ### The ESP32-C3's UHCI
 
-- UHCI0 (`esp32c3-uhci`, TRM v1.4 chapter 27) moves a UART's data to and
+- UHCI0 (`esp32c3-uhci`, TRM v1.4 chapter 26) moves a UART's data to and
   from the GDMA: the transmit list into the UART's TX FIFO as it has room,
   the RX FIFO into the receive list while it has one; SLIP separators and
   the separator, 0xDB, 0x11 and 0x13 escapes both ways; a received frame
   closed after PKT_THRS bytes, on a separator, a break or the UART's
-  receive timeout; RX_START, TX_START and the interrupt on source 15.
+  receive timeout; RX_START as a separator is sent and TX_START as one is
+  found, as TRM 26.4.12 names them; the interrupt on source 15.
   UHCI1, which no GDMA channel serves, keeps its registers.
 - The virtual terminal sends and shows bytes as hex (`tx_hex`, `rx_hex`),
   as a terminal program's hex mode, for binary protocols.
@@ -28,11 +29,12 @@ versions follow semantic versioning. There is no release yet.
 - SENSITIVE (`esp32c3-pms`, TRM v1.4 chapter 14) checks the CPU's own
   fetches, loads and stores, as ESP-IDF's memory protection (on by
   default) sets it: internal SRAM's four instruction-bus and four data-bus
-  areas between the split lines, each with world 0's permissions; the RTC
+  areas between the split lines, each with the privileged environment's
+  permissions; the RTC
   memory's low and high areas; the ROM and the cache's 16 KB. A denied
   load reads 0, a store writes nothing and a fetch reads an illegal
   instruction; the IRAM0, DRAM0 and PIF monitors latch the first violation
-  (address, kind, world, byte lanes or size) and raise interrupt sources
+  (address, kind, environment, byte lanes or size) and raise interrupt sources
   56 to 58, which ESP-IDF routes to its panic handler. The lock registers
   hold the configuration until a reset.
 - The RISC-V core asks its machine's permission check (`access_denied`)
@@ -45,7 +47,7 @@ versions follow semantic versioning. There is no release yet.
 
 ### The ESP32-C3's flash encryption (XTS-AES)
 
-- XTS-AES (`esp32c3-xts`, TRM v1.4 chapter 22): XTS-AES-128 under the
+- XTS-AES (`esp32c3-xts`, TRM v1.4 chapter 23): XTS-AES-128 under the
   eFuse key block with the XTS_AES_128_KEY purpose, with Espressif's
   addressing as espsecure computes it (each 128-byte data unit reversed,
   tweaked by its flash address, reversed again; the key block's bytes
@@ -69,12 +71,12 @@ versions follow semantic versioning. There is no release yet.
 
 ### The ESP32-C3's HMAC, digital signature and eFuse key protection
 
-- HMAC (`esp32c3-hmac`, TRM v1.4 chapter 18): HMAC-SHA256 under an eFuse
+- HMAC (`esp32c3-hmac`, TRM v1.4 chapter 21): HMAC-SHA256 under an eFuse
   key block, upstream with ESP-IDF's block flow (SET_MESSAGE_ONE,
   SET_MESSAGE_ING, ONE_BLOCK, SET_MESSAGE_PAD, SET_MESSAGE_END) and
   downstream for the digital signature and soft JTAG; the requested
   purpose checked against the block's KEY_PURPOSE (QUERY_ERROR).
-- The digital signature (`esp32c3-ds`, chapter 20): its encrypted
+- The digital signature (`esp32c3-ds`, chapter 22): its encrypted
   parameters decrypted with AES-256-CBC under the HMAC's downstream key,
   their MD and padding checked (QUERY_CHECK), and Z = X^Y mod M to 3072
   bits; with no key it stays busy, as ESP-IDF expects.
@@ -94,7 +96,7 @@ versions follow semantic versioning. There is no release yet.
 
 ### The ESP32-C3's I2S
 
-- I2S0 (`esp32c3-i2s`, TRM v1.4 chapter 28) as a master in TDM and the
+- I2S0 (`esp32c3-i2s`, TRM v1.4 chapter 29) as a master in TDM and the
   standard formats: BCK, WS and the data on their matrix signals, the
   fractional MCLK divider and the BCK divider, slot and data widths, WS by
   its idle polarity and width, MSB shift, alignment, bit order, endianness,
@@ -111,7 +113,7 @@ versions follow semantic versioning. There is no release yet.
 
 ### The ESP32-C3's TWAI (CAN 2.0)
 
-- TWAI0 (`esp32c3-twai`, TRM v1.4 chapter 22): an SJA1000-compatible
+- TWAI0 (`esp32c3-twai`, TRM v1.4 chapter 31): an SJA1000-compatible
   controller run bit by bit on twai_tx and twai_rx (matrix signal 74,
   source 25). Base and extended, data and remote frames with stuffing and
   CRC-15; arbitration (ALC, ALI); the ACK slot; self test and listen-only

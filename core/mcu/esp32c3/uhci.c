@@ -1,7 +1,7 @@
 /* SPDX-License-Identifier: Apache-2.0 */
 /* Copyright 2026 Junior Deogracias */
 /* uhci.c -- the ESP32-C3's UART/HCI controller (UHCI0 at 0x60014000, TRM
- * v1.4 chapter 27): a UART's data to and from the GDMA (peripheral 2), as
+ * v1.4 chapter 26): a UART's data to and from the GDMA (peripheral 2), as
  * ESP-IDF's HCI-over-UART transport for the Bluetooth controller uses it.
  *
  *   - CONF0's UART0_CE or UART1_CE attaches a UART (uart.c), while CLK_EN
@@ -9,14 +9,16 @@
  *   - Transmitting: the bytes of the GDMA's transmit list go into the
  *     UART's TX FIFO as it has room. With SEPER_EN a frame begins and ends
  *     (after an EOF descriptor's last byte) with the separator (ESC_CONF0's
- *     SEPER_CHAR) and TX_START is raised as it begins. ESCAPE_CONF's TX_*
+ *     SEPER_CHAR); RX_START is raised as the separator goes out (TRM
+ *     26.4.12: "when a separator character has been sent"). ESCAPE_CONF's TX_*
  *     bits replace, in the data, the separator by SEPER_ESC_CHAR0/1, 0xDB
  *     (ESC_SEQ0) by its two characters, 0x11 (ESC_SEQ1) and 0x13 (ESC_SEQ2)
  *     by theirs.
  *   - Receiving: the bytes of the UART's RX FIFO go into the GDMA's receive
  *     list while it has one (they wait in the FIFO otherwise), the RX_*
- *     escapes undone. With SEPER_EN a frame starts at a separator (RX_START)
- *     and the next separator ends it; bytes outside a frame are dropped. A
+ *     escapes undone. With SEPER_EN a frame starts at a separator (TX_START,
+ *     "when GDMA detects a separator character") and the next separator,
+ *     or a run of them, ends it; bytes outside a frame are dropped. A
  *     frame also ends (the descriptor written back with suc_eof) after
  *     PKT_THRS bytes (LEN_EOF_EN), on a break (UART_RX_BRK_EOF_EN) or when
  *     the UART's receive timeout fires (UART_IDLE_EOF_EN).
@@ -167,7 +169,7 @@ static void transmit(struct c3_uhci *k, int unit)
         if ((c & C0_SEPER_EN) && !k->tx_open) {
             k->out[k->nout++] = (u8)sep;
             k->tx_open = 1;
-            raise_int(k, I_TX_START);
+            raise_int(k, I_RX_START); /* "a separator character has been sent" */
         }
         encode(k, b);
         if (eof && (c & C0_SEPER_EN)) {
@@ -205,7 +207,7 @@ static void decode(struct c3_uhci *k, u8 c)
         if (k->rx_open)
             rx_eof(k);
         k->rx_open = 1;
-        raise_int(k, I_RX_START);
+        raise_int(k, I_TX_START); /* "GDMA detects a separator character" */
         return;
     }
     if ((conf & C0_SEPER_EN) && !k->rx_open)

@@ -1,7 +1,7 @@
 /* SPDX-License-Identifier: Apache-2.0 */
 /* Copyright 2026 Junior Deogracias */
 /* ds.c -- the ESP32-C3's digital signature peripheral (0x6003D000, TRM
- * v1.4 chapter 20): an RSA private-key operation of up to 3072 bits whose
+ * v1.4 chapter 22): an RSA private-key operation of up to 3072 bits whose
  * parameters software holds only encrypted, under a key the HMAC
  * accelerator derives downstream from an eFuse key (hmac.c), as ESP-IDF's
  * esp_ds_sign and its TLS client authentication use it.

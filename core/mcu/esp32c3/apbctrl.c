@@ -1,7 +1,7 @@
 /* SPDX-License-Identifier: Apache-2.0 */
 /* Copyright 2026 Junior Deogracias */
 /* apbctrl.c -- the ESP32-C3's APB_CTRL registers, for its random number
- * generator (TRM v1.4 chapter 24): every read of RND_DATA (APB_CTRL +
+ * generator (TRM v1.4 chapter 25): every read of RND_DATA (APB_CTRL +
  * 0xB0, the TRM's RNG_DATA_REG) is a new 32-bit number. The other
  * registers keep what is written.
  *

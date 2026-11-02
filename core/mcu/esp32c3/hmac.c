@@ -1,7 +1,7 @@
 /* SPDX-License-Identifier: Apache-2.0 */
 /* Copyright 2026 Junior Deogracias */
 /* hmac.c -- the ESP32-C3's HMAC accelerator (0x6003E000, TRM v1.4 chapter
- * 18): HMAC-SHA256 under a key in an eFuse key block, which software never
+ * 21): HMAC-SHA256 under a key in an eFuse key block, which software never
  * reads, as ESP-IDF's esp_hmac_calculate, its NVS encryption scheme and the
  * digital signature use it.
  *

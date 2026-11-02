@@ -1,7 +1,7 @@
 /* SPDX-License-Identifier: Apache-2.0 */
 /* Copyright 2026 Junior Deogracias */
 /* xts.c -- the ESP32-C3's external memory encryption and decryption (TRM
- * v1.4 chapter 22): XTS-AES-128 under the eFuse key block whose purpose is
+ * v1.4 chapter 23): XTS-AES-128 under the eFuse key block whose purpose is
  * XTS_AES_128_KEY (4), for the flash.
  *
  *   - The algorithm is Espressif's addressing of XTS-AES, as espsecure's
@@ -12,19 +12,25 @@
  *     the eFuse block's 32 bytes in reverse order (espefuse burn_key
  *     reverses an XTS key's bytes into the block); its first half encrypts
  *     the data, its second the tweak. With no such key block the key is 0.
- *   - Manual encryption (0x600CC000), which ESP-IDF's esp_flash_write_encrypted
- *     and the bootloader use: software writes the plaintext to PLAIN_MEM (a
- *     line at its flash address modulo 32, the C3's largest line: ESP-IDF's
- *     SOC_FLASH_ENCRYPTED_XTS_AES_BLOCK_MAX), LINESIZE (0 16, 1 32 bytes), DESTINATION (0, the flash) and PHYSICAL_ADDRESS; TRIGGER
+ *   - Manual encryption (0x600CC000, TRM 23.4.5 and 23.5), which ESP-IDF's
+ *     esp_flash_write_encrypted and the boot ROM use: software writes the
+ *     plaintext to PLAIN_0-7 (a line at its flash address modulo 32, table
+ *     23.4-2), LINESIZE (0 16, 1 32 bytes), DESTINATION (0, the flash) and PHYSICAL_ADDRESS; TRIGGER
  *     encrypts the line (STATE 1 busy, then 2 done) while SYSTEM's
  *     EXTERNAL_DEVICE_ENCRYPT_DECRYPT_CONTROL has ENABLE_SPI_MANUAL_ENCRYPT;
  *     RELEASE gives it to SPI1 (STATE 3), whose page program then writes the
  *     ciphertext at the line's address, whatever its own address, length
  *     and data (spimem.c);
  *     DESTROY clears it (STATE 0).
- *   - Automatic decryption: while flash encryption is on (an odd number of
- *     SPI_BOOT_CRYPT_CNT's eFuse bits), what the cache reads from the flash
- *     through the MMU is decrypted (cache.c); SPI1's own reads stay raw.
+ *   - Automatic decryption: while flash encryption is on, what the cache
+ *     reads from the flash through the MMU is decrypted (cache.c); SPI1's
+ *     own reads stay raw. On is an odd number of SPI_BOOT_CRYPT_CNT's three
+ *     eFuse bits, as the boot ROM's ets_efuse_cache_encryption_enabled and
+ *     ESP-IDF decide it (1 on, 3 off, 7 on); the TRM (23.4.6) words it as
+ *     "the first bit or the third bit set", which would leave 3 on.
+ *   - The tweak is the data unit's address within the 24-bit physical
+ *     address space (TRM 23.4.3: base_addr & 0x00FFFF80); the key, with no
+ *     key block of that purpose, is 256 zero bits (table 23.4-1).
  * Not yet: the time encryption takes (it completes at once), the
  * download-mode controls (ENABLE_DOWNLOAD_DB_ENCRYPT, G0CB_DECRYPT,
  * MANUAL_ENCRYPT), PSRAM (the C3 has none). */
@@ -35,7 +41,7 @@
 
 #define P_XTS_AES_128 4
 #define LINE_MAX 32u
-#define PLAIN_BYTES 64u
+#define PLAIN_BYTES 32u /* XTS_AES_PLAIN_0-7 */
 #define SYSTEM_CRYPT_CTRL 0x600C0044u
 
 struct c3_xts {
@@ -120,11 +126,12 @@ void esk_esp32c3_xts_crypt(struct esk_mach *m, u32 addr, u8 *buf, u32 len, int d
     u8 key[32], unitbuf[128];
     esk_aes k1, k2;
     u32 done = 0;
+    addr &= 0x00ffffffu; /* a 24-bit physical address */
     hw_key(m, key);
     esk_aes_init(&k1, key, 16);
     esk_aes_init(&k2, key + 16, 16);
     while (done < len) {
-        u32 a = addr + done, unit = a & ~0x7fu, off = a - unit, n = 128u - off;
+        u32 a = addr + done, unit = a & 0x00ffff80u, off = a - unit, n = 128u - off;
         if (n > len - done)
             n = len - done;
         memset(unitbuf, 0, sizeof unitbuf);
@@ -179,7 +186,7 @@ static void xts_write(void *ctx, u32 off, int n, u32 v)
         if (!(ctrl & 1u) || ((u32)k->dest->value & 1u))
             return; /* manual encryption off, or not the flash */
         k->enc_len = 16u << ((u32)k->linesize->value & 1u);
-        k->enc_addr = (u32)k->phys->value & ~0xfu;
+        k->enc_addr = (u32)k->phys->value & 0x00fffff0u;
         memcpy(k->enc, k->plain + (k->enc_addr % LINE_MAX), k->enc_len);
         esk_esp32c3_xts_crypt(k->s, k->enc_addr, k->enc, k->enc_len, 0);
         esk_rf_hw(k->state, 2u);

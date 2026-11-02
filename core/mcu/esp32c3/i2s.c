@@ -1,7 +1,7 @@
 /* SPDX-License-Identifier: Apache-2.0 */
 /* Copyright 2026 Junior Deogracias */
 /* i2s.c -- the ESP32-C3's I2S controller (I2S0 at 0x6002D000, TRM v1.4
- * chapter 28) as a master in TDM mode, of which the standard (Philips, MSB,
+ * chapter 29) as a master in TDM mode, of which the standard (Philips, MSB,
  * PCM) formats are the two-slot case ESP-IDF configures: its transmitter on
  * I2SO_BCK, I2SO_WS and I2SO_SD (matrix signals 13, 14, 15), its receiver on
  * I2SI_BCK and I2SI_WS (16, 17) reading I2SI_SD (15), its data through the
