@@ -38,24 +38,131 @@ static double environmental_r(const esk_adev *d)
         return clamp(par(d, "r25", 1e4) * exp(clamp(exponent, -40.0, 40.0)), 0.01, 1e12);
     }
 }
+/* A CdS cell's response time (rise_s, decay_s > 0): its conductance follows
+ * the light's in a first order lag, the datasheet's rise time constant while
+ * it grows and its decay time constant while it falls. The conductance is
+ * carried on its own clock between solutions (the target held since the last
+ * look, exactly integrated); when it has moved by ENV_RESTAMP the island
+ * solves again with it, and within that of the target it takes the target and
+ * the island may sleep. Without them the resistance follows at once. */
+typedef struct env_state {
+    double g, target;   /* conductance now and the one the light gives, S */
+    double g_stamped;   /* the conductance the matrix holds */
+    es_time_t t_last;   /* g is up to here */
+    es_time_t wake;     /* the next look, 0 when none is pending */
+} env_state;
+#define ENV_RESTAMP 2e-3 /* a relative change that re-solves the circuit (0.2 %) */
+
+static int env_lags(const esk_adev *d)
+{
+    return par(d, "rise_s", 0.0) > 0.0 && par(d, "decay_s", 0.0) > 0.0;
+}
+static void env_advance(esk_adev *d, es_time_t now)
+{
+    env_state *s = (env_state *)d->state;
+    double dt, tau;
+    if (now <= s->t_last)
+        return;
+    dt = (double)(now - s->t_last) * 1e-12;
+    tau = par(d, s->target > s->g ? "rise_s" : "decay_s", 0.02);
+    s->g = s->target + (s->g - s->target) * exp(-dt / tau);
+    s->t_last = now;
+    if (fabs(s->g - s->target) <= ENV_RESTAMP * s->target)
+        s->g = s->target;
+}
+/* the next look: about ENV_RESTAMP of change away, at least 10 us; one already
+ * due by then is kept */
+static void env_schedule(esk_adev *d, es_time_t now)
+{
+    env_state *s = (env_state *)d->state;
+    double gap = fabs(s->target - s->g), h;
+    es_time_t t;
+    if (!d->comp || gap == 0.0)
+        return;
+    h = ENV_RESTAMP * s->g *
+        par(d, s->target > s->g ? "rise_s" : "decay_s", 0.02) / gap;
+    if (h < 1e-5)
+        h = 1e-5;
+    t = now + (es_time_t)(h * 1e12);
+    if (s->wake > now && s->wake <= t)
+        return;
+    if (esk_comp_wake_at(d->comp, t, 0) == ES_OK)
+        s->wake = t;
+}
+/* carried to now with the light as it was, then the light as it is */
+static void env_retarget(esk_adev *d, es_time_t now)
+{
+    env_state *s = (env_state *)d->state;
+    env_advance(d, now);
+    s->target = 1.0 / environmental_r(d);
+    if (fabs(s->g - s->target) <= ENV_RESTAMP * s->target)
+        s->g = s->target;
+}
+static void env_restamp(esk_adev *d, es_time_t now)
+{
+    env_state *s = (env_state *)d->state;
+    if (fabs(s->g - s->g_stamped) > ENV_RESTAMP * s->g_stamped ||
+        (s->g == s->target && s->g != s->g_stamped)) {
+        s->g_stamped = s->g;
+        esk_island_touch(d->isl, now); /* accept reschedules */
+        return;
+    }
+    env_schedule(d, now);
+}
+void esk_environmental_on_time(esk_adev *d, es_time_t now)
+{
+    env_state *s = (env_state *)d->state;
+    if (!env_lags(d))
+        return;
+    s->wake = 0;
+    env_retarget(d, now);
+    env_restamp(d, now);
+}
+void esk_environmental_on_input(esk_adev *d, es_time_t now)
+{
+    if (!env_lags(d))
+        return;
+    env_retarget(d, now);
+    env_restamp(d, now);
+}
 static es_status environmental_setup(esk_adev *d)
 {
-    return d->nnodes == 2 && par(d, "r25", 1e4) > 0.0 && par(d, "beta", 3977.0) > 0.0 &&
-        par(d, "r_dark", 1e6) > 0.0 && par(d, "r_ref", 1e4) > 0.0 && par(d, "lux_ref", 10.0) > 0.0 &&
-        par(d, "gamma", 0.7) > 0.0 ? ES_OK : ES_EINVAL;
+    env_state *s = (env_state *)d->state;
+    if (!(d->nnodes == 2 && par(d, "r25", 1e4) > 0.0 && par(d, "beta", 3977.0) > 0.0 &&
+          par(d, "r_dark", 1e6) > 0.0 && par(d, "r_ref", 1e4) > 0.0 && par(d, "lux_ref", 10.0) > 0.0 &&
+          par(d, "gamma", 0.7) > 0.0 && par(d, "rise_s", 0.0) >= 0.0 && par(d, "decay_s", 0.0) >= 0.0))
+        return ES_EINVAL;
+    /* the part has sat in its first light long enough to settle */
+    s->g = s->target = s->g_stamped = 1.0 / environmental_r(d);
+    s->t_last = d->comp ? d->comp->e->sched.now : 0;
+    s->wake = 0;
+    return ES_OK;
+}
+static double environmental_now(const esk_adev *d)
+{
+    return env_lags(d) ? 1.0 / ((const env_state *)d->state)->g_stamped : environmental_r(d);
 }
 static void environmental_load(esk_adev *d, esk_amatrix *m)
 {
-    esk_am_stamp_g(m, d->node[0], d->node[1], 1.0 / environmental_r(d));
+    esk_am_stamp_g(m, d->node[0], d->node[1], 1.0 / environmental_now(d));
+}
+/* an accepted solution: a light changed without an input event (the world's)
+ * is taken from here, and the next look is scheduled for it */
+static void environmental_accept(esk_adev *d, es_time_t t)
+{
+    if (!env_lags(d))
+        return;
+    env_retarget(d, t);
+    env_schedule(d, t);
 }
 static void environmental_observe(esk_adev *d, esk_json *out)
 {
-    double r = environmental_r(d), v = accepted(d, 0) - accepted(d, 1);
+    double r = environmental_now(d), v = accepted(d, 0) - accepted(d, 1);
     esk_json_set_number(d->isl->a, out, "resistance", r);
     esk_json_set_number(d->isl->a, out, "current", v / r);
 }
-const esk_adev_ops esk_environmental_ops = { "environment_resistor", 0, environmental_setup,
-    environmental_load, NULL, NULL, NULL, NULL, NULL, environmental_observe, NULL };
+const esk_adev_ops esk_environmental_ops = { "environment_resistor", sizeof(env_state), environmental_setup,
+    environmental_load, NULL, environmental_accept, NULL, NULL, NULL, environmental_observe, NULL };
 
 /* Photodiode: reverse photocurrent K->A and a deliberately simple forward
  * knee. sensitivity is A per W/m2 at the documented reference wavelength. */

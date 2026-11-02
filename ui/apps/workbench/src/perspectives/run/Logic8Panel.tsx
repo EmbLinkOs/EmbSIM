@@ -17,6 +17,7 @@ import { getClient } from '../../connection';
 import { platform } from '../../platform/platform';
 import { useProject } from '../../stores/project';
 import { useSession } from '../../stores/session';
+import { t as tr } from '../../i18n';
 
 export const LOGIC8 = 'emblink/saleae_logic8';
 
@@ -54,6 +55,7 @@ export function Logic8Panel({ part }: { part: string }) {
     let changed = false;
     for (let i = 0; i < 16; i++) {
       const cap = await getClient().instrument.read({ part, since: rec.next });
+      if (cap.kind !== 'logic') break;
       changed = rec.ingest(cap) || changed;
       if (rec.needsRestart) continue; // the capture moved on: read it again from its first record
       if (cap.next === cap.since || cap.transitions.length === 0) break;
@@ -87,7 +89,7 @@ export function Logic8Panel({ part }: { part: string }) {
       getClient()
       .input.set({ target: part, input: 'run', value: on })
       .then(() => pull())
-      .catch((e: unknown) => toast({ kind: 'error', title: on ? 'Could not start the capture' : 'Could not stop the capture', description: errorMessage(e) }))
+      .catch((e: unknown) => toast({ kind: 'error', title: on ? tr('inst.cannotStartCapture') : tr('inst.cannotStopCapture'), description: errorMessage(e) }))
     );
   };
   const set = (param: string, value: unknown) =>
@@ -185,8 +187,8 @@ export function Logic8Panel({ part }: { part: string }) {
           {live && state === 'armed' ? '' : ` · ${transitions} ${transitions === 1 ? 'transition' : 'transitions'}`}
           {rec.full ? ' · memory full' : ''}
         </span>
-        <Button size="sm" variant="ghost" disabled={!rec.edges.length} onClick={() => void save('csv').catch((e: unknown) => toast({ kind: 'error', title: 'Could not export', description: errorMessage(e) }))}><Download /> CSV</Button>
-        <Button size="sm" variant="ghost" disabled={!rec.edges.length} onClick={() => void save('vcd').catch((e: unknown) => toast({ kind: 'error', title: 'Could not export', description: errorMessage(e) }))}><Download /> VCD</Button>
+        <Button size="sm" variant="ghost" disabled={!rec.edges.length} onClick={() => void save('csv').catch((e: unknown) => toast({ kind: 'error', title: tr('inst.exportFailed'), description: errorMessage(e) }))}><Download /> CSV</Button>
+        <Button size="sm" variant="ghost" disabled={!rec.edges.length} onClick={() => void save('vcd').catch((e: unknown) => toast({ kind: 'error', title: tr('inst.exportFailed'), description: errorMessage(e) }))}><Download /> VCD</Button>
       </div>
       <LogicAnalyzer
         label={`${part} capture`}

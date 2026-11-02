@@ -2,8 +2,8 @@
   "schema_version": 1,
   "kind": "scenario",
   "name": "eeprom_emulation",
-  "until": "15s",
-  "description": "EEPROM_Emulation (Applications/EEPROM): three 16-bit variables (virtual addresses 0x5555, 0x6666, 0x7777) kept in flash sectors 2 and 3, each write a halfword programmed after the last, a full page's valid values copied to the other and the full one erased. The application writes and reads back the first variable 0x1000 times, the second 0x2000 and the third 0x3000, checking each read, then reads all three again. Each sector's erase takes DS10693's 250 ms and each halfword's programming 16 us, the core waiting on the flash meanwhile, so the work ends past 13 s: LD2 stays dark while it works (an error would toggle it) and turns on when every value read back right, VarDataTab holding 0x1000, 0x2000 and 0x3000. Sector 2 (0x08008000) ends as the valid page (its status 0x0000), sector 3 erased.",
+  "until": "18s",
+  "description": "EEPROM_Emulation (Applications/EEPROM): three 16-bit variables (virtual addresses 0x5555, 0x6666, 0x7777) kept in flash sectors 2 and 3, each write a halfword programmed after the last, a full page's valid values copied to the other and the full one erased. The application writes and reads back the first variable 0x1000 times, the second 0x2000 and the third 0x3000, checking each read, then reads all three again. Each sector's erase takes DS10693's 250 ms and each halfword's programming 16 us, the core waiting on the flash meanwhile, and the code between them is fetched from flash at its five wait states through the ART accelerator (RM0390 §3.4), so the work ends between 15.5 and 15.75 s: LD2 stays dark while it works (an error would toggle it) and turns on when every value read back right, VarDataTab holding 0x1000, 0x2000 and 0x3000. Sector 2 (0x08008000) ends as the valid page (its status 0x0000), sector 3 erased.",
   "inputs": [],
   "assertions": [
     {
@@ -17,8 +17,8 @@
     {
       "id": "done",
       "between": [
-        "14.5s",
-        "15s"
+        "17.5s",
+        "18s"
       ],
       "probe": "led",
       "expect": {
@@ -29,7 +29,7 @@
       "id": "no-error-blink",
       "between": [
         "0.1s",
-        "15s"
+        "18s"
       ],
       "probe": "led",
       "expect": {
@@ -38,7 +38,7 @@
     },
     {
       "id": "values",
-      "at": "14.9s",
+      "at": "17.9s",
       "probe": "tab",
       "expect": {
         "equals": 52777095008256
@@ -46,7 +46,7 @@
     },
     {
       "id": "page0-valid",
-      "at": "14.9s",
+      "at": "17.9s",
       "probe": "page0",
       "expect": {
         "equals": 0
@@ -54,7 +54,7 @@
     },
     {
       "id": "page1-erased",
-      "at": "14.9s",
+      "at": "17.9s",
       "probe": "page1",
       "expect": {
         "equals": 65535

@@ -2,6 +2,7 @@
 // Copyright 2026 Junior Deogracias
 import type { CatalogItem } from '@embsim/protocol';
 import type { CatalogEntry } from '../../stores/project';
+import { tOptional } from '../../i18n';
 
 const GROUPS: Record<string, string[]> = {
   'Circuit essentials': ['passives', 'sources', 'connectors', 'inputs', 'switches', 'mechanical'],
@@ -10,7 +11,7 @@ const GROUPS: Record<string, string[]> = {
   'Sense & interact': ['sensors', 'displays', 'actuators', 'indicators', 'instruments'],
 };
 export function categoryName(category: string): string {
-  return category.replace(/[_-]/g, ' ').replace(/\b\w/g, (s) => s.toUpperCase());
+  return tOptional(`category.${category}`) ?? category.replace(/[_-]/g, ' ').replace(/\b\w/g, (s) => s.toUpperCase());
 }
 export function categoryGroups(categories: string[]) {
   const used = new Set(Object.values(GROUPS).flat());

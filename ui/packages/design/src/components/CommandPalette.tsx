@@ -3,6 +3,7 @@
 import * as RadixDialog from '@radix-ui/react-dialog';
 import { Search } from 'lucide-react';
 import { useEffect, useId, useMemo, useRef, useState, type ReactNode } from 'react';
+import { uiText } from '../uiText';
 
 export interface Command {
   id: string;
@@ -86,7 +87,7 @@ export function CommandPalette({ open, onOpenChange, commands, placeholder = 'Ty
           e.preventDefault();
           inputRef.current?.focus();
         }}>
-          <RadixDialog.Title className="es-sr-only">Command palette</RadixDialog.Title>
+          <RadixDialog.Title className="es-sr-only">{uiText('palette.title', 'Command palette')}</RadixDialog.Title>
           <div className="es-palette__input">
             <Search aria-hidden="true" />
             <input
@@ -96,7 +97,7 @@ export function CommandPalette({ open, onOpenChange, commands, placeholder = 'Ty
               aria-controls={listId}
               aria-activedescendant={visible.length ? `${listId}-${active}` : undefined}
               aria-autocomplete="list"
-              aria-label="Search commands"
+              aria-label={uiText('palette.search', 'Search commands')}
               placeholder={placeholder}
               value={query}
               onChange={(e) => setQuery(e.target.value)}
@@ -119,8 +120,8 @@ export function CommandPalette({ open, onOpenChange, commands, placeholder = 'Ty
               }}
             />
           </div>
-          <ul id={listId} role="listbox" className="es-palette__list" aria-label="Commands">
-            {visible.length === 0 && <li className="es-palette__empty">No matching command</li>}
+          <ul id={listId} role="listbox" className="es-palette__list" aria-label={uiText('palette.commands', 'Commands')}>
+            {visible.length === 0 && <li className="es-palette__empty">{uiText('palette.none', 'No matching command')}</li>}
             {visible.map((c, i) => {
               const header = !query && c.group !== lastGroup ? c.group : undefined;
               lastGroup = c.group;

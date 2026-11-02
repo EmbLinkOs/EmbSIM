@@ -2,7 +2,7 @@
  "schema_version": 1,
  "kind": "project",
  "name": "nrfx-vendor",
- "description": "An nRF52840 DK running an application built with Nordic's unmodified nrfx drivers and MDK (tests/vendor/nrfx/run.py puts the image beside this file as sketch.elf): USB power, a button on D2 (P1.03), a terminal on the virtual COM port's pins (P0.06 TX, P0.08 RX) at 115200 baud. A 25LC040 SPI EEPROM on the Arduino SPI pins (D10 CS, D13 SCK, D11 MOSI, D12 MISO), a 24C02 I2C EEPROM at 0x50 on SDA (P0.26) and SCL (P0.27) with 4.7 kOhm pull-ups to VDD, D3 through a 10 kOhm, 4.7 uF low-pass into A0 (AIN1), a 1.0 V source on A1 (AIN2).",
+ "description": "An nRF52840 DK running an application built with Nordic's unmodified nrfx drivers and MDK (tests/vendor/nrfx/run.py puts the image beside this file as sketch.elf): USB power, a button on D2 (P1.03), a terminal on the virtual COM port's pins (P0.06 TX, P0.08 RX) at 115200 baud. A 25LC040 SPI EEPROM on the Arduino SPI pins (D10 CS, D13 SCK, D11 MOSI, D12 MISO), a 24C02 I2C EEPROM at 0x50 on SDA (P0.26) and SCL (P0.27) with 4.7 kOhm pull-ups to VDD, D3 through a 10 kOhm, 4.7 uF low-pass into A0 (AIN1), a 1.0 V source on A1 (AIN2). Its resistors and capacitor are exact (tolerance 0): the scenarios' numbers are computed from their nominal values; the button bounces as a real one does.",
  "policy": "electrical",
  "boards": [
   {
@@ -78,7 +78,8 @@
    "id": "R2",
    "component": "emblink/resistor",
    "params": {
-    "resistance": 4700
+    "resistance": 4700,
+    "tolerance": 0
    },
    "layout": {
     "x": 620,
@@ -89,7 +90,8 @@
    "id": "R3",
    "component": "emblink/resistor",
    "params": {
-    "resistance": 4700
+    "resistance": 4700,
+    "tolerance": 0
    },
    "layout": {
     "x": 660,
@@ -100,7 +102,8 @@
    "id": "R1",
    "component": "emblink/resistor",
    "params": {
-    "resistance": 10000
+    "resistance": 10000,
+    "tolerance": 0
    },
    "layout": {
     "x": 120,
@@ -111,7 +114,8 @@
    "id": "C1",
    "component": "emblink/capacitor",
    "params": {
-    "capacitance": 4.7e-06
+    "capacitance": 4.7e-06,
+    "tolerance": 0
    },
    "layout": {
     "x": 120,

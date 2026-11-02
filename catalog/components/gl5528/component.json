@@ -5,7 +5,7 @@
   "version": "1.0.0",
   "name": "GL5528",
   "category": "sensors",
-  "description": "GL5528 CdS photoresistor with a nominal power-law light response: 15 kohm at 10 lux, capped at 1 Mohm in darkness.",
+  "description": "GL5528 CdS photoresistor (Senba GL55 series): R = 15 kOhm x (E / 10 lx)^-0.6, each part's 10-lux resistance drawn inside the datasheet's 10-20 kOhm, at least 1 MOhm in darkness, following a change of light in 20 ms rising and 30 ms decaying; reads the world's illuminance while its own is not set.",
   "keywords": [
     "sensors",
     "GL5528",
@@ -42,10 +42,11 @@
     "r_ref": {
       "type": "number",
       "default": 15000,
-      "doc": "Illustrative resistance at the reference illuminance, not a fitted manufacturer value.",
+      "doc": "Resistance at the reference illuminance: 15 kOhm, the middle of the datasheet's 10-20 kOhm at 10 lux (GL55 series, GL5528), each part drawn inside ±tolerance (ADR-034).",
       "unit": "ohm",
       "min": 1,
-      "max": 1000000000.0
+      "max": 1000000000.0,
+      "spread": "tolerance"
     },
     "lux_ref": {
       "type": "number",
@@ -57,18 +58,42 @@
     },
     "gamma": {
       "type": "number",
-      "default": 0.7,
-      "doc": "Exponent in R = r_ref * (illuminance / lux_ref)^(-gamma).",
+      "default": 0.6,
+      "doc": "Exponent in R = r_ref * (illuminance / lux_ref)^(-gamma): the datasheet's gamma between 10 and 100 lux for the GL5528, 0.6.",
       "min": 0.1,
       "max": 2
     },
     "r_dark": {
       "type": "number",
       "default": 1000000.0,
-      "doc": "Maximum resistance used in darkness; also caps the low-light power law.",
+      "doc": "Resistance in darkness: the datasheet's minimum dark resistance, 1 MOhm (10 s after the light goes); it also caps the low-light power law.",
       "unit": "ohm",
       "min": 1,
       "max": 1000000000000.0
+    },
+    "rise_s": {
+      "type": "number",
+      "default": 0.02,
+      "unit": "s",
+      "min": 0,
+      "max": 10,
+      "doc": "Rise time constant: after the light comes the conductance approaches the light's value in a first-order lag with this constant (the datasheet's 20 ms rise at 10 lux); 0 with decay_s 0 follows at once."
+    },
+    "decay_s": {
+      "type": "number",
+      "default": 0.03,
+      "unit": "s",
+      "min": 0,
+      "max": 10,
+      "doc": "Decay time constant: after the light goes or dims the conductance falls toward the new value with this constant (the datasheet's 30 ms decay at 10 lux)."
+    },
+    "tolerance": {
+      "type": "number",
+      "unit": "%",
+      "default": 33.3,
+      "min": 0,
+      "max": 50,
+      "doc": "Spread of the light resistance: the datasheet gives 10-20 kOhm at 10 lux, ±33 % around 15 kOhm; each part is drawn from the project's seed (ADR-034); 0 for the nominal."
     }
   },
   "model": {
@@ -156,14 +181,12 @@
     "functional": null,
     "timed": null,
     "electrical": {
-      "claims": "GL5528 CdS photoresistor with a nominal power-law light response: 15 kohm at 10 lux, capped at 1 Mohm in darkness.",
+      "claims": "The GL55 datasheet's light law for the GL5528: 10-20 kOhm at 10 lux (each part drawn from the seed), gamma 0.6 between 10 and 100 lux, 1 MOhm dark resistance as the cap; its response time as a first-order lag in conductance, 20 ms rising and 30 ms decaying.",
       "omissions": [
-        "manufacturer source review pending",
         "spectral response",
-        "response time",
-        "illumination history",
+        "the response time's dependence on the light level, and the slow tail toward the dark resistance (which the datasheet measures 10 s after the light goes): one rise and one decay constant, the datasheet's at 10 lux",
+        "illumination history (light memory)",
         "self-heating",
-        "manufacturer parameter corners",
         "thermal damage and destructive limits"
       ],
       "validation": [

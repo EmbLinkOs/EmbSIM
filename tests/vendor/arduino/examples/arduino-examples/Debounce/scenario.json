@@ -1,0 +1,125 @@
+{
+  "schema_version": 1,
+  "kind": "scenario",
+  "name": "Debounce",
+  "until": "5s",
+  "description": "Three presses toggle the L LED once each although the contacts bounce; a 20 ms tap, shorter than the sketch's 50 ms debounce delay, changes nothing.",
+  "inputs": [
+    {
+      "at": "1000ms",
+      "target": "SW1",
+      "input": "pressed",
+      "value": true
+    },
+    {
+      "at": "1200ms",
+      "target": "SW1",
+      "input": "pressed",
+      "value": false
+    },
+    {
+      "at": "2000ms",
+      "target": "SW1",
+      "input": "pressed",
+      "value": true
+    },
+    {
+      "at": "2300ms",
+      "target": "SW1",
+      "input": "pressed",
+      "value": false
+    },
+    {
+      "at": "3000ms",
+      "target": "SW1",
+      "input": "pressed",
+      "value": true
+    },
+    {
+      "at": "3150ms",
+      "target": "SW1",
+      "input": "pressed",
+      "value": false
+    },
+    {
+      "at": "4000ms",
+      "target": "SW1",
+      "input": "pressed",
+      "value": true
+    },
+    {
+      "at": "4020ms",
+      "target": "SW1",
+      "input": "pressed",
+      "value": false
+    }
+  ],
+  "assertions": [
+    {
+      "id": "start-on",
+      "at": "500ms",
+      "probe": "led",
+      "expect": {
+        "logic": "1"
+      }
+    },
+    {
+      "id": "bounces",
+      "between": [
+        "999ms",
+        "1010ms"
+      ],
+      "probe": "button",
+      "expect": {
+        "edges": 7
+      },
+      "description": "The first press chatters within the button's 2 ms of bounce: seven edges on D2 (with this project's seed) for one press"
+    },
+    {
+      "id": "press1-off",
+      "at": "1500ms",
+      "probe": "led",
+      "expect": {
+        "logic": "0"
+      }
+    },
+    {
+      "id": "press1-once",
+      "between": [
+        "1000ms",
+        "1900ms"
+      ],
+      "probe": "led",
+      "expect": {
+        "edges": 1
+      }
+    },
+    {
+      "id": "press2-on",
+      "at": "2500ms",
+      "probe": "led",
+      "expect": {
+        "logic": "1"
+      }
+    },
+    {
+      "id": "press3-off",
+      "at": "3500ms",
+      "probe": "led",
+      "expect": {
+        "logic": "0"
+      }
+    },
+    {
+      "id": "tap-ignored",
+      "between": [
+        "3900ms",
+        "5000ms"
+      ],
+      "probe": "led",
+      "expect": {
+        "edges": 0
+      }
+    }
+  ]
+}

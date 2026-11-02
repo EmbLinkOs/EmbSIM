@@ -46,15 +46,7 @@ struct intmtx {
 
 static struct intmtx *intmtx_of(struct esk_mach *m)
 {
-    int i;
-    for (i = 0; m->rf; i++) {
-        struct esk_rf_periph *p = esk_rf_periph_at(m->rf, i);
-        if (!p)
-            break;
-        if (p->ops == &esk_esp32c3_intmtx_ops)
-            return (struct intmtx *)p->ctx;
-    }
-    return NULL;
+    return (struct intmtx *)esk_rf_ctx_of(m->rf, &esk_esp32c3_intmtx_ops);
 }
 
 static u32 reg(const struct esk_rf_reg *r) { return (u32)r->value; }

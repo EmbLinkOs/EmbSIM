@@ -71,7 +71,7 @@ struct esk_cm_dc {
     const struct esk_region *r; /* the region it came from; 0: empty */
     u32 gen, pc;
     u16 h0, h1;
-    u8 size, cost, br;
+    u8 size, cost, br, ls; /* br: a taken branch's refill cycles; ls: a single load or store */
 };
 
 struct esk_cm_state {
@@ -140,6 +140,14 @@ struct esk_cm_state {
     /* the cycles an instruction takes beyond its cost (a ROM host
      * function's), charged when it completes */
     u32 extra_cycles;
+    /* an exception return's cycles, charged at the next step unless an
+     * exception tail-chains in their place (ARM DDI 0439B 3.9.1) */
+    int tail_window;
+    /* the instruction under way made a load or store on the single-cycle
+     * I/O port (ARMv6-M's IOPORT: 1 cycle, not the AHB's 2) */
+    int ioport_hit;
+    /* cycles spent in exception entry, return and tail-chaining */
+    u64 exc_cycles;
 };
 
 
@@ -224,8 +232,11 @@ ES_INLINE u32 esk_cm_ld(struct esk_cm_state *cs, u32 a, int n)
     struct esk_bus *b = &cs->sim->bus;
     if (!b->nwatch) {
         struct esk_region *r = esk_bus_region(b, a, (u32)n);
-        if (r)
+        if (r) {
+            if (r->mem == cs->sim->ftime.mem && cs->sim->ftime.dread && cs->executing && cs->access == ACC_NORMAL)
+                cs->extra_cycles += cs->sim->ftime.dread(cs->sim->ftime.ctx, a - r->base); /* the flash's wait */
             return esk_mem_rd_le(r->mem + (a - r->base), n);
+        }
     }
     return esk_cm_ld_bus(cs, a, n);
 }

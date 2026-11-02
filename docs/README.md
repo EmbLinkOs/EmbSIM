@@ -5,6 +5,7 @@
 | [Component library](../catalog/README.md) | Named parts, categories, source status, model limits and executable fixtures |
 | [Interactive library](engineering/interactive-library.md) | Explorer, next named batch, electrical models, four circuit examples and regression commands |
 | [Arrange your workspace](user/workspace.md) | Global controls, panel resizing/folding and compact-window navigation |
+| [Visual Benchmark v0.1](engineering/visual-benchmark.md) | The redesign: review, design system, default workspaces, settings, English and French, verification and limits |
 | [Workspace layout](engineering/workspace-layout.md) | Responsive navigation, constrained panel resizing and saved preferences |
 | [Bench loading](engineering/bench-loading.md) | Optional renderer loading, recovery and measured production bundle sizes |
 | [Named package geometry](engineering/package-geometry.md) | Reviewed SOT-23/SOT-223 bodies, terminal identity and mechanical representation limits |
@@ -19,6 +20,8 @@
 | [specs/](specs/index.md) | SPEC-001 to SPEC-014: the contracts |
 | [requirements/](requirements/index.md) | Numbered requirements with verification methods |
 | [engineering/](engineering/repository-workflow.md) | Repository workflow, required checks, coding standard, evidence rules; what each milestone built ([M0](engineering/m0-foundation.md), [M1](engineering/m1-firmware.md), [M2](engineering/m2-workbench.md), [M3](engineering/m3-catalog.md), [M4](engineering/m4-cores.md), [M5](engineering/m5-verification.md)) |
+| [Timing fidelity](engineering/timing-fidelity.md) | The audit of the simulator's timing, the accuracy model each target is held to, the plan, and what is validated |
+| [Bench instruments](user/instruments.md) | The Logic 8, the PPK2 and the DS1054Z: wiring them, their front panels docked or floating, what each measures |
 | [Physical bench](user/bench.md) | 3D inspection, named wiring, keyboard construction, recovery and geometry limits |
 | [user/](user/getting-started.md) | Getting started, firmware (run, build, debug), the command line, [CI](user/ci.md), diagnostics codes; the [Python client](../python/README.md) |
 | [CODING-STANDARD.md](CODING-STANDARD.md) | Rules every C file follows |

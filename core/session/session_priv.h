@@ -103,7 +103,13 @@ struct es_session {
     uint64_t last_host_ms;
     es_time_t run_until;     /* ES_TIME_MAX when unbounded */
     es_time_t run_slice_ps;
+    es_time_t pace_carry_ps; /* paced time not yet a whole analog grid step */
     es_time_t core_quantum_ps;
+    /* imperfections (ADR-034): the project's seed, ideal parts when set, and the
+     * values drawn inside each part's tolerance ({instance: {param: {...}}}) */
+    uint64_t seed;
+    int ideal;
+    esk_json *drawn;
     /* clients */
     es_notification_fn notify;
     void *notify_ctx;
@@ -116,6 +122,13 @@ struct es_session {
      * on every board with firmware (NULL) */
     unsigned an_what;
     char *an_board;
+    /* the measurements set with the analyses (latency.c), kept across a reload */
+    char *an_measure[16];
+    int an_nmeasure;
+    /* the trace set with the analyses (latency.c): on, its start boundary, its limit */
+    int an_trace;
+    char *an_trace_start;
+    uint64_t an_trace_limit;
     /* statistics */
     uint64_t rpc_count;
     double wall_time_s;
@@ -129,6 +142,12 @@ struct es_session {
  * board's with firmware (NULL); 0 turns them off. They stay on across a
  * project's reload (esk_session_analyses_apply, after a load) */
 es_status esk_session_analyze(es_session *s, const char *board, unsigned what, char *why, size_t cap);
+/* a measurement "[NAME=]FROM..TO" for the next esk_session_analyze (ES_EINVAL when full) */
+es_status esk_session_measure(es_session *s, const char *spec);
+/* the trace for the next esk_session_analyze: from `start` (NULL: from the start), at most `limit` events */
+es_status esk_session_trace(es_session *s, const char *start, uint64_t limit);
+/* the trace of `board` (NULL: the only one) as text or a value change dump */
+es_status esk_session_trace_write(es_session *s, const char *board, int vcd, esk_strbuf *out, char *why, size_t cap);
 void esk_session_analyses_apply(es_session *s);
 /* the boards' coverage, profile, stack or fault reports (`which`: one ESK_AN_*) as
  * text in format `fmt` (ESK_AN_TEXT, ...), one board's or every board's;
@@ -182,6 +201,7 @@ es_status esk_session_apply_input(es_session *s, const char *target, const char 
 esk_json *esk_session_snapshot(es_session *s, const esk_json *include);
 esk_json *esk_session_topology(es_session *s);
 es_status esk_session_probe_add(es_session *s, const char *name, const char *target, const char *kind, double rate_hz, esk_probe **out);
+es_status esk_session_probe_capacity(es_session *s, esk_probe *p, size_t cap);
 void esk_session_probe_remove(es_session *s, uint32_t id);
 esk_probe *esk_session_probe_find(es_session *s, const char *name_or_id);
 esk_json *esk_session_probe_samples(es_session *s, esk_probe *p, es_time_t from, es_time_t to, size_t max);

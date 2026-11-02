@@ -5,6 +5,7 @@ import { X } from 'lucide-react';
 import type { ReactNode } from 'react';
 import { cx } from '../cx';
 import { IconButton } from './Button';
+import { uiText } from '../uiText';
 
 export interface DialogProps {
   open: boolean;
@@ -26,7 +27,7 @@ export function Dialog({ open, onOpenChange, title, description, children, foote
           <div className="es-dialog__header">
             <RadixDialog.Title className="es-dialog__title">{title}</RadixDialog.Title>
             <RadixDialog.Close asChild>
-              <IconButton label="Close" variant="ghost" size="sm">
+              <IconButton label={uiText('close', 'Close')} variant="ghost" size="sm">
                 <X />
               </IconButton>
             </RadixDialog.Close>

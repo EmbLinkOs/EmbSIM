@@ -74,23 +74,27 @@
       "id": "R1",
       "component": "emblink/resistor",
       "params": {
-        "resistance": 10000
+        "resistance": 10000,
+        "tolerance": 0
       },
       "layout": {
         "x": 520,
         "y": 700
-      }
+      },
+      "doc": "Exact (tolerance 0): the scenarios' numbers are computed from its nominal value"
     },
     {
       "id": "C1",
       "component": "emblink/capacitor",
       "params": {
-        "capacitance": 4.7e-06
+        "capacitance": 4.7e-06,
+        "tolerance": 0
       },
       "layout": {
         "x": 420,
         "y": 760
-      }
+      },
+      "doc": "Exact (tolerance 0): the scenarios' numbers are computed from its nominal value"
     },
     {
       "id": "U2",
@@ -112,23 +116,27 @@
       "id": "R2",
       "component": "emblink/resistor",
       "params": {
-        "resistance": 4700
+        "resistance": 4700,
+        "tolerance": 0
       },
       "layout": {
         "x": 300,
         "y": 860
-      }
+      },
+      "doc": "Exact (tolerance 0): the scenarios' numbers are computed from its nominal value"
     },
     {
       "id": "R3",
       "component": "emblink/resistor",
       "params": {
-        "resistance": 4700
+        "resistance": 4700,
+        "tolerance": 0
       },
       "layout": {
         "x": 340,
         "y": 860
-      }
+      },
+      "doc": "Exact (tolerance 0): the scenarios' numbers are computed from its nominal value"
     }
   ],
   "nets": {

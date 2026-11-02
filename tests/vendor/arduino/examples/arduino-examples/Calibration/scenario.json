@@ -1,0 +1,109 @@
+{
+  "schema_version": 1,
+  "kind": "scenario",
+  "name": "Calibration",
+  "until": "10s",
+  "description": "The light during calibration sets the range: 1 lux reads as the bottom (LED off), 1000 lux as the top (LED full on), 100 lux in between.",
+  "inputs": [
+    {
+      "at": "0ms",
+      "target": "LDR1",
+      "input": "illuminance",
+      "value": 10
+    },
+    {
+      "at": "1s",
+      "target": "LDR1",
+      "input": "illuminance",
+      "value": 1000
+    },
+    {
+      "at": "2s",
+      "target": "LDR1",
+      "input": "illuminance",
+      "value": 1
+    },
+    {
+      "at": "3s",
+      "target": "LDR1",
+      "input": "illuminance",
+      "value": 10
+    },
+    {
+      "at": "6s",
+      "target": "LDR1",
+      "input": "illuminance",
+      "value": 100
+    },
+    {
+      "at": "8s",
+      "target": "LDR1",
+      "input": "illuminance",
+      "value": 1000
+    },
+    {
+      "at": "9s",
+      "target": "LDR1",
+      "input": "illuminance",
+      "value": 1
+    }
+  ],
+  "assertions": [
+    {
+      "id": "calibrating",
+      "at": "4s",
+      "probe": "calibrating",
+      "expect": {
+        "equals": 1
+      }
+    },
+    {
+      "id": "calibrated",
+      "at": "5.5s",
+      "probe": "calibrating",
+      "expect": {
+        "equals": 0
+      }
+    },
+    {
+      "id": "at-100-lux",
+      "between": [
+        "6.5s",
+        "7.5s"
+      ],
+      "probe": "pwm",
+      "expect": {
+        "min": 0.795,
+        "max": 0.809
+      },
+      "measure": "duty_cycle",
+      "description": "This project's parts as drawn from its seed (the LDR 10.22 kOhm at 10 lux, R1 9.59 kOhm) read 195 at 1 lux, 959 at 1000 lux and 807 at 100 lux: map() gives 204/255 = 0.800 (205 with the ADC's rounding at the boundary); across the datasheet spreads it ranges from 0.70 to 0.81"
+    },
+    {
+      "id": "at-1000-lux",
+      "between": [
+        "8.2s",
+        "8.8s"
+      ],
+      "probe": "pwm",
+      "expect": {
+        "min": 0.999,
+        "max": 1.0
+      },
+      "measure": "duty_cycle"
+    },
+    {
+      "id": "dark",
+      "between": [
+        "9.2s",
+        "9.8s"
+      ],
+      "probe": "pwm",
+      "expect": {
+        "min": 0.0,
+        "max": 0.001
+      },
+      "measure": "duty_cycle"
+    }
+  ]
+}

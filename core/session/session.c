@@ -26,6 +26,7 @@
 #endif
 #define ES_ABI_VERSION 1
 #define PROBE_DEFAULT_CAP 65536
+#define PROBE_MAX_CAP 16777216u /* 256 MB of samples at most */
 
 /* ---- version and errors ---------------------------------------------------- */
 
@@ -218,6 +219,9 @@ void es_session_destroy(es_session *s)
     esk_strfree(s->a, s->project_path);
     esk_strfree(s->a, s->client_name);
     esk_strfree(s->a, s->an_board);
+    while (s->an_nmeasure)
+        esk_strfree(s->a, s->an_measure[--s->an_nmeasure]);
+    esk_strfree(s->a, s->an_trace_start);
     esk_strfree(s->a, s->record_path);
     esk_json_free(s->a, s->inputs_log);
     esk_json_free(s->a, s->observations);
@@ -500,6 +504,23 @@ static es_status mem_probe(es_session *s, esk_probe *p, const char *head, const 
         p->mem_addr = v;
         p->mem_len = size;
     }
+    return ES_OK;
+}
+
+/* a probe's depth: the samples its ring keeps, as a logic analyzer's memory
+ * depth is set for a capture; only while it holds none */
+es_status esk_session_probe_capacity(es_session *s, esk_probe *p, size_t cap)
+{
+    es_sample_t *ring;
+    if (!p || p->kind == ESK_PROBE_SERIAL || p->len || cap < 1u || cap > PROBE_MAX_CAP)
+        return ES_EINVAL;
+    ring = (es_sample_t *)esk_calloc(s->a, cap, sizeof *ring);
+    if (!ring)
+        return ES_ENOMEM;
+    esk_free(s->a, p->ring, p->cap * sizeof *p->ring);
+    p->ring = ring;
+    p->cap = cap;
+    p->head = 0;
     return ES_OK;
 }
 
@@ -952,6 +973,8 @@ esk_json *esk_session_snapshot(es_session *s, const esk_json *include)
     esk_json_set_string(s->a, root, "policy", s->eng.policy == ESK_POLICY_FUNCTIONAL ? "functional" : s->eng.policy == ESK_POLICY_TIMED ? "timed" : "electrical");
     esk_json_set_bool(s->a, root, "running", s->running);
     esk_json_set_number(s->a, root, "speed", s->speed);
+    if (want(include, "drawn") && s->drawn && esk_json_len(s->drawn))
+        esk_json_object_set(s->a, root, "drawn", esk_json_clone(s->a, s->drawn));
     if (want(include, "nets")) {
         esk_json *nets = esk_json_new_object(s->a);
         for (i = 0; nets && i < s->eng.nets.len; i++) {
@@ -1449,10 +1472,23 @@ es_status esk_session_run_slice(es_session *s)
     }
     s->last_host_ms = now_ms;
     esk_session_ports_poll(s);
+    /* the slice ends on the analog grid (or at the run's end), so the host's
+     * speed decides how far a slice goes, never where the islands are cut;
+     * what does not make a whole grid step carries over to the next slice */
+    if (esk_time_add(s->pace_carry_ps, delta, &delta))
+        delta = ES_TIME_MAX - 1;
     if (esk_time_add(s->eng.sched.now, delta, &until))
         until = ES_TIME_MAX - 1;
-    if (until >= s->run_until)
+    if (until < s->run_until) {
+        until -= until % ESK_ANALOG_GRID_PS;
+        if (until <= s->eng.sched.now) {
+            s->pace_carry_ps = delta;
+            return ES_OK;
+        }
+    } else {
         until = s->run_until;
+    }
+    s->pace_carry_ps = until - s->eng.sched.now <= delta ? delta - (until - s->eng.sched.now) : 0;
     st = esk_session_do_advance(s, until);
     if (st != ES_OK || s->diag.fatal) {
         s->running = 0;

@@ -5,14 +5,16 @@
   "version": "1.0.0",
   "name": "DS1307 real-time clock",
   "category": "misc",
-  "description": "Real-time clock on I2C (DS1307, address 0x68): BCD seconds to year with leap years, 56 bytes of RAM, the clock-halt bit and the SQW/OUT pin (1 Hz to 32.768 kHz square wave or a static level). Time runs with simulated time from the start parameter.",
+  "description": "Maxim DS1307 I2C real-time clock with its 32.768 kHz crystal: time and date in BCD with 12/24-hour modes, the clock-halt bit (set on a new part: the time stands until it is cleared), a square-wave output (1 Hz, 4.096, 8.192, 32.768 kHz) or OUT level on SQW/OUT, and 56 bytes of battery-backed RAM.",
   "keywords": [
     "rtc",
     "real-time clock",
-    "DS1307",
+    "clock",
+    "ds1307",
     "i2c",
-    "calendar",
-    "time"
+    "tiny rtc",
+    "time",
+    "nvram"
   ],
   "family": "cmos_5v",
   "pins": [
@@ -22,8 +24,7 @@
       "model": {
         "kind": "passive"
       },
-      "required": false,
-      "doc": "Crystal (32.768 kHz; not modelled)"
+      "doc": "32.768 kHz crystal (the crystal is part of the model)"
     },
     {
       "name": "X2",
@@ -31,16 +32,15 @@
       "model": {
         "kind": "passive"
       },
-      "required": false
+      "doc": "32.768 kHz crystal (the crystal is part of the model)"
     },
     {
       "name": "VBAT",
       "number": 3,
       "model": {
-        "kind": "analog"
+        "kind": "passive"
       },
-      "required": false,
-      "doc": "Backup battery (not modelled)"
+      "doc": "Backup battery, 2.0 to 3.5 V (not modelled)"
     },
     {
       "name": "GND",
@@ -58,6 +58,7 @@
       "model": {
         "kind": "digital_io"
       },
+      "doc": "I2C data, open drain",
       "power_ref": "VCC"
     },
     {
@@ -66,6 +67,7 @@
       "model": {
         "kind": "digital_in"
       },
+      "doc": "I2C clock",
       "power_ref": "VCC"
     },
     {
@@ -73,9 +75,9 @@
       "number": 7,
       "model": {
         "kind": "digital_out",
-        "drive": "push_pull"
+        "drive": "open_drain"
       },
-      "doc": "Square wave or level, open drain",
+      "doc": "Square wave or OUT level, open drain (needs a pull-up)",
       "power_ref": "VCC"
     },
     {
@@ -88,25 +90,37 @@
         "tolerance": 0.1
       },
       "required": false,
-      "doc": "Supply (defaults to the family rail)"
+      "doc": "Supply, 4.5 to 5.5 V"
     }
   ],
   "params": {
+    "drift_ppm": {
+      "type": "number",
+      "default": 0,
+      "min": -100,
+      "max": 100,
+      "doc": "The crystal's rate off true, ppm (a 20 ppm crystal is about 1.7 s a day)"
+    },
     "start": {
       "type": "string",
-      "default": "2026-01-01 00:00:00",
-      "doc": "Date and time at power-up, YYYY-MM-DD HH:MM:SS"
+      "default": "",
+      "doc": "Date and time a battery kept the clock running at, YYYY-MM-DD HH:MM:SS; empty for a new part, its oscillator halted"
     }
   },
   "outputs": [
     {
       "name": "time",
       "type": "string",
-      "doc": "YYYY-MM-DD HH:MM:SS"
+      "doc": "The clock's time, YYYY-MM-DD hh:mm:ss"
+    },
+    {
+      "name": "weekday",
+      "type": "integer"
     },
     {
       "name": "running",
-      "type": "boolean"
+      "type": "boolean",
+      "doc": "The oscillator runs (CH clear)"
     }
   ],
   "model": {
@@ -115,32 +129,33 @@
   },
   "fidelity": {
     "functional": {
-      "claims": "Registers 0x00-0x07 (BCD, 24-hour, day of week from the date), RAM 0x08-0x3F, register pointer wrap, time set at STOP, CH halts, SQW/OUT per the control register.",
+      "claims": "I2C at 0x68 with user buffers refreshed at each START and at the pointer's wrap; 64 registers wrapping from 3Fh; BCD time and date with 12/24-hour modes and a user day of the week; CH halting the oscillator (set on a new part); the countdown chain reset by a seconds write; the rate off by drift_ppm; the square wave (1 Hz to 32.768 kHz) or OUT on SQW/OUT while wired; 56 bytes of RAM; no answer below VPF (3.75 V).",
       "omissions": [
-        "12-hour mode",
-        "the crystal and backup battery",
-        "the burst-read snapshot (registers are read live)"
+        "the battery (VBAT) switchover and timekeeping on battery",
+        "the crystal's frequency against temperature and load capacitance (the drift is a parameter)",
+        "the 1 Hz square wave's phase against the seconds",
+        "supply current"
       ],
       "validation": [
         "tests/*.json"
       ]
     },
     "timed": {
-      "claims": "As functional; delays as stated.",
+      "claims": "As functional.",
       "omissions": [
-        "12-hour mode",
-        "the crystal and backup battery",
-        "the burst-read snapshot (registers are read live)"
+        "the battery (VBAT) switchover and timekeeping on battery",
+        "the crystal's frequency against temperature and load capacitance (the drift is a parameter)",
+        "the 1 Hz square wave's phase against the seconds",
+        "supply current"
       ]
     },
     "electrical": {
-      "claims": "Pins bridge to analog nets with the family's pin-model defaults; the behaviour is the Lua model's.",
+      "claims": "Pins bridge to analog nets with the family's pin-model defaults; VCC's voltage gates the interface; the behaviour is the Lua model's.",
       "omissions": [
-        "12-hour mode",
-        "the crystal and backup battery",
-        "the burst-read snapshot (registers are read live)",
-        "supply current",
-        "output current limits"
+        "the battery (VBAT) switchover and timekeeping on battery",
+        "the crystal's frequency against temperature and load capacitance (the drift is a parameter)",
+        "the 1 Hz square wave's phase against the seconds",
+        "supply current"
       ],
       "validation": [
         "tests/*.json"
@@ -152,61 +167,58 @@
     "license": "Apache-2.0",
     "sources": [
       {
-        "title": "Analog Devices (Maxim) DS1307 datasheet (register map)"
-      },
-      {
-        "title": "H. Hinnant, chrono-compatible low-level date algorithms"
+        "title": "Maxim Integrated DS1307 64 x 8, Serial, I2C Real-Time Clock, data sheet 19-5215"
       }
     ]
   },
+  "tests": [
+    "tests/*.json"
+  ],
   "symbol": {
     "svg": "symbol.svg",
-    "width": 60,
-    "height": 80,
+    "width": 80,
+    "height": 60,
     "pins": {
-      "SDA": {
+      "SCL": {
         "x": 0,
         "y": 20,
         "side": "left"
       },
-      "SCL": {
+      "SDA": {
         "x": 0,
         "y": 30,
         "side": "left"
-      },
-      "SQW": {
-        "x": 60,
-        "y": 20,
-        "side": "right"
-      },
-      "X1": {
-        "x": 60,
-        "y": 40,
-        "side": "right"
-      },
-      "X2": {
-        "x": 60,
-        "y": 50,
-        "side": "right"
-      },
-      "VBAT": {
-        "x": 60,
-        "y": 60,
-        "side": "right"
       },
       "VCC": {
         "x": 30,
         "y": 0,
         "side": "top"
       },
+      "VBAT": {
+        "x": 50,
+        "y": 0,
+        "side": "top"
+      },
       "GND": {
-        "x": 30,
-        "y": 80,
+        "x": 40,
+        "y": 60,
         "side": "bottom"
+      },
+      "SQW": {
+        "x": 80,
+        "y": 20,
+        "side": "right"
+      },
+      "X1": {
+        "x": 0,
+        "y": 40,
+        "side": "left"
+      },
+      "X2": {
+        "x": 0,
+        "y": 50,
+        "side": "left"
       }
     }
-  },
-  "tests": [
-    "tests/*.json"
-  ]
+  }
 }

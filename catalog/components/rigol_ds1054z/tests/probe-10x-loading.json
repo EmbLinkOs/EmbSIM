@@ -1,0 +1,58 @@
+{
+  "schema_version": 1,
+  "kind": "component_test",
+  "name": "probe-10x-loading",
+  "description": "1 V behind 1 Mohm on channel 1 through the 10x probe (10 Mohm): the tip reads 1 x 10/11 = 0.909 V.",
+  "policy": "electrical",
+  "until": "5ms",
+  "circuit": {
+    "components": [
+      {
+        "id": "DUT",
+        "component": "emblink/rigol_ds1054z",
+        "params": {}
+      },
+      {
+        "id": "V",
+        "component": "emblink/vsource",
+        "params": {
+          "kind": "dc",
+          "dc": 1.0
+        }
+      },
+      {
+        "id": "RS",
+        "component": "emblink/resistor",
+        "params": {
+          "resistance": 1000000.0
+        }
+      },
+      {
+        "id": "G",
+        "component": "emblink/gnd"
+      }
+    ],
+    "nets": {
+      "SRC": [
+        "V.+",
+        "RS.1"
+      ],
+      "TIP": [
+        "RS.2",
+        "DUT.CH1"
+      ],
+      "GND": [
+        "V.-",
+        "G.GND",
+        "DUT.GND"
+      ]
+    }
+  },
+  "expect": {
+    "output:DUT.ch1_v": {
+      "at": "5ms",
+      "min": 0.908,
+      "max": 0.91
+    }
+  }
+}

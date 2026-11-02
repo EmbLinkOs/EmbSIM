@@ -198,7 +198,7 @@ Each step lands usable and green, as in the RTOS boards plan.
    keeps its access point, and `http_request` reads 21.9 mA in power save
    on the USB power meter (102 mA while it scans with the receiver on).
    Not yet: light sleep, and the TSF timers' wake-up from it.
-   *Under way:* ESP-NOW. `wifi/espnow` on two boards as it ships: each
+   *Done:* ESP-NOW. `wifi/espnow` on two boards as it ships: each
    broadcasts, adds the other as a peer, and the one with the larger
    random magic sends it unicast data encrypted under the local master
    key. It waited for ever at first: net80211 takes each vendor action

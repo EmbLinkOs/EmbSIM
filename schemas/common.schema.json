@@ -334,6 +334,16 @@
         },
         "strict": {
           "type": "boolean"
+        },
+        "seed": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Draws each part's values inside its tolerance (ADR-034); the same seed draws the same parts."
+        },
+        "imperfections": {
+          "type": "string",
+          "enum": ["real", "ideal"],
+          "description": "real (the default): parts carry their tolerances and bounce; ideal: nominal values, for a lesson that says so (Q17)."
         }
       }
     },

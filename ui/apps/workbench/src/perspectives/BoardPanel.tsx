@@ -46,10 +46,12 @@ import { useCallback, useEffect, useMemo, useRef, useState, type ComponentType, 
 import { errorMessage, inputs as inputActions } from '../actions';
 import { platform } from '../platform/platform';
 import { useProject, type CatalogEntry } from '../stores/project';
+import { benchInstrumentOf, openFrontPanel } from './run/benchInstruments';
 import { useSelection } from '../stores/selection';
 import { useSession } from '../stores/session';
 import { BenchWireEditor } from './BenchWireEditor';
 import { loadBenchPreferences, saveBenchPreferences, type BenchPreferences } from './bench-preferences';
+import { t as tr } from '../i18n';
 
 /** the colours an LED's `color` parameter names, for its artwork's --led-color */
 const LED_COLORS: Record<string, string> = {
@@ -172,7 +174,7 @@ export function BoardPanel({ interactive, editable: canEdit = true, onFocusCanva
       if (!blob) return;
       const host = await platform();
       await host.saveBinaryFile(`${project?.name ?? 'bench'}-bench.png`, new Uint8Array(await blob.arrayBuffer()), 'image/png');
-    } catch (e) { toast({ kind: 'error', title: 'Image export failed', description: errorMessage(e) }); }
+    } catch (e) { toast({ kind: 'error', title: tr('bench.imageFailed'), description: errorMessage(e) }); }
   };
   const exportGlb = async () => {
     try {
@@ -180,7 +182,7 @@ export function BoardPanel({ interactive, editable: canEdit = true, onFocusCanva
       if (!blob) return;
       const host = await platform();
       await host.saveBinaryFile(`${project?.name ?? 'bench'}-bench.glb`, new Uint8Array(await blob.arrayBuffer()), 'model/gltf-binary');
-    } catch (e) { toast({ kind: 'error', title: 'GLB export failed', description: errorMessage(e) }); }
+    } catch (e) { toast({ kind: 'error', title: tr('bench.glbFailed'), description: errorMessage(e) }); }
   };
   const editable = canEdit && editableProject;
 
@@ -254,8 +256,8 @@ export function BoardPanel({ interactive, editable: canEdit = true, onFocusCanva
 
   if (!project || !ctx || !model) {
     return (
-      <EmptyState icon={<CircuitBoard />} title="No project">
-        Open a project to build it on the bench.
+      <EmptyState icon={<CircuitBoard />} title={tr('world.noProject')}>
+        {tr('bench.openProject')}
       </EmptyState>
     );
   }
@@ -265,25 +267,25 @@ export function BoardPanel({ interactive, editable: canEdit = true, onFocusCanva
   const selectedJumper = selected.jumper !== undefined ? project.layout?.bench?.wires?.[selected.jumper] : undefined;
 
   const toolbar = (
-    <div className="wb-bench-toolbar" role="toolbar" aria-label="Bench tools">
-      {!editable && <Badge tone="warning">read-only</Badge>}
+    <div className="wb-bench-toolbar" role="toolbar" aria-label={tr('bench.tools')}>
+      {!editable && <Badge tone="warning">{tr('design.readOnly')}</Badge>}
       <SegmentedControl<BenchTool>
-        label="Bench tool"
+        label={tr('bench.tool')}
         size="sm"
         value={tool}
         onValueChange={setTool}
         options={[
-          { value: 'select', label: 'Move', icon: <MousePointer2 />, title: 'Move and plug parts (drag; R turns, arrows nudge, Delete removes)' },
-          { value: 'wire', label: 'Jumper', icon: <Cable />, title: 'Wire a jumper from a hole or pin to another' },
-          { value: 'measure', label: 'Measure', icon: <Ruler />, title: 'Click two points (a pin or hole snaps) for the distance between them; Esc clears' },
+          { value: 'select', label: tr('bench.tool.move'), icon: <MousePointer2 />, title: tr('bench.moveHint') },
+          { value: 'wire', label: tr('bench.tool.jumper'), icon: <Cable />, title: tr('bench.jumperHint') },
+          { value: 'measure', label: tr('bench.tool.measure'), icon: <Ruler />, title: tr('bench.measureHint') },
         ]}
       />
-      <div className="wb-bench-colors" role="radiogroup" aria-label="Jumper colour">
+      <div className="wb-bench-colors" role="radiogroup" aria-label={tr('bench.jumperColour')}>
         {WIRE_COLORS.map((c) => (
           <button key={c} type="button" role="radio" aria-checked={c === wireColor} aria-label={`Jumper colour ${c}`} className="wb-bench-color" style={{ background: c }} onClick={() => setWireColor(c)} />
         ))}
       </div>
-      <Tooltip content={pending.length ? `Wire the ${pending.length} connection${pending.length > 1 ? 's' : ''} the schematic has that the bench does not` : 'Everything the schematic connects is built'}>
+      <Tooltip content={pending.length ? `Wire the ${pending.length} connection${pending.length > 1 ? 's' : ''} the schematic has that the bench does not` : tr('bench.allBuilt')}>
         <Button
           size="sm"
           variant="ghost"
@@ -301,7 +303,7 @@ export function BoardPanel({ interactive, editable: canEdit = true, onFocusCanva
           <Wand2 /> Build {pending.length || ''}
         </Button>
       </Tooltip>
-      <Tooltip content="Put an 830-point breadboard on the bench">
+      <Tooltip content={tr('bench.addBreadboard')}>
         <Button
           size="sm"
           variant="ghost"
@@ -321,90 +323,90 @@ export function BoardPanel({ interactive, editable: canEdit = true, onFocusCanva
           <Box /> Breadboard
         </Button>
       </Tooltip>
-      <Tooltip content="A note on the bench">
-        <IconButton label="Add a note" size="sm" variant="ghost" disabled={!editable} onClick={() => setNote('')}>
+      <Tooltip content={tr('bench.aNote')}>
+        <IconButton label={tr('bench.addNote')} size="sm" variant="ghost" disabled={!editable} onClick={() => setNote('')}>
           <StickyNote />
         </IconButton>
       </Tooltip>
-      <Tooltip content="Frame everything" shortcut="F">
-        <IconButton label="Frame the bench" size="sm" variant="ghost" onClick={() => handle.current?.frame()}>
+      <Tooltip content={tr('bench.frameAll')} shortcut="F">
+        <IconButton label={tr('bench.frame')} size="sm" variant="ghost" onClick={() => handle.current?.frame()}>
           <Maximize2 />
         </IconButton>
       </Tooltip>
-      <Button size="sm" variant="ghost" disabled={flat || !selectedPart} onClick={() => handle.current?.frame(undefined, true)}>Focus part</Button>
+      <Button size="sm" variant="ghost" disabled={flat || !selectedPart} onClick={() => handle.current?.frame(undefined, true)}>{tr('bench.focusPart')}</Button>
       <BenchViewMenu>
-          <div className="wb-bench-views" role="group" aria-label="Standard views">
+          <div className="wb-bench-views" role="group" aria-label={tr('bench.standardViews')}>
             {VIEWS.map(([view, label, key]) => (
               <Button key={view} size="sm" variant="ghost" disabled={flat} title={key ? `${label} (${key})` : label} onClick={() => handle.current?.frame(view)}>{label}</Button>
             ))}
           </div>
           <SegmentedControl<'perspective' | 'orthographic'>
-            label="Projection"
+            label={tr('bench.projection')}
             size="sm"
             value={preferences.projection}
             onValueChange={(v) => preference('projection', v)}
-            options={[{ value: 'perspective', label: 'Perspective' }, { value: 'orthographic', label: 'Orthographic' }]}
+            options={[{ value: 'perspective', label: tr('bench.perspective') }, { value: 'orthographic', label: tr('bench.ortho') }]}
           />
-          <Select label="Render quality" size="sm" value={preferences.quality} onValueChange={(v) => preference('quality', v)} options={[
-            { value: 'draft', label: 'Draft render' }, { value: 'quality', label: 'Quality render (occlusion, bloom)' },
+          <Select label={tr('bench.renderQuality')} size="sm" value={preferences.quality} onValueChange={(v) => preference('quality', v)} options={[
+            { value: 'draft', label: tr('bench.draft') }, { value: 'quality', label: tr('bench.quality') },
           ]} />
-          <Select label="Bench surface" size="sm" value={preferences.surface} onValueChange={(v) => preference('surface', v)} options={[
-            { value: 'paper', label: 'Paper' }, { value: 'graphite', label: 'Graphite' }, { value: 'mat', label: 'Bench mat' },
+          <Select label={tr('bench.surface')} size="sm" value={preferences.surface} onValueChange={(v) => preference('surface', v)} options={[
+            { value: 'paper', label: tr('bench.paper') }, { value: 'graphite', label: tr('bench.graphite') }, { value: 'mat', label: tr('bench.mat') },
           ]} />
-          <Select label="Bench labels" size="sm" value={preferences.labels} onValueChange={(v) => preference('labels', v)} options={[
-            { value: 'adaptive', label: 'Adaptive labels' }, { value: 'all', label: 'All labels' }, { value: 'selected', label: 'Selected only' },
+          <Select label={tr('bench.labels')} size="sm" value={preferences.labels} onValueChange={(v) => preference('labels', v)} options={[
+            { value: 'adaptive', label: tr('bench.adaptiveLabels') }, { value: 'all', label: tr('bench.allLabels') }, { value: 'selected', label: tr('bench.selectedOnly') },
           ]} />
-          <Button size="sm" variant="ghost" aria-pressed={preferences.notes} onClick={() => preference('notes', !preferences.notes)}>Notes</Button>
+          <Button size="sm" variant="ghost" aria-pressed={preferences.notes} onClick={() => preference('notes', !preferences.notes)}>{tr('bench.notes')}</Button>
       </BenchViewMenu>
       <BenchViewMenu summary="Inspect">
-        <Select label="Section" size="sm" value={section?.axis ?? 'off'} onValueChange={(v) => setSection(v === 'off' ? null : { axis: v as SectionAxis, at: section?.at ?? 0, flip: section?.flip })} options={[
-          { value: 'off', label: 'No section' }, { value: 'x', label: 'Cut across X' }, { value: 'y', label: 'Cut across Y (depth)' }, { value: 'z', label: 'Cut across Z (height)' },
+        <Select label={tr('bench.section')} size="sm" value={section?.axis ?? 'off'} onValueChange={(v) => setSection(v === 'off' ? null : { axis: v as SectionAxis, at: section?.at ?? 0, flip: section?.flip })} options={[
+          { value: 'off', label: tr('bench.noSection') }, { value: 'x', label: tr('bench.cutX') }, { value: 'y', label: tr('bench.cutY') }, { value: 'z', label: tr('bench.cutZ') },
         ]} />
         {section && <>
-          <Input label="Section at" unit="mm" type="number" step={0.5} value={section.at} onChange={(e) => setSection({ ...section, at: Number(e.target.value) || 0 })} />
-          <Button size="sm" variant="ghost" aria-pressed={Boolean(section.flip)} onClick={() => setSection({ ...section, flip: !section.flip })}>Keep the other side</Button>
+          <Input label={tr('bench.sectionAt')} unit="mm" type="number" step={0.5} value={section.at} onChange={(e) => setSection({ ...section, at: Number(e.target.value) || 0 })} />
+          <Button size="sm" variant="ghost" aria-pressed={Boolean(section.flip)} onClick={() => setSection({ ...section, flip: !section.flip })}>{tr('bench.keepOther')}</Button>
         </>}
-        <Button size="sm" variant="ghost" aria-pressed={heightPlane !== null} onClick={() => setHeightPlane(heightPlane === null ? 15 : null)}>Height plane</Button>
-        {heightPlane !== null && <Input label="Height above the desk" unit="mm" type="number" step={0.5} min={0} value={heightPlane} onChange={(e) => setHeightPlane(Math.max(0, Number(e.target.value) || 0))} />}
+        <Button size="sm" variant="ghost" aria-pressed={heightPlane !== null} onClick={() => setHeightPlane(heightPlane === null ? 15 : null)}>{tr('bench.heightPlane')}</Button>
+        {heightPlane !== null && <Input label={tr('bench.height')} unit="mm" type="number" step={0.5} min={0} value={heightPlane} onChange={(e) => setHeightPlane(Math.max(0, Number(e.target.value) || 0))} />}
         <label className="wb-bench-explode">
-          <span>Explode</span>
-          <input type="range" min={0} max={1} step={0.05} value={explode} aria-label="Explode: lift the plugged parts off the breadboard" onChange={(e) => setExplode(Number(e.target.value))} />
+          <span>{tr('bench.explode')}</span>
+          <input type="range" min={0} max={1} step={0.05} value={explode} aria-label={tr('bench.explodeAria')} onChange={(e) => setExplode(Number(e.target.value))} />
         </label>
-        <div className="wb-bench-layers" role="group" aria-label="Layers">
+        <div className="wb-bench-layers" role="group" aria-label={tr('bench.layers')}>
           {LAYERS.map(([key, label]) => (
             <Button key={key} size="sm" variant="ghost" aria-pressed={preferences.layers[key]} onClick={() => preference('layers', { ...preferences.layers, [key]: !preferences.layers[key] })}>{label}</Button>
           ))}
         </div>
-        <div className="wb-bench-layers" role="group" aria-label="Export">
-          <Button size="sm" variant="ghost" disabled={flat} onClick={() => void exportImage(2)}>Image 2×</Button>
-          <Button size="sm" variant="ghost" disabled={flat} onClick={() => void exportImage(4)}>Image 4×</Button>
-          <Button size="sm" variant="ghost" disabled={flat} onClick={() => void exportGlb()}>GLB model</Button>
+        <div className="wb-bench-layers" role="group" aria-label={tr('bench.export')}>
+          <Button size="sm" variant="ghost" disabled={flat} onClick={() => void exportImage(2)}>{tr('bench.image2')}</Button>
+          <Button size="sm" variant="ghost" disabled={flat} onClick={() => void exportImage(4)}>{tr('bench.image4')}</Button>
+          <Button size="sm" variant="ghost" disabled={flat} onClick={() => void exportGlb()}>{tr('bench.glb')}</Button>
         </div>
       </BenchViewMenu>
-      <Button size="sm" variant="ghost" aria-pressed={preferences.list} onClick={() => preference('list', !preferences.list)}><List /> Parts & wiring</Button>
-      {onFocusCanvas && <Button size="sm" variant="ghost" aria-pressed={canvasFocused} onClick={onFocusCanvas}>Focus canvas</Button>}
+      <Button size="sm" variant="ghost" aria-pressed={preferences.list} onClick={() => preference('list', !preferences.list)}><List />{tr('bench.partsWiring')}</Button>
+      {onFocusCanvas && <Button size="sm" variant="ghost" aria-pressed={canvasFocused} onClick={onFocusCanvas}>{tr('ribbon.focusMode')}</Button>}
       <SegmentedControl<'3d' | '2d'>
-        label="Bench view"
+        label={tr('bench.view')}
         size="sm"
         value={flat ? '2d' : '3d'}
         onValueChange={(v) => { setRendererFailed(false); setFlat(v === '2d'); }}
         options={[
-          { value: '3d', label: '3D', title: 'The bench in 3D', disabled: rendererLoadFailed },
-          { value: '2d', label: '2D', title: 'The parts\' artwork, flat' },
+          { value: '3d', label: '3D', title: tr('bench.3d'), disabled: rendererLoadFailed },
+          { value: '2d', label: '2D', title: tr('bench.2dHint') },
         ]}
       />
       <span className="wb-bench-status" aria-live="polite">
         {tool === 'measure'
-          ? measured ? describeMeasurement(measured) : 'Click two points to measure · a pin or hole snaps · Esc clears'
+          ? measured ? describeMeasurement(measured) : tr('bench.measureHelp')
           : selectedPart
           ? `${selectedPart.label}${selectedHoles.length ? ` · in ${selectedHoles.join(', ')}` : ' · not plugged in'}`
           : selectedJumper
             ? `Jumper ${selectedJumper.from} → ${selectedJumper.to}`
             : tool === 'wire'
-              ? 'Press on a hole or a pin and release on another'
+              ? tr('bench.jumperHelp')
               : heightPlane !== null
                   ? above.length ? `Above ${heightPlane} mm: ${above.map((a) => `${a.id} (${a.top} mm)`).join(', ')}` : `Nothing rises above ${heightPlane} mm`
-                  : 'Right drag orbits · wheel zooms · drag a part onto the breadboard'}
+                  : tr('bench.moveHelp')}
       </span>
     </div>
   );
@@ -439,7 +441,7 @@ export function BoardPanel({ interactive, editable: canEdit = true, onFocusCanva
       onPlug={(id, hole) => {
         const at = plugAt(id, hole);
         if (!at) {
-          toast({ kind: 'warning', title: `No hole ${hole}`, description: 'Name a hole of a breadboard on the bench: a1 to j63, or a rail hole as TP1, TN1, BP1, BN1.' });
+          toast({ kind: 'warning', title: `No hole ${hole}`, description: tr('bench.holeHelp') });
           return;
         }
         mutate(`Plug ${id} into ${hole}`, (p) => moveParts(p, ctx, { [id]: at }));
@@ -457,13 +459,13 @@ export function BoardPanel({ interactive, editable: canEdit = true, onFocusCanva
         const back = Math.min(...model.parts.map((x) => x.place.y - x.shape.size[1] / 2)) - part.shape.size[1] / 2 - 10;
         mutate(`Lift ${id}`, (p) => moveParts(p, ctx, { [id]: { ...part.place, y: Math.round(back * 100) / 100 } }));
       }}
-      onJumper={(from, to) => mutate('Jumper', (p) => addJumper(p, ctx, { from, to, color: wireColor }))}
+      onJumper={(from, to) => mutate(tr('bench.tool.jumper'), (p) => addJumper(p, ctx, { from, to, color: wireColor }))}
     >
-      {traceNet && <section className="wb-bench-trace" aria-label="Traced net">
+      {traceNet && <section className="wb-bench-trace" aria-label={tr('bench.tracedNet')}>
         <h3>Trace · {traceNet}</h3>
-        <p>{connected && netStates[traceNet] ? describeNetState(netStates[traceNet], [0, 3.3]).text : 'No engine observation'}</p>
+        <p>{connected && netStates[traceNet] ? describeNetState(netStates[traceNet], [0, 3.3]).text : tr('bench.noObservation')}</p>
         <p>{(project.nets[traceNet] ?? []).join(' · ')}</p>
-        <Button size="sm" variant="ghost" onClick={() => { setJumper(undefined); useSelection.getState().selectNet(null); }}>Clear trace</Button>
+        <Button size="sm" variant="ghost" onClick={() => { setJumper(undefined); useSelection.getState().selectNet(null); }}>{tr('bench.clearTrace')}</Button>
       </section>}
       {selectedJumper && selected.jumper !== undefined && <BenchWireEditor
         key={`${selected.jumper}:${JSON.stringify(selectedJumper)}`}
@@ -484,7 +486,7 @@ export function BoardPanel({ interactive, editable: canEdit = true, onFocusCanva
       {flat ? (
         <Bench2D interactive={interactive} />
       ) : !Renderer ? (
-        <div className="wb-bench-loading" role="status">Opening 3D bench…</div>
+        <div className="wb-bench-loading" role="status">{tr('bench.opening')}</div>
       ) : (
         <Renderer
           handle={handle}
@@ -524,7 +526,7 @@ export function BoardPanel({ interactive, editable: canEdit = true, onFocusCanva
           quality={preferences.quality}
           onQualityFallback={() => {
             preference('quality', 'draft');
-            toast({ kind: 'warning', title: 'Draft render', description: 'Quality render could not keep 60 frames a second on this machine.' });
+            toast({ kind: 'warning', title: tr('bench.draft'), description: tr('bench.qualityTooSlow') });
           }}
           section={section}
           heightPlane={heightPlane}
@@ -534,7 +536,7 @@ export function BoardPanel({ interactive, editable: canEdit = true, onFocusCanva
           explode={explode}
           onRendererError={() => { setRendererFailed(true); setFlat(true); }}
           onMove={(id, place) => mutate(`Move ${id}`, (p) => moveParts(p, ctx, { [id]: place }))}
-          onWire={(from, to) => mutate('Jumper', (p) => addJumper(p, ctx, { from, to, color: wireColor }))}
+          onWire={(from, to) => mutate(tr('bench.tool.jumper'), (p) => addJumper(p, ctx, { from, to, color: wireColor }))}
           onSelect={setSelected}
           onDelete={(sel) => {
             if (sel.jumper !== undefined) mutate('Remove jumper', (p) => removeJumper(p, ctx, sel.jumper!));
@@ -542,7 +544,7 @@ export function BoardPanel({ interactive, editable: canEdit = true, onFocusCanva
             setSelected({});
           }}
           onInput={(target, input, value) => {
-            inputActions.set(target, input, value).catch((e: unknown) => toast({ kind: 'error', title: 'Input rejected', description: errorMessage(e) }));
+            inputActions.set(target, input, value).catch((e: unknown) => toast({ kind: 'error', title: tr('fail.input'), description: errorMessage(e) }));
           }}
           label={`Bench of ${project.name}`}
         />
@@ -551,18 +553,18 @@ export function BoardPanel({ interactive, editable: canEdit = true, onFocusCanva
       </div>
       {rendererLoadFailed && <div className="wb-bench-recovery" role="status">
         The 3D bench could not be loaded. The 2D view and Parts & wiring remain available.
-        <Button size="sm" variant="ghost" onClick={() => window.location.reload()}>Reload to retry 3D</Button>
+        <Button size="sm" variant="ghost" onClick={() => window.location.reload()}>{tr('bench.reload')}</Button>
       </div>}
-      {rendererFailed && <div className="wb-bench-recovery" role="status">3D rendering is unavailable. The 2D view and Parts & wiring remain available. Select 3D to retry.</div>}
+      {rendererFailed && <div className="wb-bench-recovery" role="status">{tr('bench.3dUnavailable')}</div>}
       {note !== null && (
         <Dialog
           open
           onOpenChange={(open) => !open && setNote(null)}
-          title="A note on the bench"
+          title={tr('bench.aNote')}
           footer={
             <>
               <Button variant="ghost" onClick={() => setNote(null)}>
-                Cancel
+                {tr('common.cancel')}
               </Button>
               <Button
                 variant="primary"
@@ -574,12 +576,12 @@ export function BoardPanel({ interactive, editable: canEdit = true, onFocusCanva
                   setNote(null);
                 }}
               >
-                Add
+                {tr('common.add')}
               </Button>
             </>
           }
         >
-          <Input label="Text" value={note} autoFocus onChange={(e) => setNote(e.target.value)} />
+          <Input label={tr('bench.text')} value={note} autoFocus onChange={(e) => setNote(e.target.value)} />
         </Dialog>
       )}
     </div>
@@ -594,7 +596,7 @@ const VIEWS: [StandardView, string, string][] = [
 ];
 
 const LAYERS: [keyof BenchLayers, string][] = [
-  ['boards', 'Boards'], ['breadboards', 'Breadboards'], ['parts', 'Parts'], ['jumpers', 'Jumpers'], ['world', 'World'], ['labels', 'Labels'],
+  ['boards', 'Boards'], ['breadboards', 'Breadboards'], ['parts', 'Parts'], ['jumpers', tr('bench.jumpers')], ['world', 'World'], ['labels', 'Labels'],
 ];
 
 function BenchViewMenu({ children, summary = 'View' }: { children: ReactNode; summary?: string }) {
@@ -671,8 +673,8 @@ function BenchList({
   const part = selected.part ? parts.find((p) => p.id === selected.part) : undefined;
   const proposal = part && hole.trim() ? previewPlug(part.id, hole.trim()) : null;
   return (
-    <aside className="wb-bench-list" aria-label="On the bench">
-      <h3>On the bench</h3>
+    <aside className="wb-bench-list" aria-label={tr('world.onBench')}>
+      <h3>{tr('world.onBench')}</h3>
       <ul>
         {parts.map((p) => {
           const holes = holesOf(p.id);
@@ -686,17 +688,18 @@ function BenchList({
           );
         })}
       </ul>
-      {Boolean(wires?.length) && <><h3>Jumpers</h3><ul aria-label="Bench jumpers">{wires?.map((wire, index) => <li key={index}>
+      {Boolean(wires?.length) && <><h3>{tr('bench.jumpers')}</h3><ul aria-label={tr('bench.jumpersAria')}>{wires?.map((wire, index) => <li key={index}>
         <button type="button" aria-pressed={selected.jumper === index} onClick={() => onSelect({ jumper: index })}>
           <span className="wb-wire-swatch" style={{ background: wire.color ?? WIRE_COLORS[index % WIRE_COLORS.length] }} />
           <span>{wire.from} → {wire.to}</span>
         </button>
       </li>)}</ul></>}
       {children}
-      {part && <p className="wb-bench-geometry">Geometry: {part.shape.geometrySource === 'catalog' ? 'catalog dimensions' : part.shape.geometrySource === 'artwork' ? 'artwork anchors' : 'approximate package'}. {part.shape.geometrySource === 'approximate' ? 'Check the actual package and pinout before building hardware.' : 'Source metadata does not establish mechanical qualification.'}</p>}
+      {part && <FrontPanelOnBench part={part.id} />}
+      {part && <p className="wb-bench-geometry">Geometry: {part.shape.geometrySource === 'catalog' ? 'catalog dimensions' : part.shape.geometrySource === 'artwork' ? 'artwork anchors' : 'approximate package'}. {part.shape.geometrySource === 'approximate' ? tr('bench.checkPackage') : tr('bench.noMechanical')}</p>}
       {part && editable && <BenchPlacement key={`${part.id}:${part.place.x}:${part.place.y}:${part.place.rotation}`} part={part} onPlace={onPlace} />}
-      {part?.shape.package === 'breadboard' && editable && <Button size="sm" variant="ghost" onClick={() => onTurn(part.id)}>Turn breadboard</Button>}
-      {part && isSurfaceMount(part.shape) && <p className="wb-bench-geometry">Surface-mount package. Use a carrier board for breadboard construction.</p>}
+      {part?.shape.package === 'breadboard' && editable && <Button size="sm" variant="ghost" onClick={() => onTurn(part.id)}>{tr('bench.turnBreadboard')}</Button>}
+      {part && isSurfaceMount(part.shape) && <p className="wb-bench-geometry">{tr('bench.smd')}</p>}
       {part && editable && part.shape.package !== 'breadboard' && part.shape.package !== 'board' && !isSurfaceMount(part.shape) && (
         <form
           className="wb-bench-list__form"
@@ -706,20 +709,20 @@ function BenchList({
           }}
         >
           <Input label={`Plug ${part.id}'s first leg into`} placeholder="a20" value={hole} onChange={(e) => onHoleChange(e.target.value)} />
-          {hole.trim() && <div className="wb-bench-insertion" role="status" aria-label="Insertion preview">
-            {!proposal ? 'No matching breadboard hole. Use a name such as BB1.a20.' : proposal.contacts.map((contact) => <div key={contact.pin} data-blocked={contact.occupiedBy.length > 0}>
+          {hole.trim() && <div className="wb-bench-insertion" role="status" aria-label={tr('bench.insertionPreview')}>
+            {!proposal ? tr('bench.noHole') : proposal.contacts.map((contact) => <div key={contact.pin} data-blocked={contact.occupiedBy.length > 0}>
               <strong>{contact.pin}</strong> → {contact.hole ?? 'unseated'}{contact.occupiedBy.length ? ` · occupied by ${contact.occupiedBy.join(', ')}` : ''}
             </div>)}
           </div>}
           <div className="wb-bench-list__row">
             <Button size="sm" type="submit" disabled={!proposal?.valid}>
-              Plug in
+              {tr('bench.plugIn')}
             </Button>
             <Button size="sm" variant="ghost" onClick={() => onTurn(part.id)}>
-              Turn
+              {tr('bench.turn')}
             </Button>
             <Button size="sm" variant="ghost" onClick={() => onLift(part.id)}>
-              Lift off
+              {tr('bench.liftOff')}
             </Button>
           </div>
         </form>
@@ -736,10 +739,10 @@ function BenchList({
             }
           }}
         >
-          <Input label="Jumper from" placeholder="BB1.e20" value={from} onChange={(e) => setFrom(e.target.value)} />
-          <Input label="to" placeholder="B1.D9" value={to} onChange={(e) => setTo(e.target.value)} />
+          <Input label={tr('bench.jumperFrom')} placeholder="BB1.e20" value={from} onChange={(e) => setFrom(e.target.value)} />
+          <Input label={tr('bench.to')} placeholder="B1.D9" value={to} onChange={(e) => setTo(e.target.value)} />
           <Button size="sm" type="submit" disabled={!from.trim() || !to.trim()}>
-            Add jumper
+            {tr('bench.addJumper')}
           </Button>
         </form>
       )}
@@ -752,16 +755,16 @@ function BenchPlacement({ part, onPlace }: { part: BenchPartView; onPlace(id: st
   const [y, setY] = useState(String(part.place.y));
   const [rotation, setRotation] = useState(String(part.place.rotation));
   const valid = x.trim() !== '' && y.trim() !== '' && [Number(x), Number(y)].every((value) => Number.isFinite(value) && Math.abs(value) <= 1_000_000);
-  return <form className="wb-bench-list__form" aria-label="Bench placement" onSubmit={(event) => {
+  return <form className="wb-bench-list__form" aria-label={tr('bench.placement')} onSubmit={(event) => {
     event.preventDefault();
     if (valid) onPlace(part.id, { x: Number(x), y: Number(y), rotation: Number(rotation) as 0 | 90 | 180 | 270 });
   }}>
     <div className="wb-bench-position">
-      <Input label="Bench X (mm)" type="number" step="0.01" value={x} onChange={(event) => setX(event.target.value)} />
-      <Input label="Bench Y (mm)" type="number" step="0.01" value={y} onChange={(event) => setY(event.target.value)} />
+      <Input label={tr('bench.x')} type="number" step="0.01" value={x} onChange={(event) => setX(event.target.value)} />
+      <Input label={tr('bench.y')} type="number" step="0.01" value={y} onChange={(event) => setY(event.target.value)} />
     </div>
-    <Select label="Bench rotation" size="sm" value={rotation} onValueChange={setRotation} options={[0, 90, 180, 270].map((value) => ({ value: String(value), label: `${value}°` }))} />
-    <Button size="sm" type="submit" disabled={!valid}>Apply bench position</Button>
+    <Select label={tr('bench.rotation')} size="sm" value={rotation} onValueChange={setRotation} options={[0, 90, 180, 270].map((value) => ({ value: String(value), label: `${value}°` }))} />
+    <Button size="sm" type="submit" disabled={!valid}>{tr('bench.applyPosition')}</Button>
   </form>;
 }
 
@@ -878,8 +881,8 @@ function Bench2D({ interactive }: { interactive: boolean }) {
 
   if (items.length === 0) {
     return (
-      <EmptyState icon={<CircuitBoard />} title="No board artwork">
-        Add a board, or components with artwork (buttons, LEDs), to interact with them here.
+      <EmptyState icon={<CircuitBoard />} title={tr('bench.noArtwork')}>
+        {tr('bench.addBoard')}
       </EmptyState>
     );
   }
@@ -890,11 +893,23 @@ function Bench2D({ interactive }: { interactive: boolean }) {
         wires={wires}
         height={Math.max(160, ...items.map((i) => i.y + i.height + 24))}
         disabled={!interactive || !connected}
-        label={project?.boards?.length ? `Board ${project.boards[0]!.board}` : 'Component panel'}
+        label={project?.boards?.length ? `Board ${project.boards[0]!.board}` : tr('bench.componentPanel')}
         onInput={(target, input, value) => {
-          inputActions.set(target, input, value).catch((e: unknown) => toast({ kind: 'error', title: 'Input rejected', description: errorMessage(e) }));
+          inputActions.set(target, input, value).catch((e: unknown) => toast({ kind: 'error', title: tr('fail.input'), description: errorMessage(e) }));
         }}
       />
     </div>
+  );
+}
+
+/** An instrument on the bench opens its front panel, as reaching for it on a real bench */
+function FrontPanelOnBench({ part }: { part: string }) {
+  const ref = useProject((s) => s.project?.components.find((c) => c.id === part)?.component);
+  const instrument = benchInstrumentOf(ref);
+  if (!instrument) return null;
+  return (
+    <Button size="sm" variant="ghost" onClick={() => openFrontPanel(instrument, part)}>
+      Open {part}'s front panel
+    </Button>
   );
 }

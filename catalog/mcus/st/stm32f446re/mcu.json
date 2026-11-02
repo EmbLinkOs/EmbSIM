@@ -1742,14 +1742,16 @@
    ]
   },
   "timed": {
-   "claims": "Instruction timing is estimated from EmbCC's per-class cost table with the taken-branch refill (ADR-015), not cycle-exact, at the core clock RCC gives (HCLK).",
+   "claims": "Instruction timing is estimated from EmbCC's per-class cost table with the taken-branch refill (ADR-015), not cycle-exact, at the core clock RCC gives (HCLK). Exception entry (12 cycles), return (12), tail-chaining (6) and late arrival are timed as the Cortex-M4 TRM (ARM DDI 0439B 3.9.1) gives them at zero wait states. Flash reads take FLASH_ACR's wait states, with the ART accelerator's prefetch, 64-line instruction cache and 8-line data cache (RM0390 3.4).",
    "omissions": [
-    "flash wait states and the ART accelerator",
+    "a flash miss beyond the least penalty RM0390 gives, D-Code over I-Code priority, the vector fetch's wait",
     "bus arbitration",
-    "pipeline effects beyond branch refill"
+    "pipeline effects beyond branch refill",
+    "the extended (FP) frame's and lazy stacking's cycles",
+    "an interrupt during unstacking (taken after the return)"
    ],
    "validation": [
-    "repo:tests/firmware/cm4-core"
+    "repo:tests/firmware/cm4-core", "repo:tests/unit/test_cm_timing.c", "repo:tests/unit/test_stm32f4.c"
    ]
   },
   "electrical": {

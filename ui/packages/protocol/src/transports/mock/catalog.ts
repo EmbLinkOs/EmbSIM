@@ -368,6 +368,78 @@ function breadboard830(): Entry {
 
 MOCK_CATALOG['emblink/breadboard_830'] = breadboard830();
 
+// an instrument with a front panel of its own (the demo session has no scope engine: its screen stays empty)
+MOCK_CATALOG['emblink/rigol_ds1054z'] = {
+  description: {
+    schema_version: 1,
+    kind: 'component',
+    id: 'emblink/rigol_ds1054z',
+    version: '1.0.0',
+    name: 'Oscilloscope, 4 channels (Rigol DS1054Z)',
+    category: 'instruments',
+    description: 'A four-channel digital storage oscilloscope.',
+    keywords: ['oscilloscope', 'scope', 'rigol'],
+    pins: ['CH1', 'CH2', 'CH3', 'CH4', 'GND'].map((name, i) => ({ name, number: i + 1, model: { kind: 'passive' as const } })),
+    params: {
+      timebase: { type: 'number', unit: 's', default: 1e-3, min: 5e-9, max: 50, doc: 'Seconds a division' },
+      sweep: { type: 'enum', enum: ['auto', 'normal', 'single'], default: 'auto', doc: 'Sweep' },
+    },
+    model: { primitive: 'oscilloscope' },
+    symbol: { svg: 'symbol.svg', width: 120, height: 80, pins: { CH1: { x: 0, y: 10, side: 'left' }, CH2: { x: 0, y: 20, side: 'left' }, CH3: { x: 0, y: 30, side: 'left' }, CH4: { x: 0, y: 40, side: 'left' }, GND: { x: 60, y: 80, side: 'bottom' } } },
+    fidelity: { functional: null, timed: null, electrical: { claims: 'Demo entry: the panel without the engine.', omissions: ['acquisition'] } },
+    provenance,
+  },
+  files: {
+    symbol: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 80" width="120" height="80"><rect x="1" y="1" width="118" height="78" rx="4" fill="var(--symbol-fill)" stroke="var(--symbol-stroke)"/><rect x="14" y="10" width="64" height="44" fill="none" stroke="var(--symbol-stroke)"/></svg>`,
+  },
+};
+
+// the other two bench instruments, as demo entries the same way: their panels without the engine
+const leftPins = (names: string[], y0: number) => Object.fromEntries(names.map((n, i) => [n, { x: 0, y: y0 + i * 10, side: 'left' as const }]));
+const D = ['D0', 'D1', 'D2', 'D3', 'D4', 'D5', 'D6', 'D7'];
+const box = (w: number, h: number) => `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${w} ${h}" width="${w}" height="${h}"><rect x="1" y="1" width="${w - 2}" height="${h - 2}" rx="4" fill="var(--symbol-fill)" stroke="var(--symbol-stroke)"/></svg>`;
+MOCK_CATALOG['emblink/saleae_logic8'] = {
+  description: {
+    schema_version: 1,
+    kind: 'component',
+    id: 'emblink/saleae_logic8',
+    version: '1.0.0',
+    name: 'Logic analyzer, 8 channels (Saleae Logic 8)',
+    category: 'instruments',
+    description: 'An 8-channel USB logic analyzer.',
+    keywords: ['logic analyzer', 'saleae'],
+    pins: [...D, 'GND'].map((name, i) => ({ name, number: i + 1, model: { kind: 'passive' as const } })),
+    params: { sample_rate: { type: 'number', unit: 'S/s', default: 10e6, doc: 'Sample rate' } },
+    model: { primitive: 'logic_analyzer' },
+    symbol: { svg: 'symbol.svg', width: 80, height: 100, pins: { ...leftPins(D, 10), GND: { x: 40, y: 100, side: 'bottom' } } },
+    fidelity: { functional: null, timed: null, electrical: { claims: 'Demo entry: the panel without the engine.', omissions: ['capture'] } },
+    provenance,
+  },
+  files: { symbol: box(80, 100) },
+};
+MOCK_CATALOG['emblink/nordic_ppk2'] = {
+  description: {
+    schema_version: 1,
+    kind: 'component',
+    id: 'emblink/nordic_ppk2',
+    version: '1.0.0',
+    name: 'Power profiler (Nordic Power Profiler Kit II)',
+    category: 'instruments',
+    description: 'A source meter and ampere meter sampling current at 100 kS/s.',
+    keywords: ['power profiler', 'ppk2', 'current'],
+    pins: ['VIN', 'VOUT', 'GND', ...D, 'VCC'].map((name, i) => ({ name, number: i + 1, model: { kind: 'passive' as const } })),
+    params: {
+      mode: { type: 'enum', enum: ['source', 'ampere'], default: 'source', doc: 'Mode' },
+      voltage: { type: 'number', unit: 'V', default: 3.3, min: 0.8, max: 5, doc: 'Source voltage' },
+    },
+    model: { primitive: 'power_profiler' },
+    symbol: { svg: 'symbol.svg', width: 100, height: 120, pins: { VIN: { x: 0, y: 10, side: 'left' }, VOUT: { x: 100, y: 10, side: 'right' }, GND: { x: 50, y: 120, side: 'bottom' }, ...leftPins(D, 30), VCC: { x: 100, y: 30, side: 'right' } } },
+    fidelity: { functional: null, timed: null, electrical: { claims: 'Demo entry: the panel without the engine.', omissions: ['sampling'] } },
+    provenance,
+  },
+  files: { symbol: box(100, 120) },
+};
+
 export function catalogItems(): CatalogItem[] {
   return Object.values(MOCK_CATALOG).map(({ description }) => ({
     id: description.id,

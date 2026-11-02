@@ -1,0 +1,435 @@
+{
+  "schema_version": 1,
+  "kind": "component",
+  "id": "emblink/rigol_ds1054z",
+  "version": "0.1.0",
+  "name": "Oscilloscope, 4 channels (Rigol DS1054Z)",
+  "category": "instruments",
+  "description": "Rigol's DS1054Z digital storage oscilloscope: four channels at 50 MHz, 1 GSa/s with one channel on (500 MSa/s with two, 250 MSa/s with three or four), 8 bits, 1 mV/div to 10 V/div, its inputs 1 MOhm || 15 pF (10 MOhm through the 10x probes it ships with). It acquires around an edge trigger in Auto, Normal or Single, and the workbench draws its screen and controls live as the circuit runs.",
+  "keywords": [
+    "oscilloscope",
+    "scope",
+    "rigol",
+    "ds1054z",
+    "dso",
+    "waveform",
+    "trigger",
+    "probe",
+    "voltage",
+    "timebase"
+  ],
+  "pins": [
+    {
+      "name": "CH1",
+      "number": 1,
+      "model": {
+        "kind": "passive"
+      },
+      "required": false,
+      "doc": "Channel 1's probe tip: 1 MOhm || 15 pF at 1x, 10 MOhm || 15 pF through the 10x probe"
+    },
+    {
+      "name": "CH2",
+      "number": 2,
+      "model": {
+        "kind": "passive"
+      },
+      "required": false,
+      "doc": "Channel 2's probe tip: 1 MOhm || 15 pF at 1x, 10 MOhm || 15 pF through the 10x probe"
+    },
+    {
+      "name": "CH3",
+      "number": 3,
+      "model": {
+        "kind": "passive"
+      },
+      "required": false,
+      "doc": "Channel 3's probe tip: 1 MOhm || 15 pF at 1x, 10 MOhm || 15 pF through the 10x probe"
+    },
+    {
+      "name": "CH4",
+      "number": 4,
+      "model": {
+        "kind": "passive"
+      },
+      "required": false,
+      "doc": "Channel 4's probe tip: 1 MOhm || 15 pF at 1x, 10 MOhm || 15 pF through the 10x probe"
+    },
+    {
+      "name": "GND",
+      "number": 5,
+      "model": {
+        "kind": "passive"
+      },
+      "doc": "The probes' ground clips (the scope's chassis: earth through its mains plug)"
+    }
+  ],
+  "params": {
+    "ch1_on": {
+      "type": "boolean",
+      "default": true,
+      "doc": "Channel 1 shown and acquired"
+    },
+    "ch1_scale": {
+      "type": "number",
+      "unit": "V",
+      "default": 1,
+      "min": "1m",
+      "max": 100,
+      "doc": "Channel 1's vertical scale, volts a division (1 mV to 10 V at 1x, times the probe)"
+    },
+    "ch1_offset": {
+      "type": "number",
+      "unit": "V",
+      "default": 0,
+      "min": -1000,
+      "max": 1000,
+      "doc": "Channel 1's vertical offset (±2 V to 499 mV/div, ±100 V from 500 mV/div at 1x)"
+    },
+    "ch1_probe": {
+      "type": "enum",
+      "enum": [
+        "1x",
+        "10x"
+      ],
+      "default": "10x",
+      "doc": "Channel 1's probe: its loading (1 MOhm or 10 MOhm) and the scale's range"
+    },
+    "ch1_coupling": {
+      "type": "enum",
+      "enum": [
+        "dc",
+        "ac",
+        "gnd"
+      ],
+      "default": "dc",
+      "doc": "Channel 1's coupling: DC, AC (a high-pass at 5 Hz) or GND"
+    },
+    "ch2_on": {
+      "type": "boolean",
+      "default": false,
+      "doc": "Channel 2 shown and acquired"
+    },
+    "ch2_scale": {
+      "type": "number",
+      "unit": "V",
+      "default": 1,
+      "min": "1m",
+      "max": 100,
+      "doc": "Channel 2's vertical scale, volts a division (1 mV to 10 V at 1x, times the probe)"
+    },
+    "ch2_offset": {
+      "type": "number",
+      "unit": "V",
+      "default": 0,
+      "min": -1000,
+      "max": 1000,
+      "doc": "Channel 2's vertical offset (±2 V to 499 mV/div, ±100 V from 500 mV/div at 1x)"
+    },
+    "ch2_probe": {
+      "type": "enum",
+      "enum": [
+        "1x",
+        "10x"
+      ],
+      "default": "10x",
+      "doc": "Channel 2's probe: its loading (1 MOhm or 10 MOhm) and the scale's range"
+    },
+    "ch2_coupling": {
+      "type": "enum",
+      "enum": [
+        "dc",
+        "ac",
+        "gnd"
+      ],
+      "default": "dc",
+      "doc": "Channel 2's coupling: DC, AC (a high-pass at 5 Hz) or GND"
+    },
+    "ch3_on": {
+      "type": "boolean",
+      "default": false,
+      "doc": "Channel 3 shown and acquired"
+    },
+    "ch3_scale": {
+      "type": "number",
+      "unit": "V",
+      "default": 1,
+      "min": "1m",
+      "max": 100,
+      "doc": "Channel 3's vertical scale, volts a division (1 mV to 10 V at 1x, times the probe)"
+    },
+    "ch3_offset": {
+      "type": "number",
+      "unit": "V",
+      "default": 0,
+      "min": -1000,
+      "max": 1000,
+      "doc": "Channel 3's vertical offset (±2 V to 499 mV/div, ±100 V from 500 mV/div at 1x)"
+    },
+    "ch3_probe": {
+      "type": "enum",
+      "enum": [
+        "1x",
+        "10x"
+      ],
+      "default": "10x",
+      "doc": "Channel 3's probe: its loading (1 MOhm or 10 MOhm) and the scale's range"
+    },
+    "ch3_coupling": {
+      "type": "enum",
+      "enum": [
+        "dc",
+        "ac",
+        "gnd"
+      ],
+      "default": "dc",
+      "doc": "Channel 3's coupling: DC, AC (a high-pass at 5 Hz) or GND"
+    },
+    "ch4_on": {
+      "type": "boolean",
+      "default": false,
+      "doc": "Channel 4 shown and acquired"
+    },
+    "ch4_scale": {
+      "type": "number",
+      "unit": "V",
+      "default": 1,
+      "min": "1m",
+      "max": 100,
+      "doc": "Channel 4's vertical scale, volts a division (1 mV to 10 V at 1x, times the probe)"
+    },
+    "ch4_offset": {
+      "type": "number",
+      "unit": "V",
+      "default": 0,
+      "min": -1000,
+      "max": 1000,
+      "doc": "Channel 4's vertical offset (±2 V to 499 mV/div, ±100 V from 500 mV/div at 1x)"
+    },
+    "ch4_probe": {
+      "type": "enum",
+      "enum": [
+        "1x",
+        "10x"
+      ],
+      "default": "10x",
+      "doc": "Channel 4's probe: its loading (1 MOhm or 10 MOhm) and the scale's range"
+    },
+    "ch4_coupling": {
+      "type": "enum",
+      "enum": [
+        "dc",
+        "ac",
+        "gnd"
+      ],
+      "default": "dc",
+      "doc": "Channel 4's coupling: DC, AC (a high-pass at 5 Hz) or GND"
+    },
+    "timebase": {
+      "type": "number",
+      "unit": "s",
+      "default": "1m",
+      "min": "5n",
+      "max": 50,
+      "doc": "Seconds a division across (5 ns to 50 s), 12 divisions on the screen"
+    },
+    "delay": {
+      "type": "number",
+      "unit": "s",
+      "default": 0,
+      "min": -500,
+      "max": 500,
+      "doc": "The trigger's position from the screen's centre (positive: later)"
+    },
+    "trig_source": {
+      "type": "integer",
+      "default": 1,
+      "min": 1,
+      "max": 4,
+      "doc": "The channel the edge trigger watches"
+    },
+    "trig_level": {
+      "type": "number",
+      "unit": "V",
+      "default": 0,
+      "min": -1000,
+      "max": 1000,
+      "doc": "The edge trigger's level"
+    },
+    "trig_slope": {
+      "type": "enum",
+      "enum": [
+        "rising",
+        "falling",
+        "either"
+      ],
+      "default": "rising",
+      "doc": "The edge trigger's slope"
+    },
+    "sweep": {
+      "type": "enum",
+      "enum": [
+        "auto",
+        "normal",
+        "single"
+      ],
+      "default": "auto",
+      "doc": "Auto (forced when no trigger comes), Normal (only on a trigger) or Single (one acquisition, then stopped)"
+    },
+    "holdoff": {
+      "type": "number",
+      "unit": "s",
+      "default": "16n",
+      "min": "16n",
+      "max": 10,
+      "doc": "The least time from one trigger to the next (16 ns to 10 s)"
+    },
+    "bw_limit": {
+      "type": "boolean",
+      "default": false,
+      "doc": "The 20 MHz bandwidth limit (else 50 MHz)"
+    },
+    "memory": {
+      "type": "enum",
+      "enum": [
+        "12M",
+        "24M"
+      ],
+      "default": "12M",
+      "doc": "Memory depth: 12 Mpts on one channel (6 on two, 3 on three or four), or twice that with the option"
+    }
+  },
+  "inputs": [
+    {
+      "name": "run",
+      "type": "boolean",
+      "default": true,
+      "doc": "Run (true) or Stop (false); in Single, true arms one acquisition"
+    }
+  ],
+  "outputs": [
+    {
+      "name": "status",
+      "type": "string",
+      "doc": "WAIT, T'D, AUTO or STOP, as the screen shows it"
+    },
+    {
+      "name": "sample_rate",
+      "type": "number",
+      "unit": "Hz",
+      "doc": "The sample rate for the channels on and the timebase"
+    },
+    {
+      "name": "memory_points",
+      "type": "number",
+      "doc": "The points in one acquisition"
+    },
+    {
+      "name": "acquisitions",
+      "type": "integer",
+      "doc": "Acquisitions so far"
+    },
+    {
+      "name": "ch1_v",
+      "type": "number",
+      "unit": "V",
+      "doc": "The voltage at channel 1's tip now"
+    },
+    {
+      "name": "ch2_v",
+      "type": "number",
+      "unit": "V",
+      "doc": "The voltage at channel 2's tip now"
+    },
+    {
+      "name": "ch3_v",
+      "type": "number",
+      "unit": "V",
+      "doc": "The voltage at channel 3's tip now"
+    },
+    {
+      "name": "ch4_v",
+      "type": "number",
+      "unit": "V",
+      "doc": "The voltage at channel 4's tip now"
+    }
+  ],
+  "model": {
+    "primitive": "oscilloscope"
+  },
+  "symbol": {
+    "svg": "symbol.svg",
+    "width": 120,
+    "height": 80,
+    "pins": {
+      "CH1": {
+        "x": 0,
+        "y": 10,
+        "side": "left"
+      },
+      "CH2": {
+        "x": 0,
+        "y": 20,
+        "side": "left"
+      },
+      "CH3": {
+        "x": 0,
+        "y": 30,
+        "side": "left"
+      },
+      "CH4": {
+        "x": 0,
+        "y": 40,
+        "side": "left"
+      },
+      "GND": {
+        "x": 60,
+        "y": 80,
+        "side": "bottom"
+      }
+    }
+  },
+  "fidelity": {
+    "functional": null,
+    "timed": {
+      "claims": "As electrical.",
+      "omissions": [
+        "the other trigger types (pulse, runt, window, nth edge, slope, video, pattern, delay, timeout, duration, setup/hold) and the RS232, I2C and SPI options",
+        "math, FFT, XY and Roll",
+        "averaging, peak detect and high resolution acquisition",
+        "the probe's compensation and its own bandwidth",
+        "the DC gain and offset errors and noise: the readings are exact to their 8 bits",
+        "Auto's wait before forcing a trigger (assumed: the screen's time, at least 10 ms)"
+      ]
+    },
+    "electrical": {
+      "claims": "Its inputs load the circuit (1 MOhm or, through the 10x probe, 10 MOhm, each || 15 pF); acquisitions at the sample rate the channels on and the memory allow, through a first-order 50 MHz (or 20 MHz) bandwidth, DC, AC or GND coupled, quantised at 8 bits over 10 divisions; the edge trigger with its level, slope and holdoff in Auto, Normal or Single.",
+      "omissions": [
+        "the other trigger types (pulse, runt, window, nth edge, slope, video, pattern, delay, timeout, duration, setup/hold) and the RS232, I2C and SPI options",
+        "math, FFT, XY and Roll",
+        "averaging, peak detect and high resolution acquisition",
+        "the probe's compensation and its own bandwidth",
+        "the DC gain and offset errors and noise: the readings are exact to their 8 bits",
+        "Auto's wait before forcing a trigger (assumed: the screen's time, at least 10 ms)"
+      ],
+      "validation": [
+        "tests/*.json"
+      ]
+    }
+  },
+  "provenance": {
+    "author": "EmbSIM",
+    "license": "Apache-2.0",
+    "sources": [
+      {
+        "title": "RIGOL MSO1000Z/DS1000Z User's Guide, chapter 18 (Specifications): 1 GSa/s (single channel), 500 MSa/s (dual), 250 MSa/s (3/4 channels); memory 12M/6M/3M points (24M/12M/6M optional); 8-bit vertical; 1 mV/div to 10 V/div (1X); offset +-2 V (1 mV-499 mV/div), +-100 V (500 mV-10 V/div); (1 MOhm +-1 %) || (15 pF +-3 pF); DC, AC, GND coupling; DS1054Z DC to 50 MHz, 20 MHz bandwidth limit, calculated rise time 7 ns; timebase 5 ns/div to 50 s/div; trigger Auto, Normal, Single, level +-5 div, holdoff 16 ns to 10 s; edge rising, falling, rising/falling",
+        "url": "https://www.rigol.com",
+        "date": "2026-10-31",
+        "notes": "Read from the specifications chapter's PDF (TestEquity's copy, assets.testequity.com)."
+      }
+    ]
+  },
+  "tests": [
+    "tests/*.json"
+  ]
+}

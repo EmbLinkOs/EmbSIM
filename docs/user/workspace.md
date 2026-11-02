@@ -1,11 +1,46 @@
 # Arrange your workspace
 
 The top row contains the project menu, **Design**, **Run**, **Debug**, **Verify**,
-diagnostics, theme and command-palette controls. Simulation controls live in the
-row below: run/pause, event stepping, advance duration, reset, speed, clock and
-fidelity policy. Changing perspectives keeps those controls available. Long
-project names shorten visually inside their menu; the project name is unchanged.
-The advance field, its button, F7 and the command palette use the same interval.
+diagnostics, **Settings** (the gear, or Ctrl+,) and the command palette. Simulation
+controls live in the row below: run/pause, event stepping, advance duration, reset,
+the readout, speed and fidelity policy. Changing perspectives keeps those controls
+available. Long project names shorten visually inside their menu; the project name
+is unchanged. The advance field, its button, F7 and the command palette use the
+same interval. In a small window the simulation row wraps onto a second line rather
+than hide a control.
+
+## Read the simulation
+
+The readout names the simulation's state in words, with an icon: **Running**,
+**Paused**, **Stopped** (at time zero), **Loading**, **Failed** (the last run ended
+on a fault or an error) or **Disconnected**. Hover it for what the state means.
+**Simulated** is the simulated time (hover for the exact picoseconds). **Host** is
+how fast simulated time passes against your computer's clock, measured over the
+last two seconds while running (1.00× is real time); it reads "—" while nothing is
+measured. The status bar repeats the state and simulated time on the left, and
+shows the errors and warnings (click to open the diagnostics) and the engine
+connection (hover for its address, protocol, round trip and frames) on the right.
+
+If the engine stops, a screen says so, shows where it was and the simulated time
+reached, and offers **Reconnect**.
+
+## Settings and language
+
+**Settings** applies each change at once and keeps it between sessions:
+
+- **Interface language**: English or Français. Register, pin, net and part names,
+  units and protocol names stay as written; a message not yet translated appears
+  in English.
+- **Theme**, **text size** (small, medium, large) and **density** (comfortable,
+  compact).
+- **Restore panel layout**: off, the next start opens the default layout.
+  **Reset layout** returns every perspective's panels to their defaults now.
+- **Time unit** (automatic, s, ms, µs, ns), **time precision** (0 to 6 decimals;
+  the time is truncated, never rounded up past the simulation) and the **host
+  rate** as a factor or a percentage, with a preview.
+- **Restore defaults** under About.
+
+## Arrange the panels
 
 In Design, choose **Schematic** or **Bench** above the canvas. The schematic's
 auto-layout, arrangement, checks and finder act on its drawing. The bench shows

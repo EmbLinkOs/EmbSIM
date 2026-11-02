@@ -93,7 +93,8 @@
     "bounce": {
       "type": "boolean",
       "default": true,
-      "doc": "Bounce on press and release, as membrane contacts do"
+      "doc": "Bounce on press and release, as membrane contacts do",
+      "imperfection": true
     },
     "bounce_ms": {
       "type": "number",

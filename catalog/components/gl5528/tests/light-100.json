@@ -3,7 +3,7 @@
   "kind": "component_test",
   "name": "light-100",
   "policy": "electrical",
-  "until": "1ms",
+  "until": "260ms",
   "circuit": {
     "components": [
       {
@@ -22,7 +22,10 @@
       },
       {
         "id": "DUT",
-        "component": "emblink/gl5528"
+        "component": "emblink/gl5528",
+        "params": {
+          "tolerance": 0
+        }
       },
       {
         "id": "G",
@@ -47,9 +50,9 @@
   },
   "expect": {
     "net:SENSE": {
-      "at": "500us",
-      "min_v": 0.8286876540828094,
-      "max_v": 0.8346876540828094
+      "at": "250ms",
+      "min_v": 0.998,
+      "max_v": 1.01
     }
   },
   "inputs": [
@@ -59,5 +62,6 @@
       "input": "illuminance",
       "value": 100
     }
-  ]
+  ],
+  "description": "At 100 lux the GL5528's datasheet law gives 15 kOhm x 10^-0.6 = 3.769 kOhm (tolerance 0: the nominal part): 1.004 V under 15 kOhm from 5 V. Read 250 ms after the light: past twelve of the 20 ms rise constants."
 }

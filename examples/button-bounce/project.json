@@ -1,0 +1,35 @@
+{
+  "schema_version": 1,
+  "kind": "project",
+  "name": "button-bounce",
+  "description": "Two push buttons with their real 2 ms of contact bounce (ADR-034): one pulled up straight to a logic line, which chatters through every bounce; one debounced the usual way, a 10k pull-up, a 100 nF capacitor and a Schmitt-trigger inverter, which changes once per press and once per release. The resistors and the capacitor are drawn inside their 5 % and 10 % tolerances from the project's seed.",
+  "libraries": [],
+  "policy": "electrical",
+  "boards": [],
+  "components": [
+    {"id": "V1", "component": "emblink/vsource", "params": {"dc": 3.3}, "layout": {"x": 80, "y": 120}},
+    {"id": "R1", "component": "emblink/resistor", "params": {"resistance": "10k"}, "layout": {"x": 220, "y": 60, "rotation": 90}},
+    {"id": "SW1", "component": "emblink/push_button", "layout": {"x": 300, "y": 160, "rotation": 90}},
+    {"id": "R2", "component": "emblink/resistor", "params": {"resistance": "10k"}, "layout": {"x": 460, "y": 60, "rotation": 90}},
+    {"id": "R3", "component": "emblink/resistor", "params": {"resistance": "100"}, "layout": {"x": 540, "y": 160, "rotation": 90}},
+    {"id": "SW2", "component": "emblink/push_button", "layout": {"x": 540, "y": 260, "rotation": 90}},
+    {"id": "C1", "component": "emblink/capacitor", "params": {"capacitance": "100n"}, "layout": {"x": 620, "y": 200, "rotation": 90}},
+    {"id": "U1", "component": "emblink/schmitt_inverter", "layout": {"x": 720, "y": 120}},
+    {"id": "G1", "component": "emblink/gnd", "layout": {"x": 400, "y": 340}}
+  ],
+  "nets": {
+    "VCC": ["V1.+", "R1.1", "R2.1", "U1.VCC"],
+    "RAW": ["R1.2", "SW1.1"],
+    "RC": ["R2.2", "R3.1", "C1.1", "U1.A"],
+    "SWD": ["R3.2", "SW2.1"],
+    "CLEAN": ["U1.Y"],
+    "GND": ["V1.-", "SW1.2", "SW2.2", "C1.2", "U1.GND", "G1.GND"]
+  },
+  "probes": [
+    {"id": "raw", "target": "net:RAW", "kind": "digital"},
+    {"id": "rc", "target": "net:RC", "kind": "analog", "rate_hz": 100000},
+    {"id": "clean", "target": "net:CLEAN", "kind": "digital"}
+  ],
+  "scenarios": ["scenarios/press.json"],
+  "settings": {"seed": 1}
+}

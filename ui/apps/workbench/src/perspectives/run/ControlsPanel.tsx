@@ -6,14 +6,15 @@ import { SlidersHorizontal } from 'lucide-react';
 import { useState } from 'react';
 import { errorMessage, inputs as inputActions } from '../../actions';
 import { useSession } from '../../stores/session';
+import { t as tr } from '../../i18n';
 
 export function ControlsPanel() {
   const inputs = useSession((s) => s.inputs);
   const connected = useSession((s) => s.status === 'open');
   if (inputs.length === 0) {
     return (
-      <EmptyState icon={<SlidersHorizontal />} title="No inputs">
-        Components with inputs (buttons, switches, potentiometers, serial ports) are listed here.
+      <EmptyState icon={<SlidersHorizontal />} title={tr('controls.none')}>
+        {tr('controls.listed')}
       </EmptyState>
     );
   }
@@ -29,7 +30,7 @@ export function ControlsPanel() {
 function ControlRow({ entry, disabled }: { entry: InputEntry; disabled: boolean }) {
   const { toast } = useToast();
   const [text, setText] = useState('');
-  const fail = (e: unknown) => toast({ kind: 'error', title: 'Input rejected', description: errorMessage(e) });
+  const fail = (e: unknown) => toast({ kind: 'error', title: tr('fail.input'), description: errorMessage(e) });
   const name = entry.label ?? `${entry.target} ${entry.input}`;
   const set = (v: unknown) => inputActions.set(entry.target, entry.input, v).catch(fail);
 
@@ -42,8 +43,8 @@ function ControlRow({ entry, disabled }: { entry: InputEntry; disabled: boolean 
           size="sm"
           variant="primary"
           pressed={on}
-          aria-label={`Hold ${name}`}
-          title="Hold: pressed while the pointer or Space is down"
+          aria-label={tr('controls.holdOf', { name })}
+          title={tr('controls.holdHint')}
           disabled={disabled}
           onPointerDown={(e) => {
             if (e.button !== 0) return;
@@ -68,9 +69,9 @@ function ControlRow({ entry, disabled }: { entry: InputEntry; disabled: boolean 
             if (on) void set(false);
           }}
         >
-          Hold
+          {tr('controls.hold')}
         </Button>
-        <Toggle label={`Toggle ${name}`} hideLabel checked={on} disabled={disabled} onCheckedChange={(v) => void set(v)} />
+        <Toggle label={tr('controls.toggleOf', { name })} hideLabel checked={on} disabled={disabled} onCheckedChange={(v) => void set(v)} />
       </div>
     );
   } else if (entry.type === 'number') {
@@ -97,13 +98,16 @@ function ControlRow({ entry, disabled }: { entry: InputEntry; disabled: boolean 
         className="es-row"
         onSubmit={(e) => {
           e.preventDefault();
-          void inputActions.serial(entry.target, text + '\n').catch(fail);
+          // a terminal's text is a line typed into it; any other string
+          // input (a terminal's hex bytes, a part's text) is set as written
+          if (entry.input === 'tx_text' || entry.input === 'tx') void inputActions.serial(entry.target, text + '\n').catch(fail);
+          else void set(text);
           setText('');
         }}
       >
-        <Input aria-label={`Text for ${name}`} value={text} onChange={(e) => setText(e.target.value)} mono disabled={disabled} />
+        <Input aria-label={tr('controls.textFor', { name })} value={text} onChange={(e) => setText(e.target.value)} mono disabled={disabled} />
         <Button size="sm" type="submit" disabled={disabled || !text}>
-          Send
+          {tr('controls.send')}
         </Button>
       </form>
     );
@@ -115,16 +119,16 @@ function ControlRow({ entry, disabled }: { entry: InputEntry; disabled: boolean 
         <div className="wb-control__type">
           {entry.type}
           {entry.world && (
-            <span title={entry.source === 'world' ? 'Read from the room (the World panel); moving it sets this part alone' : 'Set on this part: it no longer follows the room'}>
+            <span title={entry.source === 'world' ? tr('controls.fromWorld.hint') : tr('controls.setHere.hint')}>
               {' · '}
-              {entry.source === 'world' ? `from the world's ${entry.world}` : 'set here'}
+              {entry.source === 'world' ? tr('controls.fromWorld', { field: entry.world ?? '' }) : tr('controls.setHere')}
             </span>
           )}
           {entry.type === 'boolean' && (
             <>
               {' · '}
               <span className="wb-control__state" aria-live="polite">
-                {entry.value ? 'pressed' : 'released'}
+                {entry.value ? tr('controls.pressed') : tr('controls.released')}
               </span>
             </>
           )}

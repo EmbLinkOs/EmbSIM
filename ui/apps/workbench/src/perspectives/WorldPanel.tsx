@@ -18,6 +18,7 @@ import { getClient } from '../connection';
 import { errorMessage } from '../actions';
 import { useProject } from '../stores/project';
 import { useSession } from '../stores/session';
+import { t as tr } from '../i18n';
 
 const FORMAT: Record<WorldField, (v: number) => string> = {
   temperature: (v) => `${v.toFixed(1)} °C`,
@@ -38,7 +39,7 @@ const DEFAULT_SUN: WorldSun = { latitude_deg: 45, date: '06-21', solar_time_h: 1
 /** what the bench sees of the sun: its place in the sky, and whether it shines on the table */
 export function describeSun(sun: WorldSun, room: WorldRoom | undefined): string {
   const pos = solarPosition(sun.latitude_deg ?? 45, dayOfYear(sun.date), sun.solar_time_h ?? 12);
-  if (pos.elevation <= 0) return 'Night: the ceiling lamp lights the bench';
+  if (pos.elevation <= 0) return tr('world.night');
   const size = room?.size_mm ? { width: room.size_mm[0], depth: room.size_mm[1], height: room.size_mm[2] } : ROOM;
   const onBench = sunlit(sunDirection(pos, room?.window_azimuth_deg ?? 180), [0, 0, 0], windowOpening(size));
   return `Sun ${pos.elevation.toFixed(0)}° up in the ${compass(pos.azimuth)}: ${onBench ? 'shining on the bench through the window' : 'daylight from the window, no direct sun on the bench'}`;
@@ -91,7 +92,7 @@ export function WorldPanel() {
     return out;
   }, [project, catalog]);
 
-  if (!project) return <EmptyState icon={<Globe2 />} title="No project">Open a project to set its room.</EmptyState>;
+  if (!project) return <EmptyState icon={<Globe2 />} title={tr('world.noProject')}>{tr('world.openProject')}</EmptyState>;
   const fields = project.world?.fields ?? {};
   const bodies = project.world?.bodies ?? [];
 
@@ -146,10 +147,10 @@ export function WorldPanel() {
   };
 
   return (
-    <div className="wb-world" aria-label="The world">
+    <div className="wb-world" aria-label={tr('world.region')}>
       <section>
-        <h3>The room</h3>
-        <p className="wb-world__hint">A field you set is what every sensor bound to it reads, unless you set the sensor itself. Left unset, each part keeps its own value.</p>
+        <h3>{tr('world.room')}</h3>
+        <p className="wb-world__hint">{tr('world.fieldHelp')}</p>
         {WORLD_FIELDS.map((f) => {
           const declared = fields[f.name] !== undefined;
           const value = draft[f.name] ?? fields[f.name] ?? f.value;
@@ -185,11 +186,11 @@ export function WorldPanel() {
           );
         })}
       </section>
-      <section aria-label="Room and daylight">
-        <h3>Room and daylight</h3>
-        <p className="wb-world__hint">How the 3D bench draws the room and lights it. The light sensors read the Light field above, not the sun.</p>
+      <section aria-label={tr('world.roomDaylight')}>
+        <h3>{tr('world.roomDaylight')}</h3>
+        <p className="wb-world__hint">{tr('world.roomHelp')}</p>
         <div className="wb-world__body">
-          <span className="wb-world__id">Size</span>
+          <span className="wb-world__id">{tr('world.size')}</span>
           {(['width', 'depth', 'height'] as const).map((axis, k) => (
             <label key={axis} className="wb-world__coord">
               {axis[0]}
@@ -214,19 +215,19 @@ export function WorldPanel() {
           <span className="wb-world__value">m</span>
         </div>
         <div className="wb-world__field">
-          <span>Window looks</span>
-          <select aria-label="The window looks" value={Math.round((room?.window_azimuth_deg ?? 180) / 45) * 45 % 360} disabled={!editable} onChange={(e) => setRoom('Window direction', { ...room, window_azimuth_deg: Number(e.target.value) })}>
+          <span>{tr('world.windowLooks')}</span>
+          <select aria-label={tr('world.windowAria')} value={Math.round((room?.window_azimuth_deg ?? 180) / 45) * 45 % 360} disabled={!editable} onChange={(e) => setRoom('Window direction', { ...room, window_azimuth_deg: Number(e.target.value) })}>
             {FACINGS.map(([az, name]) => <option key={az} value={az}>{name}</option>)}
           </select>
         </div>
         <div className="wb-world__field">
           <label className="wb-world__set">
-            <input type="checkbox" checked={Boolean(sun)} disabled={!editable} onChange={(e) => setSun(e.target.checked ? 'Sun by the time of day' : 'Lamp light', e.target.checked ? sunNow : undefined)} />
-            <span>Sun</span>
+            <input type="checkbox" checked={Boolean(sun)} disabled={!editable} onChange={(e) => setSun(e.target.checked ? tr('world.sunByTime') : tr('world.lamp'), e.target.checked ? sunNow : undefined)} />
+            <span>{tr('world.sun')}</span>
           </label>
           <input
             type="range"
-            aria-label="Time of day, local solar time"
+            aria-label={tr('world.timeOfDay')}
             min={0}
             max={24}
             step={0.25}
@@ -242,18 +243,18 @@ export function WorldPanel() {
           <div className="wb-world__body">
             <label className="wb-world__coord">
               lat
-              <input type="number" aria-label="Latitude, degrees" step={0.5} min={-90} max={90} value={sunNow.latitude_deg} disabled={!editable} onChange={(e) => { const v = Number(e.target.value); if (Number.isFinite(v) && Math.abs(v) <= 90) setSun('Latitude', { ...sunNow, latitude_deg: v }); }} />
+              <input type="number" aria-label={tr('world.latitude')} step={0.5} min={-90} max={90} value={sunNow.latitude_deg} disabled={!editable} onChange={(e) => { const v = Number(e.target.value); if (Number.isFinite(v) && Math.abs(v) <= 90) setSun('Latitude', { ...sunNow, latitude_deg: v }); }} />
             </label>
             <label className="wb-world__coord">
               date
-              <input type="text" aria-label="Date, MM-DD" pattern="(0[1-9]|1[0-2])-(0[1-9]|[12][0-9]|3[01])" size={5} defaultValue={sunNow.date} key={sunNow.date} disabled={!editable} onBlur={(e) => { if (/^(0[1-9]|1[0-2])-(0[1-9]|[12][0-9]|3[01])$/.test(e.target.value)) setSun('Date', { ...sunNow, date: e.target.value }); }} />
+              <input type="text" aria-label={tr('world.date')} pattern="(0[1-9]|1[0-2])-(0[1-9]|[12][0-9]|3[01])" size={5} defaultValue={sunNow.date} key={sunNow.date} disabled={!editable} onBlur={(e) => { if (/^(0[1-9]|1[0-2])-(0[1-9]|[12][0-9]|3[01])$/.test(e.target.value)) setSun('Date', { ...sunNow, date: e.target.value }); }} />
             </label>
           </div>
         )}
         {sun && <p className="wb-world__hint" data-testid="sun-report">{describeSun(sunNow, room)}</p>}
       </section>
       <section>
-        <h3>On the bench</h3>
+        <h3>{tr('world.onBench')}</h3>
         <p className="wb-world__hint">
           Objects distance sensors see{readers.distance ? ` (${readers.distance.join(', ')})` : ''}. Drag them on the Bench, or set where they are, in mm from the bench's centre: x right, y towards you, z up. A speed (v) moves a body towards you (negative: away) in virtual time; a travel (↔) sends it back and forth.
         </p>
@@ -279,7 +280,7 @@ export function WorldPanel() {
                 />
               </label>
             ))}
-            <label className="wb-world__coord" title="Speed towards you (y), mm/s: the body moves in virtual time; sensors see it where it is">
+            <label className="wb-world__coord" title={tr('world.speedHint')}>
               v
               <input
                 type="number"
@@ -300,7 +301,7 @@ export function WorldPanel() {
                 }}
               />
             </label>
-            <label className="wb-world__coord" title="Warmer than the room (a person, an animal): a PIR sensor sees it when it moves">
+            <label className="wb-world__coord" title={tr('world.warmHint')}>
               <input
                 type="checkbox"
                 aria-label={`${b.name ?? b.id} is warm`}
@@ -316,7 +317,7 @@ export function WorldPanel() {
               />
               warm
             </label>
-            <label className="wb-world__coord" title="Let go: it falls under gravity (thrown at its speed), bounces off the table or the floor and comes to rest">
+            <label className="wb-world__coord" title={tr('world.dropHint')}>
               <input
                 type="checkbox"
                 aria-label={`${b.name ?? b.id} falls`}
@@ -341,7 +342,7 @@ export function WorldPanel() {
               />
               falls
             </label>
-            <label className="wb-world__coord" title="Walks round the table at 1.2 m/s, a person's pace (a path of waypoints, looped)">
+            <label className="wb-world__coord" title={tr('world.walkHint')}>
               <input
                 type="checkbox"
                 aria-label={`${b.name ?? b.id} walks round the table`}
@@ -369,7 +370,7 @@ export function WorldPanel() {
               />
               round
             </label>
-            <label className="wb-world__coord" title="Back and forth over this distance, mm (0: straight on)">
+            <label className="wb-world__coord" title={tr('world.swingHint')}>
               ↔
               <input
                 type="number"

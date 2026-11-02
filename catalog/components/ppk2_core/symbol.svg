@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 80 40" width="80" height="40" data-grid="10">
+  <style>.s{stroke:var(--symbol-stroke,#cdd6e4);fill:none;stroke-width:1.5;stroke-linecap:round;stroke-linejoin:round}.f{stroke:var(--symbol-stroke,#cdd6e4);fill:var(--symbol-fill,#1b2230);stroke-width:1.5;stroke-linejoin:round}.t{fill:var(--symbol-stroke,#cdd6e4);font-family:sans-serif;font-size:7px}</style>
+  <path class="s" d="M0 10 H14 M66 10 H80 M40 32 V40"/>
+  <rect class="f" x="14" y="2" width="52" height="30" rx="3"/>
+  <text class="t" x="40" y="14" text-anchor="middle">PPK2</text><text class="t" x="40" y="24" text-anchor="middle">core</text>
+</svg>

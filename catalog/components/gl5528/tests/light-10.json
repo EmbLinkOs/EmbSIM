@@ -3,7 +3,7 @@
   "kind": "component_test",
   "name": "light-10",
   "policy": "electrical",
-  "until": "1ms",
+  "until": "6ms",
   "circuit": {
     "components": [
       {
@@ -22,7 +22,10 @@
       },
       {
         "id": "DUT",
-        "component": "emblink/gl5528"
+        "component": "emblink/gl5528",
+        "params": {
+          "tolerance": 0
+        }
       },
       {
         "id": "G",
@@ -47,7 +50,7 @@
   },
   "expect": {
     "net:SENSE": {
-      "at": "500us",
+      "at": "5ms",
       "min_v": 2.497,
       "max_v": 2.503
     }

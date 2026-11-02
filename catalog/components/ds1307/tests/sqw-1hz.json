@@ -2,7 +2,7 @@
   "schema_version": 1,
   "kind": "component_test",
   "name": "sqw-1hz",
-  "description": "Control register 0x10 over I2C: SQW runs at 1 Hz.",
+  "description": "Control register 0x10 over I2C on a clock its battery kept running (CH clear): SQW runs at 1 Hz. (A new part, CH set, gives no square wave until the oscillator is started.)",
   "policy": "functional",
   "until": "4.2s",
   "circuit": {
@@ -31,7 +31,10 @@
       },
       {
         "id": "DUT",
-        "component": "emblink/ds1307"
+        "component": "emblink/ds1307",
+        "params": {
+          "start": "2026-10-16 12:00:00"
+        }
       }
     ],
     "nets": {

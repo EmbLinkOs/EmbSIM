@@ -1,0 +1,51 @@
+{
+  "schema_version": 1,
+  "kind": "component_test",
+  "name": "stops",
+  "description": "A passive buzzer fed ten periods of 1 kHz, then nothing: still 1 kHz 1.5 ms after the last rising edge (9 ms), silent 2 ms (two periods) after it, not 50 ms later.",
+  "policy": "functional",
+  "until": "20ms",
+  "circuit": {
+    "components": [
+      {
+        "id": "PG",
+        "component": "emblink/pattern_generator",
+        "params": {
+          "waveform": "1@500us,0@500us,1@500us,0@500us,1@500us,0@500us,1@500us,0@500us,1@500us,0@500us,1@500us,0@500us,1@500us,0@500us,1@500us,0@500us,1@500us,0@500us,1@500us,0@500us,0@50ms"
+        }
+      },
+      {
+        "id": "L",
+        "component": "emblink/logic_level",
+        "params": {
+          "level": 0
+        }
+      },
+      {
+        "id": "DUT",
+        "component": "emblink/buzzer"
+      }
+    ],
+    "nets": {
+      "SIG": [
+        "PG.OUT0",
+        "DUT.+"
+      ],
+      "LO": [
+        "L.OUT",
+        "DUT.-"
+      ]
+    }
+  },
+  "expect": {
+    "output:DUT.tone_hz": {
+      "at": "10.5ms",
+      "min": 999,
+      "max": 1001
+    },
+    "output:DUT.sounding": {
+      "at": "11.2ms",
+      "equals": false
+    }
+  }
+}

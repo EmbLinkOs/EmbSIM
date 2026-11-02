@@ -16,6 +16,7 @@ import { platform } from '../../platform/platform';
 import { useProject } from '../../stores/project';
 import { useSession } from '../../stores/session';
 import { useVerify, type RecordingEntry } from '../../stores/verify';
+import { t as tr } from '../../i18n';
 
 export function RecordingsPanel() {
   const capabilities = useSession((s) => s.capabilities);
@@ -29,7 +30,7 @@ export function RecordingsPanel() {
       await getClient().record.start({});
       setRecording(true);
     } catch (e) {
-      toast({ kind: 'error', title: 'Recording could not start', description: errorMessage(e) });
+      toast({ kind: 'error', title: tr('rec.cannotStart'), description: errorMessage(e) });
     }
   };
   const stop = async () => {
@@ -37,27 +38,26 @@ export function RecordingsPanel() {
       const r = await getClient().record.stop({});
       setRecording(false);
       if (r.recording) useVerify.getState().addRecording(r.recording);
-      else toast({ kind: 'success', title: 'Recorded', description: r.path });
+      else toast({ kind: 'success', title: tr('rec.recorded'), description: r.path });
     } catch (e) {
-      toast({ kind: 'error', title: 'Recording could not stop', description: errorMessage(e) });
+      toast({ kind: 'error', title: tr('rec.cannotStop'), description: errorMessage(e) });
     }
   };
   return (
-    <div className="wb-verify__pane" role="region" aria-label="Recordings">
+    <div className="wb-verify__pane" role="region" aria-label={tr('verify.recordings')}>
       <div className="es-row">
-        <span className="wb-placeholder__title">Recordings</span>
-        {!can && <Badge tone="warning">not available</Badge>}
-        {recording && <Badge tone="danger">recording</Badge>}
+        {!can && <Badge tone="warning">{tr('ph.notAvailable')}</Badge>}
+        {recording && <Badge tone="danger">{tr('verify.recording')}</Badge>}
       </div>
       <div className="es-muted">
-        Records the session's inputs and what the run observes (interrupts, probe edges, serial text, diagnostics) from now on. A recording replays identically: a divergence shows both observations.
+        {tr('rec.intro')}
       </div>
       <div className="es-row">
         <Button size="sm" icon={<Disc />} variant={recording ? 'danger' : 'default'} disabled={!can || recording} onClick={() => void start()}>
-          Record
+          {tr('rec.record')}
         </Button>
         <Button size="sm" icon={<Square />} disabled={!can || !recording} onClick={() => void stop()}>
-          Stop
+          {tr('common.stop')}
         </Button>
       </div>
       {recordings.length > 0 && (
@@ -85,11 +85,11 @@ function RecordingRow({ entry }: { entry: RecordingEntry }) {
       await primeStores(c); // the replay reloaded the project and ran it
       toast(
         r.ok
-          ? { kind: 'success', title: 'Replayed identically', description: `${r.compared ?? rec.observations.length} observations matched` }
-          : { kind: 'error', title: r.divergence ? `Diverged at observation ${r.divergence.index + 1}` : 'The project changed since the recording', description: r.drift?.map((d) => d.what).join(', ') },
+          ? { kind: 'success', title: tr('rec.identical'), description: `${r.compared ?? rec.observations.length} observations matched` }
+          : { kind: 'error', title: r.divergence ? `Diverged at observation ${r.divergence.index + 1}` : tr('rec.changed'), description: r.drift?.map((d) => d.what).join(', ') },
       );
     } catch (e) {
-      toast({ kind: 'error', title: 'Replay failed', description: errorMessage(e) });
+      toast({ kind: 'error', title: tr('rec.replayFailed'), description: errorMessage(e) });
     } finally {
       setBusy(null);
     }
@@ -100,9 +100,9 @@ function RecordingRow({ entry }: { entry: RecordingEntry }) {
       const name = `${useProject.getState().project?.name ?? 'session'}-recorded`;
       const r = await getClient().record.to_scenario({ recording: rec, name });
       useVerify.getState().openDraft(null, r.scenario);
-      toast({ kind: 'success', title: 'A scenario from the recording', description: `${r.scenario.inputs.length} inputs, ${r.scenario.assertions.length} assertions, open in the scenario editor` });
+      toast({ kind: 'success', title: tr('rec.scenarioFrom'), description: `${r.scenario.inputs.length} inputs, ${r.scenario.assertions.length} assertions, open in the scenario editor` });
     } catch (e) {
-      toast({ kind: 'error', title: 'Cannot make a scenario', description: errorMessage(e) });
+      toast({ kind: 'error', title: tr('rec.cannotScenario'), description: errorMessage(e) });
     } finally {
       setBusy(null);
     }
@@ -127,19 +127,19 @@ function RecordingRow({ entry }: { entry: RecordingEntry }) {
           {busy === 'replay' ? 'Replaying…' : 'Replay'}
         </Button>
         <Button size="sm" icon={<FileInput />} disabled={busy !== null} onClick={() => void toScenario()}>
-          To scenario
+          {tr('rec.toScenario')}
         </Button>
         <Button size="sm" variant="ghost" icon={<Download />} onClick={() => void save()}>
-          Save
+          {tr('common.save')}
         </Button>
       </div>
       {entry.replay?.divergence && (
         <div className="wb-verify__divergence">
           <div>
-            <span className="es-caps">expected</span> <code>{JSON.stringify(entry.replay.divergence.expected)}</code>
+            <span className="es-caps">{tr('verify.expected')}</span> <code>{JSON.stringify(entry.replay.divergence.expected)}</code>
           </div>
           <div>
-            <span className="es-caps">observed</span> <code>{JSON.stringify(entry.replay.divergence.observed)}</code>
+            <span className="es-caps">{tr('verify.observed')}</span> <code>{JSON.stringify(entry.replay.divergence.observed)}</code>
           </div>
         </div>
       )}

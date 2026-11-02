@@ -2,6 +2,7 @@
 // Copyright 2026 Junior Deogracias
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import type { CanvasContext } from '@embsim/scene';
+import { t as tr } from '../../i18n';
 
 export interface ContextAction { label: string; shortcut?: string; disabled?: boolean; danger?: boolean; run(): void }
 
@@ -28,14 +29,14 @@ export function SchematicContextMenu({ context, actions, onClose }: { context: C
       if (previous?.isConnected) previous.focus({ preventScroll: true });
     };
   }, [onClose]);
-  return <div ref={ref} className="wb-schematic-context" role="menu" aria-label="Schematic actions" style={{ left: position.x, top: position.y }} onKeyDown={(e) => {
+  return <div ref={ref} className="wb-schematic-context" role="menu" aria-label={tr('ctx.region')} style={{ left: position.x, top: position.y }} onKeyDown={(e) => {
     if (e.key === 'Escape' || e.key === 'Tab') { e.preventDefault(); onClose(); return; }
     const buttons = [...ref.current!.querySelectorAll<HTMLButtonElement>('button:not(:disabled)')];
     const current = buttons.indexOf(document.activeElement as HTMLButtonElement);
     const next = e.key === 'ArrowDown' ? (current + 1) % buttons.length : e.key === 'ArrowUp' ? (current - 1 + buttons.length) % buttons.length : e.key === 'Home' ? 0 : e.key === 'End' ? buttons.length - 1 : -1;
     if (next >= 0) { e.preventDefault(); buttons[next]?.focus(); }
   }}>
-    <div className="wb-schematic-context__heading">{context.selection.components.length ? `${context.selection.components.length} selected` : context.net ? `Net ${context.net}` : 'Sheet actions'}</div>
+    <div className="wb-schematic-context__heading">{context.selection.components.length ? `${context.selection.components.length} selected` : context.net ? `Net ${context.net}` : tr('ctx.sheet')}</div>
     {actions.map((action) => <button key={action.label} type="button" role="menuitem" aria-label={action.label} disabled={action.disabled} className={action.danger ? 'is-danger' : undefined} onClick={() => { onClose(); action.run(); }}><span>{action.label}</span>{action.shortcut && <kbd>{action.shortcut}</kbd>}</button>)}
   </div>;
 }

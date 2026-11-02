@@ -34,7 +34,16 @@
       "default": "100n",
       "doc": "Capacitance",
       "min": "1f",
-      "max": "10"
+      "max": "10",
+      "spread": "tolerance"
+    },
+    "tolerance": {
+      "type": "number",
+      "unit": "%",
+      "default": 10,
+      "min": 0,
+      "max": 50,
+      "doc": "Tolerance: each part's capacitance lies within this band of the nominal, drawn from the project's seed (ADR-034). 10 % is IEC 60062's code K, the usual grade of X7R ceramic capacitors; 0 for an exact part."
     },
     "esr": {
       "type": "number",
@@ -51,14 +60,14 @@
       "doc": "Initial voltage at t=0 (pin 1 relative to pin 2)",
       "advanced": true
     }
-  },  "functional": {
+  },
+  "functional": {
     "composite": {
       "components": [],
       "nets": {},
       "ports": {}
     }
   },
-
   "model": {
     "primitive": "capacitor",
     "bind": {
@@ -99,12 +108,13 @@
       "omissions": []
     },
     "electrical": {
-      "claims": "Linear capacitance with ESR and initial condition, trapezoidal/BDF2 companion (SPEC-004 §7 capacitor).",
+      "claims": "Linear capacitance with ESR and initial condition, trapezoidal/BDF2 companion (SPEC-004 §7 capacitor); each instance's capacitance drawn uniformly inside ±tolerance of the nominal from the project's seed and its id (ADR-034; nominal with settings.imperfections \"ideal\").",
       "omissions": [
         "dielectric absorption",
         "leakage",
         "ESL",
-        "voltage coefficient"
+        "voltage coefficient",
+        "the distribution inside the tolerance band (uniform: a manufacturer guarantees the band only)"
       ],
       "range": {
         "voltage_v": [

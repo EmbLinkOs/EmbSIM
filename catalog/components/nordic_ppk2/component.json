@@ -1,0 +1,335 @@
+{
+  "schema_version": 1,
+  "kind": "component",
+  "id": "emblink/nordic_ppk2",
+  "version": "0.1.0",
+  "name": "Power profiler (Nordic Power Profiler Kit II)",
+  "category": "instruments",
+  "description": "Nordic's Power Profiler Kit II, which follows a board's current as it runs: as a source meter it powers the board (0.8 to 5.0 V, at most 600 mA), as an ampere meter it sits in series with the board's own supply (up to 1 A). It samples the current at 100 kS/s from 200 nA to 1 A, switching between its five ranges by itself, with D0 to D7 of its logic port sampled alongside; the workbench shows it as Nordic's Power Profiler app does.",
+  "keywords": [
+    "ppk2",
+    "power profiler",
+    "nordic",
+    "current",
+    "power consumption",
+    "energy",
+    "ampere meter",
+    "source meter",
+    "low power",
+    "sleep current"
+  ],
+  "pins": [
+    {
+      "name": "VIN",
+      "number": 1,
+      "model": {
+        "kind": "passive"
+      },
+      "required": false,
+      "doc": "Ampere meter mode: the board's own supply in (the PPK2's VIN)"
+    },
+    {
+      "name": "VOUT",
+      "number": 2,
+      "model": {
+        "kind": "passive"
+      },
+      "doc": "To the board's supply (the PPK2's VOUT)"
+    },
+    {
+      "name": "GND",
+      "number": 3,
+      "model": {
+        "kind": "passive"
+      },
+      "doc": "Ground, to the board's ground (also in ampere meter mode)"
+    },
+    {
+      "name": "D0",
+      "number": 4,
+      "model": {
+        "kind": "passive"
+      },
+      "required": false,
+      "doc": "Logic port D0"
+    },
+    {
+      "name": "D1",
+      "number": 5,
+      "model": {
+        "kind": "passive"
+      },
+      "required": false,
+      "doc": "Logic port D1"
+    },
+    {
+      "name": "D2",
+      "number": 6,
+      "model": {
+        "kind": "passive"
+      },
+      "required": false,
+      "doc": "Logic port D2"
+    },
+    {
+      "name": "D3",
+      "number": 7,
+      "model": {
+        "kind": "passive"
+      },
+      "required": false,
+      "doc": "Logic port D3"
+    },
+    {
+      "name": "D4",
+      "number": 8,
+      "model": {
+        "kind": "passive"
+      },
+      "required": false,
+      "doc": "Logic port D4"
+    },
+    {
+      "name": "D5",
+      "number": 9,
+      "model": {
+        "kind": "passive"
+      },
+      "required": false,
+      "doc": "Logic port D5"
+    },
+    {
+      "name": "D6",
+      "number": 10,
+      "model": {
+        "kind": "passive"
+      },
+      "required": false,
+      "doc": "Logic port D6"
+    },
+    {
+      "name": "D7",
+      "number": 11,
+      "model": {
+        "kind": "passive"
+      },
+      "required": false,
+      "doc": "Logic port D7"
+    },
+    {
+      "name": "VCC",
+      "number": 12,
+      "model": {
+        "kind": "passive"
+      },
+      "required": false,
+      "doc": "Logic port VCC: the board's logic supply (1.65 to 5.5 V)"
+    }
+  ],
+  "params": {
+    "mode": {
+      "type": "enum",
+      "enum": [
+        "source",
+        "ampere"
+      ],
+      "default": "source",
+      "doc": "Source meter (it powers the board from VOUT) or ampere meter (in series, VIN to VOUT)"
+    },
+    "voltage": {
+      "type": "number",
+      "unit": "V",
+      "default": 3.3,
+      "min": 0.8,
+      "max": 5.0,
+      "doc": "Source meter mode: the voltage at VOUT"
+    },
+    "r_out": {
+      "type": "number",
+      "unit": "ohm",
+      "default": 0.05,
+      "min": 0.001,
+      "max": 10,
+      "doc": "Source meter mode: the output's resistance below its current limit (an assumption)"
+    },
+    "r_series": {
+      "type": "number",
+      "unit": "ohm",
+      "default": 0.05,
+      "min": 0.001,
+      "max": 10,
+      "doc": "Ampere meter mode: the resistance in series, VIN to VOUT (not published: an assumption)"
+    },
+    "logic_vil": {
+      "type": "number",
+      "unit": "V",
+      "default": 0.99,
+      "min": 0,
+      "max": 5.5,
+      "doc": "Logic port: low below this (an assumption: 0.3 of a 3.3 V VCC)"
+    },
+    "logic_vih": {
+      "type": "number",
+      "unit": "V",
+      "default": 2.31,
+      "min": 0,
+      "max": 5.5,
+      "doc": "Logic port: high above this (an assumption: 0.7 of a 3.3 V VCC)"
+    }
+  },
+  "outputs": [],
+  "model": {
+    "composite": {
+      "components": [
+        {
+          "id": "METER",
+          "component": "emblink/ppk2_core",
+          "params": {
+            "mode": "$mode",
+            "voltage": "$voltage",
+            "r_out": "$r_out",
+            "r_series": "$r_series"
+          }
+        },
+        {
+          "id": "LOGIC",
+          "component": "emblink/ppk2_logic_port",
+          "params": {
+            "vil": "$logic_vil",
+            "vih": "$logic_vih"
+          }
+        }
+      ],
+      "nets": {
+        "GND": [
+          "METER.GND",
+          "LOGIC.GND"
+        ]
+      },
+      "ports": {
+        "VIN": "METER.VIN",
+        "VOUT": "METER.VOUT",
+        "GND": "METER.GND",
+        "D0": "LOGIC.D0",
+        "D1": "LOGIC.D1",
+        "D2": "LOGIC.D2",
+        "D3": "LOGIC.D3",
+        "D4": "LOGIC.D4",
+        "D5": "LOGIC.D5",
+        "D6": "LOGIC.D6",
+        "D7": "LOGIC.D7",
+        "VCC": "LOGIC.VCC"
+      }
+    }
+  },
+  "symbol": {
+    "svg": "symbol.svg",
+    "width": 100,
+    "height": 120,
+    "pins": {
+      "VIN": {
+        "x": 0,
+        "y": 10,
+        "side": "left"
+      },
+      "VOUT": {
+        "x": 100,
+        "y": 10,
+        "side": "right"
+      },
+      "GND": {
+        "x": 50,
+        "y": 120,
+        "side": "bottom"
+      },
+      "D0": {
+        "x": 0,
+        "y": 30,
+        "side": "left"
+      },
+      "D1": {
+        "x": 0,
+        "y": 40,
+        "side": "left"
+      },
+      "D2": {
+        "x": 0,
+        "y": 50,
+        "side": "left"
+      },
+      "D3": {
+        "x": 0,
+        "y": 60,
+        "side": "left"
+      },
+      "D4": {
+        "x": 0,
+        "y": 70,
+        "side": "left"
+      },
+      "D5": {
+        "x": 0,
+        "y": 80,
+        "side": "left"
+      },
+      "D6": {
+        "x": 0,
+        "y": 90,
+        "side": "left"
+      },
+      "D7": {
+        "x": 0,
+        "y": 100,
+        "side": "left"
+      },
+      "VCC": {
+        "x": 100,
+        "y": 30,
+        "side": "right"
+      }
+    }
+  },
+  "fidelity": {
+    "functional": null,
+    "timed": {
+      "claims": "As electrical.",
+      "omissions": [
+        "the measurement resistors' values and the voltage they drop (not published: r_series is an assumption)",
+        "the accuracy as an error (+-10 %, +-15 % in the top range): readings are exact to their resolution",
+        "the transients when the range switches",
+        "sinking current in source meter mode",
+        "the inputs' thresholds and impedance (not published: VIL and VIH are assumptions, 0.3 and 0.7 of a 3.3 V VCC by default)",
+        "the 50 kHz bandwidth as a filter: a pulse shorter than a sample may still be seen if a sample falls in it"
+      ]
+    },
+    "electrical": {
+      "claims": "Its measurement core (emblink/ppk2_core) and logic port (emblink/ppk2_logic_port): a source meter or ampere meter sampling the current into the board at 100 kS/s at its range's resolution, D0 to D7 at 100 kHz.",
+      "omissions": [
+        "the measurement resistors' values and the voltage they drop (not published: r_series is an assumption)",
+        "the accuracy as an error (+-10 %, +-15 % in the top range): readings are exact to their resolution",
+        "the transients when the range switches",
+        "sinking current in source meter mode",
+        "the inputs' thresholds and impedance (not published: VIL and VIH are assumptions, 0.3 and 0.7 of a 3.3 V VCC by default)",
+        "the 50 kHz bandwidth as a filter: a pulse shorter than a sample may still be seen if a sample falls in it"
+      ],
+      "validation": [
+        "tests/*.json"
+      ]
+    }
+  },
+  "provenance": {
+    "author": "EmbSIM",
+    "license": "Apache-2.0",
+    "sources": [
+      {
+        "title": "Nordic Semiconductor, Power Profiler Kit II User Guide v1.0.1 (4461_012), section 8: source meter 0.8-5.0 V at most 600 mA; ampere meter 1 A continuous; resolution 200 nA-50 uA 0.2 uA, 50-500 uA 0.5 uA, 0.5-5 mA 5 uA, 5-50 mA 50 uA, 50-1000 mA 1000 uA; accuracy +-10 % (+-15 % in the top range); 100 kS/s; logic port D0-D7 with VCC 1.65-5.5 V, sampled at 100 kHz; it cannot measure negative currents",
+        "url": "https://docs.nordicsemi.com/bundle/ug_ppk2/page/UG/ppk/PPK_user_guide_Intro.html",
+        "date": "2026-10-31",
+        "notes": "Read from the guide's PDF (DigiKey's copy, mm.digikey.com, the 2025-05-05 printing)."
+      }
+    ]
+  },
+  "tests": [
+    "tests/*.json"
+  ]
+}

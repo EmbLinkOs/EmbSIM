@@ -3,11 +3,12 @@
 import { formatTime } from '@embsim/protocol';
 import { useSchematicDisplay } from '../../stores/schematicDisplay';
 import { useSession } from '../../stores/session';
+import { t as tr } from '../../i18n';
 
 export function SchematicDisplayOptions() {
   const exposure = useSchematicDisplay((s) => s.exposure), setExposure = useSchematicDisplay((s) => s.setExposure);
   const gain = useSchematicDisplay((s) => s.gain), setGain = useSchematicDisplay((s) => s.setGain);
   const duration = useSession((s) => s.emission.duration);
   const hasBaseline = useSession((s) => Object.keys(s.emission.totals).length > 0);
-  return <div className="wb-schematic-exposure"><label title="Interval light averages use native accepted-time emission integrals. Instant shows the state at this simulation time. Brightness is illustrative, not calibrated photometry.">Light <select aria-label="Schematic light exposure" value={exposure ? 'average' : 'instant'} onChange={(e) => setExposure(e.target.value === 'average')}><option value="average">Interval average{duration > 0n ? ` · ${formatTime(duration, { padZeros: false })}` : hasBaseline ? ' · waiting' : ' · unavailable'}</option><option value="instant">Instant</option></select></label><select aria-label="Schematic display gain" title="Illustrative light display gain. This changes appearance only; electrical currents and recorded measurements are unchanged." value={gain} onChange={(e) => setGain(Number(e.target.value))}>{[1,4,16].map((g) => <option value={g} key={g}>{g}× light</option>)}</select></div>;
+  return <div className="wb-schematic-exposure"><label title={tr('light.hint')}>{tr('light.label')} <select aria-label={tr('light.exposure')} value={exposure ? 'average' : 'instant'} onChange={(e) => setExposure(e.target.value === 'average')}><option value="average">{tr('light.average')}{duration > 0n ? ` · ${formatTime(duration, { padZeros: false })}` : hasBaseline ? ` · ${tr('light.waiting')}` : ` · ${tr('light.unavailable')}`}</option><option value="instant">{tr('light.instant')}</option></select></label><select aria-label={tr('light.gain')} title={tr('light.gain.hint')} value={gain} onChange={(e) => setGain(Number(e.target.value))}>{[1,4,16].map((g) => <option value={g} key={g}>{tr('light.gainOption', { g })}</option>)}</select></div>;
 }

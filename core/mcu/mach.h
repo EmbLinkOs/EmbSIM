@@ -187,6 +187,11 @@ es_status esk_bus_remap_mirror(struct esk_bus *b, u32 base, u32 target, u32 size
  * takes its bus fault, as when nothing answers */
 ES_INLINE void esk_bus_fault(struct esk_bus *b) { b->dev_fault = 1; }
 /* The core's accesses: 0, or -1 with fail_addr when nothing answers. */
+/* the access kinds access_denied is asked about */
+#define ESK_ACCESS_FETCH 0
+#define ESK_ACCESS_LOAD 1
+#define ESK_ACCESS_STORE 2
+
 int esk_bus_read(struct esk_bus *b, u32 a, int n, u32 *v);
 int esk_bus_write(struct esk_bus *b, u32 a, int n, u32 v);
 /* whether an access of the core's touches a watchpoint (1), recording the
@@ -462,6 +467,12 @@ struct esk_mach {
     int powered_down;
     void (*deep_sleep)(struct esk_mach *m);
     void (*deep_wake)(struct esk_mach *m);
+    /* the chip's permission control on the core's own accesses (an
+     * ESP32-C3's SENSITIVE): nonzero blocks the access, which then reads 0
+     * (a fetch 0, an illegal instruction) or writes nothing, without an
+     * exception; the model records it. NULL while nothing is checked */
+    int (*access_denied)(void *ctx, u32 addr, int n, int kind);
+    void *access_ctx;
     /* the program asked for a system reset (AIRCR.SYSRESETREQ) */
     int reset_req;
     /* that reset is the core's alone (an ESP32-C3's CPU reset): the
@@ -526,6 +537,16 @@ struct esk_mach {
      * core interface steps its cores itself, through esk_mach_step_core
      * (smp.c) */
     struct esk_an *an;
+    /* the flash interface's read timing (an STM32F4's wait states and ART
+     * accelerator, flash_f4.c), or 0s: the memory it covers (by its bytes,
+     * so an alias of it counts), the stall of an instruction fetch at
+     * offset `off` at machine cycle `now`, and of a data read */
+    struct {
+        const u8 *mem;
+        u32 (*ifetch)(void *ctx, u32 off, u64 now);
+        u32 (*dread)(void *ctx, u32 off);
+        void *ctx;
+    } ftime;
     int steps_cores;
     /* the ROM's host functions (struct esk_rom_call): 1 when `bkpt #n` at
      * `pc` is one, 0 for an ordinary breakpoint instruction */
@@ -576,6 +597,7 @@ struct esk_an;
 void esk_an_step(struct esk_an *a, int core, struct esk_cpu *cpu);
 void esk_an_exc(struct esk_an *a, int core, int n, u32 ret);
 void esk_an_exc_return(struct esk_an *a, int core);
+void esk_an_pend(struct esk_an *a, int core, int n);
 /* a core enters exception or interrupt n (esk_mach_host.exc), to return to
  * `ret` */
 ES_INLINE void esk_mach_exc(struct esk_mach *m, int core, int n, u32 ret)
@@ -584,6 +606,13 @@ ES_INLINE void esk_mach_exc(struct esk_mach *m, int core, int n, u32 ret)
         m->host.exc(m->host.ctx, core, n);
     if (m->an)
         esk_an_exc(m->an, core, n, ret);
+}
+/* exception or interrupt n of core `core` becomes pending (a measurement's
+ * boundary, latency.c) */
+ES_INLINE void esk_mach_pend(struct esk_mach *m, int core, int n)
+{
+    if (m->an)
+        esk_an_pend(m->an, core, n);
 }
 /* a core returns from an exception (RETFIE, MRET, ERET, RETI, a Cortex-M's
  * EXC_RETURN) */

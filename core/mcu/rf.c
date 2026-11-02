@@ -704,9 +704,17 @@ es_status esk_rf_create(struct esk_mach *m, const esk_json *desc, int rules, cha
 /* ---- lookups ---------------------------------------------------------------- */
 
 /* the index of the first register [a, a + n) touches, or -1 */
-static int reg_at_index(const struct esk_rf *rf, u32 a, int n)
+static int reg_at_index(struct esk_rf *rf, u32 a, int n)
 {
     int lo = 0, hi = rf->nreg; /* the first whose end is past a */
+    if (rf->last_reg < rf->nreg) {
+        /* the same register as last time (a poll), or the next one */
+        int k = rf->last_reg;
+        const struct esk_rf_reg *r = rf->reg[k];
+        if (r->addr <= (u64)a && (u64)a < (u64)r->addr + (u64)r->bytes &&
+            (k == 0 || (u64)rf->reg[k - 1]->addr + (u64)rf->reg[k - 1]->bytes <= a))
+            return k;
+    }
     while (lo < hi) {
         int mid = (lo + hi) / 2;
         const struct esk_rf_reg *r = rf->reg[mid];
@@ -715,8 +723,10 @@ static int reg_at_index(const struct esk_rf *rf, u32 a, int n)
         else
             hi = mid;
     }
-    if (lo < rf->nreg && rf->reg[lo]->addr < (u64)a + (u64)n)
+    if (lo < rf->nreg && rf->reg[lo]->addr < (u64)a + (u64)n) {
+        rf->last_reg = lo;
         return lo;
+    }
     return -1;
 }
 
@@ -738,6 +748,25 @@ struct esk_rf_periph *esk_rf_periph(struct esk_rf *rf, const char *name)
 struct esk_rf_periph *esk_rf_periph_at(struct esk_rf *rf, int i)
 {
     return rf && i >= 0 && i < rf->np ? &rf->p[i] : 0;
+}
+
+void *esk_rf_ctx_of(struct esk_rf *rf, const void *ops)
+{
+    int i;
+    if (!rf)
+        return NULL;
+    for (i = 0; i < rf->nfound; i++)
+        if (rf->found_ops[i] == ops)
+            return rf->found_ctx[i];
+    for (i = 0; i < rf->np; i++)
+        if ((const void *)rf->p[i].ops == ops && rf->p[i].ctx) {
+            if (rf->nfound < (int)(sizeof rf->found_ops / sizeof rf->found_ops[0])) {
+                rf->found_ops[rf->nfound] = ops;
+                rf->found_ctx[rf->nfound++] = rf->p[i].ctx;
+            }
+            return rf->p[i].ctx;
+        }
+    return NULL;
 }
 
 struct esk_rf_reg *esk_rf_reg(struct esk_rf_periph *p, const char *name)

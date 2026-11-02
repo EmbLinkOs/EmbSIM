@@ -42,8 +42,7 @@
  * D+ pull-up.
  * Not yet: the peripherals' signals but the UARTs' (a pin routed to one
  * is not driven), the input filter and synchronisation, sleep mode (the
- * MCU_ pad bits, SLP_SEL), the drive strengths' effect, the sigma-delta
- * outputs, the power-up glitches (table 5.12-2) and the pins' wake-up. */
+ * MCU_ pad bits, SLP_SEL), the drive strengths' effect, the power-up glitches (table 5.12-2) and the pins' wake-up. */
 #include <stdio.h>
 #include <string.h>
 
@@ -90,15 +89,7 @@ static u32 reg(const struct esk_rf_reg *r) { return (u32)r->value; }
 
 static struct c3_gpio *gpio_of(struct esk_mach *m)
 {
-    int i;
-    for (i = 0; m->rf; i++) {
-        struct esk_rf_periph *p = esk_rf_periph_at(m->rf, i);
-        if (!p)
-            break;
-        if (p->ops == &esk_esp32c3_gpio_ops)
-            return (struct c3_gpio *)p->ctx;
-    }
-    return NULL;
+    return (struct c3_gpio *)esk_rf_ctx_of(m->rf, &esk_esp32c3_gpio_ops);
 }
 
 /* the pin's IO MUX function: 1 the matrix (also function 0 of the pins

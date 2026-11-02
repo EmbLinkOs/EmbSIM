@@ -6,6 +6,7 @@
 #include "mcu/analysis.h"
 #include "mcu/mcu.h"
 #include "model/registry.h"
+#include "analog/named.h"
 #include <stdlib.h>
 #include <string.h>
 #include "host/host.h"
@@ -282,6 +283,7 @@ static es_status m_control_run(rpc_ctx *r)
     esk_debug_resume_all(s);
     s->running = 1;
     s->last_host_ms = esk_host_monotonic_ms();
+    s->pace_carry_ps = 0;
     r->result = obj(r);
     if (!r->result) return ES_ENOMEM;
     esk_json_set_bool(s->a, r->result, "running", 1);
@@ -607,7 +609,12 @@ static es_status m_instrument_read(rpc_ctx *r)
     r->result = obj(r);
     if (!r->result)
         return ES_ENOMEM;
-    st = esk_logic_analyzer_read(c, since > 0 ? (uint64_t)since : 0, max > 0 ? (size_t)max : 0, r->result);
+    if (c->adev && c->adev->ops == &esk_oscilloscope_ops)
+        st = esk_oscilloscope_read(c->adev, since > 0 ? (uint64_t)since : 0, r->result);
+    else if (c->adev && c->adev->ops == &esk_power_profiler_ops)
+        st = esk_power_profiler_read(c->adev, since > 0 ? (uint64_t)since : 0, max > 0 ? (size_t)max : 0, r->result);
+    else
+        st = esk_logic_analyzer_read(c, since > 0 ? (uint64_t)since : 0, max > 0 ? (size_t)max : 0, r->result);
     if (st == ES_EINVAL)
         return fail(r, -32602, "this part is not an instrument with a capture");
     return st;

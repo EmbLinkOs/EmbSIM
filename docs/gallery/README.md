@@ -5,6 +5,110 @@ evolves. Newer milestones come first. The milestone sets from M1 on are captured
 `ui/apps/workbench/scripts/screenshots.mjs` (the same views each time:
 `pnpm build`, then `node scripts/screenshots.mjs --out ../../../docs/gallery/<milestone>`).
 
+## M6 delivered: the ESP32-C3's last peripherals (2026-11-02)
+
+ESP-IDF v5.4's own examples, unmodified, on the ESP32-C3-DevKitM-1 in the
+Run perspective (each project from `tests/vendor/esp-idf/examples`, run by
+`embsim serve`).
+
+`twai_self_test`: the TWAI controller's 300 self-test frames on a jumper
+from IO0 to IO2, and `i2s_std`: I2S in duplex through its shared data pin:
+
+| ![twai_self_test: the CAN jumper and the self-test's log](c3-peripherals/twai-self-test.png) | ![i2s_std: the I2S example's log](c3-peripherals/i2s-std.png) |
+|---|---|
+
+`flash_encryption` in Development mode on a new chip: the first boot
+burns a key and encrypts the flash in place; the chip boots again from it
+encrypted and ends with NVS encrypted. `memprot`: the permission control's
+checks, each `OK`:
+
+| ![flash_encryption: the second boot's log](c3-peripherals/flash-encryption.png) | ![memprot: the permission control's checks](c3-peripherals/memprot.png) |
+|---|---|
+
+`controller_hci_uart`: the Bluetooth controller's HCI over UART1 through
+UHCI and the GDMA. HCI_Reset sent from the terminal's `tx_hex` control
+(`01 03 0c 00`) and its Command Complete in the terminal's `rx_hex`
+(`04 0e 04 05 03 0c 00`, after the 0x00 the example's own IO4 setup
+leaves on the line):
+
+![controller_hci_uart: HCI_Reset and its Command Complete](c3-peripherals/hci-uart.png)
+
+## Visual Benchmark v0.1: the redesigned workbench, in English and French (2026-11-01)
+
+The same twelve workflows before and after the redesign, captured by
+`ui/apps/workbench/scripts/benchmark-shots.mjs` against `embsim serve` on
+the real examples (`pnpm build`, then `node scripts/benchmark-shots.mjs
+--out ../../../docs/gallery/visual-benchmark-v0.1/after`, and `--lang fr`
+for French). The full sets are in `visual-benchmark-v0.1/before`, `after`
+and `after-fr`; what changed is in `docs/user/workspace.md` and the
+CHANGELOG.
+
+Design (`examples/uno-breadboard`), before and after:
+
+![Before: Design](visual-benchmark-v0.1/before/02-design-board.png)
+![After: Design](visual-benchmark-v0.1/after/02-design-board.png)
+
+Running firmware on the Blue Pill: the state named in words with its icon,
+simulated time apart from the host's rate:
+
+![Before: Run](visual-benchmark-v0.1/before/04-run-firmware.png)
+![After: Run](visual-benchmark-v0.1/after/04-run-firmware.png)
+
+Debug, paused, in French; the registers read as rows:
+
+![After, French: Debug](visual-benchmark-v0.1/after-fr/06-debug.png)
+
+The engine gone: a screen that says so and offers the way back, instead of
+an empty perspective:
+
+![Before: disconnected](visual-benchmark-v0.1/before/11-disconnected.png)
+![After: disconnected](visual-benchmark-v0.1/after/11-disconnected.png)
+
+The Settings page, in English and in French:
+
+![Settings](visual-benchmark-v0.1/after/12-settings.png)
+![Paramètres](visual-benchmark-v0.1/after-fr/12-settings.png)
+
+## Imperfections on by default (2026-11-01)
+
+`examples/button-bounce`: two push buttons, which now bounce as real ones
+do. SW1 pulls a logic line straight down and chatters through every bounce.
+SW2 discharges C1 through R3, and while the contacts spring open, R2
+recharges C1 too slowly to cross the Schmitt inverter's threshold. So U1's
+output changes once per press. R1 to R3 and C1 are drawn inside their
+tolerances from the project's seed:
+
+![The button-bounce example in the Design perspective](imperfections/1-button-bounce-design.png)
+
+## Front panels docked or floating (2026-10-31)
+
+A DS1054Z placed in the demo session, its front panel opened from the
+inspector and floated: the window stays over the Design perspective while
+the schematic is edited, moved from its title bar or the keyboard, and
+docked back into Run:
+
+![The DS1054Z's front panel floating over the Design perspective](workbench-v0.1/1-floating-front-panel.png)
+
+## An oscilloscope: the Rigol DS1054Z (2026-10-31)
+
+A DS1054Z on an RC network (10 kΩ, 10 nF) driven by a 1 kHz square wave,
+running in real time: CH1 (yellow) on the square wave, CH2 (cyan) on the
+capacitor charging and discharging, 200 µs/div at 500 MSa/s (two channels
+on, 1.2 Mpts), the edge trigger on CH1 rising at 1.65 V (T'D), the
+measurements on CH1 underneath (1 kHz, 3.28 V peak-to-peak, 50 % duty):
+
+![The DS1054Z showing an RC network live](instruments-ds1054z/1-rc-live.png)
+
+## A power profiler: the Nordic PPK2 (2026-10-31)
+
+A Power Profiler Kit II powering a load at 3.3 V that sleeps at 1 mA and
+wakes for 1 ms every 10 ms at 101 mA (a MOSFET switched by a 100 Hz clock,
+the clock also on the logic port's D0), shown as Nordic's Power Profiler
+app shows it: the last 50 ms at 100 kS/s, the window's average (11 mA),
+peak (101 mA) and charge (550 µC), D0 in step underneath:
+
+![The PPK2 following a board sleeping and waking](instruments-ppk2/1-sleep-wake.png)
+
 ## A logic analyzer: the Saleae Logic 8 (2026-10-31)
 
 A Saleae Logic 8 wired to a terminal's TX (D0) and a 1 kHz clock (D1),

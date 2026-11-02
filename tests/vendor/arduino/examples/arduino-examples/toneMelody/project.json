@@ -1,0 +1,82 @@
+{
+ "schema_version": 1,
+ "kind": "project",
+ "name": "arduino-tone-melody",
+ "description": "The IDE's toneMelody (Examples > 02.Digital) as its comment wires it, with a passive piezo buzzer in place of the 8 ohm speaker: + on D8, - to GND. tone() runs Timer2 in CTC mode toggling D8.",
+ "policy": "electrical",
+ "boards": [
+  {
+   "id": "B1",
+   "board": "emblink/arduino_uno",
+   "layout": {
+    "x": 300,
+    "y": 260
+   },
+   "firmware": {
+    "image": "sketch.elf",
+    "format": "elf"
+   }
+  }
+ ],
+ "components": [
+  {
+   "id": "USB",
+   "component": "emblink/vsource",
+   "params": {
+    "kind": "dc",
+    "dc": 5
+   },
+   "layout": {
+    "x": 720,
+    "y": 60
+   }
+  },
+  {
+   "id": "GND1",
+   "component": "emblink/gnd",
+   "layout": {
+    "x": 900,
+    "y": 200
+   }
+  },
+  {
+   "id": "BZ",
+   "component": "emblink/buzzer",
+   "params": {
+    "kind": "passive"
+   },
+   "layout": {
+    "x": 120,
+    "y": 700
+   }
+  }
+ ],
+ "nets": {
+  "USB5V": [
+   "USB.+",
+   "B1.5V"
+  ],
+  "GND": [
+   "B1.GND",
+   "GND1.GND",
+   "USB.-",
+   "BZ.-"
+  ],
+  "TONE": [
+   "B1.D8",
+   "BZ.+"
+  ]
+ },
+ "probes": [
+  {
+   "id": "hz",
+   "target": "output:BZ.tone_hz",
+   "kind": "value"
+  },
+  {
+   "id": "sounding",
+   "target": "output:BZ.sounding",
+   "kind": "value"
+  }
+ ]
+}

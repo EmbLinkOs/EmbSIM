@@ -68,8 +68,9 @@ static int geq(const u32 *a, const u32 *b, int n)
     return 1;
 }
 
-/* out = a * b * R^-1 mod m (n words), m' = -m^-1 mod 2^32: CIOS */
-static void mont(u32 *out, const u32 *a, const u32 *b, const u32 *m, u32 mp, int n)
+/* out = a * b * R^-1 mod m (n words, at most 96), m' = -m^-1 mod 2^32: CIOS;
+ * also the digital signature's (ds.c) */
+void esk_esp32c3_mont(u32 *out, const u32 *a, const u32 *b, const u32 *m, u32 mp, int n)
 {
     u32 t[MEM_WORDS + 2];
     int i, j;
@@ -107,6 +108,11 @@ static void mont(u32 *out, const u32 *a, const u32 *b, const u32 *m, u32 mp, int
         }
     }
     memcpy(out, t, (size_t)n * 4u);
+}
+
+static void mont(u32 *out, const u32 *a, const u32 *b, const u32 *m, u32 mp, int n)
+{
+    esk_esp32c3_mont(out, a, b, m, mp, n);
 }
 
 static int length(struct c3_rsa *k) { return (int)(reg32(k, OFF_MODE) & 0x7Fu) + 1; }

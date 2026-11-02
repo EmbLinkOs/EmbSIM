@@ -34,7 +34,16 @@
       "default": "1k",
       "doc": "Resistance",
       "min": "1m",
-      "max": "1G"
+      "max": "1G",
+      "spread": "tolerance"
+    },
+    "tolerance": {
+      "type": "number",
+      "unit": "%",
+      "default": 5,
+      "min": 0,
+      "max": 50,
+      "doc": "Tolerance: each part's resistance lies within this band of the nominal, drawn from the project's seed (ADR-034). 5 % is IEC 60062's code J, the usual grade of general-purpose carbon-film resistors; 0 for an exact part."
     },
     "tc1": {
       "type": "number",
@@ -104,12 +113,13 @@
       ]
     },
     "electrical": {
-      "claims": "Linear resistance r with tc1/tc2 temperature dependence (SPEC-004 §7 resistor).",
+      "claims": "Linear resistance r with tc1/tc2 temperature dependence (SPEC-004 §7 resistor); each instance's resistance drawn uniformly inside ±tolerance of the nominal from the project's seed and its id (ADR-034; nominal with settings.imperfections \"ideal\").",
       "omissions": [
         "thermal noise",
         "self-heating",
         "parasitic inductance and capacitance",
-        "power rating"
+        "power rating",
+        "the distribution inside the tolerance band (uniform: a manufacturer guarantees the band only)"
       ],
       "range": {
         "current_a": [

@@ -21,6 +21,10 @@
 
 typedef struct esk_engine esk_engine;
 typedef struct esk_net esk_net;
+/* the analog grid's period (engine.c's grid_cb): islands take a step boundary
+ * at each multiple of it; paced slices end on it */
+#define ESK_ANALOG_GRID_PS ES_PS_PER_MS
+
 typedef struct esk_pin esk_pin;
 typedef struct esk_comp esk_comp;
 typedef struct esk_island esk_island;

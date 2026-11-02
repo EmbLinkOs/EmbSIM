@@ -34,7 +34,7 @@
 struct esk_dwarf;
 
 /* the analyses a machine runs */
-enum { ESK_AN_COVERAGE = 1, ESK_AN_PROFILE = 2, ESK_AN_STACK = 4, ESK_AN_FAULT = 8 };
+enum { ESK_AN_COVERAGE = 1, ESK_AN_PROFILE = 2, ESK_AN_STACK = 4, ESK_AN_FAULT = 8, ESK_AN_MEASURE = 16 };
 /* the analyses that follow the program's calls */
 #define ESK_AN_CALLS (ESK_AN_PROFILE | ESK_AN_STACK | ESK_AN_FAULT)
 
@@ -104,6 +104,28 @@ int esk_an_faults(esk_an *a, const char *name, esk_strbuf *out);
  * backtrace: [{pc, where}], text}]}, at most ESK_AN_FAULTS of them */
 esk_json *esk_an_faults_json(esk_an *a, esk_alloc *al);
 
+/* ---- measurements between boundaries (latency.c) ---- */
+
+/* a measurement "[NAME=]FROM..TO" (latency.c's header gives the
+ * boundaries); ES_EINVAL with `why` when it cannot be read or a symbol is
+ * missing */
+es_status esk_an_measure_add(esk_an *a, const char *spec, char *why, size_t cap);
+/* the report, appended to `out`: each measurement's count, cycles and
+ * simulated time (min, mean, max) */
+int esk_an_measure_text(esk_an *a, const char *name, esk_strbuf *out);
+/* {time_base: "simulated", core_hz_min, core_hz_max, measurements: [{name,
+ * from, to, count, cycles_min, cycles_max, cycles_mean, ps_min, ps_max,
+ * ps_mean, samples: [{start_cycle, cycles, ps}]}]} */
+esk_json *esk_an_measure_json(esk_an *a, esk_alloc *al);
+/* the trace (latency.c): from now, or from the first `start` boundary (a
+ * measurement's syntax, NULL for now), at most `limit` events: each
+ * instruction starting, exception taken, pending and returned, with its
+ * cycle and simulated time. ES_EINVAL with `why` for a bad boundary */
+es_status esk_an_trace(esk_an *a, const char *start, u64 limit, char *why, size_t cap);
+/* the trace written as text (cycle, time, event, function) or, with `vcd`,
+ * as a value change dump: pc, the exception active, each pending */
+int esk_an_trace_write(esk_an *a, int vcd, esk_strbuf *out);
+
 /* ---- shared by analysis.c, coverage.c, profile.c, stack.c and fault.c ---- */
 
 #define ESK_AN_CORES 4
@@ -144,6 +166,28 @@ typedef struct esk_an_frame {
 
 #define ESK_AN_FAULTS 16
 #define ESK_AN_BT 32
+
+/* a measurement's boundary (latency.c) */
+enum { ESK_AN_B_PC = 1, ESK_AN_B_EXC, ESK_AN_B_PEND, ESK_AN_B_RET };
+typedef struct esk_an_bound {
+    int kind;
+    u32 v; /* an address, or an exception's number */
+} esk_an_bound;
+
+#define ESK_AN_MEASURES 16
+#define ESK_AN_MSAMPLES 64
+
+typedef struct esk_an_meas {
+    char name[48], from_s[96], to_s[96];
+    esk_an_bound from, to;
+    int armed;
+    u64 c0, ps0; /* where the one under way started */
+    u64 n, cmin, cmax, csum, psmin, psmax, pssum;
+    struct {
+        u64 c0, cycles, ps;
+    } s[ESK_AN_MSAMPLES]; /* the first samples: start (since the counts began), length */
+    int ns;
+} esk_an_meas;
 
 /* a fault the core took, decoded at the end of the step that took it */
 typedef struct esk_an_fault {
@@ -224,7 +268,41 @@ struct esk_an {
      * whether a lockup is reported (once a reset) */
     esk_an_fault faults[ESK_AN_FAULTS];
     int nfaults, fault_count, lockup_seen;
+    /* the measurements (latency.c): them, the simulated time kept beside
+     * the machine's cycles (t_c: up to which cycle; t_ps and t_frac: the
+     * picoseconds, exact), the core clock's range, the pendings of the step
+     * under way */
+    esk_an_meas meas[ESK_AN_MEASURES];
+    int nmeas;
+    int t_init;
+    u64 t_c, t_ps, t_frac;
+    u32 hz_lo, hz_hi;
+    int in_step, npend;
+    struct {
+        int n;
+        u64 c;
+    } pend[8];
+    /* each core's exceptions in progress (innermost last), and the one that
+     * just returned, for ret:N */
+    int exc_stack[ESK_AN_CORES][16], nexc[ESK_AN_CORES], ret_n[ESK_AN_CORES];
+    /* the trace: its events, how many it may hold, whether it records yet
+     * (its start boundary) and how many it dropped past the limit */
+    struct esk_an_tev {
+        u64 c, ps;
+        u32 v;
+        u8 kind, core;
+    } *tev;
+    u64 ntev, captev, tlimit, tdropped;
+    int tracing, tstarted;
+    esk_an_bound tstart;
 };
+
+/* latency.c's part of the step (analysis.c): before it (the machine's
+ * cycles), after it, the machine reset, the counts cleared */
+void esk_an_measure_before(esk_an *a, u64 c0);
+void esk_an_measure_after(esk_an *a, esk_an_core *k, int ran, u64 c0);
+void esk_an_measure_restart(esk_an *a);
+void esk_an_measure_clear(esk_an *a);
 
 /* stack.c's part of the step (analysis.c): set up, the machine reset, the
  * counts cleared, after a step, a frame popped, a function entered by a jump */

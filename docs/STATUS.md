@@ -5,6 +5,243 @@ maintained by hand until evidence tooling exists. It is not a generated
 support matrix. Specifications define target contracts; their acceptance
 does not mean the described behaviour exists.
 
+## M6, the flagship, delivered (2026-11-02)
+
+Each of M6's exit criteria (07-roadmap) and its evidence:
+
+| Criterion | Evidence |
+|---|---|
+| Each part's library example sketches run unmodified and pass scenarios | Thirty of the most used parts, the roadmap's list among them (DHT22, DS18B20, BME280, MPU6050, HC-SR04, SSD1306, HD44780 with its I2C backpack, WS2812, servo, stepper and driver, 4x4 keypad, DS3231, MFRC522, NEO-6M): `tests/vendor/arduino` (see "Parts" below and the entries before it) |
+| Each part's fixtures check its datasheet's timing and values | each part's `tests/*.json` in the catalog, run by `catalog_fixtures` in ctest |
+| The Uno's coverage table has no peripheral its core touches left unmodelled | `docs/coverage.md`: ATmega328P 15 of 15 modelled |
+| An ESP32-class board (Q11) | the ESP32-C3-DevKitM-1: 35 of 35 peripherals modelled (`docs/coverage.md`); ESP-IDF v5.4's examples unmodified in `tests/vendor/esp-idf` (Wi-Fi, Bluetooth LE, TWAI, I2S, flash encryption, memory protection, HCI over UART among them), Arduino-ESP32's sketches in `tests/vendor/arduino-esp32`, EmbLinkRTOS's suite at 160 MHz |
+| A host terminal opens the Uno's port and talks to a running sketch | "A board's serial port on the host" in the table below: `tests/protocol/test_host_serial.py` |
+| A circuit fed from the Uno's 5V pin sags and trips its polyfuse at the datasheet's current | the MF-MSMF050-2 (`ptc_fuse`) on the Uno's USB path and its fixtures |
+| A world panel setting ambient values and distances | "The world (ADR-026)" below: `tests/protocol/test_world.py`, `e2e/world.spec.ts` |
+| Paced real time (ADR-032) | `test_grid_slices` and the paced-run entries below |
+| Contact bounce and tolerances (ADR-034) | "Imperfections on by default" below |
+
+The workbench's screenshots of the ESP32-C3 work are in
+`docs/gallery/c3-peripherals`. M7 (the world and the breadboard) is next.
+
+## The ESP32-C3's UHCI: every peripheral modelled (2026-11-02)
+
+UHCI0 is modelled (`esp32c3-uhci`): a UART's data to and from the GDMA,
+with SLIP framing and escapes and the length, separator, break and idle
+ends of a received frame. ESP-IDF v5.4's HCI-over-UART controller example
+runs unmodified with a terminal in hex mode as the host: HCI_Reset and
+HCI_Read_BD_ADDR are answered as Espressif's controller answers them. Not
+yet: the HCI packet header and its CRC, the quick-sent queues, UHCI1. All
+35 of the ESP32-C3's peripherals are now modelled.
+
+## The ESP32-C3's permission control (2026-11-02)
+
+SENSITIVE is modelled (`esp32c3-pms`): the CPU's fetches, loads and stores
+to internal SRAM, the RTC memory and the ROM are checked against the areas
+and permissions ESP-IDF's memory protection sets, a denied access is
+blocked and the monitors latch it and interrupt. ESP-IDF v5.4's memprot
+test app passes all 16 of its ESP32-C3 checks unmodified, and every other
+ESP-IDF example still runs with the protection on. Not yet: world 1, the
+peripheral regions, the DMA and cache checks. 33 of 35 peripherals are
+modelled; UHCI0/1 remain.
+
+## The ESP32-C3's flash encryption (2026-11-02)
+
+XTS-AES is modelled (`esp32c3-xts`): manual encryption through SPI1's page
+programs and the cache's decryption while SPI_BOOT_CRYPT_CNT is odd, with
+Espressif's addressing as espsecure computes it. ESP-IDF v5.4's
+`flash_encryption` runs unmodified in Development mode: the first boot
+burns a key and encrypts the flash in place, and the chip boots again from
+it encrypted. A unit test checks the ciphertext against espsecure's. Not
+yet: the encryption's time, the download-mode encryption controls. 32 of 35
+peripherals are modelled; UHCI0/1 and the permission control remain.
+
+## The ESP32-C3's HMAC and digital signature (2026-11-01)
+
+The HMAC accelerator and the digital signature are modelled, with the
+eFuses' read and write protection of key blocks. ESP-IDF v5.4's
+`nvs_encryption_hmac` runs unmodified: it burns a read-protected HMAC key
+and encrypts NVS under keys the HMAC derives. Unit tests check the HMAC
+against Python's hmac and an RSA-1024 signature, from parameters encrypted
+as ESP-IDF's generator encrypts them, against Python's pow. 31 of 35
+peripherals are modelled; UHCI0/1, XTS-AES and the permission control
+remain.
+
+## The ESP32-C3's I2S (2026-11-01)
+
+I2S0 is modelled (`esp32c3-i2s`) as a master in TDM and the standard
+formats, through the GDMA both ways. ESP-IDF v5.4's `i2s_std` runs
+unmodified in duplex mode: what it writes comes back through the shared
+data pin, with BCLK at 1.024 MHz and WS at 16 kHz. I2S0's clock enable was
+on the wrong bit of PERIP_CLK_EN0 (4, not 21) and is fixed. Not yet: slave
+mode, PDM transmission, the MCLK output. 29 of 35 peripherals are modelled;
+UHCI0/1, HMAC, the digital signature, XTS_AES and the permission control
+remain.
+
+## The ESP32-C3's TWAI (2026-11-01)
+
+TWAI0 is modelled (`esp32c3-twai`): an SJA1000-compatible CAN 2.0
+controller run bit by bit on its matrix signals, with arbitration, the
+acceptance filters, the receive FIFO, error frames, the error counters and
+bus off. ESP-IDF v5.4's `twai_self_test` runs unmodified with TX jumpered
+to RX (300 frames at 25 kbit/s), and a unit test checks a frame's edges
+against an independently computed one. Not yet: overload frames, triple
+sampling, the clock output. 28 of 35 peripherals are modelled.
+
+## The ESP32-C3's sigma-delta modulation (2026-11-01)
+
+GPIO_SD is modelled (`esp32c3-sdm`): four pulse-density channels on matrix
+signals 55 to 58, a bit every SDn_PRESCALE + 1 APB cycles, (SDn_IN + 128) /
+256 of them high. ESP-IDF v5.4's `sdm_led` runs unmodified: over a whole
+2 s sweep of its density, GPIO0 is high 118/256 of the time. Probes take a
+`capacity` (their memory depth) for long, busy captures. The ESP32-C3 has
+27 of 35 peripherals modelled; I2S, UHCI0/1, HMAC, the digital
+signature, XTS_AES and the permission control remain (`docs/coverage.md`).
+EmbLinkOs/EmbLinkRTOS#46 runs EmbLinkRTOS's ESP32-C3 board at 160 MHz from
+the PLL, as ESP-IDF's bootloader does.
+
+## Parts: the MAX7219, the buzzer, the GL5528, the push button, a bar graph, the LM35DZ, the 74HC595, the 8x8 matrix and the DS1307 (2026-11-01)
+
+Nine more of M6's most-used parts are verified by unmodified examples on
+the Uno (tests/vendor/arduino): LedControl's `LCDemo7Segment` on the
+MAX7219 8-digit module (27 assertions: the text and each digit's lit
+segments) and the IDE's `toneMelody` on a passive buzzer (11: each note's
+Timer2 frequency, the rest and the gaps), and the IDE's `Calibration` with a
+GL5528 photoresistor (5: the calibrated range, the LED's duty at 100 lux
+from the project's drawn parts, full on, off), and the IDE's `Debounce` and
+`StateChangeDetection` against a bouncing push button (7 and 8: seven edges
+for one press, yet one toggle or count each; a 20 ms tap ignored), and the
+IDE's `barGraph` on a new 10-segment bar graph of independent LED junctions
+in the DC-10 pinout (`emblink/led_bargraph_10`), and the IDE's
+`ReadAnalogVoltage` on an LM35DZ (0.25, 0.37, 0.60 V at 25, 37.5, 60 degC),
+and ShiftRegister74HC595's example on a 74HC595 wired to D0-D2 as it says
+(through the board's resistors to the USB-serial bridge), and the IDE's
+`RowColumnScanning` on the 8x8 LED matrix (its dim cursor moved by two pots).
+RTClib's `ds1307` and `ds1307nvram` run on a DS1307 rewritten from its data
+sheet (user buffers, countdown reset, 12-hour mode, a new part halted until
+CH is cleared). With these, thirty of M6's most-used parts are verified by
+unmodified examples. The analog solver now factors in a minimum-degree order over each pivot row's
+nonzeros (0.61 of the time on that matrix circuit, same steps). The GL5528 now follows the
+GL55 datasheet: gamma 0.6, 10-20 kOhm at 10 lux drawn per part, 1 MOhm dark. The MAX7219 model shows decimal
+points, its code-B font per digit and the segment patterns libraries send,
+and shifts DOUT on CLK's falling edge; a passive buzzer falls silent two
+periods after its drive stops. Fixtures: `max7219_display/tests/raw_segments`,
+`buzzer/tests/stops`. The GL5528 follows a change of light with its
+datasheet's response time, a first-order lag in conductance of 20 ms rising
+and 30 ms decaying (`gl5528/tests/response-rise`, `response-decay`).
+
+Not yet: the MAX7219's 8x8 matrix variant and chained devices, its
+multiplexing and brightness as light; the buzzer's sound pressure and
+resonance; the GL5528's response times as they vary with the light, and its
+slow tail toward the dark resistance.
+
+## Visual Benchmark v0.1: the workbench redesigned, in English and French (2026-11-01)
+
+The workbench's shell and perspectives redesigned around the simulation
+(docs/engineering/visual-benchmark.md): a navigation bar and a simulation
+bar; the state named in words and an icon, never by colour alone; simulated
+time apart from the measured host rate; a status bar led by the simulation;
+a connection screen when the engine is not there; a Settings page
+(language, theme, text size, density, layout restore and reset, time unit,
+precision, rate format) applied at once and persisted; English and French
+from typed catalogs with English fallback, the shared packages included.
+
+Evidence: `pnpm typecheck`, `lint`, `test` (370, `i18n.test.ts` among them:
+key parity, placeholders, plural pairs); the Playwright suite with
+`e2e/settings-language.spec.ts` (settings applied and kept, the workbench
+in French without overflow, back to English) and `workspace-layout.spec.ts`
+at 1440, 900 and 768 px; twelve workflows captured before, after and in
+French (docs/gallery/visual-benchmark-v0.1).
+
+Not yet: catalog descriptions, fidelity notes and engine diagnostics in
+French (they are data); compact density on the canvas and plots; panels
+moving between perspectives; languages beyond English and French.
+
+## Imperfections on by default: bounce and tolerances (2026-11-01)
+
+ADR-034's first imperfections are on by default.
+
+**Bounce.**
+- Push buttons and toggle switches bounce: six transitions over 2 ms and
+  5 ms, on press and on release. The keypad already bounced.
+- `"bounce": false` gives an ideal contact.
+
+**Tolerances.**
+- Resistors, capacitors, electrolytics and inductors carry a tolerance.
+- Each instance's value is drawn uniformly inside it, from the project's
+  `settings.seed` and the instance's id.
+- The run report's `snapshot.drawn` lists the values.
+- `settings.imperfections: "ideal"` gives nominal parts (Q17).
+
+**Evidence.**
+- `examples/button-bounce` passes for 31 seeds: six raw edges per press,
+  and one debounced edge behind an RC and a Schmitt inverter.
+- The resistor's tolerance fixture checks seed 7's draw (1026.41 ohm).
+- The push button's and keypad's bounce fixtures count their edges.
+
+**Board changes.**
+- The Blue Pill gains its 100 nF NRST capacitor, which filters the reset
+  button and delays the boot by about 0.8 ms.
+- The Uno's DTR auto-reset is a bounce-free part of its own.
+
+**Paced real time is host-independent.** Islands take a step boundary on a 1 ms simulated grid and paced slices end on it, so a sliced run equals an uncut one to the bit (`test_grid_slices`).
+
+**A reset is now a fresh start.** Islands stop at the start of a reset, so
+a replay from reset matches a recording begun mid-run to the picosecond
+(`test_reset_is_load`, the Python client's recording tests).
+
+**Firmware.** EmbSIM's own tours and the NUCLEO-F446ZE example debounce in
+software. ST's unmodified F446ZE examples that press B1 (gpio_exti and the
+USB HID mouse) run with ideal contacts, and the project says why: the board
+has no filter on B1 (C52 not fitted), and how many times the example acts
+depends on the real switch.
+
+**Not yet.**
+- Temperature coefficients drawn per part.
+- Noise on converters and sensors.
+- Missing-decoupling effects.
+- Breadboard contact resistance.
+- Bounce varying from press to press: every press of a part bounces the
+  same way.
+- Tolerances on parts other than R, C and L.
+
+## Bench instruments: the Rigol DS1054Z (2026-10-31)
+
+The third bench instrument: `emblink/rigol_ds1054z`, from Rigol's DS1000Z
+specifications. Inputs loading the circuit (1 MΩ or 10 MΩ ∥ 15 pF), the
+sample rate by channels and memory, 8-bit quantisation over 10 divisions,
+the 50 MHz (or 20 MHz) bandwidth, DC/AC/GND coupling, the edge trigger in
+Auto, Normal and Single with holdoff. Evidence: eight fixtures (1 V behind
+1 MΩ read 0.909 V through the 10x probe and 0.5 V at 1x; Normal triggering
+on a clock and waiting on a level; Auto refreshing; Single stopping; 100
+MSa/s at 10 ms/div from the memory; 250 MSa/s with four channels) and
+`tests/protocol/test_oscilloscope.py` (an RC step: the time constant
+measured from the trace as 100.5 µs for 100 µs, 63 % and 86 % at one and two
+time constants, 8-bit codes, Single re-armed). The Run perspective draws its
+screen and front panel live (`scopeMeasure.test.ts`; the gallery). Not yet:
+the other trigger types and serial decoders, math, FFT, XY, Roll, averaging
+and peak detect, gain and offset errors and noise; Auto's wait is assumed;
+measurements come from the screen's points, not the full memory.
+
+## Bench instruments: the Nordic PPK2 (2026-10-31)
+
+The second bench instrument: `emblink/nordic_ppk2`, Nordic's Power Profiler
+Kit II, from its user guide's section 8. Source meter (0.8 to 5.0 V, at
+most 600 mA) or ampere meter (in series); the current at 100 kS/s, each
+10 µs sample at its range's resolution (five ranges, 0.2 µA to 1 mA);
+negative currents read 0; D0 to D7 of its logic port at 100 kHz. Evidence:
+six fixtures on its core (3.3 V into 330 Ω read 10.00 mA; into 1 Ω the
+600 mA limit and 0.6 V; 3.3 µA read 3.4 µA at 0.2 µA resolution; the
+ampere meter's 20.00 mA; a reverse current read 0; no samples before
+Start), one on the whole kit (current and logic port together), and
+`tests/protocol/test_power_profiler.py` (a load sleeping at 1 mA and waking
+for 1 ms every 10 ms at 101 mA: 5000 samples in 50 ms, both levels at their
+ranges' resolution, a 10 % duty, an 11.00 mA average, D0's edges where the
+current steps). The Run perspective's panel follows it live
+(`powerCapture.test.ts`; the gallery). Not yet: the measurement resistors'
+voltage drop (unpublished: `r_series` assumed), the accuracy as an error,
+range-switching transients, the logic port's thresholds (assumed).
+
 ## Bench instruments: the Saleae Logic 8 (2026-10-31)
 
 The first of three real bench instruments (`docs/engineering/bench-instruments.md`):
@@ -868,7 +1105,7 @@ of 1.0 readiness.
 | Component SDK and validation | `embsim catalog validate [DIR] [--library] [--json]` in the engine: every item instantiated under each fidelity policy it declares and its fixtures run as project and scenario, items reported ok, broken or invalid; `catalog new component\|board NAME [--lua]` writes a template that validates as written; `catalog install DIR\|ARCHIVE.zip\|URL [--to] [--force]`: a directory, a zip archive (stored and deflated entries, the inflater and the reader EmbSIM's own) or a URL fetched with curl, unpacked into a staging directory that is removed after (SPEC-014 §3 to §6) | `catalog_sdk` (`tests/protocol/test_sdk.py`): a Lua component and a board from the templates validate, install into a user library and are listed from it through `$EMBSIM_LIBRARIES`; the same library zipped deflated with a top directory, stored at its top, at fast compression and served over HTTP installs byte for byte the same files; an archive with an entry outside the library, a corrupt one (its CRC-32) and a file that is not one are refused, and no staging directory is left; a part whose fixture fails is reported broken and install refuses it; `test_zip` (stored, fixed-code and dynamic-code streams from zlib, an archive, and every truncation and one-byte change of each refused or decoded in bounds under ASan and UBSan) |
 | Importers | `tools/importers/rtos2board.py` (EmbLinkRTOS board YAML), `dts2board.py` (DeviceTree source, its own parser), `kicad2project.py` (KiCad netlist to a laid-out project), sharing `boardgen.py`; `svd2regs.py` (SPEC-014 §7); `edc2regs.py` (a PIC32's or a PIC24's EDC from Microchip's device pack, with a PIC32's CLR/SET/INV registers and vectors, a PIC24's PPS functions and configuration words, pin functions and the package) | `importers` (`tools/test_importers.py`): the boards they write validate and pass their power fixture; `edc2regs.py` on a made-up PIC32's and PIC24's EDC; `examples/kicad-flasher` is a KiCad netlist imported and run |
 | Core: session and protocol | Command path with virtual timestamps and the input log, probes (digital on change, analog and value at a rate, thresholded digital on analog nets), snapshots and topology, pacing slices, notifications, scenarios with assertions and the run report, project transactions (edits from the workbench: layout-only commits keep the run, circuit changes are checked then rebuild it) and `project.save`, the JSON-RPC method table over in-process, stdio and WebSocket (SPEC-008) | `test_session` (in-process), `tests/protocol/run_conformance.py` (nine cases on stdio and WebSocket, transports compared), `test_host` (files, sockets, SHA-1, base64, frames) |
-| MCU runtime | Cortex-M3 core extracted from EmbCC (Thumb-2, NVIC, SCB, SysTick, DWT, FPU), with ARMv7E-M's DSP instructions for the Cortex-M4 (the parallel adds and subtracts, SEL, the saturating, packing and dual multiplies), and what an RTOS port relies on (SPEC-009 §3): the MPU on the parts that have one (PMSAv7 and PMSAv6, eight regions, subregions, the background region, HFNMIENA, MemManage with MMFAR), the default map's execute-never regions, LDRT and STRT, unprivileged access to the private peripheral bus refused, stacking and unstacking faults taken as derived exceptions, and lazy floating-point context stacking (LSPACT, FPCAR, FPDSCR), bus with bit-band and aliases, ELF and Intel HEX loaders, semihosting; decoded instructions kept per memory region's generation and bursts of instructions between the run's checks, and lazy device clocks on the STM32s (about 31 million instructions a second on a release build for a busy firmware at 180 MHz); register files from EmbSIM JSON (ADR-020); STM32F1 models: RCC, GPIO, AFIO, EXTI, USART, TIM (time base, and output compare and PWM on the AFIO pins), ADC1 and ADC2 (the regular group from the pins' voltages, at the ADC clock), SPI1 and SPI2 as masters or slaves (receive-only, bidirectional, MODF, CRC) and I2C1 and I2C2 as masters or slaves (10-bit addresses, stretching, arbitration, PEC, SMBus) on their pins, IWDG and WWDG, RCC_CSR's reset flags, FLASH, PWR; runs in quanta on the scheduler with pins as signal events (ADR-019); USART frames on the TX pin and decoded from the RX pin; NRST and BOOT0 (SPEC-009) | `test_mcu` (11022 checks): EmbCC's Blue Pill golden fixture with five documented USART timing deltas, the same output from a description converted from ST's SVD, serial input, a breakpoint-and-continue run equal to an uninterrupted one (MCU-006); 101 DSP and ARMv7-M instructions over 4096 operand pairs each give QEMU's mps2-an386 results and flags (`dsp_differential`, the expected hashes checked against QEMU in CI); 28 cases of the MPU, privilege, stacking faults and FP stacking print what QEMU's mps2-an386 prints (`cm4_core_differential`, tests/firmware/cm4-core, its expected output checked against QEMU in CI); `examples/bluepill-button-led` runs firmware built by Clang and by EmbCC; an application built with ST's unmodified STM32F1 HAL and CMSIS device files (their GCC startup and linker script, a CubeMX Makefile's flags, GCC 13.2 and newlib-nano) passes 7/7, in CI's linux-gcc job too: the HAL's clock tree to 72 MHz from HSE through the PLL, `HAL_Delay` on SysTick, EXTI0, TIM2's update interrupt and USART1 both ways; a second, `adc_pwm`, 6/6: the HAL's ADC calibrated at 12 MHz, polled and by its interrupt, TIM3's PWM at 1 kHz exactly, and the PWM's average through an RC low-pass read back at 0.8 and 2.5 V; a third, `spi_i2c`, 6/6: the HAL's SPI master at 2.25 MHz against the catalog's 25LC040 (WREN, WRITE, RDSR through its write cycle, READ) and its I2C master at 100 kHz against the 24C02 (Mem_Write, IsDeviceReady through the write cycle, Mem_Read of one, two and five bytes, an absent address) (`tests/vendor/stm32cube/run.py`); `test_mcu`'s TIM3 PWM edges to the cycle and an ADC conversion's 504 cycles and code |
+| MCU runtime | Cortex-M3 core extracted from EmbCC (Thumb-2, NVIC, SCB, SysTick, DWT, FPU); on ARMv7-M, exception entry (12 cycles), return (12), tail-chaining (6) and late arrival timed as the Cortex-M4 TRM gives them at zero wait states (`tests/unit/test_cm_timing.c`; docs/engineering/timing-fidelity.md §4.1 lists what is not charged), with ARMv7E-M's DSP instructions for the Cortex-M4 (the parallel adds and subtracts, SEL, the saturating, packing and dual multiplies), and what an RTOS port relies on (SPEC-009 §3): the MPU on the parts that have one (PMSAv7 and PMSAv6, eight regions, subregions, the background region, HFNMIENA, MemManage with MMFAR), the default map's execute-never regions, LDRT and STRT, unprivileged access to the private peripheral bus refused, stacking and unstacking faults taken as derived exceptions, and lazy floating-point context stacking (LSPACT, FPCAR, FPDSCR), bus with bit-band and aliases, ELF and Intel HEX loaders, semihosting; decoded instructions kept per memory region's generation and bursts of instructions between the run's checks, and lazy device clocks on the STM32s (about 31 million instructions a second on a release build for a busy firmware at 180 MHz); register files from EmbSIM JSON (ADR-020); STM32F1 models: RCC, GPIO, AFIO, EXTI, USART, TIM (time base, and output compare and PWM on the AFIO pins), ADC1 and ADC2 (the regular group from the pins' voltages, at the ADC clock), SPI1 and SPI2 as masters or slaves (receive-only, bidirectional, MODF, CRC) and I2C1 and I2C2 as masters or slaves (10-bit addresses, stretching, arbitration, PEC, SMBus) on their pins, IWDG and WWDG, RCC_CSR's reset flags, FLASH, PWR; runs in quanta on the scheduler with pins as signal events (ADR-019); USART frames on the TX pin and decoded from the RX pin; NRST and BOOT0 (SPEC-009) | `test_mcu` (11022 checks): EmbCC's Blue Pill golden fixture with five documented USART timing deltas, the same output from a description converted from ST's SVD, serial input, a breakpoint-and-continue run equal to an uninterrupted one (MCU-006); 101 DSP and ARMv7-M instructions over 4096 operand pairs each give QEMU's mps2-an386 results and flags (`dsp_differential`, the expected hashes checked against QEMU in CI); 28 cases of the MPU, privilege, stacking faults and FP stacking print what QEMU's mps2-an386 prints (`cm4_core_differential`, tests/firmware/cm4-core, its expected output checked against QEMU in CI); `examples/bluepill-button-led` runs firmware built by Clang and by EmbCC; an application built with ST's unmodified STM32F1 HAL and CMSIS device files (their GCC startup and linker script, a CubeMX Makefile's flags, GCC 13.2 and newlib-nano) passes 7/7, in CI's linux-gcc job too: the HAL's clock tree to 72 MHz from HSE through the PLL, `HAL_Delay` on SysTick, EXTI0, TIM2's update interrupt and USART1 both ways; a second, `adc_pwm`, 6/6: the HAL's ADC calibrated at 12 MHz, polled and by its interrupt, TIM3's PWM at 1 kHz exactly, and the PWM's average through an RC low-pass read back at 0.8 and 2.5 V; a third, `spi_i2c`, 6/6: the HAL's SPI master at 2.25 MHz against the catalog's 25LC040 (WREN, WRITE, RDSR through its write cycle, READ) and its I2C master at 100 kHz against the 24C02 (Mem_Write, IsDeviceReady through the write cycle, Mem_Read of one, two and five bytes, an absent address) (`tests/vendor/stm32cube/run.py`); `test_mcu`'s TIM3 PWM edges to the cycle and an ADC conversion's 504 cycles and code |
 | MCU runtime: AVR | AVR5 core extracted from EmbCC (cycle-exact, SREG, the vector table, SLEEP), its state a parameter; ATmega328P models over the register file written from the datasheet: PORTB/C/D with pull-ups and PUD, INT0/INT1 and pin-change interrupts, Timer/Counter0, 1 and 2 in every waveform mode with double buffering and the OC pins switching at their clock, Timer/Counter1's input capture (ICP1 or the comparator, the noise canceler, ICR1 at the edge's clock), USART0 at its baud rate, the 10-bit ADC from the pins' voltages, the SPI master (modes 0 to 3, SPI2X, WCOL, SS's mode fault) on PB2 to PB5 and the TWI master (the datasheet's master statuses, repeated START, TWWC) open-drain on PC4 and PC5, the watchdog (time-outs on its 128 kHz oscillator, WDR, interrupt and system reset modes, the timed sequence, WDRF through its reset), the analog comparator (AIN0 or the bandgap against AIN1 or the ADC multiplexer's pin, its edges and vector, the crossing found in the analog solver), the EEPROM, the clock prescaler; the peripherals' clocks run lazily (owed cycles paid before the core touches a timed device, at the next event and before outside input) and a lone AVR with quiet islands runs 100 µs quanta with its UART frames queued on the TX pin (SPEC-009 §8); an AVR disassembler; DWARF with 2-byte addresses | `test_avr` (1318 checks: flags, cycles, Timer0's interrupt, fast PWM's overflow flag clock by clock, a USART frame's cycles, ports, the ADC, the SPI's frames in loopback, its timing, modes, WCOL and mode fault, the TWI's START, a NACKed SLA+W, a repeated START, SLA+R and bytes ACKed and NACKed, STOP, TWWC, SCL's period and prescaler, the watchdog's time-out, timed sequence, both modes, WDR and its reset with WDRF, the comparator's ACO, ACI, edges, vector, bandgap, ACME, ACD and its thresholds on the pins, input capture's edges, noise canceler, ICR1 as TOP, the comparator as its source and its vector, the disassembler); `examples/uno-blink-serial` 7/7 with firmware built by clang and by EmbCC; Arduino sketches built with the unmodified ArduinoCore-avr (11b9130, avr-gcc 7.3 with the IDE's flags; Blink 924 bytes as the IDE reports) pass their scenarios, in CI's linux-gcc job too: Blink 4/4, a core tour 10/10 (`delay`, `millis`, `analogRead`, `analogWrite` on Timer0 and Timer1, `attachInterrupt`, `Serial` at 115200 both ways), and `spi_wire` 5/5: the core's SPI library at 4 MHz against the catalog's 25LC040 (WREN, WRITE, RDSR through its write cycle, READ; every SCK edge through D13's LED counted) and its Wire library against the 24C02 (a page write, NACKed polls, a repeated START into `requestFrom` at 100 and 400 kHz, an absent address), and `watchdog` 5/5: avr-libc's WDT interrupt waking the part from power-down four times, then `wdt_enable` left to time out twice, a boot count in `.noinit` surviving each reset, MCUSR's PORF then WDRF, and `comparator` 3/3: the comparator's interrupt times an RC network charged and discharged through 10 kOhm into 1 uF against 2.5 V, 6960 and 6956 us measured with `micros()` where R * C * ln 2 is 6949 us, and `input_capture` 4/4: Timer1's input capture measures `analogWrite(3, 64)` wired to ICP1, 32640 cycles a period every time (490.196 Hz) and 8192 high, as the datasheet's phase-correct PWM gives (`tests/vendor/arduino/run.py`, which builds the libraries a sketch includes); EmbCC's QEMU-refereed AVR fixtures not run here (no QEMU) |
 | MCU runtime: RISC-V | RV32IMAC core extracted from EmbCC (Zicsr, machine-mode traps, compressed instructions), its state a parameter, interrupt lines from the devices, WFI as sleep; physical memory protection (the part's entries, OFF, TOR, NA4 and NAPOT, locks binding machine mode, user mode and MPRV, partial matches failing); FE310-G002 models written from SiFive's manual: the CLINT (mtime at the 32.768 kHz RTC, exactly), the PLIC (priorities, threshold, claim and complete), the GPIO (interrupts, IOFs), the UARTs (FIFOs, watermarks), the PRCI (HFROSC, HFXOSC, PLL), the always-on domain's watchdog (key, scale, comparator, zerocmp, sticky interrupt, a chip reset the domain survives) and RTC, PWM0-2 (comparators, zerocmp, deglitch, sticky, one-shot, the channels on IOF1) and SPI1 and SPI2 (FIFOs, modes 0 to 3, csmode AUTO, HOLD and OFF, the delays, watermarks) on their pins; the RISC-V disassembler | `test_riscv` (285 checks: ALU and divide cycles, stores at negative offsets, an ECALL trap, the CLINT interrupt at exactly one RTC second, a UART frame, the PLIC's reserved words, a locked NAPOT entry against machine mode's store, user mode with and without an entry, the RTC's compare at one second, the watchdog's key, zerocmp period and food, its reset and what survives it, the disassembler); `examples/hifive1-blink` 7/7 with firmware built by clang and by EmbCC; fourteen of SiFive's freedom-e-sdk examples, built with the unmodified freedom-metal library (the SDK's pinned 1cec4a2) and the HiFive1 Rev B's BSP by riscv64-unknown-elf-gcc 13.2 with picolibc, pass their scenarios (47 assertions), in CI's linux-gcc job too: hello, sifive-welcome (the RGB LED on the CLINT's timer), csr, uart-interrupt (through the PLIC), example-user-mode, minimal-boot, example-rtc, example-watchdog, example-pmp, timer-interrupt, software-interrupt, return-pass, example-pwm (PWM1 at 1 Hz on the RGB LED), example-spi (three frames on SPI1 with CS held) (`tests/vendor/freedom-metal/run.py`; an example's exit status printed by a wrapper around freedom-metal's `metal_shutdown`); example-i2c waits on I2C0, which is not modelled, and the PMU's sleep is not |
 | MCU runtime: RP2040 | Cortex-M0+ (Armv6-M) on both cores, interleaved on one clock with each core's NVIC, SysTick and event register (WFE, SEV), core 1 launched through its bootrom's FIFO handshake and powered off and on by the PSM; the register file converted from Raspberry Pi's RP2040.svd (BSD-3-Clause) on the part's bus rules (atomic XOR, set and clear aliases; byte writes across the word) with peripherals held in reset by RESETS; models extracted from EmbCC: the clocks (XOSC, ROSC, the PLLs, the generators, FC0) with clk_sys as the core's clock, PSM, the watchdog's microsecond tick and its reset, the timer's alarms, IO_BANK0 and the pads (function select, overrides, pulls, interrupts to each core), the SIO (GPIO, spinlocks; each core's CPUID, divider and FIFO, SIO_IRQ_PROC0/1), the PL011 UARTs timed at their divisor, the SSI with the Pico's flash; the PWM's slices (fractional divider, free-running and phase-correct, double-buffered CC and TOP, the wrap interrupt) on their pins and the ADC (clk_adc's 96 cycles a conversion, GPIO26-29 and the temperature sensor, START_MANY with DIV, round robin, the FIFO and its interrupt), the SPI masters (PL022: FIFOs, 4 to 16 bits in modes 0 to 3, CSn, loopback, overrun) and the I2C masters (DW_apb_i2c: the command FIFO with RESTART and STOP, open-drain SCL and SDA at HCNT and LCNT, the bus held between commands, aborts and their source) on their pins, written for EmbSIM; a bootrom stand-in that checks boot2's CRC, copies it to SRAM and enters it, and the bootrom's documented functions done by the host (ADR-021): the table lookup, the bit operations, memcpy and memset, the flash functions (erase and program with the W25Q16JV's times), reset_to_usb_boot, the float and double tables (version 3, correctly rounded arithmetic, the bootrom's conventions) | `test_rp2040` (1828 checks: SPI0's frames in loopback, its timing, FIFOs, overrun and modes, I2C0's NACKed address and its abort, a held bus kept through a disable and enable, a repeated START, the clear registers, a disable that lets the bus go; PWM slice 0's edges, wrap and buffered CC, the ADC's conversion time on clk_adc and none without it, its codes, round robin and FIFO, the boot through boot2 and a bad CRC, the aliases and byte writes, RESETS, PLL_SYS at 125 MHz measured by FC0, a timer alarm on the 1 µs tick, the divider, a UART bit time, core 1's launch, CPUID, a WFE ended by the other core's SEV, the PSM's power, the ROM's functions through its tables); `examples/pico-blink-serial` 7/7 and `examples/pico-dual-core` 9/9 with firmware built by clang and by EmbCC; an application built with the unmodified Pico SDK 2.3.1 (its CMake, GCC 13.2, newlib-nano) passes 9/9, in CI's linux-gcc job too: the SDK's clocks (clk_sys 125 MHz), float and double through the bootrom's tables, the divider, core 1 through `multicore_launch_core1` and the FIFO, `flash_range_erase` and `flash_range_program` read back through the XIP, a repeating timer, a GPIO interrupt, stdio on UART0 both ways; a second, `pwm_adc`, 7/7: `hardware_pwm` at 1 kHz exactly with its wrap interrupt, `hardware_adc` on a 1.0 V source, the temperature sensor and the PWM's average through an RC low-pass (0.8 and 2.5 V), free-running conversions round robin through the FIFO's interrupt; a third, `spi_i2c`, 7/7: `hardware_spi` and `hardware_i2c` against the catalog's 25LC040 (WREN, WRITE, RDSR through its write cycle, READ) and 24C02 (a page write, NACKed polls through its write cycle, a current-address read and a random read after a repeated START, an absent address), every SCK and SCL edge counted (`tests/vendor/pico-sdk/run.py`); the SDK's `runtime_init_usb_power_down` touches USB while it is held in reset, as on the part, which is one `mcu.held_in_reset` warning |
@@ -894,7 +1131,7 @@ of 1.0 readiness.
 | Boards qualified against reference data (visual benchmark V1) | A board's `reference.json` (kind `board_reference`, SPEC-006 §3.1): outline, mounting holes, every terminal's pad and connector bodies from sources independent of its artwork, checked by `tools/validate.py` within its tolerance, every port required to have a position; the Uno R3's from Arduino's A000066 datasheet and KiCad's `Arduino_UNO_R3` footprint and symbol, its artwork redrawn from it (the headers had been up to 4 mm out); the ESP32-C3-DevKitM-1's from Espressif's V1.0 dimension drawing, read from the PDF's vector paths (its 30 header pads, outline and micro-USB body; the pads had been 0.39 mm high, the RGB LED 1.1 mm and the USB 0.64 mm out), the check reading oblong (rect) pads as well as round ones | `tools/test_validate.py`'s `test_uno_qualified_against_its_reference` (the Uno passes; D8 0.5 mm off and the earlier USB-B place are refused); `test_devkitm1_qualified_against_its_reference` (the DevKitM-1 passes; its earlier J1 pin 1 and micro-USB places are refused); the BB830's body, 630-point area and continuous rails cite BusBoard's datasheet; the Uno's DIP socket, resonator, reset button and LEDs, and the breadboard's hole offsets from its edges, unqualified and declared; the NUCLEO-F446RE has no reference yet (UM1724's drawing is an image) |
 | The Uno's USB power path: a resettable PTC fuse and the VIN switch (ADR-031, ADR-034) | `ptc_fuse` (SPEC-004): a two-node thermal model heated by the power it passes, its resistance rising gently below the polymer's switch and steeply above it, its temperatures integrated on their own clock (component wakes) with the island touched on a 1 % change; `emblink/mf_msmf050` fitted to Bourns' typical time-to-trip curve, its room the world's temperature | the part's 11 fixtures on a current-limited 15 V supply: holds 0.5 A for 30 minutes, trips at 1.0 A, at 8 A within 0.15 s (not after 5 ms), at 2.4 A between 0.4 and 2 s, 0.6 to 1.0 W tripped, trips at 0.6 A at 85 C and holds 0.75 A at -40 C (the derating table, not fitted), resets once the fault is removed; the post-trip resistance, part spread and ratings' damage not modelled. On the Uno: USB_VBUS through F1 and T1 (`emblink/fdn340p`, a level-1 P-MOSFET with its body diode) to +5V, U5A (`emblink/lmv358`) turning T1 off when VIN/2 is above 3.3 V | the board's fixtures from a 5 V host through a 0.25 ohm cable: 5.0 V unloaded; 4.64 V at 600 mA (the cable, F1 and T1), held for 10 minutes; a 2 ohm load sags the rail to 3.8 V, F1 trips in about 16 s and the rail falls under 0.6 V with F1 passing 0.8 W; 9 V on VIN turns T1 off and USB carries nothing; the FDN340P's on-resistance, threshold and body diode and the LMV358's comparator, follower and rail fixtures |
 | Op-amp dominant pole and slew rate (SPEC-004 §7) | `opamp` with `gbw`: an internal node integrating the input stage's drive (single pole at gbw/gain, slewing at `slew`, gated at the output limits so it recovers from saturation at once), the output and that node depending on the supply pins; Newton limiting on tanh's argument for the static characteristic; the LM358 (0.7 MHz, 0.3 V/us) and LMV358 (1 MHz, 1 V/us) | each part's `slew` fixture (a follower given a 2 V step) and `bandwidth` fixture (a gain of 11 given a 10 mV step settling with its 11 / (2 pi GBW) time constant); further poles, phase margin, input offset, common-mode range and current limits not modelled |
-| Workbench | TypeScript workspace: typed protocol client and mock session, design system with light and dark themes; schematic editing against the engine through project transactions (place, wire, move, rotate, mirror, delete, copy, paste, duplicate, net labels and renames, buses with their live value, undo and redo, save to the project file); boards drawn as blocks of their ports, and the inside of a board or composite part opened on a read-only, live sheet; the 3D bench (ADR-027, Three.js), the Design canvas's second view and the Run perspective's Board panel: boards with their PCB features, breadboards and parts built from their packages on a desk, parts dragged into a breadboard's holes and plugged in, jumpers between holes and pins, unbuilt connections as dashed links built in one click, notes, live LEDs and controls, every edit a project transaction shared with the schematic (which hides breadboards), a keyboard list of every bench action, and the flat 2D bench (artworks with live LEDs and buttons, nets as wires between their pins) without WebGL; the clock's real-time rate; oscilloscope, logic analyzer with UART, SPI and I2C decoders, serial terminal, meters with units; board view artwork states with value maps, formats and text (SPEC-005 §8); the Debug perspective (source, disassembly, registers, breakpoints, memory, peripherals, console); the Verify perspective (a scenario's inputs and assertions edited in place, run with each assertion's result in its row and saved into the project; recordings replayed with the divergence shown or turned into a scenario; coverage with each file's source and counts and the functions by cycles, lcov and collapsed stacks to download); command palette; platform adapter; Tauri 2 desktop shell with the engine as sidecar and its icon | `pnpm typecheck`, `lint`, `test` (202 tests incl. axe, the decoders, artwork states and their scoping, the bench's wires, the bench model's plugging, unplugging, jumpers and unbuilt links, every catalog part's bench shape, resistor colour codes), `build` pass; Playwright smoke (open, run, press, observe, export; keyboard place and wire; theme) and the bench (a breadboard added, a resistor plugged into a10 and a14, a jumper to Q1's base and its undo) pass in Chromium; `examples/uno-breadboard` passes uno-blink-serial's scenario built on a breadboard (7/7); editing, copy and paste, and save checked in Chromium against `embsim serve`; the Blue Pill's boot banner decoded from USART1 frame by frame; `tools/perf/large_project.py` 500 inverters with 1,499 wires and 1,000 labels measured by `scripts/perf.mjs` in headless software-rendered Chromium: pan and part drag 16.8 ms at the 95th percentile, zoom 33 ms; usable at 1024x700. The desktop shell is built and run here on Linux (WebKitGTK 4.1 under Xvfb) with the Blue Pill example loaded, and its deb is built by `tauri build`; macOS and Windows installers come from CI |
+| Workbench | TypeScript workspace: typed protocol client and mock session, design system with light and dark themes; schematic editing against the engine through project transactions (place, wire, move, rotate, mirror, delete, copy, paste, duplicate, net labels and renames, buses with their live value, undo and redo, save to the project file); boards drawn as blocks of their ports, and the inside of a board or composite part opened on a read-only, live sheet; the 3D bench (ADR-027, Three.js), the Design canvas's second view and the Run perspective's Board panel: boards with their PCB features, breadboards and parts built from their packages on a desk, parts dragged into a breadboard's holes and plugged in, jumpers between holes and pins, unbuilt connections as dashed links built in one click, notes, live LEDs and controls, every edit a project transaction shared with the schematic (which hides breadboards), a keyboard list of every bench action, and the flat 2D bench (artworks with live LEDs and buttons, nets as wires between their pins) without WebGL; the clock's real-time rate; oscilloscope, logic analyzer with UART, SPI and I2C decoders, serial terminal, meters with units; board view artwork states with value maps, formats and text (SPEC-005 §8); the Debug perspective (source, disassembly, registers, breakpoints, memory, peripherals, console); the bench instruments' front panels (DS1054Z, PPK2, Logic 8) opened from their part in the inspector, the schematic's context menu, the bench's parts list or the command palette, docked in Run or floating in windows over every perspective (moved and resized by pointer or keyboard, remembered); the Verify perspective (a scenario's inputs and assertions edited in place, run with each assertion's result in its row and saved into the project; recordings replayed with the divergence shown or turned into a scenario; coverage with each file's source and counts and the functions by cycles, lcov and collapsed stacks to download); command palette; platform adapter; Tauri 2 desktop shell with the engine as sidecar and its icon | `pnpm typecheck`, `lint`, `test` (202 tests incl. axe, the decoders, artwork states and their scoping, the bench's wires, the bench model's plugging, unplugging, jumpers and unbuilt links, every catalog part's bench shape, resistor colour codes), `build` pass; Playwright smoke (open, run, press, observe, export; keyboard place and wire; theme) and the bench (a breadboard added, a resistor plugged into a10 and a14, a jumper to Q1's base and its undo) pass in Chromium, and `e2e/front-panels.spec.ts` (a front panel opened from its part in the inspector and the context menu, floated over Design, moved from the keyboard, docked back); `examples/uno-breadboard` passes uno-blink-serial's scenario built on a breadboard (7/7); editing, copy and paste, and save checked in Chromium against `embsim serve`; the Blue Pill's boot banner decoded from USART1 frame by frame; `tools/perf/large_project.py` 500 inverters with 1,499 wires and 1,000 labels measured by `scripts/perf.mjs` in headless software-rendered Chromium: pan and part drag 16.8 ms at the 95th percentile, zoom 33 ms; usable at 1024x700. The desktop shell is built and run here on Linux (WebKitGTK 4.1 under Xvfb) with the Blue Pill example loaded, and its deb is built by `tauri build`; macOS and Windows installers come from CI |
 
 Observed on 2026-10-16 in this workspace: Ubuntu 24.04, GCC 13.3 and Clang 18.1, CMake 3.28, Python 3.13, Node 22. `ctest` on the GCC Debug build: 32 of 32 targets pass (test_analog, test_avr, test_catalog, test_engine, test_host, test_json, test_lua, test_mcu, test_mips, test_nrf52, test_pic24, test_pic32, test_riscv, test_rp2040, test_sched, test_session, catalog_fixtures, tools_unittests, catalog_sdk, importers, docs_integrity, banned_constructs, catalog_fixture_assertions, protocol_conformance, gdb_server, firmware_build, multiboard, examples_headless, record_replay, analysis, run_target, python_client); the same pass on the Clang, TinyCC and AddressSanitizer builds. The CI matrix (Linux with GCC, Clang and TinyCC; macOS with Clang; Windows with MSVC; the workbench; tools and catalog; documentation; repository policy) was observed green on the M0 pull request and on the M1 pull request (EmbLinkOs/EmbSIM#2, head 9bc3d42, 2026-10-16) the M2 pull request (EmbLinkOs/EmbSIM#3, all 17 checks) the M3 pull request (EmbLinkOs/EmbSIM#4, all 17 checks) and the M4 part 1 pull request (EmbLinkOs/EmbSIM#5, all 17 checks, after its MSVC fixes), which ran the Blue Pill golden fixture, the GDB server and the firmware build on all three platforms.
 

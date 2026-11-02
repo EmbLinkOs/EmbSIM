@@ -47,8 +47,26 @@
  * option bytes' programming time (OPTSTRT is done at once), the reset
  * during an operation leaving the memory half-programmed, HCLK's 1 MHz
  * minimum, the read protection's levels (RDP is stored; a regression to
- * level 0 does not mass-erase), PCROP's read refusal (RDERR), the
- * ART accelerator's caches (DCRST, ICRST: the core reads the memory). */
+ * level 0 does not mass-erase), PCROP's read refusal (RDERR); the caches'
+ * contents (the core reads the memory: a stale line's timing is modelled,
+ * not its stale data).
+ *
+ *   - read timing (RM0390 3.4): the memory is read 128 bits at a time,
+ *     each read taking FLASH_ACR's LATENCY wait states more than a cycle
+ *     (Table 5). An instruction fetch from the line the core is executing
+ *     waits nothing. With PRFTEN the next sequential line is read while
+ *     the current one executes, ready LATENCY + 1 cycles after the current
+ *     one arrived: a fetch from it waits what is left of that. With ICEN
+ *     the instruction cache holds 64 lines (LRU): a hit waits nothing, a
+ *     line read on a miss is copied into it. Otherwise a fetch misses and
+ *     waits LATENCY cycles, the penalty RM0390 gives as "at least" the
+ *     wait states (the model charges that least). A data read (a literal
+ *     pool, through D-Code) waits LATENCY cycles unless DCEN's 8-line data
+ *     cache holds its line. ICRST and DCRST empty the caches. Not
+ *     modelled: D-Code's priority over I-Code when both read at once, the
+ *     prefetch line on a branch whose target is the prefetched line before
+ *     it has arrived (it waits as on a sequential fetch), DMA's reads of
+ *     the flash, the vector fetch on exception entry. */
 #include <string.h>
 
 #include "mcu/stm32/stm32.h"
@@ -87,10 +105,20 @@
 
 #define NSECTORS 8
 
+#define ART_ILINES 64
+#define ART_DLINES 8
+#define NO_LINE 0xFFFFFFFFu
+
 struct flash {
     struct esk_mach *s;
     struct esk_rf_periph *p;
-    struct esk_rf_reg *keyr, *optkeyr, *sr, *cr, *optcr;
+    struct esk_rf_reg *keyr, *optkeyr, *sr, *cr, *optcr, *acr;
+    /* read timing (RM0390 3.4): the line the core executes from, the one
+     * prefetched and when it arrives, the caches' lines and their last use */
+    u32 cur_line, pf_line;
+    u64 pf_ready;
+    u32 iline[ART_ILINES], dline[ART_DLINES];
+    u64 iuse[ART_ILINES], duse[ART_DLINES], use;
     int irq;
     int key_step, optkey_step; /* the keys written so far */
     int wrong_key;             /* locked until the next reset */
@@ -335,6 +363,105 @@ static u32 flash_read(void *ctx, u32 off, int n)
     return esk_rf_read(f->p, off, n);
 }
 
+/* ---- read timing (RM0390 3.4) ---- */
+
+#define ACR_PRFTEN 0x100u
+#define ACR_ICEN 0x200u
+#define ACR_DCEN 0x400u
+#define ACR_ICRST 0x800u
+#define ACR_DCRST 0x1000u
+
+static void art_clear(u32 *line, u64 *use, int n)
+{
+    int i;
+    for (i = 0; i < n; i++) {
+        line[i] = NO_LINE;
+        use[i] = 0;
+    }
+}
+
+/* a cache's hit for `l` (its use renewed), or 0 */
+static int art_hit(struct flash *f, u32 *line, u64 *use, int n, u32 l)
+{
+    int i;
+    for (i = 0; i < n; i++)
+        if (line[i] == l) {
+            use[i] = ++f->use;
+            return 1;
+        }
+    return 0;
+}
+
+/* `l` in place of the least recently used line */
+static void art_fill(struct flash *f, u32 *line, u64 *use, int n, u32 l)
+{
+    int i, lru = 0;
+    for (i = 1; i < n; i++)
+        if (use[i] < use[lru])
+            lru = i;
+    line[lru] = l;
+    use[lru] = ++f->use;
+}
+
+static u32 art_ifetch(void *ctx, u32 off, u64 now)
+{
+    struct flash *f = (struct flash *)ctx;
+    u32 acr = (u32)f->acr->value, ws = acr & 0xfu, l = off >> 4, st;
+    if (l == f->cur_line)
+        return 0;
+    if ((acr & ACR_PRFTEN) && l == f->pf_line)
+        st = f->pf_ready > now ? (u32)(f->pf_ready - now) : 0;
+    else if ((acr & ACR_ICEN) && art_hit(f, f->iline, f->iuse, ART_ILINES, l))
+        st = 0;
+    else {
+        st = ws;
+        if (acr & ACR_ICEN)
+            art_fill(f, f->iline, f->iuse, ART_ILINES, l);
+    }
+    f->cur_line = l;
+    if (acr & ACR_PRFTEN) {
+        f->pf_line = l + 1;
+        f->pf_ready = now + st + ws + 1;
+    } else {
+        f->pf_line = NO_LINE;
+    }
+    return st;
+}
+
+static u32 art_dread(void *ctx, u32 off)
+{
+    struct flash *f = (struct flash *)ctx;
+    u32 acr = (u32)f->acr->value, ws = acr & 0xfu, l = off >> 4;
+    if (!ws)
+        return 0;
+    if (acr & ACR_DCEN) {
+        if (art_hit(f, f->dline, f->duse, ART_DLINES, l))
+            return 0;
+        art_fill(f, f->dline, f->duse, ART_DLINES, l);
+    }
+    return ws;
+}
+
+static void art_reset(struct flash *f)
+{
+    f->cur_line = f->pf_line = NO_LINE;
+    f->pf_ready = 0;
+    art_clear(f->iline, f->iuse, ART_ILINES);
+    art_clear(f->dline, f->duse, ART_DLINES);
+}
+
+/* the memory the timing covers, once the bus has it */
+static void art_attach(struct flash *f)
+{
+    const struct esk_region *r = esk_bus_region(&f->s->bus, FLASH_BASE, 4);
+    if (!r || !f->acr)
+        return;
+    f->s->ftime.mem = r->mem;
+    f->s->ftime.ifetch = art_ifetch;
+    f->s->ftime.dread = art_dread;
+    f->s->ftime.ctx = f;
+}
+
 static void flash_write(void *ctx, u32 off, int n, u32 v)
 {
     struct flash *f = (struct flash *)ctx;
@@ -401,6 +528,14 @@ static void flash_write(void *ctx, u32 off, int n, u32 v)
         return;
     }
     esk_rf_write(f->p, off, n, v); /* ACR */
+    if (f->acr && off - esk_rf_off(f->acr) < 4) {
+        u32 acr = (u32)f->acr->value;
+        /* ICRST and DCRST empty a cache while it is off (RM0390 3.8.1) */
+        if ((acr & ACR_ICRST) && !(acr & ACR_ICEN))
+            art_clear(f->iline, f->iuse, ART_ILINES);
+        if ((acr & ACR_DCRST) && !(acr & ACR_DCEN))
+            art_clear(f->dline, f->duse, ART_DLINES);
+    }
 }
 
 static void flash_tick(void *ctx, u32 cycles)
@@ -435,6 +570,8 @@ static int flash_next(void *ctx, u32 *cycles)
 static void flash_reset(void *ctx)
 {
     struct flash *f = (struct flash *)ctx;
+    art_reset(f);
+    art_attach(f);
     f->busy = f->running = 0; /* a reset during an operation ends it */
     f->key_step = f->optkey_step = 0;
     f->wrong_key = 0;
@@ -456,6 +593,7 @@ void *esk_stm32f4_flash_create(struct esk_mach *s, struct esk_rf_periph *p)
     f.sr = esk_rf_reg(p, "SR");
     f.cr = esk_rf_reg(p, "CR");
     f.optcr = esk_rf_reg(p, "OPTCR");
+    f.acr = esk_rf_reg(p, "ACR");
     if (!f.keyr || !f.optkeyr || !f.sr || !f.cr || !f.optcr)
         return 0;
     f.irq = esk_rf_irq(p, "FLASH");
@@ -465,5 +603,7 @@ void *esk_stm32f4_flash_create(struct esk_mach *s, struct esk_rf_periph *p)
     *c = f;
     s->bus.rom_write = rom_write;
     s->bus.rom_write_ctx = c;
+    art_reset(c);
+    art_attach(c);
     return c;
 }

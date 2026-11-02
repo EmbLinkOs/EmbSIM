@@ -21,6 +21,7 @@
 #define SPARE (PICO_FLASH_SIZE_BYTES - FLASH_SECTOR_SIZE)
 
 static volatile unsigned presses, toggles;
+static volatile uint32_t last_edge;
 
 static bool blink(repeating_timer_t *t)
 {
@@ -32,8 +33,14 @@ static bool blink(repeating_timer_t *t)
 
 static void pressed(uint gpio, uint32_t events)
 {
-    if (gpio == BUTTON && (events & GPIO_IRQ_EDGE_FALL))
-        presses++;
+    /* the button's contacts chatter for a few milliseconds when pressed and
+     * when released: a press is a falling edge after 20 ms without an edge */
+    if (gpio == BUTTON) {
+        uint32_t now = to_ms_since_boot(get_absolute_time());
+        if ((events & GPIO_IRQ_EDGE_FALL) && !gpio_get(BUTTON) && now - last_edge >= 20u)
+            presses++;
+        last_edge = now;
+    }
 }
 
 static void core1(void)
@@ -82,7 +89,7 @@ int main(void)
     gpio_set_dir(PICO_DEFAULT_LED_PIN, GPIO_OUT);
     gpio_init(BUTTON);
     gpio_pull_up(BUTTON);
-    gpio_set_irq_enabled_with_callback(BUTTON, GPIO_IRQ_EDGE_FALL, true, pressed);
+    gpio_set_irq_enabled_with_callback(BUTTON, GPIO_IRQ_EDGE_FALL | GPIO_IRQ_EDGE_RISE, true, pressed);
     add_repeating_timer_ms(-250, blink, NULL, &timer);
     for (i = 0;; i++) {
         int c = getchar_timeout_us(0);

@@ -71,6 +71,12 @@ struct rv_state {
     u64 pmpcfg[16], pmpaddr[64];
     int npmp;    /* the PMP entries the part implements (the rest read 0) */
     int pmp_any; /* some entry is on: accesses are checked */
+    /* the entries that are on, decoded at each change of pmpcfg or
+     * pmpaddr, in priority order: their ranges [lo, hi) and config bytes */
+    int pmp_n;
+    u64 pmp_lo[64], pmp_hi[64];
+    u8 pmp_c[64];
+    int pmp_hit[8]; /* ESP-RV: by permission, the entry that granted last */
     u64 mcycle_off, minstret_off; /* what a write added to the counts */
     u64 cyc_now, insn_now;        /* the counts before this instruction */
 

@@ -14,6 +14,7 @@ import { ticks, timeToX, unitLabel, type TimeWindow } from './timeAxis';
 import { cssVar, useCanvas } from './useCanvas';
 import { decode, type Annotation, type DecoderSpec, type RecordLookup } from './decoders';
 import { DIGITAL_X, DIGITAL_Z, type WaveformRecord } from './waveform';
+import { uiText } from '@embsim/design';
 
 export interface LogicChannel {
   record: WaveformRecord;
@@ -86,7 +87,8 @@ export function LogicAnalyzer({ channels, window: win, onWindowChange, cursors, 
       now: cssVar(el, '--text-faint', '#6b7689'),
       selected: cssVar(el, '--accent-muted', 'rgba(95,227,177,0.14)'),
     };
-    const mono = `11px ${cssVar(el, '--font-mono', 'monospace')}`;
+    // the axis labels follow the workbench's text size (--ui-scale: small, medium, large)
+    const mono = `${Math.round(11 * (Number.parseFloat(cssVar(el, '--ui-scale', '1')) || 1))}px ${cssVar(el, '--font-mono', 'monospace')}`;
     ctx.clearRect(0, 0, width, height);
     ctx.fillStyle = colors.bg;
     ctx.fillRect(0, 0, width, height);
@@ -266,10 +268,10 @@ export function LogicAnalyzer({ channels, window: win, onWindowChange, cursors, 
         {...handlers}
       >
         <canvas ref={ref} className="es-instrument__canvas" />
-        {visible.length === 0 && <div className="es-instrument__empty">No digital probes subscribed</div>}
+        {visible.length === 0 && <div className="es-instrument__empty">{uiText('la.noProbes', 'No digital probes subscribed')}</div>}
       </div>
       <div className="es-instrument__strip">
-        <div className="es-instrument__traces" role="radiogroup" aria-label="Measured channel">
+        <div className="es-instrument__traces" role="radiogroup" aria-label={uiText('la.measured', 'Measured channel')}>
           {channels.map((c) => (
             <button key={c.record.id} type="button" role="radio" aria-checked={current?.record.id === c.record.id} className="es-instrument__trace" onClick={() => onSelect?.(c.record.id)}>
               {c.record.label}
@@ -278,11 +280,11 @@ export function LogicAnalyzer({ channels, window: win, onWindowChange, cursors, 
         </div>
         {measurements && current && (
           <dl className="es-instrument__measurements">
-            <Measure label="edges" value={String(measurements.edges)} />
-            <Measure label="duty" value={Number.isFinite(measurements.weighted.dutyCycle) ? `${(100 * measurements.weighted.dutyCycle).toFixed(2)} %` : '—'} />
-            <Measure label="coverage" value={`${(100 * measurements.weighted.coverage).toFixed(1)} %`} />
-            <Measure label="period" value={measurements.pf.period !== null ? formatTime(measurements.pf.period, { padZeros: false }) : '—'} />
-            <Measure label="freq" value={measurements.pf.frequencyHz !== null ? formatFrequency(measurements.pf.frequencyHz) : '—'} />
+            <Measure label={uiText('la.edges', 'edges')} value={String(measurements.edges)} />
+            <Measure label={uiText('la.duty', 'duty')} value={Number.isFinite(measurements.weighted.dutyCycle) ? `${(100 * measurements.weighted.dutyCycle).toFixed(2)} %` : '—'} />
+            <Measure label={uiText('la.coverage', 'coverage')} value={`${(100 * measurements.weighted.coverage).toFixed(1)} %`} />
+            <Measure label={uiText('la.period', 'period')} value={measurements.pf.period !== null ? formatTime(measurements.pf.period, { padZeros: false }) : '—'} />
+            <Measure label={uiText('la.freq', 'freq')} value={measurements.pf.frequencyHz !== null ? formatFrequency(measurements.pf.frequencyHz) : '—'} />
             {cursors.a !== null && <Measure label="A" value={`${formatTime(cursors.a, { padZeros: false })} · ${level(measurements.la)}`} />}
             {cursors.b !== null && <Measure label="B" value={`${formatTime(cursors.b, { padZeros: false })} · ${level(measurements.lb)}`} />}
             {cursors.a !== null && cursors.b !== null && <Measure label="Δ" value={formatTime(cursors.b - cursors.a, { padZeros: false })} />}

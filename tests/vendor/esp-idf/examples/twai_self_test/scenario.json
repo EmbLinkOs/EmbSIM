@@ -1,0 +1,50 @@
+{
+ "schema_version": 1,
+ "kind": "scenario",
+ "name": "twai_self_test",
+ "until": "6s",
+ "description": "twai_self_test, unmodified: TWAI at 25 kbit/s (ESP-IDF's timing: BRP 128, TSEG1 16, TSEG2 8 at an 80 MHz APB_CLK, 25 quanta of 1.6 us a bit) in self test mode, its TX on GPIO0 jumpered to its RX on GPIO2. Three times the driver starts, sends 100 base frames with ID 0x555 and one data byte as self reception requests, 10 ms apart, and receives each of them through the acceptance filter for 0x555 with no node acknowledging; then it stops. A frame of one byte is 44 bits before stuffing, plus the delimiters, ACK slot and end of frame, at 40 us a bit.",
+ "inputs": [],
+ "assertions": [
+  {
+   "id": "installed",
+   "at": "6s",
+   "probe": "console",
+   "expect": {
+    "contains": "TWAI Self Test: Driver installed"
+   }
+  },
+  {
+   "id": "first",
+   "at": "6s",
+   "probe": "console",
+   "expect": {
+    "contains": "TWAI Self Test: Msg received\tID 0x555\tData = 0"
+   }
+  },
+  {
+   "id": "last",
+   "at": "6s",
+   "probe": "console",
+   "expect": {
+    "contains": "TWAI Self Test: Msg received\tID 0x555\tData = 99"
+   }
+  },
+  {
+   "id": "stopped",
+   "at": "6s",
+   "probe": "console",
+   "expect": {
+    "contains": "TWAI Self Test: Driver stopped"
+   }
+  },
+  {
+   "id": "uninstalled",
+   "at": "6s",
+   "probe": "console",
+   "expect": {
+    "contains": "TWAI Self Test: Driver uninstalled"
+   }
+  }
+ ]
+}

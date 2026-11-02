@@ -1092,6 +1092,7 @@ void esk_pin_refresh(esk_pin *p)
 }
 
 static void island_step_cb(void *ctx, void *arg, es_time_t now);
+static void grid_cb(void *ctx, void *arg, es_time_t now);
 
 static es_status schedule_island(esk_engine *e, esk_island *isl, es_time_t at)
 {
@@ -1333,6 +1334,8 @@ es_status esk_engine_reset(esk_engine *e)
     uint32_t k;
     es_status st = ES_OK;
     esk_sched_reset(&e->sched);
+    for (i = 0; i < e->islands.len; i++)
+        esk_island_halt(e->islands.data[i]);
     esk_air_reset(&e->air);
     esk_inet_reset(&e->inet);
     e->signal_events = 0;
@@ -1390,6 +1393,8 @@ es_status esk_engine_reset(esk_engine *e)
         if (s2 == ES_OK)
             schedule_island(e, isl, 0);
     }
+    if (e->islands.len)
+        esk_sched_at(&e->sched, ESK_ANALOG_GRID_PS, ESK_EV_PROBE, grid_cb, e, NULL, NULL);
     return st;
 }
 
@@ -1398,12 +1403,26 @@ static void sync_cb(void *ctx, void *arg, es_time_t now)
     ES_UNUSED(ctx); ES_UNUSED(arg); ES_UNUSED(now);
 }
 
+/* the analog grid: every island takes a step boundary at each millisecond of
+ * simulated time, in every run. A run cut into slices on the grid (paced real
+ * time, a client's whole-millisecond advances) then cuts the islands nowhere
+ * an uncut run does not: their steps, and so every value they compute, are
+ * the same whatever the host's speed or the slices' lengths */
+static void grid_cb(void *ctx, void *arg, es_time_t now)
+{
+    esk_engine *e = (esk_engine *)ctx;
+    ES_UNUSED(arg);
+    if (now <= ES_TIME_MAX - ESK_ANALOG_GRID_PS)
+        esk_sched_at(&e->sched, now + ESK_ANALOG_GRID_PS, ESK_EV_PROBE, grid_cb, e, NULL, NULL);
+}
+
 es_status esk_engine_advance(esk_engine *e, es_time_t until)
 {
     es_status st;
     if (until < e->sched.now)
         return ES_ETIME;
-    /* a probe-class marker at `until` makes islands stop exactly there */
+    /* a probe-class marker at `until` makes islands stop exactly there (on the
+     * grid, where they stop anyway, it adds nothing) */
     if (e->islands.len)
         esk_sched_at(&e->sched, until, ESK_EV_PROBE, sync_cb, e, NULL, NULL);
     st = esk_sched_advance(&e->sched, until);

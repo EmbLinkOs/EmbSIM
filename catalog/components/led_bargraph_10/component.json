@@ -1,0 +1,608 @@
+{
+  "schema_version": 1,
+  "kind": "component",
+  "id": "emblink/led_bargraph_10",
+  "version": "1.0.0",
+  "name": "LED bar graph · 10 segments",
+  "category": "displays",
+  "description": "A 10-segment LED bar graph in the common 20-pin DIP package (the Kingbright DC-10 pinout): ten independent red LED junctions, segment n's anode on pin n and its cathode on pin 21 - n. Each segment follows its own junction current and needs its own series resistor.",
+  "keywords": [
+    "LED",
+    "bar graph",
+    "bargraph",
+    "10 segment",
+    "level meter",
+    "DC-10"
+  ],
+  "params": {},
+  "pins": [
+    {
+      "name": "A1",
+      "number": 1,
+      "model": {
+        "kind": "passive"
+      },
+      "required": false,
+      "doc": "Anode of segment 1"
+    },
+    {
+      "name": "A2",
+      "number": 2,
+      "model": {
+        "kind": "passive"
+      },
+      "required": false,
+      "doc": "Anode of segment 2"
+    },
+    {
+      "name": "A3",
+      "number": 3,
+      "model": {
+        "kind": "passive"
+      },
+      "required": false,
+      "doc": "Anode of segment 3"
+    },
+    {
+      "name": "A4",
+      "number": 4,
+      "model": {
+        "kind": "passive"
+      },
+      "required": false,
+      "doc": "Anode of segment 4"
+    },
+    {
+      "name": "A5",
+      "number": 5,
+      "model": {
+        "kind": "passive"
+      },
+      "required": false,
+      "doc": "Anode of segment 5"
+    },
+    {
+      "name": "A6",
+      "number": 6,
+      "model": {
+        "kind": "passive"
+      },
+      "required": false,
+      "doc": "Anode of segment 6"
+    },
+    {
+      "name": "A7",
+      "number": 7,
+      "model": {
+        "kind": "passive"
+      },
+      "required": false,
+      "doc": "Anode of segment 7"
+    },
+    {
+      "name": "A8",
+      "number": 8,
+      "model": {
+        "kind": "passive"
+      },
+      "required": false,
+      "doc": "Anode of segment 8"
+    },
+    {
+      "name": "A9",
+      "number": 9,
+      "model": {
+        "kind": "passive"
+      },
+      "required": false,
+      "doc": "Anode of segment 9"
+    },
+    {
+      "name": "A10",
+      "number": 10,
+      "model": {
+        "kind": "passive"
+      },
+      "required": false,
+      "doc": "Anode of segment 10"
+    },
+    {
+      "name": "K10",
+      "number": 11,
+      "model": {
+        "kind": "passive"
+      },
+      "required": false,
+      "doc": "Cathode of segment 10"
+    },
+    {
+      "name": "K9",
+      "number": 12,
+      "model": {
+        "kind": "passive"
+      },
+      "required": false,
+      "doc": "Cathode of segment 9"
+    },
+    {
+      "name": "K8",
+      "number": 13,
+      "model": {
+        "kind": "passive"
+      },
+      "required": false,
+      "doc": "Cathode of segment 8"
+    },
+    {
+      "name": "K7",
+      "number": 14,
+      "model": {
+        "kind": "passive"
+      },
+      "required": false,
+      "doc": "Cathode of segment 7"
+    },
+    {
+      "name": "K6",
+      "number": 15,
+      "model": {
+        "kind": "passive"
+      },
+      "required": false,
+      "doc": "Cathode of segment 6"
+    },
+    {
+      "name": "K5",
+      "number": 16,
+      "model": {
+        "kind": "passive"
+      },
+      "required": false,
+      "doc": "Cathode of segment 5"
+    },
+    {
+      "name": "K4",
+      "number": 17,
+      "model": {
+        "kind": "passive"
+      },
+      "required": false,
+      "doc": "Cathode of segment 4"
+    },
+    {
+      "name": "K3",
+      "number": 18,
+      "model": {
+        "kind": "passive"
+      },
+      "required": false,
+      "doc": "Cathode of segment 3"
+    },
+    {
+      "name": "K2",
+      "number": 19,
+      "model": {
+        "kind": "passive"
+      },
+      "required": false,
+      "doc": "Cathode of segment 2"
+    },
+    {
+      "name": "K1",
+      "number": 20,
+      "model": {
+        "kind": "passive"
+      },
+      "required": false,
+      "doc": "Cathode of segment 1"
+    }
+  ],
+  "model": {
+    "composite": {
+      "components": [
+        {
+          "id": "D1",
+          "component": "emblink/led",
+          "params": {
+            "color": "red"
+          }
+        },
+        {
+          "id": "D2",
+          "component": "emblink/led",
+          "params": {
+            "color": "red"
+          }
+        },
+        {
+          "id": "D3",
+          "component": "emblink/led",
+          "params": {
+            "color": "red"
+          }
+        },
+        {
+          "id": "D4",
+          "component": "emblink/led",
+          "params": {
+            "color": "red"
+          }
+        },
+        {
+          "id": "D5",
+          "component": "emblink/led",
+          "params": {
+            "color": "red"
+          }
+        },
+        {
+          "id": "D6",
+          "component": "emblink/led",
+          "params": {
+            "color": "red"
+          }
+        },
+        {
+          "id": "D7",
+          "component": "emblink/led",
+          "params": {
+            "color": "red"
+          }
+        },
+        {
+          "id": "D8",
+          "component": "emblink/led",
+          "params": {
+            "color": "red"
+          }
+        },
+        {
+          "id": "D9",
+          "component": "emblink/led",
+          "params": {
+            "color": "red"
+          }
+        },
+        {
+          "id": "D10",
+          "component": "emblink/led",
+          "params": {
+            "color": "red"
+          }
+        }
+      ],
+      "nets": {},
+      "ports": {
+        "A1": "D1.A",
+        "K1": "D1.K",
+        "A2": "D2.A",
+        "K2": "D2.K",
+        "A3": "D3.A",
+        "K3": "D3.K",
+        "A4": "D4.A",
+        "K4": "D4.K",
+        "A5": "D5.A",
+        "K5": "D5.K",
+        "A6": "D6.A",
+        "K6": "D6.K",
+        "A7": "D7.A",
+        "K7": "D7.K",
+        "A8": "D8.A",
+        "K8": "D8.K",
+        "A9": "D9.A",
+        "K9": "D9.K",
+        "A10": "D10.A",
+        "K10": "D10.K"
+      }
+    }
+  },
+  "fidelity": {
+    "functional": {
+      "claims": "Each segment lights while its anode is high and its cathode low, through emblink/led's indication.",
+      "omissions": [
+        "manufacturer qualification: the junctions are the catalog's red LED, not a fitted Kingbright DC-10 curve",
+        "optical calibration",
+        "thermal effects and damage",
+        "junction capacitance and reverse breakdown"
+      ],
+      "validation": [
+        "tests/*.json"
+      ]
+    },
+    "timed": {
+      "claims": "As functional.",
+      "omissions": [
+        "manufacturer qualification: the junctions are the catalog's red LED, not a fitted Kingbright DC-10 curve",
+        "optical calibration",
+        "thermal effects and damage",
+        "junction capacitance and reverse breakdown"
+      ],
+      "validation": [
+        "tests/*.json"
+      ]
+    },
+    "electrical": {
+      "claims": "Ten independent LED junctions with emblink/led's red current/voltage law; no shared terminal.",
+      "omissions": [
+        "manufacturer qualification: the junctions are the catalog's red LED, not a fitted Kingbright DC-10 curve",
+        "optical calibration",
+        "thermal effects and damage",
+        "junction capacitance and reverse breakdown"
+      ],
+      "validation": [
+        "tests/*.json"
+      ]
+    }
+  },
+  "provenance": {
+    "author": "EmbSIM",
+    "license": "Apache-2.0",
+    "sources": [
+      {
+        "title": "Kingbright DC-10EWA 10-segment bar graph array: package and pin connection diagram (pins 1-10 anodes, 11-20 cathodes)"
+      }
+    ]
+  },
+  "tests": [
+    "tests/*.json"
+  ],
+  "symbol": {
+    "svg": "symbol.svg",
+    "width": 220,
+    "height": 80,
+    "pins": {
+      "A1": {
+        "x": 20,
+        "y": 0,
+        "side": "top"
+      },
+      "K1": {
+        "x": 20,
+        "y": 80,
+        "side": "bottom"
+      },
+      "A2": {
+        "x": 40,
+        "y": 0,
+        "side": "top"
+      },
+      "K2": {
+        "x": 40,
+        "y": 80,
+        "side": "bottom"
+      },
+      "A3": {
+        "x": 60,
+        "y": 0,
+        "side": "top"
+      },
+      "K3": {
+        "x": 60,
+        "y": 80,
+        "side": "bottom"
+      },
+      "A4": {
+        "x": 80,
+        "y": 0,
+        "side": "top"
+      },
+      "K4": {
+        "x": 80,
+        "y": 80,
+        "side": "bottom"
+      },
+      "A5": {
+        "x": 100,
+        "y": 0,
+        "side": "top"
+      },
+      "K5": {
+        "x": 100,
+        "y": 80,
+        "side": "bottom"
+      },
+      "A6": {
+        "x": 120,
+        "y": 0,
+        "side": "top"
+      },
+      "K6": {
+        "x": 120,
+        "y": 80,
+        "side": "bottom"
+      },
+      "A7": {
+        "x": 140,
+        "y": 0,
+        "side": "top"
+      },
+      "K7": {
+        "x": 140,
+        "y": 80,
+        "side": "bottom"
+      },
+      "A8": {
+        "x": 160,
+        "y": 0,
+        "side": "top"
+      },
+      "K8": {
+        "x": 160,
+        "y": 80,
+        "side": "bottom"
+      },
+      "A9": {
+        "x": 180,
+        "y": 0,
+        "side": "top"
+      },
+      "K9": {
+        "x": 180,
+        "y": 80,
+        "side": "bottom"
+      },
+      "A10": {
+        "x": 200,
+        "y": 0,
+        "side": "top"
+      },
+      "K10": {
+        "x": 200,
+        "y": 80,
+        "side": "bottom"
+      }
+    },
+    "states": [
+      {
+        "output": "D1.luminance",
+        "selector": "#D1",
+        "attr": "opacity",
+        "scale": {
+          "from": [
+            0,
+            1
+          ],
+          "to": [
+            0,
+            1
+          ]
+        }
+      },
+      {
+        "output": "D2.luminance",
+        "selector": "#D2",
+        "attr": "opacity",
+        "scale": {
+          "from": [
+            0,
+            1
+          ],
+          "to": [
+            0,
+            1
+          ]
+        }
+      },
+      {
+        "output": "D3.luminance",
+        "selector": "#D3",
+        "attr": "opacity",
+        "scale": {
+          "from": [
+            0,
+            1
+          ],
+          "to": [
+            0,
+            1
+          ]
+        }
+      },
+      {
+        "output": "D4.luminance",
+        "selector": "#D4",
+        "attr": "opacity",
+        "scale": {
+          "from": [
+            0,
+            1
+          ],
+          "to": [
+            0,
+            1
+          ]
+        }
+      },
+      {
+        "output": "D5.luminance",
+        "selector": "#D5",
+        "attr": "opacity",
+        "scale": {
+          "from": [
+            0,
+            1
+          ],
+          "to": [
+            0,
+            1
+          ]
+        }
+      },
+      {
+        "output": "D6.luminance",
+        "selector": "#D6",
+        "attr": "opacity",
+        "scale": {
+          "from": [
+            0,
+            1
+          ],
+          "to": [
+            0,
+            1
+          ]
+        }
+      },
+      {
+        "output": "D7.luminance",
+        "selector": "#D7",
+        "attr": "opacity",
+        "scale": {
+          "from": [
+            0,
+            1
+          ],
+          "to": [
+            0,
+            1
+          ]
+        }
+      },
+      {
+        "output": "D8.luminance",
+        "selector": "#D8",
+        "attr": "opacity",
+        "scale": {
+          "from": [
+            0,
+            1
+          ],
+          "to": [
+            0,
+            1
+          ]
+        }
+      },
+      {
+        "output": "D9.luminance",
+        "selector": "#D9",
+        "attr": "opacity",
+        "scale": {
+          "from": [
+            0,
+            1
+          ],
+          "to": [
+            0,
+            1
+          ]
+        }
+      },
+      {
+        "output": "D10.luminance",
+        "selector": "#D10",
+        "attr": "opacity",
+        "scale": {
+          "from": [
+            0,
+            1
+          ],
+          "to": [
+            0,
+            1
+          ]
+        }
+      }
+    ]
+  }
+}

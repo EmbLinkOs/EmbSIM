@@ -147,10 +147,15 @@ struct esk_rf {
     int np;
     struct esk_rf_reg **reg; /* every register, by address */
     int nreg;
+    int last_reg;            /* the register found last, tried first */
     u32 lo, hi;              /* the span the bus device covers */
     int rules;               /* ESK_RF_ATOMIC_ALIASES, ESK_RF_WIDE_WRITES */
     struct esk_rf_periph *tk[ESK_RF_TICKERS];
     int ntk;
+    /* the models found by esk_rf_ctx_of, by their ops */
+    const void *found_ops[16];
+    void *found_ctx[16];
+    int nfound;
     int faults;
     /* the description's interrupt table, vectors and pins */
     const char **irq_name;
@@ -204,6 +209,9 @@ int esk_rf_reg_gated(const struct esk_rf_reg *r);
 void esk_rf_periph_reset(struct esk_rf_periph *p);
 struct esk_rf_periph *esk_rf_periph(struct esk_rf *rf, const char *name);
 struct esk_rf_periph *esk_rf_periph_at(struct esk_rf *rf, int i);
+/* the first peripheral's model context whose ops are `ops`, or NULL; the
+ * answer is kept, as a model's context does not move once created */
+void *esk_rf_ctx_of(struct esk_rf *rf, const void *ops);
 struct esk_rf_reg *esk_rf_reg(struct esk_rf_periph *p, const char *name);
 /* the bits of the register's field of that name, or 0 */
 u64 esk_rf_mask(const struct esk_rf_reg *r, const char *field);

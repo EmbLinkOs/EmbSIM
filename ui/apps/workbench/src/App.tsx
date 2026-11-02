@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
 // Copyright 2026 Junior Deogracias
-import { CommandPalette, Dialog, ToastProvider, TooltipProvider, useTheme, useToast } from '@embsim/design';
-import { useEffect, useState } from 'react';
+import { CommandPalette, Dialog, ToastProvider, TooltipProvider, resolveTheme, setUiMessages, useToast, type ThemePreference } from '@embsim/design';
+import { useEffect, useMemo, useState } from 'react';
 import { connectSession, tryClient, type ConnectOptions } from './connection';
 import { Gallery } from './gallery/Gallery';
 import { DebugPerspective } from './perspectives/debug/DebugPerspective';
@@ -11,9 +11,14 @@ import { VerifyPerspective } from './perspectives/verify/VerifyPerspective';
 import { useCommands, useGlobalShortcuts } from './shell/commands';
 import { NewProjectDialog } from './shell/NewProjectDialog';
 import { DiagnosticsPanel } from './shell/DiagnosticsPanel';
+import { FloatingPanels } from './shell/FloatingPanels';
 import { Toolbar } from './shell/Toolbar';
 import { WorkbenchStatusBar } from './shell/WorkbenchStatusBar';
+import { packageMessages, t as tr, type MessageKey } from './i18n';
+import { ConnectionScreen } from './shell/ConnectionScreen';
+import { SettingsPage } from './shell/SettingsPage';
 import { useLayout } from './stores/layout';
+import { useSettings } from './stores/settings';
 import { useSession } from './stores/session';
 
 export function isGalleryRoute(loc: Pick<Location, 'pathname' | 'hash'> = window.location): boolean {
@@ -42,8 +47,38 @@ export function App({ connect }: AppProps) {
   );
 }
 
+/** The theme as the Settings page keeps it (the same object the palette's theme commands use). */
+function useSettingsTheme() {
+  const preference = useSettings((s) => s.theme);
+  const set = useSettings((s) => s.set);
+  const [resolved, setResolved] = useState(() => resolveTheme(preference));
+  useEffect(() => {
+    setResolved(resolveTheme(preference));
+    if (preference !== 'system' || typeof window.matchMedia !== 'function') return;
+    const mq = window.matchMedia('(prefers-color-scheme: light)');
+    const onChange = () => setResolved(resolveTheme('system'));
+    mq.addEventListener?.('change', onChange);
+    return () => mq.removeEventListener?.('change', onChange);
+  }, [preference]);
+  return {
+    preference,
+    resolved,
+    setPreference: (p: ThemePreference) => set('theme', p),
+    toggle: () => set('theme', resolved === 'dark' ? 'light' : 'dark'),
+  };
+}
+
 function Workbench({ connect }: AppProps) {
-  const theme = useTheme();
+  const theme = useSettingsTheme();
+  const settingsOpen = useSettings((s) => s.settingsOpen);
+  const layoutEpoch = useSettings((s) => s.layoutEpoch);
+  // the perspectives read their messages when they render: a language change
+  // rebuilds them (the layout, the project and the session are kept in stores)
+  const language = useSettings((s) => s.language);
+  const viewKey = `${layoutEpoch}.${language}`;
+  // the shared packages read the same language, before anything below renders
+  useMemo(() => setUiMessages(packageMessages(language)), [language]);
+  useSettings((s) => s.language); // re-render the shell when the language changes
   const status = useSession((s) => s.status);
   const error = useSession((s) => s.error);
   const perspective = useLayout((s) => s.perspective);
@@ -60,7 +95,7 @@ function Workbench({ connect }: AppProps) {
     connectSession(connect ?? {})
       .then(() => {
         const s = useSession.getState();
-        if (s.error) toast({ kind: 'warning', title: 'Using the demo session', description: s.error, duration: 8000 });
+        if (s.error) toast({ kind: 'warning', title: tr('toast.demo'), description: s.error, duration: 8000 });
       })
       .catch((e: unknown) => {
         useSession.getState().setConnection({ status: 'error', error: e instanceof Error ? e.message : String(e) });
@@ -83,35 +118,27 @@ function Workbench({ connect }: AppProps) {
   }, [toast]);
 
   let main: React.ReactNode;
-  if (status === 'error') {
-    main = (
-      <div className="wb-connecting" role="alert">
-        <div className="es-empty__title">Could not connect</div>
-        <div>{error}</div>
-      </div>
-    );
+  if (settingsOpen) {
+    main = <SettingsPage />;
   } else if (status !== 'open') {
-    main = (
-      <div className="wb-connecting" role="status">
-        <div className="es-empty__title">Connecting…</div>
-        <div>Opening the session</div>
-      </div>
-    );
+    main = <ConnectionScreen />;
   } else {
     main =
-      perspective === 'design' ? <DesignPerspective /> : perspective === 'run' ? <RunPerspective /> : perspective === 'debug' ? <DebugPerspective /> : <VerifyPerspective />;
+      perspective === 'design' ? <DesignPerspective key={viewKey} /> : perspective === 'run' ? <RunPerspective key={viewKey} /> : perspective === 'debug' ? <DebugPerspective key={viewKey} /> : <VerifyPerspective key={viewKey} />;
   }
+  void error;
 
   return (
     <div className="wb" data-perspective={perspective}>
       <Toolbar theme={theme} commands={commands} />
       <NewProjectDialog />
-      <main className="wb__main" aria-label={`${perspective} perspective`}>
+      <main className="wb__main" aria-label={settingsOpen ? tr('settings.title') : tr('perspective.region', { name: tr(`perspective.${perspective}` as MessageKey) })}>
         {main}
       </main>
+      {status === 'open' && !settingsOpen && <FloatingPanels key={viewKey} />}
       <WorkbenchStatusBar />
       <CommandPalette open={paletteOpen} onOpenChange={setPaletteOpen} commands={commands} />
-      <Dialog open={diagnosticsOpen} onOpenChange={setDiagnosticsOpen} title="Diagnostics" className="wb-diagnostics-dialog">
+      <Dialog open={diagnosticsOpen} onOpenChange={setDiagnosticsOpen} title={tr('diag.title')} className="wb-diagnostics-dialog">
         <DiagnosticsPanel />
       </Dialog>
     </div>

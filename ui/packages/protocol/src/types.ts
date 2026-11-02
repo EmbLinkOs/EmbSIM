@@ -129,6 +129,7 @@ export const WORLD_FIELDS: { name: WorldField; label: string; unit: string; min:
 
 /** A logic analyzer part's capture (instrument.read): transitions on its sample grid. */
 export interface LogicCapture {
+  kind: 'logic';
   state: 'idle' | 'armed' | 'capturing' | 'done';
   sample_rate: number;
   /** the capture's first sample, and the samples' spacing */
@@ -146,6 +147,41 @@ export interface LogicCapture {
   full: boolean;
   /** [sample, inputs]: the inputs from that sample on; the first is the start */
   transitions: [number, number][];
+}
+
+/** A power profiler's samples (instrument.read on its measurement core): the current, 100 kS/s. */
+export interface PowerCapture {
+  kind: 'power';
+  state: 'idle' | 'sampling';
+  mode: 'source' | 'ampere';
+  sample_rate: number;
+  /** the first sample's window, and the samples' spacing */
+  start_ps: PsString;
+  period_ps: PsString;
+  /** sequence numbers: the oldest held, this read's first, the next read's */
+  first: number;
+  since: number;
+  next: number;
+  /** amperes, each the average over its window at its range's resolution */
+  samples: number[];
+}
+
+/** An oscilloscope's last acquisition (instrument.read): its screen's points, each channel's. */
+export interface ScopeCapture {
+  kind: 'scope';
+  /** as the screen's corner shows it */
+  status: 'WAIT' | "T'D" | 'AUTO' | 'STOP';
+  /** acquisitions so far; a read with `since` at or above it carries no points */
+  seq: number;
+  trigger_ps?: PsString;
+  /** the screen's first point and their spacing (12 divisions over the points) */
+  x0_ps?: PsString;
+  dx_ps?: PsString;
+  sample_rate?: number;
+  memory_points?: number;
+  /** Auto's acquisition with no trigger */
+  forced?: boolean;
+  channels: { channel: number; on: boolean; points?: number[] }[];
 }
 
 export interface WorldBody {

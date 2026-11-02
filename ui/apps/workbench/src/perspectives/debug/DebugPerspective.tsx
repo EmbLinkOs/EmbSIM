@@ -17,6 +17,7 @@ import { useProject } from '../../stores/project';
 import { useSession } from '../../stores/session';
 import { Placeholder } from '../Placeholder';
 import { demangle } from './demangle';
+import { t as tr } from '../../i18n';
 
 function useDebugBoard() {
   const boards = useSession((s) => s.boards);
@@ -53,31 +54,31 @@ export function DebugPerspective() {
     return (
       <div className="wb-perspective">
         <Placeholder
-          title="Debug"
+          title={tr('perspective.debug')}
           icon={<Bug />}
-          description="Halt, step and inspect a board's firmware: disassembly with breakpoints, registers, memory, peripherals and the console."
+          description={tr('debug.placeholderDesc')}
           requires={['debug']}
           needsBoard
-          actions={['a board whose MCU has firmware (boards[].firmware in the project)']}
+          actions={[tr('debug.placeholderAction')]}
         />
       </div>
     );
   }
 
   const left: DockItem[] = [
-    { id: 'source', title: 'Source', weight: 2.2, content: <SourcePanel /> },
-    { id: 'disassembly', title: 'Disassembly', weight: 1.6, content: <DisassemblyPanel /> },
-    { id: 'console', title: 'Console', weight: 1, content: <ConsolePanel /> },
+    { id: 'source', title: tr('debug.source'), weight: 2.2, content: <SourcePanel /> },
+    { id: 'disassembly', title: tr('debug.disassembly'), weight: 1.6, content: <DisassemblyPanel /> },
+    { id: 'console', title: tr('debug.console'), weight: 1, content: <ConsolePanel /> },
   ];
   const right: DockItem[] = [
-    { id: 'registers', title: 'Registers', weight: 1.4, content: <RegistersPanel /> },
-    { id: 'breakpoints', title: 'Breakpoints', weight: 0.8, content: <BreakpointsPanel /> },
-    { id: 'memory', title: 'Memory', weight: 1.2, content: <MemoryPanel /> },
-    { id: 'peripherals', title: 'Peripherals', weight: 1.2, content: <PeripheralsPanel /> },
+    { id: 'registers', title: tr('debug.registers'), weight: 1.4, content: <RegistersPanel /> },
+    { id: 'breakpoints', title: tr('debug.breakpoints'), weight: 0.8, content: <BreakpointsPanel /> },
+    { id: 'memory', title: tr('debug.memory'), weight: 1.2, content: <MemoryPanel /> },
+    { id: 'peripherals', title: tr('debug.peripherals'), weight: 1.2, content: <PeripheralsPanel /> },
   ];
   const items: DockItem[] = [
-    { id: 'left', title: 'Code', bare: true, weight: 2, minSize: 400, content: <DockLayout direction="column" items={left} storageKey={`embsim.layout.debug2.left.${name}`} /> },
-    { id: 'right', title: 'State', bare: true, weight: 1.3, minSize: 300, content: <DockLayout direction="column" items={right} storageKey={`embsim.layout.debug2.right.${name}`} /> },
+    { id: 'left', title: tr('debug.code'), bare: true, weight: 2, minSize: 400, content: <DockLayout direction="column" items={left} storageKey={`embsim.layout.debug2.left.${name}`} /> },
+    { id: 'right', title: tr('insp.state'), bare: true, weight: 1.3, minSize: 300, content: <DockLayout direction="column" items={right} storageKey={`embsim.layout.debug2.right.${name}`} /> },
   ];
   return (
     <div className="wb-perspective wb-debug">
@@ -102,32 +103,32 @@ function DebugToolbar() {
     ? `${where.core !== undefined ? `core ${where.core} · ` : ''}${where.function ? `${demangle(where.function)}+${where.offset ?? 0}` : ''} ${hex32(where.pc)}${where.file ? ` · ${where.file.split(/[\\/]/).pop()}:${where.line}` : ''}`
     : '';
   return (
-    <div className="wb-debug__toolbar" role="toolbar" aria-label="Debugger">
+    <div className="wb-debug__toolbar" role="toolbar" aria-label={tr('debug.debugger')}>
       <Bug aria-hidden size={16} />
       <span className="wb-debug__board">{board}</span>
       {running ? (
-        <Badge tone="accent">running</Badge>
+        <Badge tone="accent">{tr('debug.running')}</Badge>
       ) : where?.stopped ? (
         <Badge tone="warning">stopped: {where.stopped}</Badge>
       ) : (
-        <Badge>paused</Badge>
+        <Badge>{tr('debug.paused')}</Badge>
       )}
       <code className="wb-debug__where">{place}</code>
       <span className="wb-debug__spacer" />
-      <Button size="sm" variant="primary" icon={<Play size={14} />} disabled={running || busy} onClick={() => void resume()} title="Continue (F5)">
-        Continue
+      <Button size="sm" variant="primary" icon={<Play size={14} />} disabled={running || busy} onClick={() => void resume()} title={tr('debug.continueHint')}>
+        {tr('debug.continue')}
       </Button>
-      <Button size="sm" icon={<CirclePause size={14} />} disabled={!running && !!where?.stopped} onClick={() => void halt()} title="Halt the core and the session">
-        Halt
+      <Button size="sm" icon={<CirclePause size={14} />} disabled={!running && !!where?.stopped} onClick={() => void halt()} title={tr('debug.haltHint')}>
+        {tr('debug.halt')}
       </Button>
-      <Button size="sm" icon={<StepForward size={14} />} disabled={running || busy} onClick={() => void step(1)} title="One instruction (F11)">
-        Step
+      <Button size="sm" icon={<StepForward size={14} />} disabled={running || busy} onClick={() => void step(1)} title={tr('debug.stepHint')}>
+        {tr('debug.step')}
       </Button>
-      <Button size="sm" disabled={running || busy} onClick={() => void step(10)} title="Ten instructions">
-        Step 10
+      <Button size="sm" disabled={running || busy} onClick={() => void step(10)} title={tr('debug.step10Hint')}>
+        {tr('debug.step10')}
       </Button>
-      <Button size="sm" icon={<RotateCcw size={14} />} onClick={() => void reset()} title="Reset the session">
-        Reset
+      <Button size="sm" icon={<RotateCcw size={14} />} onClick={() => void reset()} title={tr('debug.resetHint')}>
+        {tr('debug.reset')}
       </Button>
       {where && (
         <span className="wb-debug__counts">
@@ -148,8 +149,8 @@ function SourcePanel() {
   useEffect(() => current.current?.scrollIntoView({ block: 'center' }), [where?.line, source]);
   if (!source) {
     return (
-      <EmptyState title="No source">
-        {where && !where.file ? 'The image has no line information: build it with -g.' : 'Halt the core to see the line it is at.'}
+      <EmptyState title={tr('debug.noSource')}>
+        {where && !where.file ? tr('debug.noLines') : tr('debug.haltForLine')}
       </EmptyState>
     );
   }
@@ -171,7 +172,7 @@ function SourcePanel() {
                     <button
                       type="button"
                       className={set ? 'wb-debug__bp is-set' : 'wb-debug__bp'}
-                      aria-label={`${set ? 'Remove' : 'Set'} breakpoint at line ${n}`}
+                      aria-label={`${set ? tr('se.remove') : 'Set'} breakpoint at line ${n}`}
                       onClick={() => void toggle(source.file, n)}
                     />
                   )}
@@ -194,11 +195,11 @@ function DisassemblyPanel() {
   const toggle = useDebug((s) => s.toggleBreakpoint);
   const current = useRef<HTMLTableRowElement | null>(null);
   useEffect(() => current.current?.scrollIntoView({ block: 'nearest' }), [where?.pc, insns]);
-  if (!insns.length) return <EmptyState title="No disassembly">Halt the core to see its instructions.</EmptyState>;
+  if (!insns.length) return <EmptyState title={tr('debug.noDisassembly')}>{tr('debug.haltToSee')}</EmptyState>;
   const bps = new Set(breakpoints.filter((b) => b.kind === 'code').map((b) => b.pc));
   return (
     <div className="wb-debug__scroll">
-      <table className="wb-debug__table wb-debug__dis" aria-label="Disassembly">
+      <table className="wb-debug__table wb-debug__dis" aria-label={tr('debug.disassembly')}>
         <tbody>
           {insns.map((i) => {
             const isPc = where?.pc === i.address;
@@ -208,7 +209,7 @@ function DisassemblyPanel() {
                   <button
                     type="button"
                     className={bps.has(i.address) ? 'wb-debug__bp is-set' : 'wb-debug__bp'}
-                    aria-label={`${bps.has(i.address) ? 'Remove' : 'Set'} breakpoint at ${hex32(i.address)}`}
+                    aria-label={`${bps.has(i.address) ? tr('se.remove') : 'Set'} breakpoint at ${hex32(i.address)}`}
                     onClick={() => void toggle(i.address)}
                   />
                 </td>
@@ -236,10 +237,10 @@ function RegistersPanel() {
   const setRegister = useDebug((s) => s.setRegister);
   const [editing, setEditing] = useState<string | null>(null);
   const [text, setText] = useState('');
-  if (!regs.length) return <EmptyState title="No registers">Halt the core to read them.</EmptyState>;
+  if (!regs.length) return <EmptyState title={tr('debug.noRegisters')}>{tr('debug.haltToRead')}</EmptyState>;
   return (
     <div className="wb-debug__scroll">
-      <table className="wb-debug__table" aria-label="Registers">
+      <table className="wb-debug__table wb-debug__regs" aria-label={tr('debug.registers')}>
         <tbody>
           {regs.map((r) => {
             const changed = previous[r.name] !== undefined && previous[r.name] !== r.value;
@@ -261,7 +262,7 @@ function RegistersPanel() {
                     <button
                       type="button"
                       className="wb-debug__value"
-                      title="Edit"
+                      title={tr('debug.edit')}
                       onClick={() => {
                         setEditing(r.name);
                         setText(hexReg(r.value, r.size));
@@ -296,20 +297,20 @@ function BreakpointsPanel() {
           setText('');
         }}
       >
-        <Input aria-label="Breakpoint: a function or an address" placeholder="main, EXTI0_IRQHandler, 0x080002f4" mono value={text} onChange={(e) => setText(e.target.value)} />
+        <Input aria-label={tr('debug.bpAria')} placeholder="main, EXTI0_IRQHandler, 0x080002f4" mono value={text} onChange={(e) => setText(e.target.value)} />
         <Button size="sm" type="submit" disabled={!text.trim()}>
-          Add
+          {tr('common.add')}
         </Button>
       </form>
       {breakpoints.length === 0 ? (
-        <div className="wb-debug__hint">No breakpoints. Click the gutter of the disassembly, or name a function.</div>
+        <div className="wb-debug__hint">{tr('debug.noBreakpoints')}</div>
       ) : (
         <ul className="wb-debug__list">
           {breakpoints.map((b, k) => (
             <li key={k}>
               <code title={b.function}>{b.kind === 'code' ? `${b.function ? `${demangle(b.function)}+${b.offset ?? 0} ` : ''}${hex32(b.pc ?? 0)}` : `${b.kind} ${hex32(b.address ?? 0)} (${b.length})`}</code>
-              <Button size="sm" variant="ghost" onClick={() => void remove(b)} aria-label="Remove breakpoint">
-                Remove
+              <Button size="sm" variant="ghost" onClick={() => void remove(b)} aria-label={tr('debug.removeBp')}>
+                {tr('se.remove')}
               </Button>
             </li>
           ))}
@@ -343,13 +344,13 @@ function MemoryPanel() {
           void load(text);
         }}
       >
-        <Input aria-label="Memory address or symbol" mono value={text} onChange={(e) => setText(e.target.value)} />
+        <Input aria-label={tr('debug.memAddr')} mono value={text} onChange={(e) => setText(e.target.value)} />
         <Button size="sm" type="submit">
-          Read
+          {tr('debug.read')}
         </Button>
       </form>
       <div className="wb-debug__scroll">
-        <pre className="wb-debug__hex" aria-label="Memory">
+        <pre className="wb-debug__hex" aria-label={tr('debug.memory')}>
           {rows
             .map(
               (r) =>
@@ -376,14 +377,14 @@ function PeripheralsPanel() {
   const shown = peripherals.filter((p) => p.name.toLowerCase().includes(filter.toLowerCase()));
   return (
     <div className="wb-debug__pane">
-      <Input aria-label="Filter peripherals" placeholder="Filter: GPIO, USART1, TIM2" value={filter} onChange={(e) => setFilter(e.target.value)} />
+      <Input aria-label={tr('debug.filterPeriph')} placeholder={tr('debug.filterPlaceholder')} value={filter} onChange={(e) => setFilter(e.target.value)} />
       <div className="wb-debug__scroll">
         {shown.map((p) => (
           <div key={p.name} className="wb-debug__periph">
             <button type="button" className="wb-debug__periph-head" aria-expanded={open === p.name} onClick={() => setOpen(open === p.name ? null : p.name)}>
               <strong>{p.name}</strong> <code>{hex32(p.base)}</code> <span className="wb-debug__model">{p.model}</span>
-              {p.reset && <Badge tone="warning">in reset</Badge>}
-              {!p.clock && <Badge tone="warning">clock off</Badge>}
+              {p.reset && <Badge tone="warning">{tr('debug.inReset')}</Badge>}
+              {!p.clock && <Badge tone="warning">{tr('debug.clockOff')}</Badge>}
             </button>
             {open === p.name && (
               <table className="wb-debug__table" aria-label={`${p.name} registers`}>
@@ -415,8 +416,8 @@ function ConsolePanel() {
   useEffect(() => end.current?.scrollIntoView({ block: 'end' }), [text]);
   return (
     <div className="wb-debug__scroll">
-      <pre className="wb-debug__console" aria-label="Console" aria-live="polite">
-        {text || 'The console (the MCU’s default UART) is empty.'}
+      <pre className="wb-debug__console" aria-label={tr('debug.console')} aria-live="polite">
+        {text || tr('debug.consoleEmpty')}
       </pre>
       <div ref={end} />
     </div>

@@ -1,0 +1,312 @@
+{
+ "schema_version": 1,
+ "kind": "project",
+ "name": "arduino-row-column-scanning",
+ "description": "The IDE's RowColumnScanning (Examples > 07.Display) as its arrays wire it: an 8x8 row-anode LED matrix with rows 1-8 on D2, D7, A5, D5, D13, A4, D12, A2 and columns 1-8 on D6, D11, D10, D3, A3, D4, D8, D9, each column through 220 Ohm; two 10 kOhm pots on A0 (X) and A1 (Y).",
+ "policy": "electrical",
+ "boards": [
+  {
+   "id": "B1",
+   "board": "emblink/arduino_uno",
+   "layout": {
+    "x": 300,
+    "y": 260
+   },
+   "firmware": {
+    "image": "sketch.elf",
+    "format": "elf"
+   }
+  }
+ ],
+ "components": [
+  {
+   "id": "USB",
+   "component": "emblink/vsource",
+   "params": {
+    "kind": "dc",
+    "dc": 5
+   },
+   "layout": {
+    "x": 720,
+    "y": 60
+   }
+  },
+  {
+   "id": "GND1",
+   "component": "emblink/gnd",
+   "layout": {
+    "x": 900,
+    "y": 200
+   }
+  },
+  {
+   "id": "MX",
+   "component": "emblink/led_matrix_8x8",
+   "layout": {
+    "x": 700,
+    "y": 600
+   }
+  },
+  {
+   "id": "POTX",
+   "component": "emblink/potentiometer",
+   "params": {
+    "resistance": 10000
+   },
+   "layout": {
+    "x": 120,
+    "y": 600
+   }
+  },
+  {
+   "id": "POTY",
+   "component": "emblink/potentiometer",
+   "params": {
+    "resistance": 10000
+   },
+   "layout": {
+    "x": 260,
+    "y": 600
+   }
+  },
+  {
+   "id": "RC1",
+   "component": "emblink/resistor",
+   "params": {
+    "resistance": 220
+   },
+   "layout": {
+    "x": 500,
+    "y": 500
+   }
+  },
+  {
+   "id": "RC2",
+   "component": "emblink/resistor",
+   "params": {
+    "resistance": 220
+   },
+   "layout": {
+    "x": 530,
+    "y": 500
+   }
+  },
+  {
+   "id": "RC3",
+   "component": "emblink/resistor",
+   "params": {
+    "resistance": 220
+   },
+   "layout": {
+    "x": 560,
+    "y": 500
+   }
+  },
+  {
+   "id": "RC4",
+   "component": "emblink/resistor",
+   "params": {
+    "resistance": 220
+   },
+   "layout": {
+    "x": 590,
+    "y": 500
+   }
+  },
+  {
+   "id": "RC5",
+   "component": "emblink/resistor",
+   "params": {
+    "resistance": 220
+   },
+   "layout": {
+    "x": 620,
+    "y": 500
+   }
+  },
+  {
+   "id": "RC6",
+   "component": "emblink/resistor",
+   "params": {
+    "resistance": 220
+   },
+   "layout": {
+    "x": 650,
+    "y": 500
+   }
+  },
+  {
+   "id": "RC7",
+   "component": "emblink/resistor",
+   "params": {
+    "resistance": 220
+   },
+   "layout": {
+    "x": 680,
+    "y": 500
+   }
+  },
+  {
+   "id": "RC8",
+   "component": "emblink/resistor",
+   "params": {
+    "resistance": 220
+   },
+   "layout": {
+    "x": 710,
+    "y": 500
+   }
+  }
+ ],
+ "nets": {
+  "USB5V": [
+   "USB.+",
+   "B1.5V",
+   "POTX.2",
+   "POTY.2"
+  ],
+  "GND": [
+   "B1.GND",
+   "GND1.GND",
+   "USB.-",
+   "POTX.1",
+   "POTY.1"
+  ],
+  "X": [
+   "POTX.W",
+   "B1.A0"
+  ],
+  "Y": [
+   "POTY.W",
+   "B1.A1"
+  ],
+  "ROW1": [
+   "B1.D2",
+   "MX.R1"
+  ],
+  "ROW2": [
+   "B1.D7",
+   "MX.R2"
+  ],
+  "ROW3": [
+   "B1.A5",
+   "MX.R3"
+  ],
+  "ROW4": [
+   "B1.D5",
+   "MX.R4"
+  ],
+  "ROW5": [
+   "B1.D13",
+   "MX.R5"
+  ],
+  "ROW6": [
+   "B1.A4",
+   "MX.R6"
+  ],
+  "ROW7": [
+   "B1.D12",
+   "MX.R7"
+  ],
+  "ROW8": [
+   "B1.A2",
+   "MX.R8"
+  ],
+  "COLPIN1": [
+   "B1.D6",
+   "RC1.1"
+  ],
+  "COL1": [
+   "RC1.2",
+   "MX.C1"
+  ],
+  "COLPIN2": [
+   "B1.D11",
+   "RC2.1"
+  ],
+  "COL2": [
+   "RC2.2",
+   "MX.C2"
+  ],
+  "COLPIN3": [
+   "B1.D10",
+   "RC3.1"
+  ],
+  "COL3": [
+   "RC3.2",
+   "MX.C3"
+  ],
+  "COLPIN4": [
+   "B1.D3",
+   "RC4.1"
+  ],
+  "COL4": [
+   "RC4.2",
+   "MX.C4"
+  ],
+  "COLPIN5": [
+   "B1.A3",
+   "RC5.1"
+  ],
+  "COL5": [
+   "RC5.2",
+   "MX.C5"
+  ],
+  "COLPIN6": [
+   "B1.D4",
+   "RC6.1"
+  ],
+  "COL6": [
+   "RC6.2",
+   "MX.C6"
+  ],
+  "COLPIN7": [
+   "B1.D8",
+   "RC7.1"
+  ],
+  "COL7": [
+   "RC7.2",
+   "MX.C7"
+  ],
+  "COLPIN8": [
+   "B1.D9",
+   "RC8.1"
+  ],
+  "COL8": [
+   "RC8.2",
+   "MX.C8"
+  ]
+ },
+ "probes": [
+  {
+   "id": "p54",
+   "target": "output:MX.D54.luminance",
+   "kind": "value"
+  },
+  {
+   "id": "p55",
+   "target": "output:MX.D55.luminance",
+   "kind": "value"
+  },
+  {
+   "id": "p44",
+   "target": "output:MX.D44.luminance",
+   "kind": "value"
+  },
+  {
+   "id": "p18",
+   "target": "output:MX.D18.luminance",
+   "kind": "value"
+  },
+  {
+   "id": "p81",
+   "target": "output:MX.D81.luminance",
+   "kind": "value"
+  },
+  {
+   "id": "p88",
+   "target": "output:MX.D88.luminance",
+   "kind": "value"
+  }
+ ]
+}

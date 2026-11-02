@@ -1015,6 +1015,15 @@ seed is part of a recording.
 
 **Status.** Accepted direction (owner, 2026-10-18).
 
+The first step is in (2026-11-01):
+- Contact bounce is on by default on push buttons, toggle switches and the
+  keypad.
+- R, C and L tolerances are drawn per instance from `settings.seed` (a
+  parameter's `spread` names its tolerance).
+- `settings.imperfections: "ideal"` labels a project's ideal parts.
+- The seed is in the project, which a recording carries.
+- Limits, damage, noise and the fault mode remain.
+
 ## ADR-035 AI assistants and scripts use the same session as people
 
 **Context.** The owner wants AIs to be able to use the app. Everything the

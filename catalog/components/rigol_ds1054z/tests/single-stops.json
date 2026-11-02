@@ -1,0 +1,52 @@
+{
+  "schema_version": 1,
+  "kind": "component_test",
+  "name": "single-stops",
+  "description": "Single on the 1 kHz clock: one acquisition, then STOP.",
+  "policy": "electrical",
+  "until": "10ms",
+  "circuit": {
+    "components": [
+      {
+        "id": "DUT",
+        "component": "emblink/rigol_ds1054z",
+        "params": {
+          "timebase": "100u",
+          "trig_level": 1.5,
+          "sweep": "single"
+        }
+      },
+      {
+        "id": "CLK",
+        "component": "emblink/clock_source",
+        "params": {
+          "freq": "1k"
+        }
+      },
+      {
+        "id": "G",
+        "component": "emblink/gnd"
+      }
+    ],
+    "nets": {
+      "C": [
+        "CLK.OUT",
+        "DUT.CH1"
+      ],
+      "GND": [
+        "G.GND",
+        "DUT.GND"
+      ]
+    }
+  },
+  "expect": {
+    "output:DUT.acquisitions": {
+      "at": "10ms",
+      "equals": 1
+    },
+    "output:DUT.status": {
+      "at": "10ms",
+      "equals": "STOP"
+    }
+  }
+}

@@ -3,7 +3,7 @@
 import { Button, DockLayout, IconButton, SegmentedControl, Tabs, Tooltip, useToast, type Command, type DockItem } from '@embsim/design';
 import { followWindow, LogicAnalyzer, Oscilloscope, SerialTerminal, type ScopeTrace } from '@embsim/instruments';
 import { SchematicCanvas, type CanvasMode, type Point, type SchematicCanvasHandle } from '@embsim/scene';
-import { Download, Locate, Maximize2, Trash2 } from 'lucide-react';
+import { Download, Locate, Maximize2, PictureInPicture2, Trash2 } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { errorMessage, exportCsv, exportVcd, inputs as inputActions, probes as probeActions } from '../../actions';
 import { platform } from '../../platform/platform';
@@ -23,7 +23,9 @@ import { useHostPort } from './useHostPort';
 import { SchematicDisplayOptions } from './SchematicDisplayOptions';
 import { useSchematicOutputs } from '../../stores/schematicDisplay';
 import { isWiredInstrument, WiredInstrumentsPanel } from './WiredInstrumentsPanel';
-import { LOGIC8, Logic8Panel } from './Logic8Panel';
+import { benchInstrumentParts, dockIdOf, titleOf } from './benchInstruments';
+import { useFloating } from '../../stores/floating';
+import { t as tr } from '../../i18n';
 
 const TRACE_COLORS = ['#5fe3b1', '#f0975a', '#7cbcf5', '#f27d84', '#e9bd55', '#c48cf0'];
 
@@ -33,6 +35,8 @@ export function RunPerspective() {
   const nets = useSession((s) => s.nets);
   const outputs = useSchematicOutputs();
   const inputs = useSession((s) => s.inputs);
+  const floating = useFloating((s) => s.floating);
+  const floatPanel = useFloating((s) => s.float);
   const [mode, setMode] = useState<CanvasMode>('interact');
   const [comparison, setComparison] = useState<{project: unknown; a?: string; b?: string; aPoint?: Point; bPoint?: Point}>({project:null});
   const [pickLead, setPickLead] = useState<'a'|'b'|null>(null);
@@ -100,22 +104,22 @@ export function RunPerspective() {
     const text = kind === 'csv' ? exportCsv(ids, from, to) : exportVcd(ids, from, to);
     const p = await platform();
     const where = await p.saveTextFile(`embsim-${project?.name ?? 'session'}.${kind}`, text, kind === 'csv' ? 'text/csv' : 'text/plain');
-    if (where) toast({ kind: 'success', title: `Exported ${where}` });
+    if (where) toast({ kind: 'success', title: tr('run.exported', { where }) });
   };
-  const guard = (fn: () => Promise<unknown>) => () => void fn().catch((e: unknown) => toast({ kind: 'error', title: 'Action failed', description: errorMessage(e) }));
+  const guard = (fn: () => Promise<unknown>) => () => void fn().catch((e: unknown) => toast({ kind: 'error', title: tr('run.actionFailed'), description: errorMessage(e) }));
 
-  const sendInput = useCallback((target: string, input: string, value: unknown) => void inputActions.set(target, input, value).catch((e: unknown) => toast({ kind: 'error', title: 'Input rejected', description: errorMessage(e) })), [toast]);
+  const sendInput = useCallback((target: string, input: string, value: unknown) => void inputActions.set(target, input, value).catch((e: unknown) => toast({ kind: 'error', title: tr('fail.input'), description: errorMessage(e) })), [toast]);
 
   const commands = useMemo<Command[]>(
     () => [
-      { id: 'run.export.csv', label: 'Export window as CSV', group: 'Instruments', icon: <Download />, run: guard(() => exportAs('csv')) },
-      { id: 'run.export.vcd', label: 'Export window as VCD', group: 'Instruments', icon: <Download />, run: guard(() => exportAs('vcd')) },
-      { id: 'run.follow', label: inst.window.follow ? 'Stop following the clock' : 'Follow the clock', group: 'Instruments', shortcut: 'F', run: () => inst.setWindow({ ...inst.window, follow: !inst.window.follow }) },
-      { id: 'run.clear-cursors', label: 'Clear cursors', group: 'Instruments', run: () => inst.setCursors({ a: null, b: null }) },
-      { id: 'run.fit-capture', label: 'Fit captured waveforms', group: 'Instruments', run: fitCapture },
-      ...(project ? Object.keys(project.nets).map((net) => ({ id: `probe.${net}`, label: `Add probe on net ${net}`, group: 'Probes', keywords: ['probe', net], run: guard(() => probeActions.add(`net:${net}`, 'analog', 200_000)) })) : []),
-      ...inst.probes.map((p) => ({ id: `unprobe.${p.probe}`, label: `Remove probe ${p.probe}`, group: 'Probes', icon: <Trash2 />, run: guard(() => probeActions.remove(p.probe as string)) })),
-      { id: 'input.press', label: 'Press and release the button (SW1)', group: 'Inputs', keywords: ['button'], run: guard(async () => {
+      { id: 'run.export.csv', label: tr('run.exportCsv'), group: tr('run.group.instruments'), icon: <Download />, run: guard(() => exportAs('csv')) },
+      { id: 'run.export.vcd', label: tr('run.exportVcd'), group: tr('run.group.instruments'), icon: <Download />, run: guard(() => exportAs('vcd')) },
+      { id: 'run.follow', label: inst.window.follow ? tr('run.stopFollow') : tr('run.follow'), group: tr('run.group.instruments'), shortcut: 'F', run: () => inst.setWindow({ ...inst.window, follow: !inst.window.follow }) },
+      { id: 'run.clear-cursors', label: tr('run.clearCursors'), group: tr('run.group.instruments'), run: () => inst.setCursors({ a: null, b: null }) },
+      { id: 'run.fit-capture', label: tr('run.fitWaves'), group: tr('run.group.instruments'), run: fitCapture },
+      ...(project ? Object.keys(project.nets).map((net) => ({ id: `probe.${net}`, label: tr('run.addProbe', { net }), group: tr('run.group.probes'), keywords: ['probe', net], run: guard(() => probeActions.add(`net:${net}`, 'analog', 200_000)) })) : []),
+      ...inst.probes.map((p) => ({ id: `unprobe.${p.probe}`, label: tr('run.removeProbe', { probe: String(p.probe) }), group: tr('run.group.probes'), icon: <Trash2 />, run: guard(() => probeActions.remove(p.probe as string)) })),
+      { id: 'input.press', label: tr('run.pressSw1'), group: tr('run.group.inputs'), keywords: ['button'], run: guard(async () => {
         await inputActions.press('SW1');
         await new Promise((r) => setTimeout(r, 150));
         await inputActions.release('SW1');
@@ -141,11 +145,11 @@ export function RunPerspective() {
 
   const instrumentActions = (
     <>
-      <Tooltip content="Fit captured waveforms">
-        <IconButton label="Fit captured waveforms" size="sm" variant="ghost" onClick={fitCapture}><Maximize2 /></IconButton>
+      <Tooltip content={tr('run.fitWaves')}>
+        <IconButton label={tr('run.fitWaves')} size="sm" variant="ghost" onClick={fitCapture}><Maximize2 /></IconButton>
       </Tooltip>
-      <Tooltip content={inst.window.follow ? 'Following the clock (F)' : 'Follow the clock (F)'}>
-        <IconButton label={inst.window.follow ? 'Stop following the clock' : 'Follow the clock'} size="sm" variant="ghost" pressed={inst.window.follow} onClick={() => inst.setWindow({ ...inst.window, follow: !inst.window.follow })}>
+      <Tooltip content={inst.window.follow ? tr('run.followingF') : tr('run.followF')}>
+        <IconButton label={inst.window.follow ? tr('run.stopFollow') : tr('run.follow')} size="sm" variant="ghost" pressed={inst.window.follow} onClick={() => inst.setWindow({ ...inst.window, follow: !inst.window.follow })}>
           <Locate />
         </IconButton>
       </Tooltip>
@@ -159,13 +163,13 @@ export function RunPerspective() {
   );
 
   const left: DockItem[] = [
-    { id: 'wired-instruments', title: 'Wired instruments', weight: 1.2, minSize: 140, collapsible: true, defaultCollapsed: !project?.components.some((c) => isWiredInstrument(c.component)), content: <WiredInstrumentsPanel onLocate={(id) => { setSelection({ components: [id], wires: [] }); setFocusInstrument({ id }); }} onTrace={(target) => guard(() => probeActions.add(target, 'value', 200_000))()} /> },
-    { id: 'voltage-comparison', title: 'Voltage comparison', weight: 1, minSize: 170, collapsible: true, defaultCollapsed: true, content: <VoltageComparison names={Object.keys(project?.nets ?? {}).sort()} nets={nets} leads={leads} onChange={changeLead} active={pickLead} onPick={(side) => { setPickLead(side); if (side) setMode('probe'); }} /> },
-    { id: 'controls', title: 'Controls', content: <ControlsPanel />, weight: 1, minSize: 120 },
-    { id: 'world', title: 'World', content: <WorldPanel />, weight: 1, minSize: 120, collapsible: true, defaultCollapsed: true },
+    { id: 'wired-instruments', title: tr('run.wired'), weight: 1.2, minSize: 140, collapsible: true, defaultCollapsed: !project?.components.some((c) => isWiredInstrument(c.component)), content: <WiredInstrumentsPanel onLocate={(id) => { setSelection({ components: [id], wires: [] }); setFocusInstrument({ id }); }} onTrace={(target) => guard(() => probeActions.add(target, 'value', 200_000))()} /> },
+    { id: 'voltage-comparison', title: tr('run.comparison'), weight: 1, minSize: 170, collapsible: true, defaultCollapsed: true, content: <VoltageComparison names={Object.keys(project?.nets ?? {}).sort()} nets={nets} leads={leads} onChange={changeLead} active={pickLead} onPick={(side) => { setPickLead(side); if (side) setMode('probe'); }} /> },
+    { id: 'controls', title: tr('run.controls'), content: <ControlsPanel />, weight: 1, minSize: 120 },
+    { id: 'world', title: tr('design.tab.world'), content: <WorldPanel />, weight: 1, minSize: 120, collapsible: true, defaultCollapsed: true },
   ];
   const centre: DockItem[] = [
-    { id: 'schematic', title: 'Live schematic', weight: 2.4, minSize: 240, flush: true, actions: <><SegmentedControl label="Schematic interaction" value={mode} onValueChange={(next) => { setMode(next); setPickLead(null); }} options={[{value:'interact',label:'Operate'},{value:'select',label:'Inspect'},{value:'probe',label:'Probe'}]} /><SchematicDisplayOptions /><IconButton label="Fit live schematic" size="sm" variant="ghost" onClick={() => schematicRef.current?.zoomToFit()}><Maximize2 /></IconButton></>, content: project ? (
+    { id: 'schematic', title: tr('run.liveSchematic'), weight: 2.4, minSize: 240, flush: true, actions: <><SegmentedControl label={tr('run.interaction')} value={mode} onValueChange={(next) => { setMode(next); setPickLead(null); }} options={[{value:'interact',label:tr('design.tool.operate')},{value:'select',label:tr('run.inspect')},{value:'probe',label:tr('design.tool.probe')}]} /><SchematicDisplayOptions /><IconButton label={tr('run.fitSchematic')} size="sm" variant="ghost" onClick={() => schematicRef.current?.zoomToFit()}><Maximize2 /></IconButton></>, content: project ? (
               <SchematicCanvas
                 handle={schematicRef}
                 appearance={appearance}
@@ -186,36 +190,38 @@ export function RunPerspective() {
                 probes={inst.probes}
                 readOnly
                 onNetClick={(net, at) => { if (pickLead) { changeLead(pickLead, net, at); setPickLead(null); return; } guard(() => probeActions.add(`net:${net}`, 'analog', 200_000).then((id) => toast({ kind: 'success', title: `Probe ${id} on ${net}` })))(); }}
-                label="Live schematic"
+                label={tr('run.liveSchematic')}
               />
     ) : null },
     // an instrument with no probe of its kind folds to its rail until the user opens it; the
     // shared window's actions go with the one that shows something
-    { id: 'scope', title: 'Oscilloscope', flush: true, weight: 1.2, minSize: 140, collapsible: true, defaultCollapsed: noScope, actions: noScope && logicChannels.length > 0 ? undefined : instrumentActions, content: (
+    { id: 'scope', title: tr('run.scope'), flush: true, weight: 1.2, minSize: 140, collapsible: true, defaultCollapsed: noScope, actions: noScope && logicChannels.length > 0 ? undefined : instrumentActions, content: (
       <Oscilloscope traces={scopeTraces} window={win} onWindowChange={inst.setWindow} cursors={inst.cursors} onCursorsChange={inst.setCursors} now={now} selected={inst.selectedScope} onSelect={inst.setSelectedScope} revision={inst.revision} />
     ) },
-    { id: 'logic', title: 'Logic analyzer', flush: true, weight: 1, minSize: 120, collapsible: true, defaultCollapsed: logicChannels.length === 0, actions: noScope && logicChannels.length > 0 ? instrumentActions : undefined, content: (
+    { id: 'logic', title: tr('run.logic'), flush: true, weight: 1, minSize: 120, collapsible: true, defaultCollapsed: logicChannels.length === 0, actions: noScope && logicChannels.length > 0 ? instrumentActions : undefined, content: (
       <LogicAnalyzer channels={logicChannels} lookup={lookupRecord} window={win} onWindowChange={inst.setWindow} cursors={inst.cursors} onCursorsChange={inst.setCursors} now={now} selected={inst.selectedLogic} onSelect={inst.setSelectedLogic} revision={inst.revision} />
     ) },
-    // each Saleae Logic 8 on the bench: its own capture, as Logic 2 shows it
-    ...(project?.components.filter((c) => c.component === LOGIC8) ?? []).map((c): DockItem => ({
-      id: `logic8-${c.id}`, title: `${c.id} · Logic 8`, flush: true, weight: 1.1, minSize: 160, collapsible: true, content: <Logic8Panel part={c.id} />,
+    // each bench instrument's front panel (the DS1054Z, the PPK2, the Logic 8), unless it floats
+    ...benchInstrumentParts(project).filter(({ part }) => !floating.includes(part)).map(({ part, instrument }): DockItem => ({
+      id: dockIdOf(instrument, part), title: titleOf(instrument, part), flush: true, weight: instrument.weight, minSize: instrument.minSize, collapsible: true,
+      actions: <IconButton size="sm" variant="ghost" label={`Float ${titleOf(instrument, part)} in its own window`} onClick={() => floatPanel(part)}><PictureInPicture2 /></IconButton>,
+      content: instrument.panel(part),
     })),
     {
       id: 'bottom',
-      title: { serial: 'Serial terminal', diagnostics: 'Diagnostics', meters: 'Meters', air: 'The air' }[bottomTab],
+      title: { serial: tr('run.serialTerminal'), diagnostics: tr('run.tab.diagnostics'), meters: tr('run.tab.meters'), air: tr('run.theAir') }[bottomTab],
       flush: true,
       weight: 1,
       minSize: 140,
       actions: bottomTab === 'meters' ? probesList : undefined,
       content: (
         <Tabs
-          label="Run details"
+          label={tr('run.details')}
           value={bottomTab}
           onValueChange={setBottomTab}
           items={[
-            { value: 'meters', label: 'Meters', content: <MetersPanel /> },
-            { value: 'serial', label: 'Serial', content: (
+            { value: 'meters', label: tr('run.tab.meters'), content: <MetersPanel /> },
+            { value: 'serial', label: tr('run.tab.serial'), content: (
               <SerialTerminal
                 target={serialTarget}
                 targets={serialTargets}
@@ -223,22 +229,22 @@ export function RunPerspective() {
                 lines={inst.serialLines.filter((l) => !l.target || l.target === serialTarget)}
                 onSend={(target, text) => guard(() => inputActions.serial(target, text))()}
                 disabled={!inst.probes.some((p) => p.kind === 'serial')}
-                disabledReason="No serial probe in this project (add a board with a UART)"
+                disabledReason={tr('run.noSerial')}
                 hostPort={hostPort.port}
                 hostPortError={hostPort.error}
                 onHostPort={hostPort.toggle}
               />
             ) },
-            { value: 'air', label: 'Air', content: <AirPanel /> },
-            { value: 'diagnostics', label: 'Diagnostics', content: <DiagnosticsPanel /> },
+            { value: 'air', label: tr('run.tab.air'), content: <AirPanel /> },
+            { value: 'diagnostics', label: tr('run.tab.diagnostics'), content: <DiagnosticsPanel /> },
           ]}
         />
       ),
     },
   ];
   const items: DockItem[] = [
-    { id: 'left', title: 'Controls and instruments', flush: true, collapsible: true, defaultCollapsed: inputs.length === 0 && !project?.components.some((c) => isWiredInstrument(c.component)), weight: 1, minSize: 260, content: <DockLayout direction="column" items={left} storageKey={`embsim.layout.run.left.${project?.name ?? 'none'}`} /> },
-    { id: 'centre', title: 'Instruments', bare: true, weight: 2.6, minSize: 480, content: <DockLayout direction="column" items={centre} storageKey={`embsim.layout.run.schematic.centre.${project?.name ?? 'none'}`} /> },
+    { id: 'left', title: tr('run.controlsInstruments'), flush: true, collapsible: true, defaultCollapsed: inputs.length === 0 && !project?.components.some((c) => isWiredInstrument(c.component)), weight: 1, minSize: 260, content: <DockLayout direction="column" items={left} storageKey={`embsim.layout.run.left.${project?.name ?? 'none'}`} /> },
+    { id: 'centre', title: tr('run.group.instruments'), bare: true, weight: 2.6, minSize: 480, content: <DockLayout direction="column" items={centre} storageKey={`embsim.layout.run.schematic.centre.${project?.name ?? 'none'}`} /> },
   ];
   return (
     <div className="wb-perspective">

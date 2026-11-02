@@ -472,6 +472,8 @@ void esk_an_step(esk_an *a, int core, struct esk_cpu *c)
         k->kind = step_kind(a, k, c, pc0);
     if ((a->what & ESK_AN_STACK) && k->tail_fn == -2)
         esk_an_stack_first(a, k, c, pc0);
+    if (a->what & ESK_AN_MEASURE)
+        esk_an_measure_before(a, c0);
     c->ops->step(c);
     di = m->insns - i0;
     dc = m->cycles - c0;
@@ -510,6 +512,8 @@ void esk_an_step(esk_an *a, int core, struct esk_cpu *c)
         }
         follow(a, k, c, node, c->ops->pc(c), ran);
     }
+    if (a->what & ESK_AN_MEASURE)
+        esk_an_measure_after(a, k, ran, c0);
     k->nev = 0;
 }
 
@@ -702,6 +706,8 @@ void esk_an_restart(esk_an *a)
     }
     if (a->what & ESK_AN_STACK)
         esk_an_stack_restart(a);
+    if (a->what & ESK_AN_MEASURE)
+        esk_an_measure_restart(a);
     a->lockup_seen = 0;
 }
 
@@ -717,6 +723,8 @@ void esk_an_clear(esk_an *a)
     a->cycles0 = a->m->cycles;
     if (a->what & ESK_AN_STACK)
         esk_an_stack_clear(a);
+    if (a->what & ESK_AN_MEASURE)
+        esk_an_measure_clear(a);
     esk_an_fault_clear(a);
 }
 
@@ -729,6 +737,8 @@ void esk_an_free(esk_an *a)
     if (!a)
         return;
     al = a->a;
+    if (a->tev)
+        esk_free(al, a->tev, (size_t)a->captev * sizeof *a->tev);
     if (a->fn_minsp)
         esk_an_stack_free(a);
     esk_an_fault_clear(a);
