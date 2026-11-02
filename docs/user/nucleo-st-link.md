@@ -64,6 +64,28 @@ SysTick handler's write to `ticks`. While the core is halted, the clocks
 and peripherals go on, as on the board. A timer keeps counting, and a UART
 keeps sending what is in its shift register.
 
+## printf over SWO
+
+The ST-LINK also reads the STM32's serial wire output: on the NUCLEO its SWO
+input is wired to PB3 (TRACESWO). A program writes text to the ITM's
+stimulus port 0, as CMSIS's `ITM_SendChar` does; OpenOCD sets the trace up
+and writes what arrives to a file:
+
+```sh
+openocd -f interface/stlink.cfg -c "hla_stlink_backend tcp 7184" -f target/stm32f4x.cfg \
+        -c init \
+        -c "stm32f4x.tpiu configure -protocol uart -output swo.bin -traceclk 16000000 -pin-freq 2000000" \
+        -c "stm32f4x.tpiu enable" -c "itm port 0 on"
+```
+
+`-traceclk` is the core's clock (HCLK: 16 MHz on the HSI, 180 MHz on the
+example's PLL); `-pin-freq` is the SWO rate, at most 2 MHz on this probe.
+OpenOCD sets DBGMCU's TRACE_IOEN, the TPIU's NRZ protocol and prescaler, and
+the ITM's enables; the file holds the ITM's packets (a header byte, then
+the bytes). A TPIU prescaler that does not give the probe's rate within
+3 % reaches it as garbage, as on the board: the probe's output
+`trace_garbled` counts it. `tests/firmware/nucleo-swo` is such a program.
+
 ## VS Code
 
 `embsim ide` writes the launch configurations and the tasks they need into
@@ -96,7 +118,6 @@ and GDB stopping at `main`. VS Code itself is not run.
   USB/IP step of ADR-031.
 - The probe's mass-storage drive (`NODE_F446RE`), which flashes a `.bin`
   copied onto it.
-- SWO trace.
 - The other boards' probes: the Pico's debug probe, the nRF52840 DK's
   J-Link OB, the Explorer 16/32's PICkit.
 

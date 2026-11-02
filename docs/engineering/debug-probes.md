@@ -127,10 +127,12 @@ step writes DHCSR three times in a row.
 Step 5 is in: `embsim ide` writes VS Code's
 configurations, Cortex-Debug through the probe with OpenOCD and on EmbSIM's
 GDB server, and `tests/protocol/test_ide.py` carries them out as VS Code
-does. PlatformIO's `debug_tool` is not done yet. Steps 4, 6 and 7 remain.
+does. PlatformIO's `debug_tool` is not done yet. SWO trace is in: the
+ARMv7-M cores' ITM and TPIU (`cortexm/itm.c`), PB3's TRACESWO under
+DBGMCU's TRACE_IOEN, and the probe's trace receiver, which OpenOCD's
+`tpiu` and `itm` commands read (`test_stlink.py`). Steps 4, 6 and 7 remain.
 
 ## 6. Not planned
 
 ST's firmware itself (proprietary); the ST-Link's firmware upgrade (DFU);
-SWO trace until the TPIU and ITM are modelled; JTAG (the NUCLEO's
-ST-Link is SWD only).
+JTAG (the NUCLEO's ST-Link is SWD only).

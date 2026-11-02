@@ -474,7 +474,7 @@ simulation (`tests/unit/test_cm_debug.c`). The NUCLEO-F446RE's
 ST-LINK/V2-1 (U2) answers OpenOCD 0.12's commands for firmware V2J37M26
 and reaches the target through its SW-DP and MEM-AP. The session shares it
 on the host as ST's stlink-server does (`stlink.serve`, `embsim serve
---stlink`). `tests/protocol/test_stlink.py` passes 29 checks:
+--stlink`). `tests/protocol/test_stlink.py` passes 32 checks:
 - the probe's identity and the target's voltage;
 - SWD, the IDCODE, a halt, registers, memory, a fault's address, a step,
   a restart and NRST;
@@ -483,7 +483,11 @@ on the host as ST's stlink-server does (`stlink.serve`, `embsim serve
 - unmodified OpenOCD programming a blank board, the program then running
   (its banner, LD2 blinking);
 - GDB through OpenOCD stopping at a breakpoint on main, stepping a line,
-  and stopping on a watchpoint in SysTick_Handler.
+  and stopping on a watchpoint in SysTick_Handler;
+- printf over SWO: a program's ITM writes on PB3's TRACESWO, read through
+  the probe by OpenOCD's `tpiu` and `itm` commands, and garbage when the
+  TPIU's rate is not the probe's (the ARMv7-M cores' ITM and TPIU,
+  `cortexm/itm.c`).
 
 `embsim ide` writes VS Code's launch configurations and tasks from the
 board's `debug` section: through the probe with OpenOCD, and on EmbSIM's
@@ -494,7 +498,8 @@ Not yet:
 - the probe's USB transport (tools that open the USB device, as `st-flash`
   does, need USB/IP);
 - its mass-storage drive;
-- SWO trace;
+- SWO in Manchester (the V2-1 reads NRZ), and the F103's and nRF52840's
+  trace pins (their ITM and TPIU are there, no pin carries TRACESWO);
 - the other boards' probes (steps 4, 6 and 7; the PICkit's host protocol is
   unpublished).
 

@@ -5,6 +5,18 @@ versions follow semantic versioning. There is no release yet.
 
 ## Unreleased
 
+### SWO trace through the NUCLEO's ST-LINK
+
+- The ARMv7-M cores' ITM and TPIU (`cortexm/itm.c`): the 32 stimulus ports
+  and their software packets (TRCENA, ITMENA and TER; FIFOREADY; the lock),
+  the TPIU's protocol and prescaler, each byte ten bits at TRACECLKIN /
+  (SWOSCALER + 1); both in the debug domain, kept through a system reset.
+- The F446's PB3 carries TRACESWO while DBGMCU_CR's TRACE_IOEN selects
+  asynchronous trace; the NUCLEO's ST-LINK has its SWO input on PB3 and
+  receives it (START_TRACE_RX, GET_TRACE_NB, the trace endpoint), NRZ only
+  and within 3 % of its rate. Unmodified OpenOCD's `tpiu` and `itm`
+  commands read a program's printf over SWO (`test_stlink.py`).
+
 ### The RP2040's bus fabric: contention between the cores and DMA
 
 - The crossbar's arbiters (`rp2040-busctrl`, RP2040 datasheet 2.1): both

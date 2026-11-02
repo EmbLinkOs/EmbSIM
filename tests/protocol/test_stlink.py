@@ -35,7 +35,11 @@ target's SRAM, verifies the flash and resets it; the program then runs:
 its banner on the ST-LINK's virtual COM port and LD2 blinking. With an
 Arm GDB too, GDB debugs the running program through OpenOCD's GDB server:
 a breakpoint at main, a line stepped over, a watchpoint on a variable the
-SysTick handler writes.
+SysTick handler writes. Last, printf over SWO: tests/firmware/nucleo-swo
+writes lines to the ITM's port 0, OpenOCD's `tpiu configure ... enable` and
+`itm port 0 on` set the trace up at 2 MHz from the 16 MHz HSI, and the lines
+arrive in OpenOCD's file through the probe's trace receiver; with the TPIU's
+prescaler changed behind OpenOCD's back (1 MHz), the probe gets garbage.
 
     test_stlink.py --embsim PATH
 """
@@ -311,6 +315,77 @@ def gdb(embsim: str, tmp: Path) -> None:
               "a watchpoint on ticks (a DWT comparator) stops SysTick_Handler's write: ticks = 1")
 
 
+SWO_ELF = ROOT / "tests" / "firmware" / "nucleo-swo" / "swo.elf"
+
+
+def itm_text(raw: bytes) -> str:
+    """the ITM's software packets on port 0, as text"""
+    out, i = bytearray(), 0
+    while i < len(raw):
+        h = raw[i]
+        size = {1: 1, 2: 2, 3: 4}.get(h & 3, 0)
+        if h & 4 or not size:  # not a software source packet: skip its byte
+            i += 1
+            continue
+        if h >> 3 == 0:
+            out += raw[i + 1:i + 1 + size]
+        i += 1 + size
+    return out.decode("latin-1")
+
+
+def swo(embsim: str, tmp: Path) -> None:
+    tool = shutil.which("openocd")
+    if not tool:
+        print("  SKIP OpenOCD is not installed")
+        return
+    p = json.loads((EXAMPLE / "project.json").read_text(encoding="utf-8"))
+    for b in p["boards"]:
+        b["firmware"]["image"] = str(SWO_ELF)
+    p["probes"] = []
+    src = tmp / "swo.json"
+    src.write_text(json.dumps(p), encoding="utf-8")
+    for acpr, want in ((None, True), (15, False)):
+        out = tmp / f"swo-{acpr}.bin"
+        with StdioClient([embsim, "sidecar", str(src)]) as c:
+            r = c.call("stlink.serve", {"port": 0})
+            c.call("control.run", {"speed": 1})
+            time.sleep(0.3)
+            # the TPIU's prescaler for 2 MHz from the 16 MHz HSI; the probe's
+            # UART at `rate`
+            oc = subprocess.Popen([tool, "-f", "interface/stlink.cfg", "-c", f"hla_stlink_backend tcp {r['port']}",
+                                   "-f", "target/stm32f4x.cfg",
+                                   "-c", "gdb_port disabled; telnet_port disabled; tcl_port disabled", "-c", "init",
+                                   "-c", f"stm32f4x.tpiu configure -protocol uart -output {out.as_posix()} "
+                                         "-traceclk 16000000 -pin-freq 2000000",
+                                   "-c", "stm32f4x.tpiu enable", "-c", "itm port 0 on",
+                                   # the TPIU's prescaler changed behind OpenOCD: 16 MHz / 16, 1 MHz
+                                   *(["-c", f"mww 0xE0040010 {acpr}"] if acpr is not None else [])],
+                                  stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True)
+            try:
+                until(lambda: out.exists() and "swo line 3" in itm_text(out.read_bytes()), 25.0 if want else 6.0)
+            finally:
+                oc.terminate()
+                log = oc.communicate(timeout=20)[0]
+            c.call("control.pause")
+            u2 = c.call("observe.snapshot", {"include": ["outputs"]})["outputs"]["B1.U2"]
+        text = itm_text(out.read_bytes()) if out.exists() else ""
+        if want:
+            lines = [ln for ln in text.splitlines() if ln.startswith("swo line ")]
+            nums = [int(ln.split()[2]) for ln in lines]
+            check(len(lines) >= 3 and nums == list(range(nums[0], nums[0] + len(nums))),
+                  f"OpenOCD's tpiu and itm: printf over SWO reaches its file ({lines[:3]})" +
+                  ("" if lines else ": " + log[-600:]))
+            check(u2["trace_hz"] == 2000000 and u2["trace_bytes"] > 0 and u2["trace_garbled"] == 0,
+                  f"the probe received {u2['trace_bytes']} bytes at {u2['trace_hz']} Hz")
+        else:
+            # the target's SWO at 1 MHz read at 2 MHz: the probe's UART sees garbage
+            # (the lines of the second or so OpenOCD takes to send its commands get
+            # through before the prescaler changes; the 6 s would hold some 60)
+            check(text.count("swo line") <= 20 and u2["trace_garbled"] > 100,
+                  f"SWO at 1 MHz read at 2 MHz: {text.count('swo line')} line(s) before the change, "
+                  f"then {u2['trace_garbled']} bytes garbled")
+
+
 def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--embsim", default=str(ROOT / "build" / "dev" / "bin" / "embsim"))
@@ -319,6 +394,7 @@ def main() -> int:
         protocol(args.embsim, Path(tmp))
         openocd(args.embsim, Path(tmp))
         gdb(args.embsim, Path(tmp))
+        swo(args.embsim, Path(tmp))
     print("stlink: %s" % ("ok" if not failures else f"{failures} failure(s)"))
     return 1 if failures else 0
 

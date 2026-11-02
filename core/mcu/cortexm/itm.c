@@ -19,6 +19,8 @@
  *     a stop bit) after the one before; CSPSR, FFCR and FFSR as written and
  *     read (the formatter is bypassed in the serial wire modes, as on the
  *     Cortex-M4); the identification registers.
+ * Both are in the debug domain: a power-on resets them, a system reset
+ * keeps what a debugger set (as DBGMCU's registers).
  * The bytes leave on the trace pin while the part's debug component gives
  * it its trace function (an STM32's DBGMCU_CR TRACE_IOEN with the
  * asynchronous TRACE_MODE: m->dbg.swo); a probe takes them as they arrive
@@ -150,6 +152,8 @@ static void itm_write(void *ctx, u32 off, int n, u32 v)
 static void itm_reset(void *ctx)
 {
     struct itm *t = (struct itm *)ctx;
+    if (t->sim->reset_cause != ESK_RESET_POWER)
+        return; /* the debug domain: a system reset keeps what a debugger set */
     t->ter = t->tpr = t->tcr = 0;
     t->locked = 1;
 }
@@ -197,6 +201,8 @@ static void tpiu_write(void *ctx, u32 off, int n, u32 v)
 static void tpiu_reset(void *ctx)
 {
     struct itm *t = (struct itm *)ctx;
+    if (t->sim->reset_cause != ESK_RESET_POWER)
+        return;
     t->cspsr = 1;
     t->acpr = 0;
     t->sppr = 1;
@@ -213,8 +219,10 @@ void *esk_itm_create(struct esk_mach *s, struct esk_cm_state *core)
     memset(t, 0, sizeof *t);
     t->sim = s;
     t->core = core;
-    itm_reset(t);
-    tpiu_reset(t);
+    t->locked = 1;
+    t->cspsr = 1;
+    t->sppr = 1;
+    t->ffcr = 0x102u;
     s->itm = t;
     return t;
 }
