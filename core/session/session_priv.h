@@ -86,6 +86,8 @@ struct es_session {
     ESK_VEC(esk_probe *) probes;
     /* serial ports on the host (hostport.c) */
     ESK_VEC(struct esk_host_port *) host_ports;
+    /* the probes shared as stlink-server shares them (stlinksrv.c), or NULL */
+    struct esk_stlink_server *stlink;
     uint32_t next_probe_id;
     size_t probe_memory_bytes;
     /* inputs record (SPEC-012 §1 inputs) */
@@ -172,6 +174,13 @@ es_status esk_session_port_open(es_session *s, const char *target, const struct 
 es_status esk_session_port_close(es_session *s, const char *target);
 esk_json *esk_session_port_json(es_session *s, const struct esk_host_port *hp);
 void esk_session_ports_poll(es_session *s);
+/* stlink-server (stlinksrv.c): listen on host:port (0: any port) for the
+ * session's ST-LINK probes, the port bound in *bound; stop; the port, 0 when
+ * not serving; serve what came, as the ports are polled */
+es_status esk_session_stlink_serve(es_session *s, const char *host, int port, int *bound);
+void esk_session_stlink_close(es_session *s);
+int esk_session_stlink_port(const es_session *s);
+void esk_session_stlink_poll(es_session *s);
 void esk_session_ports_free(es_session *s);
 /* bytes sent back to back at `from` baud (8N1) as a UART at `to` baud reads them */
 size_t esk_uart_rebaud(const unsigned char *in, size_t n, double from, double to, unsigned char *out, size_t cap);

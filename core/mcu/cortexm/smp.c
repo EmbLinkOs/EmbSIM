@@ -73,6 +73,8 @@ static int next_core(const struct smp *x)
 
 static int current(const struct smp *x)
 {
+    if (x->m->bus.dap)
+        return 0; /* the debug port's access reaches core 0's debug (no multi-drop) */
     return x->stepping ? x->cur : next_core(x);
 }
 
@@ -321,6 +323,7 @@ static const struct esk_dev_ops smp_scs_ops = {
 
 PER_CORE(smp_systick, esk_systick_ops, st)
 PER_CORE(smp_dwt, esk_dwt_ops, dw)
+PER_CORE(smp_fpb, esk_fpb_ops, c)
 
 /* a store clears every core's exclusive monitor on its address */
 static void smp_snoop(void *ctx, u32 a)
@@ -376,6 +379,9 @@ es_status esk_cortexm_create_smp(struct esk_mach *m, const char *model, int prio
             x->dw[0] = d->ctx;
             d->ops = &smp_dwt_ops;
             d->ctx = x;
+        } else if (d->ops == &esk_fpb_ops) {
+            d->ops = &smp_fpb_ops;
+            d->ctx = x;
         }
     }
     if (!x->st[0] || !x->dw[0])
@@ -384,6 +390,7 @@ es_status esk_cortexm_create_smp(struct esk_mach *m, const char *model, int prio
         x->self[i].smp = x;
         x->self[i].n = i;
         esk_systick_target(x->st[i], core_pend, &x->self[i]);
+        esk_dwt_core(x->dw[i], x->c[i]);
         x->c[i]->sev = smp_sev;
         x->c[i]->sev_ctx = x;
     }
@@ -509,4 +516,21 @@ void esk_cortexm_core_launch(struct esk_mach *m, int core, u32 vtor, u32 sp, u32
     c->tbit = (int)(entry & 1u);
     c->pc = entry & ~1u;
     wake(x, core, m->cycles);
+}
+
+/* the SW-DP's IDCODE as ARM's designs give it for core 0's model: an M0+'s
+ * DPv1 (0x0BC11477), an M3's (0x1BA01477), an M4's (0x2BA01477), an M7's
+ * (0x5BA02477) */
+u32 esk_cortexm_dp_idcode(struct esk_mach *m)
+{
+    struct smp *x = smp_of(m);
+    const struct esk_cm_state *cs = x ? x->c[0] : (const struct esk_cm_state *)m->cpu;
+    const char *n = cs && cs->model ? cs->model->name : "";
+    if (!strcmp(n, "cortex-m0plus") || !strcmp(n, "cortex-m0"))
+        return 0x0BC11477u;
+    if (!strcmp(n, "cortex-m3"))
+        return 0x1BA01477u;
+    if (!strcmp(n, "cortex-m7"))
+        return 0x5BA02477u;
+    return 0x2BA01477u;
 }

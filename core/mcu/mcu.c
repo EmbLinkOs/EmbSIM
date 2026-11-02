@@ -1276,9 +1276,12 @@ static void mcu_reset_now(mcu_state *st, int power_on)
         /* the core alone starts again: memory and devices keep their state */
         st->m.reset_req = 0;
         st->m.reset_cpu_only = 0;
+        int was = st->m.reset_cause;
         st->m.asleep = 0;
         st->m.yield = 0;
+        st->m.reset_cause = ESK_RESET_SOFTWARE; /* not a power-on: the debug domain stays */
         st->m.cpu->ops->reset(st->m.cpu);
+        st->m.reset_cause = was;
         return;
     }
     if (st->ev) {
@@ -1290,7 +1293,11 @@ static void mcu_reset_now(mcu_state *st, int power_on)
     for (r = 0; power_on && r < st->m.bus.nrg; r++)
         if (!st->m.bus.rg[r].mirror && !(st->m.flash_written && st->m.bus.rg[r].kind == ESK_MEM_FLASH))
             esk_bus_erase(&st->m.bus.rg[r]);
-    if (!st->image && !esk_mach_store(&st->m, "flash")) {
+    /* a Cortex-M with nothing in its flash runs from it as the part does
+     * (its erased vectors lock it up), so a probe can halt it and program
+     * it */
+    if (!st->image && !esk_mach_store(&st->m, "flash") && !st->m.flash_written &&
+        !(st->m.cpu && !strcmp(st->m.cpu->ops->name, "cortex-m"))) {
         /* no image yet: the part sits blank, its pins inputs (a part that
          * boots its ROM from a flash it reaches through a device, as the
          * ESP32-C3, runs it on whatever the flash holds) */
@@ -1612,7 +1619,7 @@ static void mcu_observe(esk_comp *c, esk_json *out)
     const char *state;
     if (!st->attached)
         return;
-    state = !st->image && !esk_mach_store(&st->m, "flash") ? "no_image"
+    state = !st->image && !esk_mach_store(&st->m, "flash") && !st->m.flash_written ? "no_image"
             : st->boot_fail                       ? "boot_mode"
             : st->held                            ? "reset"
             : st->m.state == ESK_MACH_EXIT        ? "exited"
@@ -1694,6 +1701,38 @@ void esk_mcu_resume(esk_comp *c, u64 steps)
     st->m.bus.watch_hit = 0;
     catch_up(st, c->e->sched.now);
     wake(st);
+}
+
+uint32_t esk_mcu_dap_idcode(esk_comp *c)
+{
+    mcu_state *st = esk_mcu_is(c) ? state_of(c) : NULL;
+    if (!st || !st->attached || !st->m.cpu || strcmp(st->m.cpu->ops->name, "cortex-m") != 0)
+        return 0;
+    return esk_cortexm_dp_idcode(&st->m);
+}
+
+int esk_mcu_dap_mem(esk_comp *c, uint32_t addr, int bytes, int write, uint32_t *v)
+{
+    mcu_state *st = esk_mcu_is(c) ? state_of(c) : NULL;
+    int r;
+    if (!esk_mcu_dap_idcode(c))
+        return ESK_DAP_NO_TARGET;
+    /* in Standby or Stop the debug port answers only when DBGMCU keeps
+     * it powered (DBG_STANDBY, DBG_STOP) */
+    if ((st->m.powered_down && !(st->m.dbg.cr & 4u)) || (st->m.clocks_stopped && !(st->m.dbg.cr & 2u)))
+        return ESK_DAP_NO_TARGET;
+    if (st->held)
+        return ESK_DAP_FAULT; /* the system bus is in reset */
+    catch_up(st, c->e->sched.now);
+    esk_mach_outside(&st->m);
+    st->m.bus.dap = 1;
+    r = write ? esk_bus_write(&st->m.bus, addr, bytes, *v) : esk_bus_read(&st->m.bus, addr, bytes, v);
+    st->m.bus.dap = 0;
+    if (write && st->m.reset_req && !runnable(st))
+        mcu_reset_now(st, 0); /* a blank or idle part's reset: no quantum would take it */
+    else if (write)
+        wake(st); /* a halt, a restart or a reset request takes effect from now */
+    return r ? ESK_DAP_FAULT : ESK_DAP_OK;
 }
 
 void esk_mcu_halt(esk_comp *c)

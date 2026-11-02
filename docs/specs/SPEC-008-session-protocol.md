@@ -118,6 +118,11 @@ Notation: `method(params) -> result`. Params and results are objects.
   - A board whose `console.bridge.dtr_reset` names a component (SPEC-006) has that component's `pressed` held for `ms` when a program opens the port. This is DTR's reset through the Uno's 100 nF capacitor, also a recorded input.
 - `embsim serve PROJECT --serial B1` opens the port when the session starts and prints its path.
 
+### stlink (the bench's ST-LINK probes on the host, docs/engineering/debug-probes.md)
+- `stlink.serve({host?, port?}) -> {port, probes: [{id, serial}]}`: the session serves its ST-LINK probes (`emblink/st_link_v21`, the NUCLEO's `U2`) as ST's stlink-server does, a TCP service on `host` (default `127.0.0.1`) and `port` (default 7184, 0 for any free port; the bound one is returned). STM32CubeIDE's stlink-server clients and OpenOCD 0.12 (`hla_stlink_backend tcp PORT` after `interface/stlink.cfg`) reach the probe through it, and through the probe the target's debug port. Serving again returns the same port. Error `-32008` when it cannot listen.
+- `stlink.stop({}) -> {}`: closes the service and its clients' connections.
+- Requests are answered at each run slice while the session runs. A paused session holds them (a client waiting more than its time-out, 1 s for OpenOCD, gives up), as a probe's host would.
+
 ### probe and waveform
 - `probe.add({target, kind, rate_hz?, decode?: {protocol, params}}) -> {probe, stream?}`
 - `probe.remove({probe}) -> {}`

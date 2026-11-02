@@ -84,11 +84,19 @@ static void iw_start(struct iwdg *w)
     iw_clock(w);
 }
 
+/* DBGMCU's DBG_IWDG_STOP (APB1_FZ bit 12), DBG_WWDG_STOP (bit 11): the
+ * watchdog stops while a debugger holds the core halted */
+static int frozen(const struct esk_mach *s, int bit) { return s->dbg.halted && (s->dbg.fz[0] >> bit & 1u); }
+
 static void iw_tick(void *ctx, u32 cycles)
 {
     struct iwdg *w = (struct iwdg *)ctx;
     if (!w->running)
         return;
+    if (frozen(w->s, 12)) {
+        w->since = 0;
+        return;
+    }
     cycles = esk_mach_after(w->s, cycles, w->since);
     w->since = 0;
     if (w->upd) {
@@ -126,7 +134,7 @@ static int iw_next(void *ctx, u32 *cycles)
 {
     struct iwdg *w = (struct iwdg *)ctx;
     u64 best = ~(u64)0;
-    if (!w->running)
+    if (!w->running || frozen(w->s, 12))
         return 0;
     if (w->on) {
         u64 need = ((u64)w->count + 1) * iw_unit(w);
@@ -328,9 +336,12 @@ static void ww_clock(struct wwdg *w)
 static void ww_tick(void *ctx, u32 cycles)
 {
     struct wwdg *w = (struct wwdg *)ctx;
-    (void)cycles;
     if (!w->running)
         return;
+    if (frozen(w->s, 11)) {
+        w->base_at += cycles; /* its counter holds */
+        return;
+    }
     ww_sync(w);
 }
 
@@ -338,7 +349,7 @@ static int ww_next(void *ctx, u32 *cycles)
 {
     struct wwdg *w = (struct wwdg *)ctx;
     u64 unit, at, now;
-    if (!w->running || esk_rf_gated(w->p))
+    if (!w->running || esk_rf_gated(w->p) || frozen(w->s, 11))
         return 0;
     unit = ww_unit(w);
     now = w->s->cycles - w->base_at;

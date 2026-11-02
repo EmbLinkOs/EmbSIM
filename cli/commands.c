@@ -56,6 +56,7 @@ static void usage_to(FILE *out)
           "  validate PATH...            validate projects (descriptions: tools/validate.py)\n"
           "  serve PROJECT [--port N] [--host H] [--ui DIR] [--open] [--allow-origin ORIGIN]...\n"
           "        [--serial B1]...      a board's serial port on the host (a pseudo-terminal)\n"
+          "        [--stlink [PORT]]     the board's ST-LINK as stlink-server shares it (TCP, 7184)\n"
           "        [--run]               run at real time from the start, no client needed\n"
           "  sidecar [PROJECT]           speak the session protocol on stdin/stdout\n"
           "  gdb PROJECT [--board B] [--port N] [--host H]   a GDB server for a board's MCU\n"
@@ -1224,7 +1225,7 @@ static int cmd_serve(int argc, char **argv, const char *argv0, int sidecar)
 {
     const char *project = NULL, *host = "127.0.0.1", *ui = NULL, *policy = NULL, *library = NULL;
     const char *origins[8], *serials[4];
-    int port = 8765, open = 0, i, n_origins = 0, n_serials = 0, run = 0;
+    int port = 8765, open = 0, i, n_origins = 0, n_serials = 0, run = 0, stlink = -1;
     es_session *s;
     es_status st;
     for (i = 0; i < argc; i++) {
@@ -1234,6 +1235,11 @@ static int cmd_serve(int argc, char **argv, const char *argv0, int sidecar)
         else if (!strcmp(a, "--serial") && more) {
             if (n_serials == (int)ES_COUNTOF(serials)) { fprintf(stderr, "embsim: at most 4 --serial\n"); return 2; }
             serials[n_serials++] = argv[++i];
+        }
+        else if (!strcmp(a, "--stlink")) {
+            stlink = 7184;
+            if (more && argv[i + 1][0] >= '0' && argv[i + 1][0] <= '9')
+                stlink = atoi(argv[++i]);
         }
         else if (!strcmp(a, "--allow-origin") && more) {
             if (n_origins == (int)ES_COUNTOF(origins)) { fprintf(stderr, "embsim: at most 8 --allow-origin\n"); return 2; }
@@ -1271,6 +1277,18 @@ static int cmd_serve(int argc, char **argv, const char *argv0, int sidecar)
         o = esk_session_port_json(s, hp);
         fprintf(stderr, "embsim: %s's serial port is %s\n", serials[i], esk_json_get_str(o, "path", "?"));
         esk_json_free(s->a, o);
+    }
+    if (stlink >= 0) {
+        /* the probes as stlink-server shares them: OpenOCD's
+         * `hla_stlink_backend tcp PORT`, STM32CubeIDE */
+        int bound = 0;
+        if (esk_session_stlink_serve(s, host, stlink, &bound) != ES_OK) {
+            fprintf(stderr, "embsim: --stlink: cannot listen on %s:%d\n", host, stlink);
+            es_session_destroy(s);
+            return 2;
+        }
+        fprintf(stderr, "embsim: stlink-server on %s:%d (OpenOCD: -f interface/stlink.cfg -c \"hla_stlink_backend tcp %d\")\n",
+                host, bound, bound);
     }
     if (run && s->loaded) {
         /* running at real time from the start, with nothing attached: the

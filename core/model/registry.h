@@ -40,6 +40,15 @@ int esk_usb_host_cdc_open(struct esk_comp *c);
 size_t esk_usb_host_cdc_room(struct esk_comp *c);
 size_t esk_usb_host_cdc_write(struct esk_comp *c, const uint8_t *b, size_t n);
 void esk_usb_host_cdc_line(struct esk_comp *c, int held, int dtr, uint32_t baud);
+/* ST's ST-LINK/V2-1 debug probe (st_link.c): its command interface as its
+ * USB bulk endpoints carry it, a 16-byte command `cmd` with a write's `out`
+ * data, answered into `in` (at most `cap` bytes; the length answered);
+ * whether a component is one; its serial number */
+extern const esk_model_ops esk_st_link_ops;
+size_t esk_stlink_command(struct esk_comp *c, const uint8_t cmd[16], const uint8_t *out, size_t nout, uint8_t *in,
+                          size_t cap);
+int esk_stlink_is(const struct esk_comp *c);
+const char *esk_stlink_serial(struct esk_comp *c);
 /* a web server on the internet beyond the routers (web_server.c) */
 extern const esk_model_ops esk_web_server_ops;
 /* an 8-channel logic analyzer, the Saleae Logic 8 (logic_analyzer.c) */

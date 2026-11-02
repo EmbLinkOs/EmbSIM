@@ -114,6 +114,7 @@ struct esk_bus {
     int watch_hit, watch_kind; /* the first watchpoint the core hit */
     u32 watch_addr;
     int debug;     /* the access is a debugger's */
+    int dap;       /* the access is the debug port's (a probe's MEM-AP), not the core's */
     int dev_fault; /* the device refused it: esk_bus_fault */
     int unmapped;  /* nothing answered the failed access */
     /* a device was accessed since esk_mach_event_coming last looked */
@@ -455,6 +456,13 @@ struct esk_mach {
     /* the program wrote its own flash (an AVR's SPM): a power cycle keeps
      * what it wrote rather than loading the image again */
     int flash_written;
+    /* a debugger's view of the part: the core halted in Debug state
+     * (cortexm/debug.c), and an STM32's DBGMCU_CR and freeze registers
+     * (APB1_FZ, APB2_FZ) as the part's DBGMCU model holds them */
+    struct {
+        int halted;
+        u32 cr, fz[2];
+    } dbg;
     /* set by a model when something outside the machine must see a change
      * now (a pin, the core clock): the runtime ends its quantum */
     int yield;
@@ -771,6 +779,8 @@ void esk_cortexm_event(struct esk_mach *m);
  * that runs next) */
 int esk_cortexm_cores(struct esk_mach *m);
 int esk_cortexm_core(struct esk_mach *m);
+/* the SW-DP IDCODE of the debug port in front of core 0 */
+u32 esk_cortexm_dp_idcode(struct esk_mach *m);
 /* exception n pends on one core's NVIC only */
 void esk_cortexm_core_interrupt(struct esk_mach *m, int core, int n);
 /* a core other than core 0 powered off (reset, idle) or on (waiting in its

@@ -1,0 +1,44 @@
+{
+  "schema_version": 1,
+  "kind": "component_test",
+  "name": "no-target",
+  "description": "A probe on its own: nothing on SWDIO's net, T_VCC unpowered; it waits in mass-storage mode, holding nothing.",
+  "policy": "functional",
+  "until": "10ms",
+  "circuit": {
+    "components": [
+      {
+        "id": "DUT",
+        "component": "emblink/st_link_v21"
+      },
+      {
+        "id": "G0",
+        "component": "emblink/gnd"
+      }
+    ],
+    "nets": {
+      "GND": [
+        "DUT.GND",
+        "G0.GND"
+      ]
+    }
+  },
+  "expect": {
+    "output:DUT.mode": {
+      "at": "5ms",
+      "equals": "mass"
+    },
+    "output:DUT.swd": {
+      "at": "5ms",
+      "equals": false
+    },
+    "output:DUT.target": {
+      "at": "5ms",
+      "equals": ""
+    },
+    "output:DUT.nrst_low": {
+      "at": "5ms",
+      "equals": false
+    }
+  }
+}

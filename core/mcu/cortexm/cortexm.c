@@ -162,6 +162,8 @@ int esk_cm_exec_prio(struct esk_cm_state *cs)
 static int watched(struct esk_cm_state *cs, u32 a, int n, int write)
 {
     struct esk_bus *b = &cs->sim->bus;
+    if (cs->dbg.dwt_on && cs->executing)
+        esk_cm_dbg_access(cs, a, n, write);
     if (!b->nwatch || !esk_bus_watch_check(b, a, n, write) || !cs->executing)
         return 0;
     cs->fault_exc = FAULT_WATCH;
@@ -564,6 +566,29 @@ static void take_sync(struct esk_cm_state *cs, int n, u32 bits, u32 ret)
         return;
     }
     exc_entry(cs, n, ret);
+    if ((cs->dbg.ctrl & DHCSR_C_DEBUGEN) && n != EXC_SVC) {
+        /* DEMCR's vector catch: the core halts at the handler's first
+         * instruction */
+        u32 vc = 0;
+        if (n == EXC_HARD)
+            vc |= 1u << 10;                                         /* VC_HARDERR */
+        if (bits & (BFSR_STKERR | BFSR_UNSTKERR | MMFSR_MSTKERR | MMFSR_MUNSTKERR | UFSR_INVPC))
+            vc |= 1u << 9;                                          /* VC_INTERR */
+        if (bits & (BFSR_IBUSERR | BFSR_PRECISERR | BFSR_LSPERR))
+            vc |= 1u << 8;                                          /* VC_BUSERR */
+        if (bits & (UFSR_UNDEFINSTR | UFSR_INVSTATE))
+            vc |= 1u << 7;                                          /* VC_STATERR */
+        if (bits & (UFSR_UNALIGNED | UFSR_DIVBYZERO))
+            vc |= 1u << 6;                                          /* VC_CHKERR */
+        if (bits & UFSR_NOCP)
+            vc |= 1u << 5;                                          /* VC_NOCPERR */
+        if (bits & (MMFSR_IACCVIOL | MMFSR_DACCVIOL | MMFSR_MLSPERR))
+            vc |= 1u << 4;                                          /* VC_MMERR */
+        if (cs->model->arch == ARCH_V6M)
+            vc &= 1u << 10;
+        if (vc & cs->demcr)
+            esk_cm_dbg_halt(cs, DFSR_VCATCH);
+    }
 }
 
 /* the most urgent pending exception that can preempt now, or 0 */
@@ -573,6 +598,8 @@ static int pending_to_take(struct esk_cm_state *cs)
     for (int n = 2; n < NEXC; n++) {
         if (!cs->pend[n] || (n >= 16 && !cs->irq_en[n]))
             continue;
+        if (n >= EXC_PENDSV && (cs->dbg.ctrl & DHCSR_C_MASKINTS))
+            continue; /* a debugger's step keeps them out */
         int p = group_prio(cs, n);
         if (!best || p < bp) {
             best = n;
@@ -805,9 +832,27 @@ static int fetch16(struct esk_mach *s, u32 a, u8 *b, const struct esk_region **r
     return 1;
 }
 
+static void step_one(struct esk_cm_state *cs);
+
+/* one step, as a debugger sees it: nothing in Debug state, a breakpoint
+ * comparator's halt before the instruction, a step's or a watchpoint's
+ * after it */
 static void step(struct esk_cpu *c)
 {
     struct esk_cm_state *cs = (struct esk_cm_state *)c;
+    cs->dbg.resumed = 0;
+    if (cs->dbg.ctrl) {
+        if (cs->sim->bus_stall == 0 && !cs->tail_window && esk_cm_dbg_before(cs))
+            return;
+        step_one(cs);
+        esk_cm_dbg_after(cs);
+        return;
+    }
+    step_one(cs);
+}
+
+static void step_one(struct esk_cm_state *cs)
+{
     struct esk_mach *s = cs->sim;
     u32 snap[16];
     int sN = cs->N, sZ = cs->Z, sC = cs->C, sV = cs->V, sQ = cs->Q;
@@ -1033,7 +1078,15 @@ static void cpu_reset(struct esk_cpu *c)
     void *sev_ctx = k->sev_ctx;
     int mpu_regions = k->mpu_regions;
     struct esk_cm_dc *dc = k->dc;
+    /* the debug domain: a system reset keeps it, a power-on clears it */
+    struct esk_cm_debug dbg = k->dbg;
+    u32 demcr = k->demcr;
+    int keep_debug = s->reset_cause != ESK_RESET_POWER;
     memset(k, 0, sizeof *k);
+    if (keep_debug) {
+        k->dbg = dbg;
+        k->demcr = demcr;
+    }
     k->mpu_regions = mpu_regions;
     k->dc = dc;
     if (dc)
@@ -1062,6 +1115,7 @@ static void cpu_reset(struct esk_cpu *c)
     cs->pc = entry & ~1u;
     for (int n = 4; n < NEXC; n++)
         cs->prio[n] = 0;
+    esk_cm_dbg_reset(cs);
 }
 
 static u32 cpu_pc(struct esk_cpu *c)
@@ -1073,7 +1127,7 @@ static void cpu_interrupt(struct esk_cpu *c, int n)
 {
     struct esk_cm_state *cs = (struct esk_cm_state *)c;
     esk_cm_set_pend(cs, n);
-    if (cs->sim->asleep && !cs->sim->powered_down && wake_pending(cs)) {
+    if (cs->sim->asleep && !cs->sim->powered_down && !cs->dbg.halted && wake_pending(cs)) {
         cs->sim->asleep = 0;
         if (cs->in_wfe)
             cs->event = 0; /* SEVONPEND's event ended the WFE with it */
@@ -1093,8 +1147,12 @@ static void cpu_irq_level(struct esk_cpu *c, int n, int level)
 static int cpu_wake_pending(struct esk_cpu *c)
 {
     struct esk_cm_state *cs = (struct esk_cm_state *)c;
-    if (cs->sim->powered_down)
-        return 0;
+    if (cs->sim->powered_down || cs->dbg.halted)
+        return 0; /* Debug state ends only by the debugger */
+    if (cs->dbg.resumed) {
+        cs->dbg.resumed = 0; /* the debugger restarted it */
+        return 1;
+    }
     if (cs->in_wfe && cs->event) {
         cs->event = 0; /* the event that ends a WFE is consumed (SEVONPEND's) */
         return 1;
@@ -1210,6 +1268,72 @@ static int cpu_reg_write(struct esk_cpu *c, int n, const u8 *buf)
     }
     case 4: if (!v7) return 0; cs->basepri = v & 0xff; return 4;
     case 5: if (!v7) return 0; cs->faultmask = v & 1; return 4;
+    }
+    return 0;
+}
+
+/* DCRSR's REGSEL (ARM DDI 0403E C1.6.3): R0-R12, SP, LR,
+ * DebugReturnAddress (15), xPSR (16), MSP (17), PSP (18), CONTROL,
+ * FAULTMASK, BASEPRI and PRIMASK in one word (20), FPSCR (0x21) and S0-S31
+ * (0x40-0x5f) with an FPU. 0 for a REGSEL the core has not. */
+int esk_cm_dcrsr(struct esk_cm_state *cs, u32 regsel, int write, u32 *v)
+{
+    struct esk_cpu *c = &cs->cpu;
+    u8 b[8];
+    int v7 = cs->model->arch == ARCH_V7M;
+    int gdb = -1;
+    if (regsel <= 15)
+        gdb = (int)regsel;
+    else if (regsel == 16)
+        gdb = GR_XPSR;
+    else if (regsel == 17)
+        gdb = sys_base(cs);
+    else if (regsel == 18)
+        gdb = sys_base(cs) + 1;
+    if (gdb >= 0) {
+        if (write) {
+            put32(b, *v);
+            return cpu_reg_write(c, gdb, b) > 0;
+        }
+        if (cpu_reg_read(c, gdb, b) <= 0)
+            return 0;
+        *v = get32(b);
+        return 1;
+    }
+    if (regsel == 20) {
+        if (write) {
+            u32 ctl = *v >> 24 & (cs->model->fpu ? 7u : 3u);
+            if (!v7)
+                ctl &= ~1u;
+            cs->primask = *v & 1u;
+            if (v7) {
+                cs->basepri = *v >> 8 & 0xffu;
+                cs->faultmask = *v >> 16 & 1u;
+            }
+            cs->control = ctl;
+            if (!cs->ipsr)
+                esk_cm_use_psp(cs, (ctl & 2) != 0);
+        } else {
+            *v = (cs->control & (cs->model->fpu ? 7u : 3u)) << 24 | (v7 ? cs->faultmask << 16 | cs->basepri << 8 : 0) |
+                 cs->primask;
+        }
+        return 1;
+    }
+    if (!cs->model->fpu)
+        return 0;
+    if (regsel == 0x21) {
+        if (write)
+            cs->fpscr = *v & 0xF7C0009Fu;
+        else
+            *v = cs->fpscr;
+        return 1;
+    }
+    if (regsel >= 0x40 && regsel <= 0x5f) {
+        if (write)
+            cs->S[regsel - 0x40] = *v;
+        else
+            *v = cs->S[regsel - 0x40];
+        return 1;
     }
     return 0;
 }
@@ -1394,13 +1518,20 @@ es_status esk_cortexm_create(struct esk_mach *s, const char *model, int prio_bit
     dw = esk_dwt_create(s);
     if (!k || !st || !dw)
         return ES_ENOMEM;
+    esk_dwt_core(dw, k);
     s->cpu = &k->cpu;
     s->bus.snoop = excl_snoop;
     s->bus.snoop_ctx = k;
     if (esk_mach_add_dev(s, 0xE000E010u, 0x10, &esk_systick_ops, st) != ES_OK ||
         esk_mach_add_dev(s, 0xE000E000u, 0x1000, &esk_scs_ops, k) != ES_OK ||
         esk_mach_add_dev(s, 0xE0001000u, 0x1000, &esk_dwt_ops, dw) != ES_OK ||
-        esk_mach_add_dev(s, 0xE0000000u, 0x20000000u, &zero_ops, 0) != ES_OK)
+        esk_mach_add_dev(s, 0xE0002000u, 0x1000, &esk_fpb_ops, k) != ES_OK ||
+        esk_mach_add_dev(s, 0xE00FF000u, 0x1000, &esk_romtable_ops, k) != ES_OK ||
+        /* the internal private peripheral bus's other blocks and the
+         * vendor's system region read as zero; the external PPB
+         * (0xE0040000-0xE00FFFFF) is the part's own (an STM32's DBGMCU) */
+        esk_mach_add_dev(s, 0xE0000000u, 0x40000u, &zero_ops, 0) != ES_OK ||
+        esk_mach_add_dev(s, 0xE0100000u, 0x1FF00000u, &zero_ops, 0) != ES_OK)
         return ES_ELIMIT;
     *out = &k->cpu;
     return ES_OK;

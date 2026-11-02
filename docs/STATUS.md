@@ -460,6 +460,36 @@ time. Not yet: mpremote itself in CI (its raw-REPL protocol is what the
 test speaks). At the prompt `rp2.StateMachine` runs an `rp2.asm_pio`
 program and `rp2.DMA` copies memory.
 
+## Debug probes: the NUCLEO's ST-LINK (2026-11-02)
+
+The plan is `docs/engineering/debug-probes.md`; its first three steps are
+in. Every Cortex-M core has its halting debug as a debugger reaches it
+through the debug port: DHCSR's halt, step and restart, DCRSR and DCRDR,
+DEMCR's vector catch, DFSR, BKPT, the FPB's breakpoints and the DWT's
+watchpoints. A halted core runs nothing while the clocks and peripherals
+go on, unlike the session's own debugger, which pauses the whole
+simulation (`tests/unit/test_cm_debug.c`). The NUCLEO-F446RE's
+ST-LINK/V2-1 (U2) answers OpenOCD 0.12's commands for firmware V2J37M26
+and reaches the target through its SW-DP and MEM-AP. The session shares it
+on the host as ST's stlink-server does (`stlink.serve`, `embsim serve
+--stlink`). `tests/protocol/test_stlink.py` passes 26 checks:
+- the probe's identity and the target's voltage;
+- SWD, the IDCODE, a halt, registers, memory, a fault's address, a step,
+  a restart and NRST;
+- DBGMCU's DBG_IWDG_STOP holding the watchdog while the core is halted;
+- unmodified OpenOCD programming a blank board, the program then running
+  (its banner, LD2 blinking);
+- GDB through OpenOCD stopping at a breakpoint on main, stepping a line,
+  and stopping on a watchpoint in SysTick_Handler.
+
+Not yet:
+- the probe's USB transport (tools that open the USB device, as `st-flash`
+  does, need USB/IP);
+- its mass-storage drive;
+- SWO trace;
+- the timers' freeze bits;
+- the other boards' probes (steps 4 to 7).
+
 ## The RP2040's PIO and DMA (2026-11-02)
 
 PIO0 and PIO1 (`core/mcu/rp2040/pio.c`) and the DMA controller

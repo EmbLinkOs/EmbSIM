@@ -284,6 +284,7 @@ static void rom_write(void *ctx, struct esk_region *r, u32 a, int n, u32 v)
         f->s->bus_stall = ps_to_cycles(f, f->left_ps); /* a store while BSY waits for it */
     old = esk_mem_rd_le(r->mem + (a - r->base), n);
     esk_mem_wr_le(r->mem + (a - r->base), n, old & v);
+    f->s->flash_written = 1;
     esk_bus_code_changed(&f->s->bus);
     begin(f, PROGRAM_PS);
 }
@@ -295,6 +296,7 @@ static void erase(struct flash *f, u32 base, u32 size)
     struct esk_region *r = region_at(f->s, base, size);
     if (r)
         memset(r->mem + (base - r->base), 0xff, size);
+    f->s->flash_written = 1; /* a power cycle keeps the flash as it is now */
     esk_bus_code_changed(&f->s->bus);
 }
 

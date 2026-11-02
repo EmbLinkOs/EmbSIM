@@ -104,6 +104,16 @@ int esk_mcu_dump_regs(esk_comp *c, const char *periph, esk_strbuf *out);
 /* the RTOS tasks the firmware's memory holds now (mcu/rtos.h), or NULL with
  * the reason in `why` */
 esk_json *esk_mcu_rtos_json(esk_comp *c, esk_alloc *a, char *why, size_t cap);
+/* A probe's access to an Arm MCU through its debug port (ADIv5 SW-DP and
+ * MEM-AP; docs/engineering/debug-probes.md): the SW-DP's IDCODE (0 when
+ * the MCU has none), and a MEM-AP transfer of 1, 2 or 4 bytes at `addr`
+ * made now, as a bus master other than the core makes it (the core's debug
+ * registers among what it reaches). ESK_DAP_FAULT when nothing answers
+ * the address or the part is held in reset, ESK_DAP_NO_TARGET when it is
+ * not powered or has no debug port. */
+enum { ESK_DAP_OK = 0, ESK_DAP_FAULT = 1, ESK_DAP_NO_TARGET = 2 };
+uint32_t esk_mcu_dap_idcode(esk_comp *c);
+int esk_mcu_dap_mem(esk_comp *c, uint32_t addr, int bytes, int write, uint32_t *v);
 /* the firmware image's name as the project gives it */
 const char *esk_mcu_image_name(const esk_comp *c);
 

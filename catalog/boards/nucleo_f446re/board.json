@@ -251,6 +251,11 @@
         "resistance": 0.001
       },
       "doc": "SB57 (on), with the ferrite bead L1 in series: VDDA/VREF+ fed from VDD"
+    },
+    {
+      "id": "U2",
+      "component": "emblink/st_link_v21",
+      "doc": "The ST-LINK/V2-1 (MB1136's U2, an STM32F103CBT6 with ST's firmware): SWD on PA13 and PA14, NRST, VDD_TARGET sensed on VDD"
     }
   ],
   "nets": {
@@ -282,7 +287,8 @@
       "CN10.9",
       "CN10.20",
       "CN10.32",
-      "R29.2"
+      "R29.2",
+      "U2.GND"
     ],
     "U3_OUT": [
       "U3.OUT",
@@ -334,7 +340,8 @@
       "R30.1",
       "SB57.1",
       "CN7.5",
-      "CN7.33"
+      "CN7.33",
+      "U2.T_VCC"
     ],
     "AVDD": [
       "U5.VDDA",
@@ -347,7 +354,8 @@
       "B2.1",
       "C14.1",
       "CN6.3",
-      "CN7.14"
+      "CN7.14",
+      "U2.NRST"
     ],
     "VCAP_1": [
       "U5.VCAP_1",
@@ -456,11 +464,13 @@
     ],
     "PA13": [
       "U5.PA13",
-      "CN7.13"
+      "CN7.13",
+      "U2.SWDIO"
     ],
     "PA14": [
       "U5.PA14",
-      "CN7.15"
+      "CN7.15",
+      "U2.SWCLK"
     ],
     "PA15": [
       "U5.PA15",
@@ -1178,7 +1188,11 @@
     "baud": 115200,
     "bridge": {
       "part": "STM32F103CBT6 (ST-LINK/V2-1)",
-      "usb": {"vid": "0x0483", "pid": "0x374B", "product": "STM32 STLink"}
+      "usb": {
+        "vid": "0x0483",
+        "pid": "0x374B",
+        "product": "STM32 STLink"
+      }
     }
   },
   "bench": {
@@ -1763,9 +1777,9 @@
   },
   "fidelity": {
     "functional": {
-      "claims": "Nets, ports, LD2, LD3, B1, B2 and the jumpers as parts; the STM32F446RE runs its firmware (see its description), its HSE an 8 MHz clock on PH0 (HSEBYP needed, as on the real board) and its LSE the X2 crystal. The ST-LINK/V2-1's virtual COM port is the session's console on USART2 (PA2/PA3) and a serial port on the host; Arduino D0/D1 are not connected to PA3/PA2, as SB62/SB63 are off from the factory.",
+      "claims": "Nets, ports, LD2, LD3, B1, B2 and the jumpers as parts; the ST-LINK/V2-1 as U2 (emblink/st_link_v21) on PA13, PA14, NRST and VDD, reached through the session's stlink-server by OpenOCD and the IDEs that drive it: SWD, NRST, the target's voltage, flash programming and debugging through the core's debug; the STM32F446RE runs its firmware (see its description), its HSE an 8 MHz clock on PH0 (HSEBYP needed, as on the real board) and its LSE the X2 crystal. The ST-LINK/V2-1's virtual COM port is the session's console on USART2 (PA2/PA3) and a serial port on the host; Arduino D0/D1 are not connected to PA3/PA2, as SB62/SB63 are off from the factory.",
       "omissions": [
-        "the ST-LINK/V2-1 itself: its USB enumeration, the mass-storage drag-and-drop programming, SWD and its NRST drive (the session programs and debugs the board, ADR-031)",
+        "the ST-LINK/V2-1's USB device: its enumeration on the host (a debugger reaches it through the session's stlink-server), the mass-storage drag-and-drop programming",
         "the VCP's bytes reach USART2 directly, not as frames on PA2/PA3",
         "LD1 (COM), the ST-LINK's tricolour LED",
         "the solder bridges are fixed in their factory state (SB62/SB63 off, SB48/SB49 off, SB56/SB51 on, SB16/SB50 on, SB45/SB57 on, SB17, SB21 and SB2 on)",

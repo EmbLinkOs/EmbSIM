@@ -76,6 +76,10 @@ int esk_stm32f4_pwr_standby(struct esk_mach *m);
 extern const struct esk_dev_ops esk_stm32f4_gpio_ops, esk_stm32f4_syscfg_ops;
 void *esk_stm32f4_gpio_create(struct esk_mach *m, struct esk_rf_periph *p);
 void *esk_stm32f4_syscfg_create(struct esk_mach *m, struct esk_rf_periph *p);
+/* the F4's DBGMCU (dbgmcu_f4.c): IDCODE, the low-power debug bits and the
+ * watchdogs' freeze while the core is halted */
+extern const struct esk_dev_ops esk_stm32f4_dbgmcu_ops;
+void *esk_stm32f4_dbgmcu_create(struct esk_mach *m, struct esk_rf_periph *p);
 /* the pins' outside levels changed: every port's IDR again, and EXTI's
  * edges; one port's pins again (a peripheral's output on them changed) */
 void esk_stm32f4_pins_changed(struct esk_mach *m);

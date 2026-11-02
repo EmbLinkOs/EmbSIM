@@ -5,6 +5,39 @@ versions follow semantic versioning. There is no release yet.
 
 ## Unreleased
 
+### Debug probes: the NUCLEO's ST-LINK, through the Cortex-M's own debug
+
+- The NUCLEO-F446RE's ST-LINK/V2-1 (`emblink/st_link_v21`, the board's U2
+  on PA13, PA14, NRST and VDD): the command interface of firmware V2J37M26
+  as OpenOCD 0.12 drives it, reaching the target through its debug port
+  (the SW-DP's IDCODE, the MEM-AP). The session shares it with the host as
+  ST's stlink-server does (`stlink.serve`, `embsim serve --stlink`), so
+  OpenOCD (`hla_stlink_backend tcp 7184`) and the IDEs that drive it work
+  unmodified: OpenOCD programs a blank board's flash with its loader running
+  on the target, verifies it and resets it, and GDB through OpenOCD stops
+  at breakpoints and watchpoints and steps (`tests/protocol/test_stlink.py`,
+  `docs/user/nucleo-st-link.md`).
+- A blank STM32 (its image not built) runs from its erased flash and locks
+  up, as a new part does, so a probe can halt and program it; a debug halt
+  ends the lockup. The F4's flash keeps what was programmed through a power
+  cycle.
+- The STM32F4's DBGMCU: IDCODE (0x10006421 on the F446) is readable (the
+  core's read-as-zero range no longer hides the external PPB), DBG_STOP and
+  DBG_STANDBY keep a probe's connection in Stop and Standby, and
+  DBG_IWDG_STOP and DBG_WWDG_STOP freeze the watchdogs while the core is
+  halted. The Cortex-M's ROM table is at 0xE00FF000.
+
+- The Cortex-M cores' halting debug, as a probe drives it through the
+  debug port (ARM DDI 0403E and DDI 0419E, C1): DHCSR halts, steps and
+  restarts the core, DCRSR and DCRDR read and write every core register,
+  DEMCR's vector catch stops the core at its reset vector or a fault
+  handler, DFSR says why it halted, BKPT halts a debugged core, the FPB's
+  comparators are breakpoints and the DWT's comparators are watchpoints.
+  A halted core runs nothing while its clocks and peripherals go on, and
+  a system reset keeps the debug domain while a power-on clears it
+  (`tests/unit/test_cm_debug.c`). The plan for the probes on top of it:
+  `docs/engineering/debug-probes.md`.
+
 ### The RP2040's PIO and DMA
 
 - PIO0 and PIO1: four state machines each on their fractional clock

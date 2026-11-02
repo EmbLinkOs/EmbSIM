@@ -1,0 +1,182 @@
+{
+  "schema_version": 1,
+  "kind": "component",
+  "id": "emblink/st_link_v21",
+  "version": "0.1.0",
+  "name": "ST-LINK/V2-1 debug probe",
+  "category": "instruments",
+  "description": "ST's ST-LINK/V2-1, the debugger and programmer on a NUCLEO-64 (UM1724 6.2), firmware V2J37M26 (0483:374B). Its SWD lines and NRST go to the target, T_VCC senses the target's supply. A debugger on the computer reaches it through the session's stlink-server (stlink.serve, the TCP service STM32CubeIDE and OpenOCD's `st-link backend tcp` use): its commands, as OpenOCD 0.12 sends them, halt, step and run the target's core, read and write its registers and memory and program its flash, all through the target's debug port.",
+  "keywords": [
+    "st-link",
+    "stlink",
+    "debugger",
+    "programmer",
+    "swd",
+    "probe",
+    "openocd",
+    "nucleo",
+    "stm32"
+  ],
+  "family": "cmos_3v3",
+  "pins": [
+    {
+      "name": "SWDIO",
+      "number": 1,
+      "model": {
+        "kind": "digital_io",
+        "family": "cmos_3v3"
+      },
+      "doc": "SWD data, to the target's SWDIO (PA13 on an STM32): the MCU on this net is the probe's target"
+    },
+    {
+      "name": "SWCLK",
+      "number": 2,
+      "model": {
+        "kind": "digital_in",
+        "family": "cmos_3v3"
+      },
+      "doc": "SWD clock, to the target's SWCLK (PA14); held high-impedance, as the clock is not simulated edge by edge"
+    },
+    {
+      "name": "NRST",
+      "number": 3,
+      "model": {
+        "kind": "digital_out",
+        "drive": "open_drain",
+        "strength": "strong",
+        "family": "cmos_3v3"
+      },
+      "doc": "The target's reset, pulled low by DRIVE_NRST (open drain)"
+    },
+    {
+      "name": "T_VCC",
+      "number": 4,
+      "model": {
+        "kind": "digital_in",
+        "family": "cmos_3v3"
+      },
+      "doc": "VDD_TARGET: the target's supply, read by GET_TARGET_VOLTAGE; below 1.65 V no target answers"
+    },
+    {
+      "name": "GND",
+      "number": 5,
+      "model": {
+        "kind": "power",
+        "role": "ground"
+      },
+      "required": false
+    }
+  ],
+  "params": {
+    "serial": {
+      "type": "string",
+      "default": "066DFF495051717867152438",
+      "doc": "The probe's serial number (24 hex digits), as GET_DEV_INFO and USB report it"
+    }
+  },
+  "outputs": [
+    {
+      "name": "mode",
+      "type": "string",
+      "doc": "The firmware's mode: mass (the default), debug once a debugger entered SWD, dfu"
+    },
+    {
+      "name": "swd",
+      "type": "boolean",
+      "doc": "SWD entered: the target's debug port is in use"
+    },
+    {
+      "name": "target",
+      "type": "string",
+      "doc": "The MCU on SWDIO's net, empty when none"
+    },
+    {
+      "name": "target_voltage",
+      "type": "number",
+      "unit": "V",
+      "doc": "T_VCC as the probe measures it"
+    },
+    {
+      "name": "nrst_low",
+      "type": "boolean",
+      "doc": "The probe holds NRST low"
+    },
+    {
+      "name": "commands",
+      "type": "integer",
+      "doc": "Commands answered since the session started"
+    },
+    {
+      "name": "log",
+      "type": "string",
+      "doc": "What the probe did: SWD entered and left, NRST driven"
+    }
+  ],
+  "model": {
+    "primitive": "st_link"
+  },
+  "functional": {
+    "primitive": "st_link"
+  },
+  "symbol": {
+    "svg": "symbol.svg",
+    "width": 80,
+    "height": 60,
+    "pins": {
+      "SWDIO": {
+        "x": 80,
+        "y": 10,
+        "side": "right"
+      },
+      "SWCLK": {
+        "x": 80,
+        "y": 20,
+        "side": "right"
+      },
+      "NRST": {
+        "x": 80,
+        "y": 30,
+        "side": "right"
+      },
+      "T_VCC": {
+        "x": 80,
+        "y": 40,
+        "side": "right"
+      },
+      "GND": {
+        "x": 40,
+        "y": 60,
+        "side": "bottom"
+      }
+    }
+  },
+  "fidelity": {
+    "functional": {
+      "claims": "The ST-LINK/V2-1's command interface as firmware V2J37M26 answers it and OpenOCD 0.12's stlink_usb.c reads it: GET_VERSION, GET_CURRENT_MODE, DFU_EXIT, GET_TARGET_VOLTAGE (T_VCC against its 1.2 V reference); in DEBUG mode APIV2_ENTER (SWD), EXIT, READ_IDCODES (the target's SW-DP IDCODE), SWD_SET_FREQ, DRIVE_NRST (low, high, a 2 ms pulse on its open-drain NRST), RESETSYS (AIRCR.SYSRESETREQ), GETSTATUS, FORCEDEBUG, RUNCORE, STEPCORE, READREG and WRITEREG through DCRSR and DCRDR, READALLREGS, READDEBUGREG and WRITEDEBUGREG, memory reads and writes of 8, 16 and 32 bits and 32 bits without increment, GETLASTRWSTATUS(2) with the faulting address, READ_DAP_REG and WRITE_DAP_REG (DP: DPIDR, CTRL/STAT, SELECT, RDBUFF; MEM-AP: CSW, TAR, DRW, BASE, IDR), INIT_AP and CLOSE_AP_DBG; status 0x80, 0x81, 0x09 when no target answers, 0x11 for an AP fault. Its target is the MCU on SWDIO's net, reached through that MCU's MEM-AP. Shared with the host by the session's stlink-server (stlink.serve).",
+      "omissions": [
+        "its USB transport: the session hands it each command (stlink-server's TCP protocol, not a USB device on the host)",
+        "SWD as transactions, not SWDIO and SWCLK edges; a command takes no simulated time",
+        "its virtual COM port and mass-storage drive on the same USB device (the board's console bridge stands for the port)",
+        "SWO trace (an empty trace), JTAG, SWIM, its own firmware upgrade (DFU)"
+      ]
+    }
+  },
+  "provenance": {
+    "author": "EmbSIM",
+    "license": "Apache-2.0",
+    "sources": [
+      {
+        "title": "ST UM1724, STM32 Nucleo-64 boards, 6.2 (the embedded ST-LINK/V2-1)",
+        "notes": "Its SWD, NRST and VDD_TARGET wiring on MB1136"
+      },
+      {
+        "title": "OpenOCD 0.12.0 src/jtag/drivers/stlink_usb.c",
+        "url": "https://github.com/openocd-org/openocd/blob/v0.12.0/src/jtag/drivers/stlink_usb.c",
+        "notes": "The ST-LINK command set and stlink-server's TCP protocol as OpenOCD sends and reads them; read for their layout, not copied (GPL-2.0)"
+      }
+    ]
+  },
+  "tests": [
+    "tests/*.json"
+  ]
+}

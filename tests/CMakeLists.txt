@@ -55,6 +55,9 @@ if(Python3_Interpreter_FOUND)
   # the Pico programmed with BOOTSEL and a UF2 file on its USB drive (ADR-031)
   add_test(NAME uf2 COMMAND ${Python3_EXECUTABLE} ${CMAKE_SOURCE_DIR}/tests/protocol/test_uf2.py
            --embsim $<TARGET_FILE:embsim_cli> WORKING_DIRECTORY ${CMAKE_SOURCE_DIR})
+  # the NUCLEO's ST-LINK through stlink-server's protocol, and OpenOCD programming a blank board
+  add_test(NAME stlink COMMAND ${Python3_EXECUTABLE} ${CMAKE_SOURCE_DIR}/tests/protocol/test_stlink.py
+           --embsim $<TARGET_FILE:embsim_cli> WORKING_DIRECTORY ${CMAKE_SOURCE_DIR})
   # the fault mode and damage (ADR-034)
   add_test(NAME faults COMMAND ${Python3_EXECUTABLE} ${CMAKE_SOURCE_DIR}/tests/protocol/test_faults.py
            --embsim $<TARGET_FILE:embsim_cli> WORKING_DIRECTORY ${CMAKE_SOURCE_DIR})
