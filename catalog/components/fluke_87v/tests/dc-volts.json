@@ -1,0 +1,57 @@
+{
+  "schema_version": 1,
+  "kind": "component_test",
+  "name": "dc-volts",
+  "description": "5 V across V and COM on V DC: 5.000 V on the 6 V range.",
+  "policy": "electrical",
+  "until": "600ms",
+  "circuit": {
+    "components": [
+      {
+        "id": "DUT",
+        "component": "emblink/fluke_87v"
+      },
+      {
+        "id": "G",
+        "component": "emblink/gnd"
+      },
+      {
+        "id": "SUP",
+        "component": "emblink/vsource",
+        "params": {
+          "kind": "dc",
+          "dc": 5
+        }
+      }
+    ],
+    "nets": {
+      "P": [
+        "SUP.+",
+        "DUT.V"
+      ],
+      "GND": [
+        "SUP.-",
+        "DUT.COM",
+        "G.GND"
+      ]
+    }
+  },
+  "expect": {
+    "output:DUT.display": {
+      "at": "600ms",
+      "equals": "5.000"
+    },
+    "output:DUT.unit": {
+      "at": "600ms",
+      "equals": "V"
+    }
+  },
+  "inputs": [
+    {
+      "at": "0s",
+      "target": "DUT",
+      "input": "function",
+      "value": "vdc"
+    }
+  ]
+}

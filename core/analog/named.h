@@ -15,6 +15,9 @@ extern const esk_adev_ops esk_button4_ops;
 extern const esk_adev_ops esk_ptc_fuse_ops;
 /* an inline USB power meter (meter.c) */
 extern const esk_adev_ops esk_usb_meter_ops;
+extern const esk_adev_ops esk_multimeter_ops;
+void esk_multimeter_on_time(esk_adev *d, es_time_t now);
+void esk_multimeter_on_input(esk_adev *d, const char *input, es_time_t now);
 void esk_usb_meter_on_time(esk_adev *d, es_time_t now);
 /* the PPK2's measurement core (power_profiler.c): its samples since `since`, and its sample ring freed */
 extern const esk_adev_ops esk_power_profiler_ops;

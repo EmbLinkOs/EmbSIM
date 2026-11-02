@@ -215,6 +215,28 @@ depends on the real switch.
   same way.
 - Tolerances on parts other than R, C and L.
 
+## Bench instruments: the Fluke 87V multimeter (2026-11-02)
+
+The fourth bench instrument (ADR-033): `emblink/fluke_87v`, from Fluke's
+83V/87V detailed specifications and Eaton's DMM-B fuse data sheet. Its jacks
+(COM, V Ω, mA/µA, A) are its pins and its rotary switch an input; it loads
+the circuit as the meter does: 10 MΩ on volts, a source per range on ohms
+(the typical short-circuit currents, < 7.3 V open), 0.6 mA on diode test,
+the current jacks' shunts at their burden voltages (100 µV/µA, 1.8 mV/mA,
+0.03 V/A) in every position, F1 440 mA and F2 11 A fast fuses opening after
+their total clearing time from Eaton's curves and staying open until
+replaced. The display: 6000 counts, 4 updates a second, autoranging, DC
+averaged and AC true RMS over the update, OL. Evidence: nine fixtures
+(5.000 V; 3.333 V on a 10 M/10 M divider, its own loading; 4.700 kΩ after
+autoranging down from 50 MΩ; OL open; 4.99 mA in series with 1 kΩ; the lead
+left in mA/µA across a supply blowing F1 in milliseconds; 400 mA carried for
+2 s; 1.000 V RMS of a 50 Hz sine within the 87V's accuracy; an LED's forward
+voltage on diode test) and the Run perspective's front panel (display,
+switch, jacks, fuses, `Fluke87vPanel.test.tsx`). Not yet: capacitance,
+frequency, temperature, MIN MAX and the other buttons, the continuity
+beeper (its threshold is not published in the specifications), the input
+alert's chirp, the accuracy as an error, the fuse element's cooling.
+
 ## Bench instruments: the Rigol DS1054Z (2026-10-31)
 
 The third bench instrument: `emblink/rigol_ds1054z`, from Rigol's DS1000Z

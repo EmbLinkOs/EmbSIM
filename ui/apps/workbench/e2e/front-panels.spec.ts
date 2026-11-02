@@ -97,6 +97,7 @@ for (const scheme of ['light', 'dark'] as const)
     { place: 'Place Oscilloscope, 4 channels', region: /^U\d+ oscilloscope$/, cls: '.wb-ds1054z' },
     { place: 'Place Logic analyzer, 8 channels', region: /^U\d+ logic analyzer$/, cls: '.wb-logic8' },
     { place: 'Place Power profiler', region: /^U\d+ power profiler$/, cls: '.wb-ppk2' },
+    { place: 'Place Digital multimeter', region: /^U\d+ multimeter$/, cls: '.wb-dmm' },
   ]) {
     test(`${place.slice(6)} (${scheme}): its front panel passes axe docked and floating`, async ({ page }) => {
       await page.emulateMedia({ colorScheme: scheme });

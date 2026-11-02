@@ -1,0 +1,223 @@
+{
+  "schema_version": 1,
+  "kind": "component",
+  "id": "emblink/fluke_87v",
+  "version": "0.1.0",
+  "name": "Digital multimeter (Fluke 87V)",
+  "category": "instruments",
+  "description": "Fluke's 87V handheld true-rms multimeter, used as on the bench: the rotary switch sets what it measures (AC and DC volts, millivolts, ohms, diode test, AC and DC currents in µA, mA and A), the leads go in its jacks (COM, V Ω, mA/µA, A) and it loads the circuit as the meter does: 10 MΩ on volts, a test current on ohms, its shunts on the current jacks. The current jacks are fused (440 mA and 11 A, fast): measure a supply's voltage with the lead left in A and the fuse blows. The display shows 6000 counts, four times a second, ranging itself.",
+  "keywords": [
+    "multimeter",
+    "dmm",
+    "fluke",
+    "87v",
+    "voltmeter",
+    "ammeter",
+    "ohmmeter",
+    "diode test",
+    "fuse",
+    "true rms",
+    "current",
+    "resistance"
+  ],
+  "pins": [
+    {
+      "name": "COM",
+      "number": 3,
+      "model": {
+        "kind": "passive"
+      },
+      "required": false,
+      "doc": "Common (COM): the black lead"
+    },
+    {
+      "name": "V",
+      "number": 4,
+      "model": {
+        "kind": "passive"
+      },
+      "required": false,
+      "doc": "Volts, ohms, diode (V Ω ⟶): the red lead for voltage and resistance"
+    },
+    {
+      "name": "MA",
+      "number": 2,
+      "model": {
+        "kind": "passive"
+      },
+      "required": false,
+      "doc": "mA/µA: the red lead for currents to 400 mA, through F1 (440 mA fast)"
+    },
+    {
+      "name": "A",
+      "number": 1,
+      "model": {
+        "kind": "passive"
+      },
+      "required": false,
+      "doc": "A: the red lead for currents to 10 A, through F2 (11 A fast)"
+    }
+  ],
+  "params": {},
+  "inputs": [
+    {
+      "name": "function",
+      "type": "enum",
+      "enum": [
+        "off",
+        "vac",
+        "vdc",
+        "mvdc",
+        "ohm",
+        "diode",
+        "ua_dc",
+        "ua_ac",
+        "ma_dc",
+        "ma_ac",
+        "a_dc",
+        "a_ac"
+      ],
+      "default": "vdc",
+      "doc": "The rotary switch: off; vac (V~); vdc (V⎓); mvdc (mV⎓); ohm (Ω); diode; ua_dc, ua_ac (µA, mA/µA jack); ma_dc, ma_ac (mA, mA/µA jack); a_dc, a_ac (A, A jack)"
+    },
+    {
+      "name": "replace_fuse",
+      "type": "boolean",
+      "default": false,
+      "doc": "True: the blown fuses are replaced with new ones"
+    }
+  ],
+  "outputs": [
+    {
+      "name": "display",
+      "type": "string",
+      "doc": "What the display shows (\"4.987\", \"OL\")"
+    },
+    {
+      "name": "unit",
+      "type": "string",
+      "doc": "Its unit (V, mV, ohm, kohm, Mohm, uA, mA, A)"
+    },
+    {
+      "name": "value",
+      "type": "number",
+      "doc": "The reading in base units (volts, ohms, amperes); 0 on OL"
+    },
+    {
+      "name": "overload",
+      "type": "boolean",
+      "doc": "OL is shown"
+    },
+    {
+      "name": "position",
+      "type": "string",
+      "doc": "The switch's position"
+    },
+    {
+      "name": "fuse_ma",
+      "type": "string",
+      "doc": "F1, the mA/µA input's fuse: ok or blown"
+    },
+    {
+      "name": "fuse_a",
+      "type": "string",
+      "doc": "F2, the A input's fuse: ok or blown"
+    },
+    {
+      "name": "i_ma",
+      "type": "number",
+      "unit": "A",
+      "doc": "The current into the mA/µA jack"
+    },
+    {
+      "name": "i_a",
+      "type": "number",
+      "unit": "A",
+      "doc": "The current into the A jack"
+    }
+  ],
+  "model": {
+    "primitive": "multimeter"
+  },
+  "symbol": {
+    "svg": "symbol.svg",
+    "width": 80,
+    "height": 100,
+    "pins": {
+      "A": {
+        "x": 10,
+        "y": 100,
+        "side": "bottom"
+      },
+      "MA": {
+        "x": 30,
+        "y": 100,
+        "side": "bottom"
+      },
+      "COM": {
+        "x": 50,
+        "y": 100,
+        "side": "bottom"
+      },
+      "V": {
+        "x": 70,
+        "y": 100,
+        "side": "bottom"
+      }
+    }
+  },
+  "fidelity": {
+    "functional": null,
+    "timed": {
+      "claims": "As electrical.",
+      "omissions": [
+        "the accuracy as an error: readings are exact to their resolution",
+        "the 100 pF input capacitance",
+        "capacitance, conductance, frequency, duty cycle, temperature, MIN MAX, peak, REL, HOLD, the 4½-digit mode, the bar graph, backlight and battery",
+        "the continuity beeper (its threshold is not in the specifications)",
+        "the input alert's chirp (whether a lead is in a jack is not known)",
+        "in the mA/A position the 87V reads the jack its lead is in; here the function names the jack (ma_dc, a_dc)",
+        "the 50 MΩ range's open-circuit voltage (5.5 V, chosen so its full scale stays under the sheet's < 4.5 V)",
+        "the fuse element's cooling between overloads (their fractions add up and do not decay); the curves read off Eaton's plot at about ±10 %",
+        "damage from overvoltage"
+      ]
+    },
+    "electrical": {
+      "claims": "What it puts on its jacks, from Fluke's 83V/87V detailed specifications: 10 MΩ on the volt functions; on ohms a source per range from the typical short-circuit currents (600 Ω 1 mA, 6 kΩ 100 µA, 60 kΩ 10 µA, 600 kΩ 1 µA, 6 MΩ 1 µA, 50 MΩ 0.5 µA) and the open-circuit bound (< 7.3 V), ranging one range per update; diode test < 3.9 V open, 0.6 mA, OL above 3.000 V; the current jacks' shunts in every position at the typical burden voltages (100 µV/µA, 1.8 mV/mA, 0.03 V/A); fuses F1 440 mA and F2 11 A opening after their total clearing time from Eaton's DMM-B curves (overloads adding their fractions of it), replaced by an input; the display at 6000 counts, 4 updates a second, the ranges and resolutions of the sheet, DC averaged over the update, AC the true RMS of its AC part, OL beyond the top range.",
+      "omissions": [
+        "the accuracy as an error: readings are exact to their resolution",
+        "the 100 pF input capacitance",
+        "capacitance, conductance, frequency, duty cycle, temperature, MIN MAX, peak, REL, HOLD, the 4½-digit mode, the bar graph, backlight and battery",
+        "the continuity beeper (its threshold is not in the specifications)",
+        "the input alert's chirp (whether a lead is in a jack is not known)",
+        "in the mA/A position the 87V reads the jack its lead is in; here the function names the jack (ma_dc, a_dc)",
+        "the 50 MΩ range's open-circuit voltage (5.5 V, chosen so its full scale stays under the sheet's < 4.5 V)",
+        "the fuse element's cooling between overloads (their fractions add up and do not decay); the curves read off Eaton's plot at about ±10 %",
+        "damage from overvoltage"
+      ],
+      "validation": [
+        "tests/*.json"
+      ]
+    }
+  },
+  "provenance": {
+    "author": "EmbSIM",
+    "license": "Apache-2.0",
+    "sources": [
+      {
+        "title": "Fluke Corporation, Fluke 83V and 87V Digital Multimeters, Detailed Specifications: ranges, resolution, accuracy, burden voltage (100 µV/µA, 1.8 mV/mA, 0.03 V/A), input impedance 10 MΩ < 100 pF, ohms open-circuit test voltage and short-circuit currents, diode test 3.000 V 0.6 mA, fuses 44/100 A and 11 A 1000 V FAST, 6000 counts at 4 updates/s",
+        "url": "https://valuetronics.com/cdn/shop/files/Fluke_83V_87V_PRV240.pdf",
+        "date": "2026-11-02"
+      },
+      {
+        "title": "Eaton Bussmann series, DMM-B fast-acting multi-meter fuses, Technical Data 1047 (Dec 2015): ratings and total clearing time-current curves of DMM-B-44/100 and DMM-B-11A",
+        "url": "https://datasheet.chipsmall.com/DMM-B-44-100/349825.pdf",
+        "date": "2026-11-02",
+        "notes": "The curves read off the plot at points 300 s, 1 s, 0.1 s, 10 ms (F1) and 300 s, 10 s, 1 s, 0.1 s, 10 ms (F2)."
+      }
+    ]
+  },
+  "tests": [
+    "tests/*.json"
+  ]
+}

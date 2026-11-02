@@ -109,6 +109,19 @@ peak (101 mA) and charge (550 µC), D0 in step underneath:
 
 ![The PPK2 following a board sleeping and waking](instruments-ppk2/1-sleep-wake.png)
 
+## A multimeter: the Fluke 87V (2026-11-02)
+
+A Fluke 87V across the bottom of a 10 k / 4.7 k divider from 5 V, its front
+panel docked in the Run perspective. On V DC it reads 1.660 V: the
+resistors as drawn from the project's seed, not their nominal 1.599 V:
+
+![The 87V on V DC](instruments-fluke87v/1-volts.png)
+
+Turned to Ω with the circuit still powered, it reads nonsense (2.154 MΩ), as
+a real meter does when its test current meets a live circuit:
+
+![The 87V on ohms across a powered circuit](instruments-fluke87v/2-ohms-powered.png)
+
 ## A logic analyzer: the Saleae Logic 8 (2026-10-31)
 
 A Saleae Logic 8 wired to a terminal's TX (D0) and a 1 kHz clock (D1),

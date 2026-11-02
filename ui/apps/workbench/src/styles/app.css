@@ -2266,6 +2266,20 @@
 .wb-ppk2__plots > :nth-child(2) { flex: 1; min-height: 0; }
 
 /* a Rigol DS1054Z: its screen beside its front panel, the measurements underneath */
+/* the Fluke 87V's front panel */
+.wb-dmm { display: flex; flex-direction: column; gap: 10px; padding: 10px; height: 100%; min-height: 0; overflow: auto; background: #f2c200; color: #1b1b1b; border-radius: 10px; }
+.wb-dmm__lcd { display: grid; grid-template-columns: 2.5em 1fr 2.5em; align-items: end; padding: 10px 12px; border-radius: 6px; background: #c9d3b4; color: #1f2418; font-variant-numeric: tabular-nums; }
+.wb-dmm__reading { font-size: 2.6rem; line-height: 1; text-align: right; font-family: ui-monospace, monospace; letter-spacing: 0.04em; }
+.wb-dmm__mode, .wb-dmm__unit { font-size: 0.85rem; font-weight: 600; }
+.wb-dmm__switch { display: grid; grid-template-columns: repeat(4, 1fr); gap: 4px; padding: 8px; border-radius: 50%/18%; background: #2b2b2b; }
+.wb-dmm__pos { padding: 6px 2px; border: 1px solid #444; border-radius: 4px; background: #1d1d1d; color: #e8e8e8; font-size: 0.8rem; cursor: pointer; }
+.wb-dmm__pos.is-on { background: #f2c200; color: #111; border-color: #f2c200; font-weight: 700; }
+.wb-dmm__pos:focus-visible { outline: 2px solid #fff; outline-offset: 1px; }
+.wb-dmm__jacks { display: grid; grid-template-columns: repeat(4, 1fr); gap: 4px; text-align: center; font-size: 0.8rem; font-weight: 600; }
+.wb-dmm__jack { padding: 4px 2px; border-radius: 4px; background: #2b2b2b; color: #bbb; display: flex; flex-direction: column; }
+.wb-dmm__jack small { font-weight: 400; font-size: 0.65rem; }
+.wb-dmm__jack.is-used { color: #fff; outline: 2px solid #c8102e; }
+.wb-dmm__hint { margin: 0; font-size: 0.8rem; }
 .wb-ds1054z { display: flex; flex-direction: column; height: 100%; min-height: 0; }
 .wb-ds1054z__body { flex: 1; min-height: 0; display: flex; gap: 8px; padding: 8px; }
 .wb-ds1054z__screen { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 4px; padding: 6px; border-radius: 8px; background: #0b0f15; }

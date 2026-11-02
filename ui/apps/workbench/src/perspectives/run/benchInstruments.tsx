@@ -12,6 +12,7 @@ import type { Project } from '@embsim/protocol';
 import { useFloating } from '../../stores/floating';
 import { useLayout } from '../../stores/layout';
 import { DS1054Z, Ds1054zPanel } from './Ds1054zPanel';
+import { FLUKE87V, Fluke87vPanel } from './Fluke87vPanel';
 import { LOGIC8, Logic8Panel } from './Logic8Panel';
 import { PPK2, Ppk2Panel } from './Ppk2Panel';
 
@@ -33,6 +34,7 @@ export interface BenchInstrument {
 export const BENCH_INSTRUMENTS: BenchInstrument[] = [
   { component: DS1054Z, name: 'DS1054Z oscilloscope', key: 'ds1054z', weight: 1.6, minSize: 260, size: { width: 900, height: 560 }, panel: (part) => <Ds1054zPanel part={part} /> },
   { component: PPK2, name: 'Power Profiler Kit II', key: 'ppk2', weight: 1.3, minSize: 200, size: { width: 860, height: 480 }, panel: (part) => <Ppk2Panel part={part} /> },
+  { component: FLUKE87V, name: '87V multimeter', key: 'fluke87v', weight: 0.9, minSize: 200, size: { width: 360, height: 420 }, panel: (part) => <Fluke87vPanel part={part} /> },
   { component: LOGIC8, name: 'Logic 8', key: 'logic8', weight: 1.1, minSize: 160, size: { width: 860, height: 380 }, panel: (part) => <Logic8Panel part={part} /> },
 ];
 

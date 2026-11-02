@@ -42,7 +42,8 @@ const char *const *esk_adev_pin_names(const esk_adev_ops *ops, int *n)
                              *const relay[] = { "S+", "S-", "COM", "NC", "NO" },
                              *const spdt[] = { "COM", "NC", "NO" }, *const one[] = { "1" },
                              *const ppk[] = { "VIN", "VOUT", "GND" },
-                             *const scope[] = { "CH1", "CH2", "CH3", "CH4", "GND" };
+                             *const scope[] = { "CH1", "CH2", "CH3", "CH4", "GND" },
+                             *const dmm[] = { "COM", "V", "MA", "A" };
     static const struct { const char *name; const char *const *pins; int n; } table[] = {
         { "environment_resistor", env, 2 }, { "ptc_fuse", two, 2 }, { "photodiode", dio, 2 }, { "optocoupler", opto, 4 },
         { "relay_contacts", relay, 5 }, { "spdt_contact", spdt, 3 },
@@ -51,6 +52,7 @@ const char *const *esk_adev_pin_names(const esk_adev_ops *ops, int *n)
         { "led", dio, 2 }, { "rgb_led", rgb, 4 }, { "zener", dio, 2 }, { "bjt_npn", bjt, 3 }, { "bjt_pnp", bjt, 3 },
         { "nmos", mos, 3 }, { "pmos", mos, 3 }, { "opamp", amp, 5 }, { "regulator", reg, 3 }, { "pull", one, 1 },
         { "usb_meter", reg, 3 }, { "instrument_input", src, 2 }, { "power_profiler", ppk, 3 }, { "oscilloscope", scope, 5 },
+        { "multimeter", dmm, 4 },
     };
     size_t i;
     for (i = 0; ops && i < sizeof table / sizeof table[0]; i++)
@@ -69,7 +71,8 @@ int esk_adev_preserves_open_pins(const esk_adev_ops *ops)
     return ops && (!strcmp(ops->name, "led") || !strcmp(ops->name, "rgb_led") ||
                    !strcmp(ops->name, "instrument_input") || !strcmp(ops->name, "vsource") ||
                    !strcmp(ops->name, "power_profiler") || /* VIN is open in source meter mode */
-                   !strcmp(ops->name, "oscilloscope"));    /* a channel with no probe on it */
+                   !strcmp(ops->name, "oscilloscope") ||   /* a channel with no probe on it */
+                   !strcmp(ops->name, "multimeter"));     /* a jack with no lead in it */
 }
 
 static double pd(const esk_adev *d, const char *name, double def)
@@ -2087,6 +2090,7 @@ static const esk_adev_ops *const device_table[] = {
     &esk_comparator_ops, &esk_temperature_ops, &esk_timer555_ops,
     &esk_environmental_ops, &esk_photodiode_ops, &esk_optocoupler_ops, &esk_relay_contacts_ops, &esk_spdt_ops, &esk_button4_ops,
     &esk_ptc_fuse_ops, &esk_usb_meter_ops, &instrument_ops, &esk_power_profiler_ops, &esk_oscilloscope_ops,
+    &esk_multimeter_ops,
 };
 
 void esk_adev_on_time(esk_adev *d, es_time_t now)
@@ -2099,12 +2103,18 @@ void esk_adev_on_time(esk_adev *d, es_time_t now)
         esk_oscilloscope_on_time(d, now);
     else if (d && d->ops == &esk_environmental_ops)
         esk_environmental_on_time(d, now);
+    else if (d && d->ops == &esk_multimeter_ops)
+        esk_multimeter_on_time(d, now);
 }
 
 void esk_adev_on_input(esk_adev *d, const char *input, es_time_t now)
 {
     if (d && input && d->ops == &esk_environmental_ops) {
         esk_environmental_on_input(d, now);
+        return;
+    }
+    if (d && input && d->ops == &esk_multimeter_ops) {
+        esk_multimeter_on_input(d, input, now);
         return;
     }
     if (!d || !input || strcmp(input, "run"))

@@ -73,11 +73,11 @@
       ],
       "probe": "pwm",
       "expect": {
-        "min": 0.795,
+        "min": 0.79,
         "max": 0.809
       },
       "measure": "duty_cycle",
-      "description": "This project's parts as drawn from its seed (the LDR 10.22 kOhm at 10 lux, R1 9.59 kOhm) read 195 at 1 lux, 959 at 1000 lux and 807 at 100 lux: map() gives 204/255 = 0.800 (205 with the ADC's rounding at the boundary); across the datasheet spreads it ranges from 0.70 to 0.81"
+      "description": "This project's parts as drawn from its seed (the LDR 10.22 kOhm at 10 lux, R1 9.59 kOhm) read 195 at 1 lux, 959 at 1000 lux and 807 at 100 lux: map() gives 204/255 = 0.800 (205 with the ADC's rounding at the boundary); across the datasheet spreads it ranges from 0.70 to 0.81. The Uno starts through its boot section (BOOTRST, as its fuses are programmed), 16 us later than at address 0, so the calibration's ADC samples fall at other instants of the light's steps: 202 to 206 (0.79 to 0.81)"
     },
     {
       "id": "at-1000-lux",

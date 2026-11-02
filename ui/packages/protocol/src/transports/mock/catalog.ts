@@ -440,6 +440,26 @@ MOCK_CATALOG['emblink/nordic_ppk2'] = {
   files: { symbol: box(100, 120) },
 };
 
+MOCK_CATALOG['emblink/fluke_87v'] = {
+  description: {
+    schema_version: 1,
+    kind: 'component',
+    id: 'emblink/fluke_87v',
+    version: '0.1.0',
+    name: 'Digital multimeter (Fluke 87V)',
+    category: 'instruments',
+    description: 'A handheld true-rms multimeter with fused current inputs.',
+    keywords: ['multimeter', 'dmm', 'fluke'],
+    pins: ['COM', 'V', 'MA', 'A'].map((name, i) => ({ name, number: i + 1, model: { kind: 'passive' as const } })),
+    params: {},
+    model: { primitive: 'multimeter' },
+    symbol: { svg: 'symbol.svg', width: 80, height: 100, pins: { A: { x: 10, y: 100, side: 'bottom' }, MA: { x: 30, y: 100, side: 'bottom' }, COM: { x: 50, y: 100, side: 'bottom' }, V: { x: 70, y: 100, side: 'bottom' } } },
+    fidelity: { functional: null, timed: null, electrical: { claims: 'Demo entry: the panel without the engine.', omissions: ['readings'] } },
+    provenance,
+  },
+  files: { symbol: box(80, 100) },
+};
+
 export function catalogItems(): CatalogItem[] {
   return Object.values(MOCK_CATALOG).map(({ description }) => ({
     id: description.id,

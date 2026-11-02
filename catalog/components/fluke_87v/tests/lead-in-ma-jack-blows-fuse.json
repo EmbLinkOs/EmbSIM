@@ -1,0 +1,70 @@
+{
+  "schema_version": 1,
+  "kind": "component_test",
+  "name": "lead-in-ma-jack-blows-fuse",
+  "description": "The classic mistake: the red lead left in mA/uA while measuring a 5 V supply (0.1 ohm inside). About 2.6 A flows through the 1.8 ohm shunt; F1 (440 mA fast) clears in milliseconds and the jack opens.",
+  "policy": "electrical",
+  "until": "100ms",
+  "circuit": {
+    "components": [
+      {
+        "id": "DUT",
+        "component": "emblink/fluke_87v"
+      },
+      {
+        "id": "G",
+        "component": "emblink/gnd"
+      },
+      {
+        "id": "SUP",
+        "component": "emblink/vsource",
+        "params": {
+          "kind": "dc",
+          "dc": 5
+        }
+      },
+      {
+        "id": "RS",
+        "component": "emblink/resistor",
+        "params": {
+          "resistance": "0.1",
+          "tolerance": 0
+        }
+      }
+    ],
+    "nets": {
+      "P": [
+        "SUP.+",
+        "RS.1"
+      ],
+      "M": [
+        "RS.2",
+        "DUT.MA"
+      ],
+      "GND": [
+        "SUP.-",
+        "DUT.COM",
+        "G.GND"
+      ]
+    }
+  },
+  "expect": {
+    "output:DUT.fuse_ma": {
+      "at": "100ms",
+      "equals": "blown"
+    },
+    "output:DUT.i_ma": {
+      "at": "100ms",
+      "min": -1e-06,
+      "max": 1e-06
+    }
+  },
+  "inputs": [
+    {
+      "at": "0s",
+      "target": "DUT",
+      "input": "function",
+      "value": "vdc"
+    }
+  ]
+}

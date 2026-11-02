@@ -1,0 +1,75 @@
+{
+  "schema_version": 1,
+  "kind": "component_test",
+  "name": "loads-divider",
+  "description": "The meter's 10 MOhm loads a 10 M / 10 M divider from 10 V: it reads 3.333 V, not 5 V, as on the bench.",
+  "policy": "electrical",
+  "until": "600ms",
+  "circuit": {
+    "components": [
+      {
+        "id": "DUT",
+        "component": "emblink/fluke_87v"
+      },
+      {
+        "id": "G",
+        "component": "emblink/gnd"
+      },
+      {
+        "id": "SUP",
+        "component": "emblink/vsource",
+        "params": {
+          "kind": "dc",
+          "dc": 10
+        }
+      },
+      {
+        "id": "R1",
+        "component": "emblink/resistor",
+        "params": {
+          "resistance": "10M",
+          "tolerance": 0
+        }
+      },
+      {
+        "id": "R2",
+        "component": "emblink/resistor",
+        "params": {
+          "resistance": "10M",
+          "tolerance": 0
+        }
+      }
+    ],
+    "nets": {
+      "P": [
+        "SUP.+",
+        "R1.1"
+      ],
+      "M": [
+        "R1.2",
+        "R2.1",
+        "DUT.V"
+      ],
+      "GND": [
+        "SUP.-",
+        "R2.2",
+        "DUT.COM",
+        "G.GND"
+      ]
+    }
+  },
+  "expect": {
+    "output:DUT.display": {
+      "at": "600ms",
+      "equals": "3.333"
+    }
+  },
+  "inputs": [
+    {
+      "at": "0s",
+      "target": "DUT",
+      "input": "function",
+      "value": "vdc"
+    }
+  ]
+}

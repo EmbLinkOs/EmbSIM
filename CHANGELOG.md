@@ -5,6 +5,18 @@ versions follow semantic versioning. There is no release yet.
 
 ## Unreleased
 
+### A multimeter used like the real one (ADR-033)
+
+- `emblink/fluke_87v`, the Fluke 87V: COM, V Ω, mA/µA and A jacks, the
+  rotary switch as an input (V AC/DC, mV, Ω autoranging, diode test, µA,
+  mA and A AC/DC), the meter's own load on the circuit (10 MΩ, the ohms
+  source per range, the shunts' burden voltages in every position) and its
+  fused current inputs: F1 440 mA and F2 11 A open after their total
+  clearing time from Eaton's DMM-B curves and stay open until replaced, so
+  measuring a supply with the lead in a current jack blows the fuse as it
+  does on the bench. 6000-count display at 4 updates a second, DC averaged,
+  AC true RMS. Nine fixtures; a front panel in the Run perspective.
+
 ### Programming the Uno the real way (ADR-031, ADR-032)
 
 - The ATmega328P's boot loader support: the fuses as the board programs
