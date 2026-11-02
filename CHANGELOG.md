@@ -5,6 +5,31 @@ versions follow semantic versioning. There is no release yet.
 
 ## Unreleased
 
+### The ESP32-C3's HMAC, digital signature and eFuse key protection
+
+- HMAC (`esp32c3-hmac`, TRM v1.4 chapter 18): HMAC-SHA256 under an eFuse
+  key block, upstream with ESP-IDF's block flow (SET_MESSAGE_ONE,
+  SET_MESSAGE_ING, ONE_BLOCK, SET_MESSAGE_PAD, SET_MESSAGE_END) and
+  downstream for the digital signature and soft JTAG; the requested
+  purpose checked against the block's KEY_PURPOSE (QUERY_ERROR).
+- The digital signature (`esp32c3-ds`, chapter 20): its encrypted
+  parameters decrypted with AES-256-CBC under the HMAC's downstream key,
+  their MD and padding checked (QUERY_CHECK), and Z = X^Y mod M to 3072
+  bits; with no key it stays busy, as ESP-IDF expects.
+- eFuses: a read-protected key block (RD_DIS) reads 0 while the hardware
+  still uses it; a write-protected key block is not programmed. The word
+  at +0x18C, which Espressif's map leaves out and ESP-IDF's eFuse driver
+  reads, reads 0; the DS's IV words (+0x630), also left out, are there.
+- ESP-IDF v5.4's `nvs_encryption_hmac` runs unmodified on a new chip: it
+  burns an HMAC key into BLOCK4, read-protected, and both NVS partitions
+  are encrypted under keys the HMAC derives, their values read back.
+  `test_hmac_upstream` checks the HMAC of a burnt, read-protected key
+  against Python's hmac and the purpose check; `test_ds_sign` an RSA-1024
+  signature against Python's pow, from parameters encrypted as ESP-IDF's
+  gen_digital_signature_tests.py encrypts them
+  (`tests/unit/gen_esp32c3_ds_vector.py`), and a corrupted parameter's MD
+  failure. The ESP32-C3 has 31 of 35 peripherals modelled.
+
 ### The ESP32-C3's I2S
 
 - I2S0 (`esp32c3-i2s`, TRM v1.4 chapter 28) as a master in TDM and the

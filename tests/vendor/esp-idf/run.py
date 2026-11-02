@@ -57,6 +57,7 @@ EXAMPLES = {
     "i2c_eeprom": "examples/peripherals/i2c/i2c_eeprom",
     "i2s_std": "examples/peripherals/i2s/i2s_basic/i2s_std",
     "ledc_basic": "examples/peripherals/ledc/ledc_basic",
+    "nvs_encryption_hmac": "examples/security/nvs_encryption_hmac",
     "real_time_stats": "examples/system/freertos/real_time_stats",
     "sdm_led": "examples/peripherals/sigma_delta/sdm_led",
     "twai_self_test": "examples/peripherals/twai/twai_self_test",

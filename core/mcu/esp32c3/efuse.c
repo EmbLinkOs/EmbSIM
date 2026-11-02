@@ -12,7 +12,10 @@
  *     RD_SYS_PART2_DATA0-7); PGM_CMD with 0x5A5A ORs PGM_DATA0-7 into block
  *     BLK_NUM. Either completes at once: CMD reads 0 and INT_RAW's
  *     READ_DONE or PGM_DONE is set; another op code does nothing.
- *   - The error registers read 0: the blocks read back without error.
+ *   - The error registers read 0: the blocks read back without error. The
+ *     word between RD_REPEAT_ERR3 and RD_REPEAT_ERR4 (+0x18C), which
+ *     Espressif's register map leaves out, reads 0 too: ESP-IDF's eFuse
+ *     driver reads the five error words as consecutive words from +0x17C.
  *
  * The chip's bits out of the factory: a chip revision v0.3 (BLOCK1's
  * WAFER_VERSION_MAJOR 0, MINOR_HI 0, MINOR_LO 3), the revision of the
@@ -24,7 +27,12 @@
  * its chip (settings.mac: two boards are two chips); every other bit 0 (no secure boot,
  * no flash encryption, no keys, and no calibration data in BLOCK2,
  * BLK_VERSION 0 as on the first lots).
- * Not yet: the write and read protection bits (WR_DIS, RD_DIS), the
+ * Read protection: a key block (BLOCK4-9) or BLOCK10 whose RD_DIS bit
+ * (BLOCK0 bits 32-38) is set reads 0 from its RD_ registers, while the
+ * hardware that uses keys (HMAC, the digital signature, XTS-AES) still
+ * reads them (esk_esp32c3_efuse_key). Write protection: a key block whose
+ * WR_DIS bit (23-28) is set is not programmed.
+ * Not yet: the other WR_DIS bits (BLOCK0's fields, BLOCK1-3, BLOCK10), the
  * Reed-Solomon check values, the timing registers and the program and
  * read times. */
 #include <stdio.h>
@@ -73,9 +81,11 @@ static void factory(struct c3_efuse *k)
 static void load(struct c3_efuse *k)
 {
     int b, w;
-    for (b = 0; b < NBLOCKS; b++)
+    for (b = 0; b < NBLOCKS; b++) {
+        int hidden = b >= 4 && ((k->bits[0][1] >> (b - 4)) & 1u); /* RD_DIS */
         for (w = 0; w < blocks[b].words; w++)
-            esk_rf_hw(k->rd[b][w], k->bits[b][w]);
+            esk_rf_hw(k->rd[b][w], hidden ? 0u : k->bits[b][w]);
+    }
 }
 
 static u32 ef_read(void *ctx, u32 off, int n)
@@ -95,6 +105,8 @@ static void ef_write(void *ctx, u32 off, int n, u32 v)
             esk_rf_hw(k->raw, k->raw->value | 1u);
         } else if ((cmd & 2u) && op == OP_PGM) {
             int b = (int)((cmd >> 2) & 15u), w;
+            if (b >= 4 && b <= 9 && ((k->bits[0][0] >> (23 + b - 4)) & 1u))
+                b = NBLOCKS; /* WR_DIS.BLOCK_KEYn: not programmed */
             for (w = 0; b < NBLOCKS && w < blocks[b].words; w++)
                 k->bits[b][w] |= (u32)k->pgm[w]->value;
             esk_rf_hw(k->raw, k->raw->value | 2u);
@@ -159,4 +171,31 @@ int esk_esp32c3_efuse_wdt_delay_sel(struct esk_mach *m)
     if (esk_bus_debug_read(&m->bus, 0x60008834u, 4, &v) != 0)
         return 0;
     return (int)((v >> 16) & 3u);
+}
+
+/* a key block (0-5, BLOCK4-9) and its KEY_PURPOSE as the key-using hardware
+ * reads them, read protection or not; -1 when there is no eFuse controller */
+int esk_esp32c3_efuse_key(struct esk_mach *m, int id, u8 key[32], int *purpose)
+{
+    int i, w;
+    for (i = 0; m->rf && id >= 0 && id < 6; i++) {
+        struct esk_rf_periph *p = esk_rf_periph_at(m->rf, i);
+        struct c3_efuse *k;
+        if (!p)
+            break;
+        if (p->ops != &esk_esp32c3_efuse_ops)
+            continue;
+        k = (struct c3_efuse *)p->ctx;
+        for (w = 0; w < 8; w++) {
+            u32 v = k->bits[4 + id][w];
+            key[4 * w] = (u8)v;
+            key[4 * w + 1] = (u8)(v >> 8);
+            key[4 * w + 2] = (u8)(v >> 16);
+            key[4 * w + 3] = (u8)(v >> 24);
+        }
+        /* KEY_PURPOSE_n: BLOCK0 bits 88 + 4n */
+        *purpose = (int)((id < 2 ? k->bits[0][2] >> (24 + 4 * id) : k->bits[0][3] >> (4 * (id - 2))) & 15u);
+        return 0;
+    }
+    return -1;
 }

@@ -3046,6 +3046,139 @@ static void test_i2s_frame(void)
     c3_close(&f);
 }
 
+#define HMAC 0x6003E000u
+
+/* program eFuse block `blk` with eight words, then reload the RD_ registers */
+static void efuse_burn(c3 *f, u32 blk, const u32 w[8])
+{
+    int i;
+    for (i = 0; i < 8; i++)
+        wr(f, EFUSE + 4u * (u32)i, w[i]);
+    wr(f, EFUSE + 0x1CCu, 0x5A5Au);
+    wr(f, EFUSE + 0x1D4u, blk << 2 | 2u);
+    wr(f, EFUSE + 0x1CCu, 0x5AA5u);
+    wr(f, EFUSE + 0x1D4u, 1u);
+}
+
+/* HMAC-SHA256 under key block 0 (bytes 0..31, purpose HMAC_UP, read
+ * protected), of "The quick brown fox": the digest Python's hmac gives */
+static void test_hmac_upstream(void)
+{
+    static const u32 want[8] = { 0x1ff55b6bu, 0x5f4e87cdu, 0xef0ed024u, 0xc60c34afu,
+                                 0xc36bd928u, 0x55861e8bu, 0x7cdf9a81u, 0xdb3415ecu };
+    static const char msg[] = "The quick brown fox";
+    u32 key[8], b0[8] = { 0 }, blk[16];
+    u8 bytes[64];
+    c3 f;
+    int i;
+    if (!c3_open(&f, NULL, 0, NULL, 0))
+        return;
+    for (i = 0; i < 8; i++)
+        key[i] = 0x03020100u + 0x04040404u * (u32)i;
+    efuse_burn(&f, 4u, key);
+    b0[1] = 1u;        /* RD_DIS.BLOCK_KEY0 */
+    b0[2] = 8u << 24;  /* KEY_PURPOSE_0: HMAC_UP */
+    efuse_burn(&f, 0u, b0);
+    CHECK_EQ(rd(&f, EFUSE + 0x9Cu), 0u); /* read protected: software sees 0 */
+    wr(&f, SYSTEM + 0x14u, rd(&f, SYSTEM + 0x14u) | 1u << 5); /* PERIP_CLK_EN1's HMAC */
+    wr(&f, SYSTEM + 0x1Cu, rd(&f, SYSTEM + 0x1Cu) & ~(1u << 5));
+    wr(&f, HMAC + 0x40u, 1u);
+    wr(&f, HMAC + 0x44u, 8u);
+    wr(&f, HMAC + 0x48u, 0u);
+    wr(&f, HMAC + 0x4Cu, 1u);
+    CHECK_EQ(rd(&f, HMAC + 0x68u), 0u);
+    /* the message padded by software, its length counting the ipad block */
+    memset(bytes, 0, sizeof bytes);
+    memcpy(bytes, msg, sizeof msg - 1u);
+    bytes[sizeof msg - 1u] = 0x80u;
+    bytes[62] = (u8)(((sizeof msg - 1u + 64u) * 8u) >> 8);
+    bytes[63] = (u8)((sizeof msg - 1u + 64u) * 8u);
+    for (i = 0; i < 16; i++)
+        blk[i] = (u32)bytes[4 * i] | (u32)bytes[4 * i + 1] << 8 | (u32)bytes[4 * i + 2] << 16 |
+                 (u32)bytes[4 * i + 3] << 24;
+    for (i = 0; i < 16; i++)
+        wr(&f, HMAC + 0x80u + 4u * (u32)i, blk[i]);
+    wr(&f, HMAC + 0x50u, 1u); /* SET_MESSAGE_ONE */
+    wr(&f, HMAC + 0xF4u, 1u); /* ONE_BLOCK */
+    CHECK_EQ(rd(&f, HMAC + 0x6Cu), 0u);
+    for (i = 0; i < 8; i++)
+        CHECK_EQ(rd(&f, HMAC + 0xC0u + 4u * (u32)i), want[i]);
+    wr(&f, HMAC + 0x5Cu, 2u); /* SET_RESULT_FINISH clears it */
+    CHECK_EQ(rd(&f, HMAC + 0xC0u), 0u);
+    /* the digital signature's purpose against an HMAC_UP key: refused */
+    wr(&f, HMAC + 0x40u, 1u);
+    wr(&f, HMAC + 0x44u, 7u);
+    wr(&f, HMAC + 0x48u, 0u);
+    wr(&f, HMAC + 0x4Cu, 1u);
+    CHECK_EQ(rd(&f, HMAC + 0x68u), 1u);
+    c3_close(&f);
+}
+
+#define DSIG 0x6003D000u
+#include "esp32c3_ds_vector.h"
+
+/* the digital signature: key block 1 (bytes 0..31, purpose
+ * HMAC_DOWN_DIGITAL_SIGNATURE), the HMAC accelerator downstream, then
+ * ESP-IDF's layout of encrypted RSA-1024 parameters: Z is Python's pow */
+static void ds_load(c3 *f, const u8 *c)
+{
+    static const u32 frag_off[4] = { 0x000u, 0x200u, 0x400u, 0x600u };
+    static const u32 frag_len[4] = { 384u, 384u, 384u, 48u };
+    u32 i, j, at = 0;
+    for (i = 0; i < 4; i++)
+        for (j = 0; j < frag_len[i]; j += 4, at += 4)
+            wr(f, DSIG + frag_off[i] + j,
+               (u32)c[at] | (u32)c[at + 1] << 8 | (u32)c[at + 2] << 16 | (u32)c[at + 3] << 24);
+    for (i = 0; i < 16; i += 4)
+        wr(f, DSIG + 0x630u + i, (u32)ds_iv[i] | (u32)ds_iv[i + 1] << 8 | (u32)ds_iv[i + 2] << 16 | (u32)ds_iv[i + 3] << 24);
+    for (i = 0; i < 128; i += 4)
+        wr(f, DSIG + 0x800u + i, (u32)ds_x[i] | (u32)ds_x[i + 1] << 8 | (u32)ds_x[i + 2] << 16 | (u32)ds_x[i + 3] << 24);
+}
+
+static void test_ds_sign(void)
+{
+    u32 key[8], b0[8] = { 0 };
+    u8 bad[1200];
+    c3 f;
+    int i;
+    if (!c3_open(&f, NULL, 0, NULL, 0))
+        return;
+    for (i = 0; i < 8; i++)
+        key[i] = 0x03020100u + 0x04040404u * (u32)i;
+    efuse_burn(&f, 5u, key);       /* BLOCK_KEY1 */
+    b0[1] = 1u << 1;               /* RD_DIS.BLOCK_KEY1 */
+    b0[2] = 7u << 28;              /* KEY_PURPOSE_1: HMAC_DOWN_DIGITAL_SIGNATURE */
+    efuse_burn(&f, 0u, b0);
+    wr(&f, SYSTEM + 0x14u, rd(&f, SYSTEM + 0x14u) | 3u << 4); /* PERIP_CLK_EN1's DS and HMAC */
+    wr(&f, SYSTEM + 0x1Cu, rd(&f, SYSTEM + 0x1Cu) & ~(3u << 4));
+    /* without a key the DS stays busy */
+    wr(&f, DSIG + 0xE00u, 1u);
+    CHECK_EQ(rd(&f, DSIG + 0xE0Cu), 1u);
+    wr(&f, DSIG + 0xE08u, 1u);
+    wr(&f, HMAC + 0x40u, 1u);
+    wr(&f, HMAC + 0x44u, 7u);
+    wr(&f, HMAC + 0x48u, 1u);
+    wr(&f, HMAC + 0x4Cu, 1u);
+    CHECK_EQ(rd(&f, HMAC + 0x68u), 0u);
+    wr(&f, DSIG + 0xE00u, 1u); /* SET_START: the key from the HMAC accelerator */
+    CHECK_EQ(rd(&f, DSIG + 0xE0Cu), 0u);
+    ds_load(&f, ds_c);
+    wr(&f, DSIG + 0xE04u, 1u); /* SET_ME */
+    CHECK_EQ(rd(&f, DSIG + 0xE14u), 0u);
+    for (i = 0; i < 128; i += 4)
+        CHECK_EQ(rd(&f, DSIG + 0xA00u + (u32)i),
+                 (u32)ds_z[i] | (u32)ds_z[i + 1] << 8 | (u32)ds_z[i + 2] << 16 | (u32)ds_z[i + 3] << 24);
+    wr(&f, DSIG + 0xE08u, 1u); /* SET_FINISH */
+    /* one byte of C changed: the MD check fails */
+    memcpy(bad, ds_c, sizeof bad);
+    bad[5] ^= 1u;
+    wr(&f, DSIG + 0xE00u, 1u);
+    ds_load(&f, bad);
+    wr(&f, DSIG + 0xE04u, 1u);
+    CHECK_EQ(rd(&f, DSIG + 0xE14u) & 1u, 1u);
+    c3_close(&f);
+}
+
 #define I2C 0x60013000u
 #define I2C_SCL_LOW (I2C + 0x00u)
 #define I2C_CTR (I2C + 0x04u)
@@ -3841,6 +3974,8 @@ RUN(test_ledc_dither_and_fade);
 RUN(test_sdm_density);
 RUN(test_twai_frame);
 RUN(test_i2s_frame);
+RUN(test_hmac_upstream);
+RUN(test_ds_sign);
 RUN(test_i2c_master);
 RUN(test_i2c_stretch_and_end);
 RUN(test_i2c_slave);

@@ -5,6 +5,17 @@ maintained by hand until evidence tooling exists. It is not a generated
 support matrix. Specifications define target contracts; their acceptance
 does not mean the described behaviour exists.
 
+## The ESP32-C3's HMAC and digital signature (2026-11-01)
+
+The HMAC accelerator and the digital signature are modelled, with the
+eFuses' read and write protection of key blocks. ESP-IDF v5.4's
+`nvs_encryption_hmac` runs unmodified: it burns a read-protected HMAC key
+and encrypts NVS under keys the HMAC derives. Unit tests check the HMAC
+against Python's hmac and an RSA-1024 signature, from parameters encrypted
+as ESP-IDF's generator encrypts them, against Python's pow. 31 of 35
+peripherals are modelled; UHCI0/1, XTS-AES and the permission control
+remain.
+
 ## The ESP32-C3's I2S (2026-11-01)
 
 I2S0 is modelled (`esp32c3-i2s`) as a master in TDM and the standard

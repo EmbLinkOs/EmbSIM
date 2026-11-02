@@ -35,6 +35,8 @@
  *   sdm.c     the sigma-delta modulation's four pulse-density channels
  *   twai.c    the TWAI (CAN 2.0) controller, SJA1000-compatible, bit by bit
  *   i2s.c     the I2S controller as a master in TDM and standard formats
+ *   hmac.c    the HMAC accelerator under eFuse keys, upstream and downstream
+ *   ds.c      the digital signature: RSA under parameters only it decrypts
  *   i2c.c     the I2C controller, master and slave, on the pins
  *   gdma.c    the GDMA controller: three transmit and three receive
  *             channels on descriptor lists
@@ -141,6 +143,7 @@ u32 esk_esp32c3_apb_hz(struct esk_mach *m);
 void esk_esp32c3_reset(struct esk_mach *m, int code);
 /* eFuse WDT_DELAY_SEL */
 int esk_esp32c3_efuse_wdt_delay_sel(struct esk_mach *m);
+int esk_esp32c3_efuse_key(struct esk_mach *m, int id, u8 key[32], int *purpose);
 extern const struct esk_dev_ops esk_esp32c3_usbjtag_ops;
 void *esk_esp32c3_usbjtag_create(struct esk_mach *s, struct esk_rf_periph *p);
 extern const struct esk_dev_ops esk_esp32c3_rmt_ops;
@@ -153,6 +156,12 @@ extern const struct esk_dev_ops esk_esp32c3_twai_ops;
 void *esk_esp32c3_twai_create(struct esk_mach *s, struct esk_rf_periph *p);
 extern const struct esk_dev_ops esk_esp32c3_i2s_ops;
 void *esk_esp32c3_i2s_create(struct esk_mach *s, struct esk_rf_periph *p);
+extern const struct esk_dev_ops esk_esp32c3_hmac_ops;
+void *esk_esp32c3_hmac_create(struct esk_mach *s, struct esk_rf_periph *p);
+int esk_esp32c3_hmac_ds_key(struct esk_mach *m, u8 key[32]);
+void esk_esp32c3_mont(u32 *out, const u32 *a, const u32 *b, const u32 *m, u32 mp, int n);
+extern const struct esk_dev_ops esk_esp32c3_ds_ops;
+void *esk_esp32c3_ds_create(struct esk_mach *s, struct esk_rf_periph *p);
 extern const struct esk_dev_ops esk_esp32c3_i2c_ops;
 void *esk_esp32c3_i2c_create(struct esk_mach *s, struct esk_rf_periph *p);
 extern const struct esk_dev_ops esk_esp32c3_gdma_ops;
