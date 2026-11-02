@@ -51,6 +51,7 @@ EXAMPLES = {
     "ble_ibeacon": "examples/bluetooth/bluedroid/ble/ble_ibeacon",
     "blink": "examples/get-started/blink",
     "espnow": "examples/wifi/espnow",
+    "flash_encryption": "examples/security/flash_encryption",
     "gptimer": "examples/peripherals/timer_group/gptimer",
     "hello_world": "examples/get-started/hello_world",
     "http_request": "examples/protocols/http_request",

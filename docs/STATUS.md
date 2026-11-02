@@ -10,9 +10,9 @@ does not mean the described behaviour exists.
 XTS-AES is modelled (`esp32c3-xts`): manual encryption through SPI1's page
 programs and the cache's decryption while SPI_BOOT_CRYPT_CNT is odd, with
 Espressif's addressing as espsecure computes it. ESP-IDF v5.4's
-`flash_encryption` in Development mode burns a key and encrypts the flash
-in place at the first boot; its second boot is still being brought up. A
-unit test checks the ciphertext against espsecure's. Not
+`flash_encryption` runs unmodified in Development mode: the first boot
+burns a key and encrypts the flash in place, and the chip boots again from
+it encrypted. A unit test checks the ciphertext against espsecure's. Not
 yet: the encryption's time, the download-mode encryption controls. 32 of 35
 peripherals are modelled; UHCI0/1 and the permission control remain.
 

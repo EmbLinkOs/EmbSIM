@@ -1,0 +1,90 @@
+{
+ "schema_version": 1,
+ "kind": "scenario",
+ "name": "flash_encryption",
+ "until": "34s",
+ "description": "flash_encryption, unmodified, built with flash encryption in Development mode (the user's menuconfig choice) and flashed in plaintext on a new chip: the bootloader generates a key, burns it into BLOCK_KEY0 with the XTS_AES_128_KEY purpose, encrypts the bootloader, the partition table and the encrypted partitions in place through manual encryption, burns SPI_BOOT_CRYPT_CNT and resets; the ROM, the bootloader and the application then run from the encrypted flash through the cache's decryption. The application's partition reads give plaintext and its raw flash reads ciphertext; FATFS works on both FAT partitions, the test string found in the plain one and not in the encrypted one; NVS is encrypted under keys it generates.",
+ "inputs": [],
+ "assertions": [
+  {
+   "id": "key",
+   "at": "34s",
+   "probe": "console",
+   "expect": {
+    "contains": "flash_encrypt: Generating new flash encryption key..."
+   }
+  },
+  {
+   "id": "burnt",
+   "at": "34s",
+   "probe": "console",
+   "expect": {
+    "contains": "efuse: Writing EFUSE_BLK_KEY0 with purpose 4"
+   }
+  },
+  {
+   "id": "completed",
+   "at": "34s",
+   "probe": "console",
+   "expect": {
+    "contains": "flash_encrypt: Flash encryption completed"
+   }
+  },
+  {
+   "id": "reset",
+   "at": "34s",
+   "probe": "console",
+   "expect": {
+    "contains": "boot: Resetting with flash encryption enabled..."
+   }
+  },
+  {
+   "id": "enabled",
+   "at": "34s",
+   "probe": "console",
+   "expect": {
+    "contains": "Flash encryption feature is enabled in DEVELOPMENT mode"
+   }
+  },
+  {
+   "id": "fat-plain",
+   "at": "34s",
+   "probe": "console",
+   "expect": {
+    "contains": "Test string was found at offset (0x8000)"
+   }
+  },
+  {
+   "id": "fat-read",
+   "at": "34s",
+   "probe": "console",
+   "expect": {
+    "contains": "example_fatfs: Read from file: 'the quick brown fox jumped over the lazy dog'"
+   }
+  },
+  {
+   "id": "fat-encrypted",
+   "at": "34s",
+   "probe": "console",
+   "expect": {
+    "contains": "example_fatfs: Data does not match test string"
+   }
+  },
+  {
+   "id": "nvs",
+   "at": "34s",
+   "probe": "console",
+   "expect": {
+    "contains": "nvs: NVS partition \"nvs\" is encrypted."
+   }
+  },
+  {
+   "id": "returned",
+   "at": "34s",
+   "probe": "console",
+   "expect": {
+    "contains": "main_task: Returned from app_main()"
+   }
+  }
+ ]
+}

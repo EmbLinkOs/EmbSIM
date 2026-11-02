@@ -13,11 +13,18 @@ versions follow semantic versioning. There is no release yet.
   tweaked by its flash address, reversed again; the key block's bytes
   reversed). Manual encryption of 16- and 32-byte lines (PLAIN_MEM at the
   address modulo 32, TRIGGER, RELEASE, DESTROY, STATE) while SYSTEM's
-  ENABLE_SPI_MANUAL_ENCRYPT is set; SPI1's next page program at the
-  released address writes the ciphertext instead of its own data.
+  ENABLE_SPI_MANUAL_ENCRYPT is set; SPI1's page program then writes the
+  released line's ciphertext at its address, whatever its own address
+  and data (the ROM's esp_rom_spiflash_write_encrypted leaves ADDR as
+  it was).
 - The cache decrypts the pages it maps from the flash while eFuse
   SPI_BOOT_CRYPT_CNT has an odd number of bits set; SPI1's reads stay raw.
-- `test_xts_flash_encryption` checks 64 bytes encrypted by hand in two
+- ESP-IDF v5.4's `flash_encryption` runs unmodified in Development mode on
+  a new chip: the bootloader generates a key, burns it into BLOCK_KEY0,
+  encrypts the bootloader, the partition table and the encrypted
+  partitions in place and resets; the chip boots from the encrypted flash,
+  FATFS works on the encrypted partition and NVS is encrypted.
+  `test_xts_flash_encryption` checks 64 bytes encrypted by hand in two
   lines against `espsecure.py encrypt_flash_data --aes_xts` and their
   decryption through the cache. The ESP32-C3 has 32 of 35 peripherals
   modelled.
