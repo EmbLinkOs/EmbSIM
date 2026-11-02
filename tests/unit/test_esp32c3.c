@@ -3067,7 +3067,7 @@ static void test_hmac_upstream(void)
     static const u32 want[8] = { 0x1ff55b6bu, 0x5f4e87cdu, 0xef0ed024u, 0xc60c34afu,
                                  0xc36bd928u, 0x55861e8bu, 0x7cdf9a81u, 0xdb3415ecu };
     static const char msg[] = "The quick brown fox";
-    u32 key[8], b0[8] = { 0 }, blk[16];
+    u32 key[8], b0[8] = { 0 }, blk[16], bitlen;
     u8 bytes[64];
     c3 f;
     int i;
@@ -3091,8 +3091,9 @@ static void test_hmac_upstream(void)
     memset(bytes, 0, sizeof bytes);
     memcpy(bytes, msg, sizeof msg - 1u);
     bytes[sizeof msg - 1u] = 0x80u;
-    bytes[62] = (u8)(((sizeof msg - 1u + 64u) * 8u) >> 8);
-    bytes[63] = (u8)((sizeof msg - 1u + 64u) * 8u);
+    bitlen = (u32)(sizeof msg - 1u + 64u) * 8u;
+    bytes[62] = (u8)((bitlen >> 8) & 0xffu);
+    bytes[63] = (u8)(bitlen & 0xffu);
     for (i = 0; i < 16; i++)
         blk[i] = (u32)bytes[4 * i] | (u32)bytes[4 * i + 1] << 8 | (u32)bytes[4 * i + 2] << 16 |
                  (u32)bytes[4 * i + 3] << 24;
