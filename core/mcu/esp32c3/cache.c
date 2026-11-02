@@ -50,15 +50,7 @@ struct c3_cache {
 
 static struct c3_cache *cache_of(struct esk_mach *m)
 {
-    int i;
-    for (i = 0; m->rf; i++) {
-        struct esk_rf_periph *p = esk_rf_periph_at(m->rf, i);
-        if (!p)
-            break;
-        if (p->ops == &esk_esp32c3_cache_ops)
-            return (struct c3_cache *)p->ctx;
-    }
-    return NULL;
+    return (struct c3_cache *)esk_rf_ctx_of(m->rf, &esk_esp32c3_cache_ops);
 }
 
 static void fill(struct c3_cache *k, int i)

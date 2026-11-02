@@ -167,10 +167,10 @@ void *esk_esp32c3_efuse_create(struct esk_mach *s, struct esk_rf_periph *p)
  * hold shifted left by this plus one */
 int esk_esp32c3_efuse_wdt_delay_sel(struct esk_mach *m)
 {
-    u32 v = 0;
-    if (esk_bus_debug_read(&m->bus, 0x60008834u, 4, &v) != 0)
+    const struct c3_efuse *k = (const struct c3_efuse *)esk_rf_ctx_of(m->rf, &esk_esp32c3_efuse_ops);
+    if (!k)
         return 0;
-    return (int)((v >> 16) & 3u);
+    return (int)((k->rd[0][2]->value >> 16) & 3u); /* RD_REPEAT_DATA1 */
 }
 
 /* a key block (0-5, BLOCK4-9) and its KEY_PURPOSE as the key-using hardware

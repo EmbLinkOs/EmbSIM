@@ -5,6 +5,27 @@ versions follow semantic versioning. There is no release yet.
 
 ## Unreleased
 
+### M6 delivered, and a faster ESP32-C3
+
+- M6, the flagship, is delivered: STATUS.md maps each of its exit
+  criteria to its evidence, and the roadmap says so. The workbench's
+  screenshots of the ESP32-C3's TWAI, I2S, memory protection and HCI over
+  UART are in `docs/gallery/c3-peripherals`.
+- The ESP32-C3 runs about twice as fast with nothing it shows changed:
+  the models find one another through a lookup the register file keeps
+  (`esk_rf_ctx_of`) instead of a search of every peripheral at each call
+  (the SAR ADC asked for the APB clock that way on every tick while the
+  bootloader's entropy source kept it scanning; the RTC watchdog read an
+  eFuse word through the bus), the register file tries the register it
+  found last before its binary search, and the RISC-V core decodes its
+  PMP entries when they are written rather than at every access, the
+  ESP-RV core trying first the entry that last granted that kind of
+  access. ESP-IDF's flash_encryption bootloader, its first 10 simulated
+  seconds: 109 s of wall time before, 48 s after (RelWithDebInfo).
+- The workbench's Controls panel sets a string input as written; only a
+  terminal's `tx_text` is sent as a typed line with its newline, so a
+  terminal's `tx_hex` reaches it as bytes.
+
 ### The ESP32-C3's UHCI
 
 - UHCI0 (`esp32c3-uhci`, TRM v1.4 chapter 26) moves a UART's data to and

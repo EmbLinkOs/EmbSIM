@@ -98,7 +98,10 @@ function ControlRow({ entry, disabled }: { entry: InputEntry; disabled: boolean 
         className="es-row"
         onSubmit={(e) => {
           e.preventDefault();
-          void inputActions.serial(entry.target, text + '\n').catch(fail);
+          // a terminal's text is a line typed into it; any other string
+          // input (a terminal's hex bytes, a part's text) is set as written
+          if (entry.input === 'tx_text' || entry.input === 'tx') void inputActions.serial(entry.target, text + '\n').catch(fail);
+          else void set(text);
           setText('');
         }}
       >

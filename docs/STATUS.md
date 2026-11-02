@@ -5,6 +5,25 @@ maintained by hand until evidence tooling exists. It is not a generated
 support matrix. Specifications define target contracts; their acceptance
 does not mean the described behaviour exists.
 
+## M6, the flagship, delivered (2026-11-02)
+
+Each of M6's exit criteria (07-roadmap) and its evidence:
+
+| Criterion | Evidence |
+|---|---|
+| Each part's library example sketches run unmodified and pass scenarios | Thirty of the most used parts, the roadmap's list among them (DHT22, DS18B20, BME280, MPU6050, HC-SR04, SSD1306, HD44780 with its I2C backpack, WS2812, servo, stepper and driver, 4x4 keypad, DS3231, MFRC522, NEO-6M): `tests/vendor/arduino` (see "Parts" below and the entries before it) |
+| Each part's fixtures check its datasheet's timing and values | each part's `tests/*.json` in the catalog, run by `catalog_fixtures` in ctest |
+| The Uno's coverage table has no peripheral its core touches left unmodelled | `docs/coverage.md`: ATmega328P 15 of 15 modelled |
+| An ESP32-class board (Q11) | the ESP32-C3-DevKitM-1: 35 of 35 peripherals modelled (`docs/coverage.md`); ESP-IDF v5.4's examples unmodified in `tests/vendor/esp-idf` (Wi-Fi, Bluetooth LE, TWAI, I2S, flash encryption, memory protection, HCI over UART among them), Arduino-ESP32's sketches in `tests/vendor/arduino-esp32`, EmbLinkRTOS's suite at 160 MHz |
+| A host terminal opens the Uno's port and talks to a running sketch | "A board's serial port on the host" in the table below: `tests/protocol/test_host_serial.py` |
+| A circuit fed from the Uno's 5V pin sags and trips its polyfuse at the datasheet's current | the MF-MSMF050-2 (`ptc_fuse`) on the Uno's USB path and its fixtures |
+| A world panel setting ambient values and distances | "The world (ADR-026)" below: `tests/protocol/test_world.py`, `e2e/world.spec.ts` |
+| Paced real time (ADR-032) | `test_grid_slices` and the paced-run entries below |
+| Contact bounce and tolerances (ADR-034) | "Imperfections on by default" below |
+
+The workbench's screenshots of the ESP32-C3 work are in
+`docs/gallery/c3-peripherals`. M7 (the world and the breadboard) is next.
+
 ## The ESP32-C3's UHCI: every peripheral modelled (2026-11-02)
 
 UHCI0 is modelled (`esp32c3-uhci`): a UART's data to and from the GDMA,

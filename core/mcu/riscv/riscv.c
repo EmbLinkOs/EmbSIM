@@ -146,13 +146,24 @@ static u8 pmp_cfg(const struct rv_state *rs, int i)
     return (u8)(rs->pmpcfg[(i / 8) * 2] >> (8 * (i % 8)));
 }
 
+static int pmp_range(const struct rv_state *rs, int i, u64 *lo, u64 *hi);
+
 static void pmp_changed(struct rv_state *rs)
 {
     int i;
     rs->pmp_any = 0;
-    for (i = 0; i < rs->npmp; i++)
-        if (pmp_cfg(rs, i) >> 3 & 3)
-            rs->pmp_any = 1;
+    rs->pmp_n = 0;
+    for (i = 0; i < rs->npmp; i++) {
+        u64 lo, hi;
+        if (!(pmp_cfg(rs, i) >> 3 & 3))
+            continue;
+        rs->pmp_any = 1;
+        if (!pmp_range(rs, i, &lo, &hi))
+            continue;
+        rs->pmp_lo[rs->pmp_n] = lo;
+        rs->pmp_hi[rs->pmp_n] = hi;
+        rs->pmp_c[rs->pmp_n++] = pmp_cfg(rs, i);
+    }
 }
 
 /* the privilege loads and stores are checked at */
@@ -197,36 +208,41 @@ static int pmp_range(const struct rv_state *rs, int i, u64 *lo, u64 *hi)
 
 /* ESP-RV's PMP, which has no static priority: an access passes when an
  * enabled entry that binds the privilege grants it whole */
-static int pmp_denies_esp(const struct rv_state *rs, u64 a, int n, int priv, u32 perm)
+static int pmp_denies_esp(struct rv_state *rs, u64 a, int n, int priv, u32 perm)
 {
-    int i, matched = 0;
-    for (i = 0; i < rs->npmp; i++) {
-        u8 c = pmp_cfg(rs, i);
-        u64 lo, hi;
-        if (!pmp_range(rs, i, &lo, &hi) || (priv == PRV_M && !(c & PMP_L)))
+    int i, matched = 0, h = rs->pmp_hit[perm & 7u];
+    /* any entry that grants the access passes it (no priority): the one
+     * that granted this kind of access last is tried first */
+    if (h < rs->pmp_n && !(priv == PRV_M && !(rs->pmp_c[h] & PMP_L)) && rs->pmp_lo[h] < rs->pmp_hi[h] &&
+        a >= rs->pmp_lo[h] && a + (u64)n <= rs->pmp_hi[h] && (rs->pmp_c[h] & perm) == perm)
+        return 0;
+    for (i = 0; i < rs->pmp_n; i++) {
+        u8 c = rs->pmp_c[i];
+        u64 lo = rs->pmp_lo[i], hi = rs->pmp_hi[i];
+        if (priv == PRV_M && !(c & PMP_L))
             continue;
         if (lo >= hi || a + (u64)n <= lo || a >= hi)
             continue;
         matched = 1;
-        if (a >= lo && a + (u64)n <= hi && (c & perm) == perm)
+        if (a >= lo && a + (u64)n <= hi && (c & perm) == perm) {
+            rs->pmp_hit[perm & 7u] = i;
             return 0;
+        }
     }
     return priv < PRV_M || matched;
 }
 
 /* nonzero when the PMP fails n bytes at `a` for `perm` at privilege `priv` */
-static int pmp_denies(const struct rv_state *rs, u64 a, int n, int priv, u32 perm)
+static int pmp_denies(struct rv_state *rs, u64 a, int n, int priv, u32 perm)
 {
     int i;
     if (rs->esp && rs->pmp_any)
         return pmp_denies_esp(rs, a, n, priv, perm);
     if (!rs->pmp_any)
         return priv < PRV_M && rs->npmp > 0;
-    for (i = 0; i < rs->npmp; i++) {
-        u8 c = pmp_cfg(rs, i);
-        u64 lo, hi;
-        if (!pmp_range(rs, i, &lo, &hi))
-            continue;
+    for (i = 0; i < rs->pmp_n; i++) {
+        u8 c = rs->pmp_c[i];
+        u64 lo = rs->pmp_lo[i], hi = rs->pmp_hi[i];
         if (lo >= hi || a + (u64)n <= lo || a >= hi)
             continue;
         if (a < lo || a + (u64)n > hi)
@@ -265,6 +281,7 @@ static void pmpaddr_write(struct rv_state *rs, int i, u64 v)
     if (i + 1 < rs->npmp && (pmp_cfg(rs, i + 1) & PMP_L) && (pmp_cfg(rs, i + 1) >> 3 & 3) == PMP_TOR)
         return;
     rs->pmpaddr[i] = rv_xl(rs, v) & (rs->xlen == 32 ? 0xffffffffull : 0x3fffffffffffffull);
+    pmp_changed(rs);
 }
 
 /* ---- memory ------------------------------------------------------------- */

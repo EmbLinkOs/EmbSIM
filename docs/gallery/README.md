@@ -5,6 +5,34 @@ evolves. Newer milestones come first. The milestone sets from M1 on are captured
 `ui/apps/workbench/scripts/screenshots.mjs` (the same views each time:
 `pnpm build`, then `node scripts/screenshots.mjs --out ../../../docs/gallery/<milestone>`).
 
+## M6 delivered: the ESP32-C3's last peripherals (2026-11-02)
+
+ESP-IDF v5.4's own examples, unmodified, on the ESP32-C3-DevKitM-1 in the
+Run perspective (each project from `tests/vendor/esp-idf/examples`, run by
+`embsim serve`).
+
+`twai_self_test`: the TWAI controller's 300 self-test frames on a jumper
+from IO0 to IO2, and `i2s_std`: I2S in duplex through its shared data pin:
+
+| ![twai_self_test: the CAN jumper and the self-test's log](c3-peripherals/twai-self-test.png) | ![i2s_std: the I2S example's log](c3-peripherals/i2s-std.png) |
+|---|---|
+
+`flash_encryption` in Development mode on a new chip: the first boot
+burns a key and encrypts the flash in place; the chip boots again from it
+encrypted and ends with NVS encrypted. `memprot`: the permission control's
+checks, each `OK`:
+
+| ![flash_encryption: the second boot's log](c3-peripherals/flash-encryption.png) | ![memprot: the permission control's checks](c3-peripherals/memprot.png) |
+|---|---|
+
+`controller_hci_uart`: the Bluetooth controller's HCI over UART1 through
+UHCI and the GDMA. HCI_Reset sent from the terminal's `tx_hex` control
+(`01 03 0c 00`) and its Command Complete in the terminal's `rx_hex`
+(`04 0e 04 05 03 0c 00`, after the 0x00 the example's own IO4 setup
+leaves on the line):
+
+![controller_hci_uart: HCI_Reset and its Command Complete](c3-peripherals/hci-uart.png)
+
 ## Visual Benchmark v0.1: the redesigned workbench, in English and French (2026-11-01)
 
 The same twelve workflows before and after the redesign, captured by

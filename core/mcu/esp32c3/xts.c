@@ -55,15 +55,7 @@ struct c3_xts {
 
 static struct c3_xts *xts_of(struct esk_mach *m)
 {
-    int i;
-    for (i = 0; m->rf; i++) {
-        struct esk_rf_periph *p = esk_rf_periph_at(m->rf, i);
-        if (!p)
-            break;
-        if (p->ops == &esk_esp32c3_xts_ops)
-            return (struct c3_xts *)p->ctx;
-    }
-    return NULL;
+    return (struct c3_xts *)esk_rf_ctx_of(m->rf, &esk_esp32c3_xts_ops);
 }
 
 /* the hardware's key: the XTS_AES_128_KEY block's bytes reversed */
