@@ -7,6 +7,14 @@ versions follow semantic versioning. There is no release yet.
 
 ### MicroPython on the Pico
 
+- A USB device's serial port is a serial port on the computer: `port.open`
+  on a USB host (`PC`) gives a pseudo-terminal bound to its CDC ACM port. A
+  program opening it raises DTR (SET_CONTROL_LINE_STATE) and closing it
+  drops it; its baud rate goes to the device as the line coding; bytes
+  pass as USB carries them (no rate to mismatch), the terminal's only as
+  fast as the bulk endpoint takes them. A terminal, or mpremote's raw REPL,
+  talks to MicroPython's prompt over it.
+
 - MicroPython v1.24.1 (its rp2 port for RPI_PICO, built unmodified) is put
   on the Pico as a person does it: plugged in with BOOTSEL held,
   firmware.uf2 copied onto the RPI-RP2 drive, the Pico reboots, and its

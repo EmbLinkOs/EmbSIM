@@ -31,6 +31,15 @@ extern const esk_model_ops esk_wifi_scanner_ops;
 extern const esk_model_ops esk_air_sniffer_ops;
 /* a computer's USB port: the host on a USB cable (usb_host.c) */
 extern const esk_model_ops esk_usb_host_ops;
+/* its CDC ACM serial port, for a host port (session/hostport.c): the bytes
+ * come so far (the last *len of *total), whether it is open, room to send,
+ * what is sent, and the terminal's side of the line (a program holds the
+ * port: DTR with it, its baud rate as the line coding) */
+const uint8_t *esk_usb_host_cdc_rx(struct esk_comp *c, uint64_t *total, size_t *len);
+int esk_usb_host_cdc_open(struct esk_comp *c);
+size_t esk_usb_host_cdc_room(struct esk_comp *c);
+size_t esk_usb_host_cdc_write(struct esk_comp *c, const uint8_t *b, size_t n);
+void esk_usb_host_cdc_line(struct esk_comp *c, int held, int dtr, uint32_t baud);
 /* a web server on the internet beyond the routers (web_server.c) */
 extern const esk_model_ops esk_web_server_ops;
 /* an 8-channel logic analyzer, the Saleae Logic 8 (logic_analyzer.c) */

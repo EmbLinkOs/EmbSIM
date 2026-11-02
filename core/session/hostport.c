@@ -35,6 +35,7 @@
 #include "host/host.h"
 #include "mcu/mcu.h"
 #include "protocol/wsutil.h"
+#include "model/registry.h"
 
 #include <math.h>
 #include <string.h>
@@ -72,6 +73,19 @@ static esk_comp *port_part(es_session *s, const char *target)
         if (esk_str_eq(esk_json_get_str(esk_json_at(inputs, i), "name", ""), "tx_text"))
             return c;
     return NULL;
+}
+
+/* a computer's USB port whose device has a CDC ACM serial port (a Pico's
+ * MicroPython or stdio over USB): the host part, as `PC.HOST` or `PC` */
+static esk_comp *port_cdc(es_session *s, const char *target)
+{
+    char id[200];
+    esk_comp *c = esk_engine_comp(&s->eng, target);
+    if (c && c->ops == &esk_usb_host_ops)
+        return c;
+    esk_snprintf(id, sizeof id, "%s.HOST", target);
+    c = esk_engine_comp(&s->eng, id);
+    return c && c->ops == &esk_usb_host_ops ? c : NULL;
 }
 
 static esk_host_port *port_named(es_session *s, const char *target)
@@ -239,8 +253,9 @@ es_status esk_session_port_open(es_session *s, const char *target, const struct 
         return ES_OK;
     }
     bi = port_board(s, target);
-    if (bi ? !esk_json_get(esk_json_get(bi->item ? bi->item->desc : NULL, "console"), "peripheral") : !port_part(s, target)) {
-        esk_snprintf(why, cap, "%s is neither a board with a serial console nor a terminal part", target);
+    if (bi ? !esk_json_get(esk_json_get(bi->item ? bi->item->desc : NULL, "console"), "peripheral")
+           : !port_part(s, target) && !port_cdc(s, target)) {
+        esk_snprintf(why, cap, "%s is not a board with a serial console, a terminal part or a computer's USB port", target);
         return ES_ENOTFOUND;
     }
     hp = (esk_host_port *)esk_calloc(s->a, 1, sizeof *hp);
@@ -263,6 +278,11 @@ es_status esk_session_port_open(es_session *s, const char *target, const struct 
     if (bi && bi->mcu) {
         size_t len;
         (void)esk_mcu_console(bi->mcu, &len, &hp->sent);
+    } else if (port_cdc(s, target)) {
+        size_t len;
+        esk_comp *c = port_cdc(s, target);
+        (void)esk_usb_host_cdc_rx(c, &hp->sent, &len);
+        esk_usb_host_cdc_line(c, 1, 0, 0); /* a port no program has open yet: DTR down */
     } else {
         esk_comp *c = port_part(s, target);
         esk_json *o = c ? esk_json_new_object(s->a) : NULL;
@@ -363,6 +383,19 @@ static const unsigned char *port_output(es_session *s, esk_host_port *hp, size_t
     esk_board_inst *bi = port_board(s, hp->target);
     *n = 0;
     *hold = NULL;
+    if (!bi && port_cdc(s, hp->target)) {
+        size_t len;
+        uint64_t total, fresh;
+        const uint8_t *b = esk_usb_host_cdc_rx(port_cdc(s, hp->target), &total, &len);
+        if (total < hp->sent)
+            hp->sent = 0;
+        fresh = total - hp->sent;
+        hp->sent = total;
+        if (fresh > len)
+            fresh = len; /* older than the port keeps: lost, as a full buffer loses them */
+        *n = (size_t)fresh;
+        return b + len - (size_t)fresh;
+    }
     if (bi && bi->mcu) {
         size_t len;
         uint64_t total, fresh;
@@ -400,6 +433,7 @@ void esk_session_ports_poll(es_session *s)
     for (i = 0; i < s->host_ports.len; i++) {
         esk_host_port *hp = s->host_ports.data[i];
         esk_board_inst *bi = port_board(s, hp->target);
+        esk_comp *cdc = bi ? NULL : port_cdc(s, hp->target);
         int peer = esk_host_pty_peer(hp->pty), changed = 0;
         unsigned char buf[512], conv[512];
         const unsigned char *out;
@@ -447,6 +481,8 @@ void esk_session_ports_poll(es_session *s)
                 changed = 1;
             }
         }
+        if (cdc && changed) /* a USB serial port: DTR with the program, its rate as the line coding */
+            esk_usb_host_cdc_line(cdc, 1, peer, peer ? hp->baud : 0);
         sketch = sketch_baud(s, hp);
 
         /* the MCU's bytes to the program, or dropped while none has the port */
@@ -465,7 +501,7 @@ void esk_session_ports_poll(es_session *s)
                     chunk = (size_t)(until - idx);
             }
             m = chunk;
-            if (mismatched(rate, hp->baud)) {
+            if (!cdc && mismatched(rate, hp->baud)) { /* USB carries bytes, not frames at a rate */
                 m = esk_uart_rebaud(out, chunk, rate, hp->baud, conv, sizeof conv);
                 p = conv;
             }
@@ -477,8 +513,15 @@ void esk_session_ports_poll(es_session *s)
         }
         esk_json_free(s->a, hold);
 
+        /* the program's bytes to a USB serial port: what its bulk endpoint
+         * can take, the rest left in the terminal for later */
+        while (cdc && peer && esk_usb_host_cdc_open(cdc) && esk_usb_host_cdc_room(cdc) >= sizeof buf &&
+               (got = esk_host_pty_read(hp->pty, buf, sizeof buf)) > 0) {
+            hp->from_host += (size_t)got;
+            (void)esk_usb_host_cdc_write(cdc, buf, (size_t)got);
+        }
         /* the program's bytes to the MCU, as inputs now */
-        while (peer && (got = esk_host_pty_read(hp->pty, buf, sizeof buf)) > 0) {
+        while (!cdc && peer && (got = esk_host_pty_read(hp->pty, buf, sizeof buf)) > 0) {
             const unsigned char *p = buf;
             size_t m = (size_t)got;
             esk_json *v;

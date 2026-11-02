@@ -452,7 +452,12 @@ through the bootrom's flash functions) is listed by `os.listdir()`
 (`tests/vendor/micropython/run.py`, CI's linux-gcc job). The whole run
 takes about 1.2 s of wall time. For it the RP2040 gained its RTC (MicroPython
 sets the time at boot and waits for it to run). Not yet: the REPL as a
-serial port on the computer (ADR-032), `mpremote`, PIO and DMA programs.
+its USB serial port is also a serial port on the computer: `port.open` on
+the USB host gives a pseudo-terminal, a program opening it raises DTR and
+closing it drops it, and a terminal's `print(6*7)` and mpremote's raw REPL
+(Ctrl-A, the code, Ctrl-D) are answered over it with the session in real
+time. Not yet: mpremote itself in CI (its raw-REPL protocol is what the
+test speaks), PIO and DMA programs.
 
 ## USB for a Pico's own program (ADR-031, 2026-11-02)
 

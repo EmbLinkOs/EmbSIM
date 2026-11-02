@@ -18,6 +18,12 @@ terminal does. At its prompt:
   - a file written to its flash filesystem (littlefs, formatted on the first
     boot through the bootrom's flash functions) is listed by `os.listdir()`.
 
+Then the board's USB serial port is a serial port on this computer
+(`port.open` on the USB host, a pseudo-terminal) and the session runs in
+real time: a program opening it raises DTR, the friendly prompt answers
+over it, and so does MicroPython's raw REPL as mpremote drives it (Ctrl-C,
+Ctrl-A, the code, Ctrl-D: `OK`, the output, Ctrl-D twice).
+
 The checkout is not vendored: --mp names it (with its lib/pico-sdk,
 lib/tinyusb, lib/micropython-lib and lib/mbedtls submodules), CI's at a
 pinned release; or --uf2 names a firmware.uf2 already built.
@@ -29,10 +35,12 @@ skips."""
 import argparse
 import json
 import os
+import select
 import shutil
 import subprocess
 import sys
 import tempfile
+import time
 from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
@@ -45,6 +53,30 @@ def build(mp: Path) -> Path:
     subprocess.run(["make", "-C", str(mp / "mpy-cross"), "-j8"], check=True)
     subprocess.run(["make", "-C", str(mp / "ports" / "rp2"), "BOARD=RPI_PICO", "-j8"], check=True)
     return mp / "ports" / "rp2" / "build-RPI_PICO" / "firmware.uf2"
+
+
+def read_for(fd: int, seconds: float, until: bytes) -> bytes:
+    got = b""
+    end = time.monotonic() + seconds
+    while time.monotonic() < end and until not in got:
+        r, _, _ = select.select([fd], [], [], 0.05)
+        if r:
+            try:
+                got += os.read(fd, 4096)
+            except BlockingIOError:
+                pass
+    return got
+
+
+def open_port(path: str) -> int:
+    import termios
+    import tty
+    fd = os.open(path, os.O_RDWR | os.O_NOCTTY | os.O_NONBLOCK)
+    tty.setraw(fd)
+    attrs = termios.tcgetattr(fd)
+    attrs[4] = attrs[5] = termios.B115200
+    termios.tcsetattr(fd, termios.TCSANOW, attrs)
+    return fd
 
 
 def project(uf2: str) -> dict:
@@ -129,6 +161,37 @@ def main() -> int:
                   f"the LED on GPIO25 lit from machine.Pin: {samples[-1] if samples else None}")
             out = repl("import os; open('hello.txt','w').write('hi'); print(os.listdir())", "]\r\n")
             check("'hello.txt'" in out, f"a file in its flash filesystem: {out.strip().splitlines()[-2:] if out else ''}")
+
+            # its serial port on this computer, the session in real time
+            if os.name == "posix":
+                port = c.call("port.open", {"target": "PC"})
+                path = port["path"]
+                check(os.path.exists(path) and not port["connected"], f"the Pico's USB serial port on the host: {path}")
+                c.call("control.run", {"speed": 1})
+                time.sleep(0.3)
+                fd = open_port(path)
+                time.sleep(0.5)
+                os.write(fd, b"\r\nprint(6*7)\r\n")
+                got = read_for(fd, 30.0, b"42\r\n")
+                check(b"42\r\n" in got, f"a terminal on {path}: print(6*7) answers {got[-24:]!r}")
+                # MicroPython's raw REPL, as mpremote enters it and runs code
+                os.write(fd, b"\r\x03\x03")
+                read_for(fd, 2.0, b">>> ")
+                os.write(fd, b"\r\x01")
+                got = read_for(fd, 30.0, b"raw REPL; CTRL-B to exit\r\n>")
+                ok = b"raw REPL; CTRL-B to exit\r\n>" in got
+                os.write(fd, b"print('raw', 2**10)\x04")
+                got = read_for(fd, 30.0, b"\x04>")
+                ok = ok and got.startswith(b"OK") and b"raw 1024" in got
+                os.write(fd, b"\x02")
+                check(ok, f"mpremote's raw REPL: {got[:40]!r}")
+                os.close(fd)
+                time.sleep(0.5)
+                c.call("control.pause")
+                log = c.call("observe.snapshot", {"include": ["outputs"]})["outputs"]["PC.HOST"]["log"]
+                check("DTR and RTS raised" in log and "DTR and RTS dropped" in log,
+                      "DTR rises as a program opens the port and drops as it closes it")
+                c.call("port.close", {"target": "PC"})
     print("micropython: %s" % ("ok" if not failures else f"{failures} failure(s)"))
     return 1 if failures else 0
 

@@ -192,11 +192,16 @@ typedef struct uh_state {
      * and what is to go */
     struct {
         int present, intf, ep_in, ep_out, mps, open, due, tin, tout;
-        char text[4096];
+        char text[8192]; /* what came, the last of it (a NUL ends the observed text, not the bytes) */
         size_t len;
         uint64_t bytes;
-        uint8_t tx[256];
+        uint8_t tx[4096];
         uint32_t tx_len;
+        /* a program on the computer has the port (a host port, hostport.c):
+         * DTR follows it, and its line coding is sent; else the port opens
+         * at enumeration as a terminal left open does */
+        int held, dtr, want_dtr, line_due, state_due;
+        uint32_t baud;
     } cdc;
     /* what came */
     uint64_t reports;
@@ -471,12 +476,20 @@ static void begin(uh_state *s, int step)
             control(s, 0x81, 6, 0x2200, (unsigned)s->hid[s->hid_i].intf,
                     s->hid[s->hid_i].report_len ? s->hid[s->hid_i].report_len : 255u);
             return;
-        case E_CDC_LINE: { /* SET_LINE_CODING: 115200 baud, 8N1, as a terminal opens the port */
-            static const uint8_t lc[7] = { 0x00, 0xc2, 0x01, 0x00, 0, 0, 8 };
+        case E_CDC_LINE: { /* SET_LINE_CODING: the terminal's rate (115200 unless a program set one), 8N1 */
+            uint32_t b = s->cdc.baud ? s->cdc.baud : 115200u;
+            uint8_t lc[7] = { 0, 0, 0, 0, 0, 0, 8 };
+            lc[0] = (uint8_t)(b & 0xffu);
+            lc[1] = (uint8_t)(b >> 8 & 0xffu);
+            lc[2] = (uint8_t)(b >> 16 & 0xffu);
+            lc[3] = (uint8_t)(b >> 24);
             control_out(s, 0x21, 0x20, 0, (unsigned)s->cdc.intf, lc, 7);
             return;
         }
-        case E_CDC_STATE: control(s, 0x21, 0x22, 3, (unsigned)s->cdc.intf, 0); return; /* DTR and RTS */
+        case E_CDC_STATE: /* DTR and RTS, raised or dropped */
+            s->cdc.dtr = s->cdc.held ? s->cdc.want_dtr : 1;
+            control(s, 0x21, 0x22, s->cdc.dtr ? 3u : 0u, (unsigned)s->cdc.intf, 0);
+            return;
         case E_WAKE_ON: control(s, 0x00, 3, 1, 0, 0); return;
         case E_WAKE_OFF: control(s, 0x00, 1, 1, 0, 0); return;
         default:
@@ -648,9 +661,11 @@ static void done(uh_state *s)
 /* a request's STALL: the ones that may be refused go on */
 static void cdc_opened(uh_state *s)
 {
+    if (!s->cdc.open)
+        s->cdc.tin = s->cdc.tout = 0;
     s->cdc.open = 1;
-    s->cdc.tin = s->cdc.tout = 0;
-    say(s, "CDC ACM interface %d open: 115200 8N1, DTR and RTS", s->cdc.intf);
+    say(s, "CDC ACM interface %d: %lu 8N1, DTR and RTS %s", s->cdc.intf,
+        (unsigned long)(s->cdc.baud ? s->cdc.baud : 115200u), s->cdc.dtr ? "raised" : "dropped");
 }
 
 static void stalled(uh_state *s)
@@ -1707,6 +1722,14 @@ static void run(uh_state *s)
             s->dfu_pending = 0;
             dfu_start(s);
         }
+        if (!d_t && !s->ct.on && s->cdc.open && (s->cdc.line_due || s->cdc.state_due) && s->state == S_CONFIGURED &&
+            s->step == E_DONE) {
+            /* a program opened or closed the port, or set its rate */
+            int line = s->cdc.line_due;
+            s->cdc.line_due = 0;
+            s->cdc.state_due = 0;
+            begin(s, line ? E_CDC_LINE : E_CDC_STATE);
+        }
         if (!d_t && !s->ct.on && s->msc.pending && s->state == S_CONFIGURED && s->step == E_DONE) {
             s->msc.pending = 0;
             msc_start(s);
@@ -1965,3 +1988,54 @@ static void uh_observe(esk_comp *c, esk_json *out)
 
 const esk_model_ops esk_usb_host_ops = { "usb_host", sizeof(uh_state), uh_create, uh_destroy, uh_reset, uh_input,
                                          uh_time, uh_set, uh_observe, NULL, 0 };
+
+/* ---- the CDC ACM port for a host port (hostport.c) ---------------------- */
+
+const uint8_t *esk_usb_host_cdc_rx(esk_comp *c, uint64_t *total, size_t *len)
+{
+    uh_state *s = st_of(c);
+    *total = s->cdc.bytes;
+    *len = s->cdc.len;
+    return (const uint8_t *)s->cdc.text;
+}
+
+int esk_usb_host_cdc_open(esk_comp *c)
+{
+    uh_state *s = st_of(c);
+    return s->cdc.open && s->state == S_CONFIGURED;
+}
+
+size_t esk_usb_host_cdc_room(esk_comp *c)
+{
+    uh_state *s = st_of(c);
+    return sizeof s->cdc.tx - s->cdc.tx_len;
+}
+
+size_t esk_usb_host_cdc_write(esk_comp *c, const uint8_t *b, size_t n)
+{
+    uh_state *s = st_of(c);
+    size_t room = sizeof s->cdc.tx - s->cdc.tx_len;
+    if (n > room)
+        n = room;
+    memcpy(s->cdc.tx + s->cdc.tx_len, b, n);
+    s->cdc.tx_len += (uint32_t)n;
+    if (n)
+        kick(s, esk_comp_now(c));
+    return n;
+}
+
+void esk_usb_host_cdc_line(esk_comp *c, int held, int dtr, uint32_t baud)
+{
+    uh_state *s = st_of(c);
+    int was_held = s->cdc.held;
+    s->cdc.held = held;
+    if (held && (dtr != s->cdc.want_dtr || !was_held)) {
+        s->cdc.want_dtr = dtr;
+        s->cdc.state_due = 1;
+    }
+    if (held && baud && baud != s->cdc.baud) {
+        s->cdc.baud = baud;
+        s->cdc.line_due = 1;
+    }
+    kick(s, esk_comp_now(c));
+}

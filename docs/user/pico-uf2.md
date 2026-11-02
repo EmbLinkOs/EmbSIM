@@ -45,3 +45,21 @@ new program starts. The host's `copy_result` says `copied`.
 
 What is not there yet: picotool's PICOBOOT interface, UF2 files for RAM,
 and a blank board (one with no firmware entry at all) in its USB boot.
+
+## MicroPython, and its prompt on your computer
+
+MicroPython's `firmware.uf2` for the Pico (its rp2 port, RPI_PICO) goes on
+the same way. After the reboot the Pico is MicroPython's own USB device
+(2e8a:0005) with a CDC serial port. To use its prompt from your computer:
+
+```json
+{"method": "port.open", "params": {"target": "PC"}}
+```
+
+answers the pseudo-terminal's path (`/dev/pts/5`); run the session in real
+time (`control.run` with speed 1, or `embsim serve --run`) and open the
+path with any terminal (`picocom /dev/pts/5`) or `mpremote connect
+/dev/pts/5`. Opening it raises DTR on the USB line, closing it drops it,
+and the terminal's baud rate is passed on as the line coding, which a USB
+serial port does not need. Linux and macOS (Windows has no
+pseudo-terminals yet, Q16). Not yet: programs that use PIO or DMA.
