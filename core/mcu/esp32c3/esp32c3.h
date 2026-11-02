@@ -39,6 +39,7 @@
  *   ds.c      the digital signature: RSA under parameters only it decrypts
  *   xts.c     XTS-AES flash encryption: manual encryption, the cache's decryption
  *   pms.c     the permission control on the CPU's accesses to SRAM, RTC memory and ROM
+ *   uhci.c    UHCI0 and UHCI1: a UART's bytes to and from the GDMA, SLIP framing
  *   i2c.c     the I2C controller, master and slave, on the pins
  *   gdma.c    the GDMA controller: three transmit and three receive
  *             channels on descriptor lists
@@ -74,6 +75,20 @@ void *esk_esp32c3_iomux_create(struct esk_mach *s, struct esk_rf_periph *p);
 void esk_esp32c3_pins_changed(struct esk_mach *m);
 /* where a UART's TXD (tx) or RXD is: 0 and the runtime's port and bit */
 int esk_esp32c3_uart_pin(struct esk_mach *m, const char *unit, int tx, int *port, int *bit);
+/* UHCI's access to a UART (unit 0 or 1): the RX FIFO's oldest byte, the TX
+ * FIFO's room and a byte into it, a frame's time in core cycles */
+int esk_esp32c3_uart_rx_take(struct esk_mach *m, int unit, u8 *c);
+int esk_esp32c3_uart_tx_room(struct esk_mach *m, int unit);
+void esk_esp32c3_uart_tx_put(struct esk_mach *m, int unit, u8 c);
+u32 esk_esp32c3_uart_char_cycles(struct esk_mach *m, int unit);
+/* what a UART tells UHCI: a byte in its RX FIFO, a break, the line idle
+ * for the receive timeout */
+#define UHCI_EV_RX 0
+#define UHCI_EV_BREAK 1
+#define UHCI_EV_IDLE 2
+void esk_esp32c3_uhci_uart_event(struct esk_mach *m, int unit, int ev);
+extern const struct esk_dev_ops esk_esp32c3_uhci_ops;
+void *esk_esp32c3_uhci_create(struct esk_mach *s, struct esk_rf_periph *p);
 /* a peripheral output signal of the GPIO matrix (table 5.11-1) driven by
  * its model: its level and enable */
 void esk_esp32c3_signal(struct esk_mach *m, int sig, int level, int oe);
@@ -180,6 +195,8 @@ void *esk_esp32c3_gdma_create(struct esk_mach *s, struct esk_rf_periph *p);
 int esk_esp32c3_dma_out(struct esk_mach *m, int peri, u8 *byte, int *eof);
 /* a byte received: 1 when stored, 0 when there was no room */
 int esk_esp32c3_dma_in(struct esk_mach *m, int peri, u8 byte);
+/* a receive list is there to take bytes */
+int esk_esp32c3_dma_in_ready(struct esk_mach *m, int peri);
 /* the received data's end (the descriptor written back with suc_eof) */
 void esk_esp32c3_dma_in_eof(struct esk_mach *m, int peri);
 extern const struct esk_dev_ops esk_esp32c3_spi2_ops;

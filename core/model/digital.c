@@ -626,6 +626,8 @@ typedef struct vt_state {
     unsigned rx_shift;
     char rx_text[VT_RX_BUF];
     size_t rx_len;
+    unsigned char rx_raw[VT_RX_BUF / 2]; /* the same bytes, for rx_hex */
+    size_t raw_len;
     unsigned char tx_queue[VT_BUF];
     size_t tx_head, tx_len;
     int tx_busy, tx_bit;
@@ -669,6 +671,12 @@ static void vt_time(esk_comp *c, uint32_t token)
             }
             s->rx_text[s->rx_len++] = (char)s->rx_shift;
             s->rx_text[s->rx_len] = 0;
+            if (s->raw_len >= sizeof s->rx_raw) {
+                size_t keep = sizeof s->rx_raw / 2;
+                memmove(s->rx_raw, s->rx_raw + (s->raw_len - keep), keep);
+                s->raw_len = keep;
+            }
+            s->rx_raw[s->raw_len++] = (unsigned char)s->rx_shift;
             s->rx_bytes++;
             s->rx_busy = 0;
         }
@@ -712,7 +720,7 @@ static es_status vt_create(esk_comp *c)
 static void vt_reset(esk_comp *c)
 {
     vt_state *s = (vt_state *)c->state;
-    s->rx_busy = 0; s->rx_len = 0; s->rx_text[0] = 0; s->tx_head = s->tx_len = 0; s->tx_busy = 0;
+    s->rx_busy = 0; s->rx_len = 0; s->rx_text[0] = 0; s->raw_len = 0; s->tx_head = s->tx_len = 0; s->tx_busy = 0;
     s->rx_bytes = s->tx_bytes = 0;
     if (s->tx)
         esk_pin_drive(s->tx, ESK_L1, ESK_STR_STRONG, 0);
@@ -722,11 +730,39 @@ static es_status vt_set(esk_comp *c, const char *input, const esk_json *value)
     vt_state *s = (vt_state *)c->state;
     const char *text;
     size_t i, n;
-    if (strcmp(input, "tx_text") && strcmp(input, "tx"))
+    if (strcmp(input, "tx_text") && strcmp(input, "tx") && strcmp(input, "tx_hex"))
         return ES_EINVAL;
     text = esk_json_str(value);
     if (!text) return ES_EINVAL;
     n = strlen(text);
+    if (!strcmp(input, "tx_hex")) {
+        /* bytes as hex digit pairs, as a terminal's hex send takes them;
+         * spaces between them are allowed */
+        int hi = -1;
+        for (i = 0; i < n; i++) {
+            int d = text[i] >= '0' && text[i] <= '9' ? text[i] - '0'
+                  : text[i] >= 'a' && text[i] <= 'f' ? text[i] - 'a' + 10
+                  : text[i] >= 'A' && text[i] <= 'F' ? text[i] - 'A' + 10 : -1;
+            if (d < 0) {
+                if (text[i] != ' ')
+                    return ES_EINVAL;
+                continue;
+            }
+            if (hi < 0) {
+                hi = d;
+                continue;
+            }
+            if (s->tx_len < VT_BUF) {
+                s->tx_queue[(s->tx_head + s->tx_len) % VT_BUF] = (unsigned char)(hi << 4 | d);
+                s->tx_len++;
+            }
+            hi = -1;
+        }
+        if (hi >= 0)
+            return ES_EINVAL;
+        vt_tx_start(c);
+        return ES_OK;
+    }
     for (i = 0; i < n && s->tx_len < VT_BUF; i++) {
         s->tx_queue[(s->tx_head + s->tx_len) % VT_BUF] = (unsigned char)text[i];
         s->tx_len++;
@@ -737,7 +773,16 @@ static es_status vt_set(esk_comp *c, const char *input, const esk_json *value)
 static void vt_observe(esk_comp *c, esk_json *out)
 {
     vt_state *s = (vt_state *)c->state;
+    char hex[VT_RX_BUF + 1];
+    size_t i;
+    static const char digits[] = "0123456789abcdef";
     esk_json_set_string(c->e->a, out, "rx_text", s->rx_text);
+    for (i = 0; i < s->raw_len; i++) {
+        hex[2 * i] = digits[s->rx_raw[i] >> 4];
+        hex[2 * i + 1] = digits[s->rx_raw[i] & 15u];
+    }
+    hex[2 * s->raw_len] = 0;
+    esk_json_set_string(c->e->a, out, "rx_hex", hex);
     esk_json_set_integer(c->e->a, out, "rx_bytes", (int64_t)s->rx_bytes);
     esk_json_set_integer(c->e->a, out, "tx_bytes", (int64_t)s->tx_bytes);
     esk_json_set_integer(c->e->a, out, "tx_pending", (int64_t)s->tx_len + (s->tx_busy ? 1 : 0));

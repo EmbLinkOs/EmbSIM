@@ -5,7 +5,7 @@
   "version": "1.0.0",
   "name": "Virtual terminal",
   "category": "instruments",
-  "description": "UART encoder/decoder on two nets: text sent through tx_text is serialised on TX; frames on RX are decoded into rx_text.",
+  "description": "UART encoder/decoder on two nets: text sent through tx_text (or bytes through tx_hex) is serialised on TX; frames on RX are decoded into rx_text and rx_hex.",
   "keywords": [
     "uart",
     "serial",
@@ -91,6 +91,12 @@
       "type": "string",
       "default": "",
       "doc": "Text appended to the transmit queue"
+    },
+    {
+      "name": "tx_hex",
+      "type": "string",
+      "default": "",
+      "doc": "Bytes appended to the transmit queue, as pairs of hex digits (spaces allowed), as a terminal's hex send takes them"
     }
   ],
   "outputs": [
@@ -98,6 +104,11 @@
       "name": "rx_text",
       "type": "string",
       "doc": "Text received on RX: a 32 KiB scrollback, the oldest half dropped when it fills"
+    },
+    {
+      "name": "rx_hex",
+      "type": "string",
+      "doc": "The bytes received on RX as lowercase hex pairs: a 16 KiB scrollback, the oldest half dropped when it fills"
     },
     {
       "name": "rx_errors",
@@ -135,7 +146,7 @@
   },
   "fidelity": {
     "functional": {
-      "claims": "8N1-style framing at baud with configurable bits, parity and stop bits; byte timing exact to the bit (SPEC-003 §5 virtual_terminal).",
+      "claims": "8N1-style framing at baud with configurable bits, parity and stop bits; byte timing exact to the bit (SPEC-003 §5 virtual_terminal); bytes sent and seen as hex (tx_hex, rx_hex), as a terminal program's hex mode, for binary protocols such as HCI.",
       "omissions": [
         "flow control",
         "break detection"

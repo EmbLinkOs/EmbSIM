@@ -274,6 +274,15 @@ int esk_esp32c3_dma_in(struct esk_mach *m, int peri, u8 byte)
     return in_byte(k, n, byte);
 }
 
+int esk_esp32c3_dma_in_ready(struct esk_mach *m, int peri)
+{
+    struct c3_gdma *k = gdma_of(m);
+    int n;
+    if (!k || (n = chan_of(k, peri, 0)) < 0)
+        return 0;
+    return k->c[n].in.on;
+}
+
 void esk_esp32c3_dma_in_eof(struct esk_mach *m, int peri)
 {
     struct c3_gdma *k = gdma_of(m);

@@ -5,6 +5,16 @@ maintained by hand until evidence tooling exists. It is not a generated
 support matrix. Specifications define target contracts; their acceptance
 does not mean the described behaviour exists.
 
+## The ESP32-C3's UHCI: every peripheral modelled (2026-11-02)
+
+UHCI0 is modelled (`esp32c3-uhci`): a UART's data to and from the GDMA,
+with SLIP framing and escapes and the length, separator, break and idle
+ends of a received frame. ESP-IDF v5.4's HCI-over-UART controller example
+runs unmodified with a terminal in hex mode as the host: HCI_Reset and
+HCI_Read_BD_ADDR are answered as Espressif's controller answers them. Not
+yet: the HCI packet header and its CRC, the quick-sent queues, UHCI1. All
+35 of the ESP32-C3's peripherals are now modelled.
+
 ## The ESP32-C3's permission control (2026-11-02)
 
 SENSITIVE is modelled (`esp32c3-pms`): the CPU's fetches, loads and stores

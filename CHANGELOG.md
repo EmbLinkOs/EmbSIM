@@ -5,6 +5,24 @@ versions follow semantic versioning. There is no release yet.
 
 ## Unreleased
 
+### The ESP32-C3's UHCI
+
+- UHCI0 (`esp32c3-uhci`, TRM v1.4 chapter 27) moves a UART's data to and
+  from the GDMA: the transmit list into the UART's TX FIFO as it has room,
+  the RX FIFO into the receive list while it has one; SLIP separators and
+  the separator, 0xDB, 0x11 and 0x13 escapes both ways; a received frame
+  closed after PKT_THRS bytes, on a separator, a break or the UART's
+  receive timeout; RX_START, TX_START and the interrupt on source 15.
+  UHCI1, which no GDMA channel serves, keeps its registers.
+- The virtual terminal sends and shows bytes as hex (`tx_hex`, `rx_hex`),
+  as a terminal program's hex mode, for binary protocols.
+- ESP-IDF v5.4's `controller_hci_uart_esp32c3_and_esp32s3` runs
+  unmodified: the Bluetooth controller's HCI over UART1 through UHCI and
+  the GDMA, the terminal as the host: HCI_Reset gets its Command Complete
+  and HCI_Read_BD_ADDR the chip's Bluetooth address. `test_uhci_slip`
+  checks SLIP framing and escapes through UART1's loopback. The ESP32-C3
+  has all 35 of its peripherals modelled.
+
 ### The ESP32-C3's permission control
 
 - SENSITIVE (`esp32c3-pms`, TRM v1.4 chapter 14) checks the CPU's own

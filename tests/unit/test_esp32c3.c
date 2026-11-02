@@ -415,10 +415,15 @@ static void test_wfi_wakes(void)
 static char uart_out[65536];
 static size_t uart_n;
 
+static u8 uart1_out[256];
+static size_t uart1_n;
+
 static void uart_tx(void *ctx, const char *unit, int c, u32 bit_cycles)
 {
     (void)ctx;
     (void)bit_cycles;
+    if (strcmp(unit, "UART1") == 0 && uart1_n < sizeof uart1_out)
+        uart1_out[uart1_n++] = (u8)c;
     if (strcmp(unit, "UART0") == 0 && uart_n + 1 < sizeof uart_out) {
         uart_out[uart_n++] = (char)c;
         uart_out[uart_n] = 0;
@@ -3313,6 +3318,54 @@ static void test_pms(void)
     c3_close(&f);
 }
 
+#define UHCI0 0x60014000u
+#define UART1 0x60010000u
+
+/* UHCI0 on UART1 in SLIP mode (SEPER_EN, the reset's escapes of 0xC0 and
+ * 0xDB), UART1 looped back: four bytes from the GDMA's transmit list leave
+ * framed by separators with 0xC0 and 0xDB escaped, come back through the
+ * receiver, and land in the receive list as they were, closed by the
+ * second separator (suc_eof) */
+static void test_uhci_slip(void)
+{
+    static const u8 want_line[] = { 0xC0, 0x01, 0xDB, 0xDC, 0xDB, 0xDD, 0x03, 0xC0 };
+    const u32 prog[] = { JAL_SELF };
+    const u32 tx = 0x3FC90000u, rx = 0x3FC90100u, dtx = 0x3FC90200u, drx = 0x3FC90210u;
+    u32 got;
+    c3 f;
+    size_t i;
+    if (!c3_open(&f, prog, 1, NULL, 0))
+        return;
+    f.m.host.uart_tx = uart_tx;
+    uart1_n = 0;
+    wr(&f, SYSTEM + 0x10u, rd(&f, SYSTEM + 0x10u) | 1u << 5 | 1u << 8); /* UART1, UHCI0 */
+    wr(&f, SYSTEM + 0x18u, rd(&f, SYSTEM + 0x18u) & ~(1u << 5 | 1u << 8));
+    wr(&f, SYSTEM + 0x14u, rd(&f, SYSTEM + 0x14u) | 1u << 6); /* DMA */
+    wr(&f, SYSTEM + 0x1Cu, rd(&f, SYSTEM + 0x1Cu) & ~(1u << 6));
+    wr(&f, UART1 + 0x20u, rd(&f, UART1 + 0x20u) | 1u << 14); /* LOOPBACK */
+    wr(&f, tx, 0x03DBC001u);                                 /* 01 C0 DB 03 */
+    wr(&f, dtx, 1u << 31 | 1u << 30 | 4u << 12 | 4u);
+    wr(&f, dtx + 4u, tx);
+    wr(&f, dtx + 8u, 0u);
+    wr(&f, drx, 1u << 31 | 64u);
+    wr(&f, drx + 4u, rx);
+    wr(&f, drx + 8u, 0u);
+    wr(&f, GDMA + 0x100u, 2u); /* OUT_PERI_SEL: UHCI0 */
+    wr(&f, GDMA + 0xA0u, 2u);  /* IN_PERI_SEL */
+    wr(&f, GDMA + 0x80u, (drx & 0xfffffu) | 1u << 22);
+    wr(&f, UHCI0 + 0x00u, 1u << 11 | 1u << 3 | 1u << 5); /* CLK_EN, UART1_CE, SEPER_EN */
+    wr(&f, GDMA + 0xE0u, (dtx & 0xfffffu) | 1u << 21);
+    c3_run(&f, 200000u);
+    CHECK_EQ(uart1_n, sizeof want_line);
+    for (i = 0; i < sizeof want_line && i < uart1_n; i++)
+        CHECK_EQ(uart1_out[i], want_line[i]);
+    CHECK_EQ(rd(&f, drx), 1u << 30 | 4u << 12 | 64u); /* four bytes, suc_eof */
+    got = rd(&f, rx);
+    CHECK_EQ(got, 0x03DBC001u);
+    CHECK(rd(&f, UHCI0 + 0x04u) & 3u); /* RX_START and TX_START */
+    c3_close(&f);
+}
+
 #define I2C 0x60013000u
 #define I2C_SCL_LOW (I2C + 0x00u)
 #define I2C_CTR (I2C + 0x04u)
@@ -4112,6 +4165,7 @@ RUN(test_hmac_upstream);
 RUN(test_ds_sign);
 RUN(test_xts_flash_encryption);
 RUN(test_pms);
+RUN(test_uhci_slip);
 RUN(test_i2c_master);
 RUN(test_i2c_stretch_and_end);
 RUN(test_i2c_slave);

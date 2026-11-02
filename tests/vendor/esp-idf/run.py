@@ -50,6 +50,7 @@ EXAMPLES = {
     "blecent": "examples/bluetooth/nimble/blecent",
     "ble_ibeacon": "examples/bluetooth/bluedroid/ble/ble_ibeacon",
     "blink": "examples/get-started/blink",
+    "controller_hci_uart": "examples/bluetooth/hci/controller_hci_uart_esp32c3_and_esp32s3",
     "espnow": "examples/wifi/espnow",
     "flash_encryption": "examples/security/flash_encryption",
     "gptimer": "examples/peripherals/timer_group/gptimer",
