@@ -373,8 +373,14 @@ def swo(embsim: str, tmp: Path) -> None:
                 else:  # the garbage of a second or more of lines
                     until(lambda: garbled() > 100, 25.0)
             finally:
+                # OpenOCD stops the trace through the probe as it shuts down: on a
+                # slow (sanitized) build that takes the session a while
                 oc.terminate()
-                log = oc.communicate(timeout=20)[0]
+                try:
+                    log = oc.communicate(timeout=90)[0]
+                except subprocess.TimeoutExpired:
+                    oc.kill()
+                    log = oc.communicate()[0]
             c.call("control.pause")
             u2 = c.call("observe.snapshot", {"include": ["outputs"]})["outputs"]["B1.U2"]
         text = itm_text(out.read_bytes()) if out.exists() else ""
