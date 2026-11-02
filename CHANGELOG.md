@@ -17,6 +17,14 @@ versions follow semantic versioning. There is no release yet.
   on the target, verifies it and resets it, and GDB through OpenOCD stops
   at breakpoints and watchpoints and steps (`tests/protocol/test_stlink.py`,
   `docs/user/nucleo-st-link.md`).
+- `embsim ide PROJECT` writes VS Code's launch configurations and tasks
+  for the project's boards. A board with its own probe (the board
+  description's new `debug` section) is debugged through it: Cortex-Debug
+  with OpenOCD, after a task that runs the session with the probe shared.
+  Every board can also be debugged on EmbSIM's GDB server: Cortex-Debug for
+  a Cortex-M, the C/C++ extension's GDB for the other cores.
+  `tests/protocol/test_ide.py` carries both configurations out as VS Code
+  does.
 - A blank STM32 (its image not built) runs from its erased flash and locks
   up, as a new part does, so a probe can halt and program it; a debug halt
   ends the lockup. The F4's flash keeps what was programmed through a power

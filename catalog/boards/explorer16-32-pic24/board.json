@@ -1239,6 +1239,7 @@
       "omissions": [
         "decoupling",
         "the supply selection (USB-C, barrel jack, the PICkit)",
+        "the on-board PICkit On Board 4 (PKOB4) as a host reaches it: its USB protocol is Microchip's own, spoken only by MPLAB X and MPLAB IPE and published nowhere, so no tool can drive a model of it; the board is debugged on EmbSIM's GDB server (embsim gdb, embsim ide) and programmed by loading its image, and the PICkit/ICSP header's ICSP programming (the parts' flash programming specifications) waits for a host route (docs/engineering/debug-probes.md, step 7)",
         "ESD diodes"
       ],
       "validation": [

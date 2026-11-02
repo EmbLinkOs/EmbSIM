@@ -113,7 +113,7 @@ a USB host part's copy job.
 
 ## 5. Where it stands (2026-11-02)
 
-Steps 1 to 3 are in. A blank NUCLEO is programmed by unmodified OpenOCD
+Steps 1, 2, 3 and 5 are in. A blank NUCLEO is programmed by unmodified OpenOCD
 through the simulated ST-LINK and stlink-server, and GDB debugs it
 through OpenOCD (`tests/protocol/test_stlink.py`;
 `docs/user/nucleo-st-link.md` holds the commands and a VS Code
@@ -124,7 +124,10 @@ server answers one command per client per run slice, as the probe's
 full-speed USB takes a 1 ms frame for each. This also lets a core that a
 command restarted run before the next command looks at it: OpenOCD's
 step writes DHCSR three times in a row.
-Steps 4 to 7 remain.
+Step 5 is in: `embsim ide` writes VS Code's
+configurations, Cortex-Debug through the probe with OpenOCD and on EmbSIM's
+GDB server, and `tests/protocol/test_ide.py` carries them out as VS Code
+does. PlatformIO's `debug_tool` is not done yet. Steps 4, 6 and 7 remain.
 
 ## 6. Not planned
 

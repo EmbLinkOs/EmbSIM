@@ -19,6 +19,7 @@
 #include "sdk.h"
 #include "export.h"
 #include "plan.h"
+#include "ide.h"
 #include "util/num.h"
 #include "util/str.h"
 
@@ -61,6 +62,8 @@ static void usage_to(FILE *out)
           "  sidecar [PROJECT]           speak the session protocol on stdin/stdout\n"
           "  gdb PROJECT [--board B] [--port N] [--host H]   a GDB server for a board's MCU\n"
           "  build PROJECT [--board B] [--toolchain T]   build a board's firmware\n"
+          "  ide PROJECT [--embsim CMD] [--force]   VS Code launch configurations for the boards: through\n"
+          "      a board's own probe (OpenOCD) and EmbSIM's GDB server, in .vscode next to the project\n"
           "  export svg PROJECT [-o FILE] [--theme light|dark]   the schematic sheet as SVG\n"
           "  export svg PROJECT --component ID [--at T] [--scenario FILE] [--scale N] [-o FILE]\n"
           "      what a display shows at T (a graphic display's pixels, a character module's lines)\n"
@@ -1337,6 +1340,33 @@ static void gdb_listening(void *ctx, int port)
     fflush(stdout);
 }
 
+static int cmd_ide(int argc, char **argv, const char *argv0)
+{
+    const char *project = NULL, *embsim = "embsim", *library = NULL;
+    int force = 0, i, rc;
+    es_session *s;
+    for (i = 0; i < argc; i++) {
+        const char *a = argv[i];
+        int more = i + 1 < argc;
+        if (!strcmp(a, "--embsim") && more) embsim = argv[++i];
+        else if (!strcmp(a, "--library") && more) library = argv[++i];
+        else if (!strcmp(a, "--force")) force = 1;
+        else if (a[0] == '-') { fprintf(stderr, EMBSIM_ID ": unknown option %s (embsim --help)\n", a); return 2; }
+        else project = a;
+    }
+    if (!project) { usage(); return 2; }
+    s = open_session(NULL, argv0, library);
+    if (!s) return 2;
+    if (es_session_load_file(s, project) != ES_OK) {
+        fprintf(stderr, "embsim: cannot load %s\n", project);
+        es_session_destroy(s);
+        return 2;
+    }
+    rc = embsim_ide(s, project, embsim, force);
+    es_session_destroy(s);
+    return rc;
+}
+
 static int cmd_gdb(int argc, char **argv, const char *argv0)
 {
     const char *project = NULL, *host = "127.0.0.1", *board = NULL, *library = NULL;
@@ -1910,6 +1940,7 @@ int embsim_cli_main(int argc, char **argv)
     if (!strcmp(cmd, "sidecar")) return cmd_serve(argc - 2, argv + 2, argv[0], 1);
     if (!strcmp(cmd, "gdb")) return cmd_gdb(argc - 2, argv + 2, argv[0]);
     if (!strcmp(cmd, "build")) return cmd_build(argc - 2, argv + 2, argv[0]);
+    if (!strcmp(cmd, "ide")) return cmd_ide(argc - 2, argv + 2, argv[0]);
     if (!strcmp(cmd, "export")) return cmd_export(argc - 2, argv + 2, argv[0]);
     if (!strcmp(cmd, "plan")) return cmd_plan(argc - 2, argv + 2, argv[0]);
     if (!strcmp(cmd, "toolchains")) return cmd_toolchains(argv[0]);

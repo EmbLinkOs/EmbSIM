@@ -169,6 +169,13 @@ Rules:
   The named component's contacts (the reset switch's) join RESET to ground
   for as long. A board with a bridge is the one whose console `port.open`
   puts on the host (SPEC-008).
+- `debug` (optional) is the board's own debug probe: `probe` (the component
+  that is it, the NUCLEO's `U2`), its `name` as tools and people call it
+  (`ST-LINK/V2-1`), the OpenOCD files that drive it and its target
+  (`openocd`: `["interface/stlink.cfg", "target/stm32f4x.cfg"]`), and the
+  OpenOCD command that reaches it through the session (`openocd_command`:
+  `hla_stlink_backend tcp 7184`). `embsim ide` writes the board's IDE
+  launch configurations from it (docs/engineering/debug-probes.md).
 - `oscillators` fill the MCU's `"board"` clock sources.
 - `toolchains` give per-profile target settings for `embsim build`.
 - The board's artwork hotspots bind to on-board component inputs or outputs

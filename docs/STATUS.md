@@ -482,13 +482,19 @@ on the host as ST's stlink-server does (`stlink.serve`, `embsim serve
 - GDB through OpenOCD stopping at a breakpoint on main, stepping a line,
   and stopping on a watchpoint in SysTick_Handler.
 
+`embsim ide` writes VS Code's launch configurations and tasks from the
+board's `debug` section: through the probe with OpenOCD, and on EmbSIM's
+GDB server for any board. `tests/protocol/test_ide.py` carries both out as
+VS Code does.
+
 Not yet:
 - the probe's USB transport (tools that open the USB device, as `st-flash`
   does, need USB/IP);
 - its mass-storage drive;
 - SWO trace;
 - the timers' freeze bits;
-- the other boards' probes (steps 4 to 7).
+- the other boards' probes (steps 4, 6 and 7; the PICkit's host protocol is
+  unpublished).
 
 ## The RP2040's PIO and DMA (2026-11-02)
 

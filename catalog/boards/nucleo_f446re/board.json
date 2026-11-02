@@ -1195,6 +1195,15 @@
       }
     }
   },
+  "debug": {
+    "probe": "U2",
+    "name": "ST-LINK/V2-1",
+    "openocd": [
+      "interface/stlink.cfg",
+      "target/stm32f4x.cfg"
+    ],
+    "openocd_command": "hla_stlink_backend tcp 7184"
+  },
   "bench": {
     "thickness_mm": 1.6,
     "standoff_mm": 3,

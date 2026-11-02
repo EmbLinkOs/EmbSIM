@@ -64,26 +64,30 @@ SysTick handler's write to `ticks`. While the core is halted, the clocks
 and peripherals go on, as on the board. A timer keeps counting, and a UART
 keeps sending what is in its shift register.
 
-## VS Code (Cortex-Debug)
+## VS Code
 
-Cortex-Debug starts OpenOCD itself. The configuration names OpenOCD's
-files and adds the backend command:
+`embsim ide` writes the launch configurations and the tasks they need into
+`.vscode` next to the project:
 
-```json
-{
-  "name": "NUCLEO-F446RE (EmbSIM)",
-  "type": "cortex-debug",
-  "request": "launch",
-  "servertype": "openocd",
-  "executable": "${workspaceFolder}/firmware/blink-serial.elf",
-  "configFiles": ["interface/stlink.cfg", "target/stm32f4x.cfg"],
-  "openOCDLaunchCommands": ["hla_stlink_backend tcp 7184"],
-  "runToEntryPoint": "main"
-}
+```sh
+embsim ide project.json            # --embsim PATH when embsim is not on the PATH
 ```
 
-The commands are the ones above. This configuration has not itself been
-run in VS Code here.
+- **"B1 through its ST-LINK/V2-1 (OpenOCD)"** uses Cortex-Debug. Its task
+  starts the session in real time with the probe shared
+  (`embsim serve project.json --stlink 7184 --run`). Cortex-Debug then
+  starts OpenOCD with `interface/stlink.cfg`, `target/stm32f4x.cfg` and
+  `hla_stlink_backend tcp 7184`, and runs to `main`.
+- **"B1 on EmbSIM's GDB server"** connects to EmbSIM's own GDB server
+  (`embsim gdb project.json --board B1 --port 3333`). This works for any
+  board, probe or not: Cortex-Debug for a Cortex-M, the C/C++ extension's
+  GDB (`gdb-multiarch`) for the other cores.
+
+The files come from the board's description (its `debug` section, SPEC-006).
+`embsim ide` will not replace existing ones unless given `--force`.
+`tests/protocol/test_ide.py` carries out both configurations the way VS Code
+does, from what the files say: the tasks until they are ready, then OpenOCD
+and GDB stopping at `main`. VS Code itself is not run.
 
 ## What is not there yet
 

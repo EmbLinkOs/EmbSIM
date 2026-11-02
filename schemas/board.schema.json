@@ -145,6 +145,18 @@
         }
       }
     },
+    "debug": {
+      "type": "object",
+      "description": "The board's own debug probe (SPEC-006 §3): the component that is it, its name, the OpenOCD files that drive it and its target, and the OpenOCD command that reaches it through the session (docs/engineering/debug-probes.md)",
+      "required": ["probe", "openocd"],
+      "additionalProperties": false,
+      "properties": {
+        "probe": { "type": "string", "description": "The board component that is the probe (the NUCLEO's U2)" },
+        "name": { "type": "string", "description": "The probe as tools and people call it (ST-LINK/V2-1)" },
+        "openocd": { "type": "array", "items": { "type": "string" }, "minItems": 1, "description": "OpenOCD's configuration files for the probe and the target, in order" },
+        "openocd_command": { "type": "string", "description": "The OpenOCD command that reaches the probe through the session (hla_stlink_backend tcp 7184)" }
+      }
+    },
     "bench": {
       "type": "object",
       "description": "The board as the 3D bench builds it (SPEC-006 §4, ADR-027): its physical components on the PCB, in millimetres from the board's top-left corner seen from above; the artwork is the PCB's face.",
