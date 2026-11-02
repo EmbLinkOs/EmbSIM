@@ -361,8 +361,17 @@ def swo(embsim: str, tmp: Path) -> None:
                                    # the TPIU's prescaler changed behind OpenOCD: 16 MHz / 16, 1 MHz
                                    *(["-c", f"mww 0xE0040010 {acpr}"] if acpr is not None else [])],
                                   stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True)
+            def garbled() -> int:
+                c.call("control.pause")
+                n = c.call("observe.snapshot", {"include": ["outputs"]})["outputs"]["B1.U2"]["trace_garbled"]
+                c.call("control.run", {"speed": 1})
+                return n
+
             try:
-                until(lambda: out.exists() and "swo line 3" in itm_text(out.read_bytes()), 25.0 if want else 6.0)
+                if want:
+                    until(lambda: out.exists() and "swo line 3" in itm_text(out.read_bytes()), 25.0)
+                else:  # the garbage of a second or more of lines
+                    until(lambda: garbled() > 100, 25.0)
             finally:
                 oc.terminate()
                 log = oc.communicate(timeout=20)[0]
