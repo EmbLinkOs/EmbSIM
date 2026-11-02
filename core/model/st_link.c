@@ -54,7 +54,9 @@
 
 enum { MODE_DFU = 0, MODE_MASS = 1, MODE_DEBUG = 2 };
 enum { ST_OK = 0x80, ST_FAULT = 0x81, ST_NO_TARGET = 0x09, ST_AP_FAULT = 0x11 };
-enum { P_SWDIO, P_SWCLK, P_NRST, P_TVCC, P_GND };
+enum { P_SWDIO, P_SWCLK, P_NRST, P_TVCC, P_GND, P_SWO };
+#define TRACE_CAP 4096u /* the probe's trace buffer: OpenOCD's STLINK_TRACE_SIZE */
+#define TRACE_MAX_HZ 2000000u /* the V2-1's highest SWO rate */
 enum { TOK_NRST = 1 };
 
 typedef struct sl_state {
@@ -67,6 +69,12 @@ typedef struct sl_state {
     uint32_t dp_select, ap_csw, ap_tar;
     unsigned divisor; /* SWD_SET_FREQ's */
     uint64_t commands;
+    /* SWO trace: START_TRACE_RX's rate, the bytes received and not read */
+    int trace_on;
+    uint32_t trace_hz;
+    uint8_t trace[TRACE_CAP];
+    uint32_t trace_n;
+    uint64_t trace_bytes, trace_lost, trace_garbled;
     char log[LOG_CAP];
     size_t log_len;
 } sl_state;
@@ -118,6 +126,53 @@ static esk_comp *target(sl_state *s)
                 return c;
     }
     return NULL;
+}
+
+/* the probe's SWO receiver: what has come down its SWO pin since it last
+ * looked, into its buffer. It reads a UART (NRZ) at START_TRACE_RX's rate:
+ * the target's output at another protocol, or more than 3 % off that rate
+ * (the tolerance OpenOCD asks of the two), arrives as garbage, counted and
+ * not kept; a full buffer loses what comes after */
+static void trace_receive(sl_state *s)
+{
+    esk_comp *t = target(s);
+    esk_pin *swo = pin(s, P_SWO), *tp = t ? esk_mcu_swo_pin(t) : NULL;
+    uint8_t buf[512];
+    uint32_t n, sppr = 0, k;
+    double baud = 0;
+    if (!t)
+        return;
+    do {
+        n = esk_mcu_swo(t, buf, sizeof buf, &sppr, &baud);
+        if (!n || !s->trace_on || !swo || !swo->net || !tp || tp->net != swo->net)
+            continue; /* no one listens on the wire: the bytes are gone */
+        if (sppr != 2u || baud <= 0 || baud > (double)s->trace_hz * 1.03 || baud < (double)s->trace_hz * 0.97) {
+            s->trace_garbled += n;
+            continue;
+        }
+        for (k = 0; k < n; k++) {
+            if (s->trace_n == TRACE_CAP) {
+                s->trace_lost++;
+                continue;
+            }
+            s->trace[s->trace_n++] = buf[k];
+            s->trace_bytes++;
+        }
+    } while (n == sizeof buf);
+}
+
+/* the trace read (the trace endpoint, or stlink-server's READ_SWO): up to
+ * `cap` bytes of the buffer */
+size_t esk_stlink_trace(esk_comp *c, uint8_t *in, size_t cap)
+{
+    sl_state *s = (sl_state *)c->state;
+    size_t n;
+    trace_receive(s);
+    n = s->trace_n < cap ? s->trace_n : cap;
+    memcpy(in, s->trace, n);
+    memmove(s->trace, s->trace + n, s->trace_n - n);
+    s->trace_n -= (uint32_t)n;
+    return n;
 }
 
 /* T_VCC as the probe's divider and ADC see it */
@@ -382,12 +437,34 @@ size_t esk_stlink_command(esk_comp *c, const uint8_t cmd[16], const uint8_t *out
             r[0] = cmd[2] == 0 ? ST_OK : ST_FAULT;
             n = 2;
             break;
-        case 0x40: /* START_TRACE_RX */
+        case 0x40: { /* START_TRACE_RX: the buffer's size and the SWO rate */
+            uint32_t hz = le32(cmd + 4);
+            if (!hz || hz > TRACE_MAX_HZ) {
+                r[0] = ST_FAULT;
+            } else {
+                char rate[16];
+                s->trace_on = 0;
+                trace_receive(s); /* what came before is not the trace's */
+                s->trace_on = 1;
+                s->trace_hz = hz;
+                s->trace_n = 0;
+                r[0] = ST_OK;
+                snprintf(rate, sizeof rate, "%lu", (unsigned long)hz);
+                say(s, "SWO trace received at %s Hz", rate);
+            }
+            n = 2;
+            break;
+        }
         case 0x41: /* STOP_TRACE_RX */
+            trace_receive(s);
+            s->trace_on = 0;
             r[0] = ST_OK;
             n = 2;
             break;
-        case 0x42: /* GET_TRACE_NB: nothing traced */
+        case 0x42: /* GET_TRACE_NB: the bytes received */
+            trace_receive(s);
+            r[0] = (uint8_t)s->trace_n;
+            r[1] = (uint8_t)(s->trace_n >> 8);
             n = 2;
             break;
         case 0x07: /* READMEM_32BIT */
@@ -473,6 +550,10 @@ static void sl_reset(esk_comp *c)
     s->dp_select = s->ap_csw = s->ap_tar = 0;
     s->divisor = 0;
     s->commands = 0;
+    s->trace_on = 0;
+    s->trace_hz = 0;
+    s->trace_n = 0;
+    s->trace_bytes = s->trace_lost = s->trace_garbled = 0;
     s->log_len = 0;
     s->log[0] = 0;
     if (pin(s, P_NRST))
@@ -497,6 +578,11 @@ static void sl_observe(esk_comp *c, esk_json *o)
     esk_json_set_number(a, o, "target_voltage", target_volts(s));
     esk_json_set_bool(a, o, "nrst_low", s->nrst_low);
     esk_json_set_integer(a, o, "commands", (int64_t)s->commands);
+    esk_json_set_bool(a, o, "trace", s->trace_on);
+    esk_json_set_integer(a, o, "trace_hz", (int64_t)s->trace_hz);
+    esk_json_set_integer(a, o, "trace_bytes", (int64_t)s->trace_bytes);
+    esk_json_set_integer(a, o, "trace_lost", (int64_t)s->trace_lost);
+    esk_json_set_integer(a, o, "trace_garbled", (int64_t)s->trace_garbled);
     esk_json_set_string(a, o, "log", s->log);
 }
 

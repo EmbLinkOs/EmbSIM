@@ -114,6 +114,12 @@ esk_json *esk_mcu_rtos_json(esk_comp *c, esk_alloc *a, char *why, size_t cap);
 enum { ESK_DAP_OK = 0, ESK_DAP_FAULT = 1, ESK_DAP_NO_TARGET = 2 };
 uint32_t esk_mcu_dap_idcode(esk_comp *c);
 int esk_mcu_dap_mem(esk_comp *c, uint32_t addr, int bytes, int write, uint32_t *v);
+/* the MCU's pin that can carry its serial wire output (the alternate
+ * function JTDO_SWO or TRACESWO: an STM32's PB3), or NULL */
+esk_pin *esk_mcu_swo_pin(esk_comp *c);
+/* the serial wire output's bytes that have left the trace pin by now, at
+ * most `cap`, with the TPIU's protocol (SPPR: 2 NRZ) and bit rate */
+uint32_t esk_mcu_swo(esk_comp *c, uint8_t *buf, uint32_t cap, uint32_t *sppr, double *baud);
 /* the firmware image's name as the project gives it */
 const char *esk_mcu_image_name(const esk_comp *c);
 

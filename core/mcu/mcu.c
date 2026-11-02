@@ -1711,6 +1711,29 @@ uint32_t esk_mcu_dap_idcode(esk_comp *c)
     return esk_cortexm_dp_idcode(&st->m);
 }
 
+esk_pin *esk_mcu_swo_pin(esk_comp *c)
+{
+    mcu_state *st = esk_mcu_is(c) ? state_of(c) : NULL;
+    int af = 0, at;
+    if (!st || !st->m.rf)
+        return NULL;
+    at = esk_rf_af_pin(st->m.rf, "JTDO_SWO", 0, &af);
+    if (at < 0)
+        at = esk_rf_af_pin(st->m.rf, "TRACESWO", 0, &af);
+    if (at < 0 || at / 32 >= MCU_PORTS || at % 32 > 15)
+        return NULL;
+    return st->gpio[at / 32][at % 32];
+}
+
+uint32_t esk_mcu_swo(esk_comp *c, uint8_t *buf, uint32_t cap, uint32_t *sppr, double *baud)
+{
+    mcu_state *st = esk_mcu_is(c) ? state_of(c) : NULL;
+    if (!st)
+        return 0;
+    catch_up(st, c->e->sched.now);
+    return esk_cm_swo_take(&st->m, buf, cap, sppr, baud);
+}
+
 int esk_mcu_dap_mem(esk_comp *c, uint32_t addr, int bytes, int write, uint32_t *v)
 {
     mcu_state *st = esk_mcu_is(c) ? state_of(c) : NULL;

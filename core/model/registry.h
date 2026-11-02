@@ -48,6 +48,9 @@ extern const esk_model_ops esk_st_link_ops;
 size_t esk_stlink_command(struct esk_comp *c, const uint8_t cmd[16], const uint8_t *out, size_t nout, uint8_t *in,
                           size_t cap);
 int esk_stlink_is(const struct esk_comp *c);
+/* the probe's trace read (its trace endpoint, stlink-server's READ_SWO):
+ * up to `cap` bytes of the SWO it has received */
+size_t esk_stlink_trace(struct esk_comp *c, uint8_t *in, size_t cap);
 const char *esk_stlink_serial(struct esk_comp *c);
 /* a web server on the internet beyond the routers (web_server.c) */
 extern const esk_model_ops esk_web_server_ops;

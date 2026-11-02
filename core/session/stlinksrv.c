@@ -15,7 +15,8 @@
  *     number, 0483:374B, whether a client has it open);
  *   - OPEN_DEV (a connection id), CLOSE_DEV;
  *   - SEND_USB_CMD: the 16-byte command, its direction and size, a write's
- *     data after it; answered by the status and a read's data;
+ *     data after it; answered by the status and a read's data; direction
+ *     3 (READ_SWO) reads the probe's trace endpoint;
  *   - GET_NB_OF_DEV_CLIENTS.
  * Every answer starts with its status (1: OK) but the version's and the
  * count's. Four clients at a time; a probe opened by one is in use to the
@@ -190,6 +191,11 @@ static size_t serve(es_session *s, struct esk_stlink_server *v, sl_client *c, co
         if (dir == 0) {
             (void)esk_stlink_command(c->dev, b + 8, b + 32, size, o + 4, 0);
             return 4;
+        }
+        if (dir == 3) { /* READ_SWO: the probe's trace endpoint */
+            memset(o + 4, 0, size);
+            (void)esk_stlink_trace(c->dev, o + 4, size);
+            return 4 + size;
         }
         memset(o + 4, 0, size);
         (void)esk_stlink_command(c->dev, b + 8, NULL, 0, o + 4, size);

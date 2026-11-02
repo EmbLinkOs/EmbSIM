@@ -312,8 +312,8 @@ static u32 rom_read(void *ctx, u32 off, int n)
     case 0x000: return 0xFFF0F003u; /* SCS */
     case 0x004: return 0xFFF02003u; /* DWT */
     case 0x008: return 0xFFF03003u; /* FPB (BPU) */
-    case 0x00c: return v6 ? 0 : 0xFFF01002u; /* ITM: not present */
-    case 0x010: return v6 ? 0 : 0xFFF41002u; /* TPIU: not present */
+    case 0x00c: return v6 ? 0 : 0xFFF01003u; /* ITM (itm.c) */
+    case 0x010: return v6 ? 0 : 0xFFF41003u; /* TPIU (itm.c) */
     case 0x014: return v6 ? 0 : 0xFFF42002u; /* ETM: not present */
     case 0xfcc: return 1u;                  /* MEMTYPE: the system memory is on this bus */
     case 0xfd0: return 0x04;

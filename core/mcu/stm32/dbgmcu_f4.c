@@ -12,9 +12,14 @@
  *     window watchdogs (wdg.c) whose bit is set stop counting;
  *   - the registers are reset at power-on only: a system reset keeps what
  *     a debugger wrote (OpenOCD's stm32f4x.cfg sets them, then resets).
- * Omissions: the RTC's, the I2C SMBus time-outs' and CAN's freeze bits,
- * and TRACE_IOEN and TRACE_MODE (no trace port); a frozen timer's input
- * filters hold too. */
+ *   - DBGMCU_CR's TRACE_IOEN with the asynchronous TRACE_MODE gives PB3
+ *     its TRACESWO function: the TPIU's serial wire output leaves on it
+ *     (cortexm/itm.c).
+ * Omissions: the RTC's, the I2C SMBus time-outs' and CAN's freeze bits;
+ * the synchronous trace modes (TRACE_MODE 1 to 3: no parallel trace port,
+ * PE2-PE6 are not taken); PB3's own GPIO configuration is not checked
+ * (TRACE_IOEN gives it the trace); a frozen timer's input filters hold
+ * too. */
 #include <string.h>
 
 #include "mcu/stm32/stm32.h"
@@ -30,6 +35,8 @@ static u32 val(const struct esk_rf_reg *r) { return r ? (u32)r->value : 0; }
 static void publish(struct dbgmcu *d)
 {
     d->s->dbg.cr = val(d->cr);
+    /* TRACE_IOEN with TRACE_MODE 00: the trace pin is PB3's TRACESWO */
+    d->s->dbg.swo = (d->s->dbg.cr >> 5 & 1u) && !(d->s->dbg.cr >> 6 & 3u);
     d->s->dbg.fz[0] = val(d->apb1);
     d->s->dbg.fz[1] = val(d->apb2);
 }

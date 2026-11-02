@@ -65,6 +65,15 @@
         "role": "ground"
       },
       "required": false
+    },
+    {
+      "name": "SWO",
+      "number": 6,
+      "model": {
+        "kind": "digital_in",
+        "family": "cmos_3v3"
+      },
+      "doc": "The target's serial wire output (PB3's TRACESWO on an STM32, through SB15 on a NUCLEO-64): the probe's UART receiver for SWO trace"
     }
   ],
   "params": {
@@ -147,6 +156,11 @@
         "x": 40,
         "y": 60,
         "side": "bottom"
+      },
+      "SWO": {
+        "x": 0,
+        "y": 10,
+        "side": "left"
       }
     }
   },

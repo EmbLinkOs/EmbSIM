@@ -471,7 +471,12 @@ struct esk_mach {
     struct {
         int halted;
         u32 cr, fz[2];
+        /* the trace pin carries the serial wire output (an STM32's
+         * DBGMCU_CR TRACE_IOEN in asynchronous TRACE_MODE) */
+        int swo;
     } dbg;
+    /* the ITM and TPIU (cortexm/itm.c), when the core has them */
+    void *itm;
     /* set by a model when something outside the machine must see a change
      * now (a pin, the core clock): the runtime ends its quantum */
     int yield;
@@ -790,6 +795,9 @@ int esk_cortexm_cores(struct esk_mach *m);
 int esk_cortexm_core(struct esk_mach *m);
 /* core `core` waits `n` cycles more (a bus arbiter's) */
 void esk_cortexm_core_stall(struct esk_mach *m, int core, u32 n);
+/* the serial wire output's bytes that have reached the trace pin by now
+ * (at most `cap`), its protocol (TPIU_SPPR) and bit rate (cortexm/itm.c) */
+u32 esk_cm_swo_take(struct esk_mach *m, u8 *buf, u32 cap, u32 *sppr, double *baud);
 /* the SW-DP IDCODE of the debug port in front of core 0 */
 u32 esk_cortexm_dp_idcode(struct esk_mach *m);
 /* exception n pends on one core's NVIC only */

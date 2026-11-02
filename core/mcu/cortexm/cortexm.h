@@ -391,6 +391,9 @@ void esk_systick_target(void *systick, void (*pend)(void *ctx, int n), void *ctx
  * CALIB's value */
 void esk_systick_config(void *systick, u32 ref_div, u32 calib);
 void *esk_dwt_create(struct esk_mach *m);
+/* the ITM and the TPIU of an ARMv7-M core (itm.c): one context for both */
+extern const struct esk_dev_ops esk_itm_ops, esk_tpiu_ops;
+void *esk_itm_create(struct esk_mach *m, struct esk_cm_state *core);
 /* the core whose accesses its comparators watch */
 void esk_dwt_core(void *dwt, struct esk_cm_state *cs);
 

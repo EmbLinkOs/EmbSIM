@@ -1503,7 +1503,7 @@ es_status esk_cortexm_create(struct esk_mach *s, const char *model, int prio_bit
                              struct esk_cpu **out)
 {
     struct esk_cm_state *k;
-    void *st, *dw;
+    void *st, *dw, *it = 0;
     size_t i;
     int known = 0;
     for (i = 0; i < sizeof cpus / sizeof cpus[0]; i++)
@@ -1527,6 +1527,9 @@ es_status esk_cortexm_create(struct esk_mach *s, const char *model, int prio_bit
         esk_mach_add_dev(s, 0xE0001000u, 0x1000, &esk_dwt_ops, dw) != ES_OK ||
         esk_mach_add_dev(s, 0xE0002000u, 0x1000, &esk_fpb_ops, k) != ES_OK ||
         esk_mach_add_dev(s, 0xE00FF000u, 0x1000, &esk_romtable_ops, k) != ES_OK ||
+        (k->model->arch != ARCH_V6M && (!(it = esk_itm_create(s, k)) ||
+                                        esk_mach_add_dev(s, 0xE0000000u, 0x1000, &esk_itm_ops, it) != ES_OK ||
+                                        esk_mach_add_dev(s, 0xE0040000u, 0x1000, &esk_tpiu_ops, it) != ES_OK)) ||
         /* the internal private peripheral bus's other blocks and the
          * vendor's system region read as zero; the external PPB
          * (0xE0040000-0xE00FFFFF) is the part's own (an STM32's DBGMCU) */
