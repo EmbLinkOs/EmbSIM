@@ -11,6 +11,7 @@ import { useTimeInteraction, type Cursors } from './interaction';
 import { axisLabels, formatMeterValue } from './Meter';
 import { ticks, timeToX, unitLabel, type TimeWindow } from './timeAxis';
 import { cssVar, useCanvas } from './useCanvas';
+import { plotMetrics, usePlotLook } from './plotMetrics';
 import type { WaveformRecord } from './waveform';
 import { uiText } from '@embsim/design';
 
@@ -38,9 +39,6 @@ export interface OscilloscopeProps {
   className?: string;
 }
 
-const PLOT_LEFT = 52;
-const PLOT_BOTTOM = 22;
-const PLOT_TOP = 8;
 
 function niceStep(range: number, target: number): number {
   const rough = range / Math.max(1, target);
@@ -77,6 +75,9 @@ export function Oscilloscope({ traces, window: win, onWindowChange, cursors, onC
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [current, win.start, end, cursors.a, cursors.b, revision, now]);
 
+  const look = usePlotLook();
+  const metrics = plotMetrics('analog', look);
+  const { left: PLOT_LEFT, bottom: PLOT_BOTTOM, top: PLOT_TOP } = metrics;
   const { ref, size, redraw } = useCanvas((ctx, { width, height }) => {
     const el = wrapRef.current;
     const colors = {
@@ -87,8 +88,8 @@ export function Oscilloscope({ traces, window: win, onWindowChange, cursors, onC
       cursorB: cssVar(el, '--warning', '#e9bd55'),
       now: cssVar(el, '--text-faint', '#6b7689'),
     };
-    // the axis labels follow the workbench's text size (--ui-scale: small, medium, large)
-    const mono = `${Math.round(11 * (Number.parseFloat(cssVar(el, '--ui-scale', '1')) || 1))}px ${cssVar(el, '--font-mono', 'monospace')}`;
+    // the rows, margins and labels follow the workbench's density and text size (plotMetrics)
+    const mono = `${metrics.font}px ${cssVar(el, '--font-mono', 'monospace')}`;
     ctx.clearRect(0, 0, width, height);
     ctx.fillStyle = colors.bg;
     ctx.fillRect(0, 0, width, height);
@@ -243,7 +244,7 @@ export function Oscilloscope({ traces, window: win, onWindowChange, cursors, onC
   // Redraw whenever inputs change.
   useEffect(() => {
     redraw();
-  }, [redraw, win, cursors, now, revision, traces, selected]);
+  }, [redraw, win, cursors, now, revision, traces, selected, look]);
 
   const handlers = useTimeInteraction(wrapRef, { window: win, onWindowChange, cursors, onCursorsChange, plotLeft: PLOT_LEFT, width: size.width });
 

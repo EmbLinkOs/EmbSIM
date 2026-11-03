@@ -168,9 +168,14 @@ every format the engine raises, checked by ctest `diagnostics_fr`; messages
 passed through whole from a parser, a validation or a Lua model stay
 English), and every catalog entry carries its text in French under
 `i18n.fr` (225 entries, checked against their English by ctest
-`catalog_fr`; the library and inspector show it).
+`catalog_fr`; the library and inspector show it). Compact density now
+reaches the plots drawn on canvases (the oscilloscope's, the logic
+analyzer's and the power profiler's rows, margins and labels, which also
+follow the text size as it changes) and the schematic canvas's screen-space
+chrome (tooltip, HUD, legend, navigator); the schematic's own drawing keeps
+its sheet size (`e2e/compact-density.spec.ts`).
 
-Not yet: compact density on the canvas and plots; panels
+Not yet: panels
 moving between perspectives; languages beyond English and French.
 
 ## Imperfections on by default: bounce and tolerances (2026-11-01)

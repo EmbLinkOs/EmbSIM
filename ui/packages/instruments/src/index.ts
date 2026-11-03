@@ -3,6 +3,7 @@
 export * from './waveform';
 export * from './timeAxis';
 export { useCanvas, cssVar, type CanvasSize } from './useCanvas';
+export { plotMetrics, usePlotLook, type PlotLook, type PlotMetrics } from './plotMetrics';
 export { useTimeInteraction, type Cursors } from './interaction';
 export { Oscilloscope, Measure, type OscilloscopeProps, type ScopeTrace } from './Oscilloscope';
 export { LogicAnalyzer, type LogicAnalyzerProps, type LogicChannel } from './LogicAnalyzer';

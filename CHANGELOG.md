@@ -5,6 +5,17 @@ versions follow semantic versioning. There is no release yet.
 
 ## Unreleased
 
+### Compact density on the canvas and the plots
+
+- The plots drawn on canvases (the oscilloscope, the logic analyzer, the
+  power profiler's graphs) take their rows, margins and label size from the
+  density and text size (`plotMetrics`: a logic row of 30 px comfortable,
+  20 compact), and redraw when either changes. The schematic canvas's
+  screen-space chrome (tooltip, HUD, legend, navigator) tightens; the
+  schematic's drawing keeps its sheet size, as only the zoom should change
+  it. `e2e/compact-density.spec.ts` checks the navigator shrinks and saves
+  both densities to `docs/gallery/compact-density`.
+
 ### The engine's diagnostics and the catalog's text in French
 
 - Every diagnostic the engine raises carries its French in JSON

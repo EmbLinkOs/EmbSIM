@@ -145,7 +145,7 @@ applied to the document at once:
 | General | Interface language | English or Français; at once |
 | Appearance | Theme | System, light, dark |
 | | Text size | Small, medium, large (`data-text-size`) |
-| | Density | Comfortable, compact (`data-density`) |
+| | Density | Comfortable, compact (`data-density`); the canvas plots read it and the text size through `plotMetrics` (rows 30/20 px, margins, labels) and redraw when they change; the schematic canvas's screen-space chrome tightens, its drawing keeps its sheet size |
 | Workspace | Restore panel layout | Off: the next start opens the default layout (the page says it takes effect at the next start) |
 | | Reset layout | Clears every saved arrangement now |
 | Simulation | Time unit | Automatic (the largest that fits), s, ms, µs, ns |

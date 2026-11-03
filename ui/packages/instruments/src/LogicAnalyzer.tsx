@@ -12,6 +12,7 @@ import { useTimeInteraction, type Cursors } from './interaction';
 import { Measure } from './Oscilloscope';
 import { ticks, timeToX, unitLabel, type TimeWindow } from './timeAxis';
 import { cssVar, useCanvas } from './useCanvas';
+import { plotMetrics, usePlotLook } from './plotMetrics';
 import { decode, type Annotation, type DecoderSpec, type RecordLookup } from './decoders';
 import { DIGITAL_X, DIGITAL_Z, type WaveformRecord } from './waveform';
 import { uiText } from '@embsim/design';
@@ -40,11 +41,6 @@ export interface LogicAnalyzerProps {
   lookup?: RecordLookup;
 }
 
-const ANN = 18; // the annotation row under a decoded channel
-const PLOT_LEFT = 72;
-const PLOT_BOTTOM = 22;
-const PLOT_TOP = 6;
-const ROW = 30;
 
 export function LogicAnalyzer({ channels, window: win, onWindowChange, cursors, onCursorsChange, now, selected, onSelect, revision = 0, label = 'Logic analyzer', className, lookup }: LogicAnalyzerProps) {
   const wrapRef = useRef<HTMLDivElement>(null);
@@ -72,6 +68,9 @@ export function LogicAnalyzer({ channels, window: win, onWindowChange, cursors, 
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [visible.map((c) => c.record.id + (c.decode?.protocol ?? '')).join(), win.start, end, revision, lookup]);
 
+  const look = usePlotLook();
+  const metrics = plotMetrics('logic', look);
+  const { left: PLOT_LEFT, bottom: PLOT_BOTTOM, top: PLOT_TOP, row: ROW, ann: ANN } = metrics;
   const { ref, size, redraw } = useCanvas((ctx, { width, height }) => {
     const el = wrapRef.current;
     const colors = {
@@ -87,8 +86,8 @@ export function LogicAnalyzer({ channels, window: win, onWindowChange, cursors, 
       now: cssVar(el, '--text-faint', '#6b7689'),
       selected: cssVar(el, '--accent-muted', 'rgba(95,227,177,0.14)'),
     };
-    // the axis labels follow the workbench's text size (--ui-scale: small, medium, large)
-    const mono = `${Math.round(11 * (Number.parseFloat(cssVar(el, '--ui-scale', '1')) || 1))}px ${cssVar(el, '--font-mono', 'monospace')}`;
+    // the rows, margins and labels follow the workbench's density and text size (plotMetrics)
+    const mono = `${metrics.font}px ${cssVar(el, '--font-mono', 'monospace')}`;
     ctx.clearRect(0, 0, width, height);
     ctx.fillStyle = colors.bg;
     ctx.fillRect(0, 0, width, height);
@@ -250,7 +249,7 @@ export function LogicAnalyzer({ channels, window: win, onWindowChange, cursors, 
 
   useEffect(() => {
     redraw();
-  }, [redraw, win, cursors, now, revision, channels, selected, annotations]);
+  }, [redraw, win, cursors, now, revision, channels, selected, annotations, look]);
   const handlers = useTimeInteraction(wrapRef, { window: win, onWindowChange, cursors, onCursorsChange, plotLeft: PLOT_LEFT, width: size.width });
 
   const level = (v: number) => (Number.isNaN(v) ? '—' : v === DIGITAL_Z ? 'Z' : v === DIGITAL_X ? 'X' : String(v));

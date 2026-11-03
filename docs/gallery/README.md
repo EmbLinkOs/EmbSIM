@@ -5,6 +5,16 @@ evolves. Newer milestones come first. The milestone sets from M1 on are captured
 `ui/apps/workbench/scripts/screenshots.mjs` (the same views each time:
 `pnpm build`, then `node scripts/screenshots.mjs --out ../../../docs/gallery/<milestone>`).
 
+## Compact density on the canvas and plots (2026-11-03)
+
+The Run perspective comfortable and compact: the oscilloscope's and the
+logic analyzer's margins and rows tighten, the schematic's own drawing
+keeps its size (captured by `e2e/compact-density.spec.ts`).
+
+| ![Run, comfortable](compact-density/run-comfortable.png) | ![Run, compact](compact-density/run-compact.png) |
+|---|---|
+| ![Design, comfortable](compact-density/design-comfortable.png) | ![Design, compact](compact-density/design-compact.png) |
+
 ## M6 delivered: the ESP32-C3's last peripherals (2026-11-02)
 
 ESP-IDF v5.4's own examples, unmodified, on the ESP32-C3-DevKitM-1 in the
