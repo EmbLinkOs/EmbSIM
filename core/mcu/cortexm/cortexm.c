@@ -97,6 +97,7 @@ void esk_cm_set_pend(struct esk_cm_state *cs, int n)
     if (n > 0 && n < NEXC && !cs->pend[n]) {
         cs->pend[n] = 1;
         cs->npend++;
+        esk_mach_pend(cs->sim, esk_cortexm_core(cs->sim), n);
         if (n >= 16 && (cs->scr & SCR_SEVONPEND))
             cs->event = 1;
     }
@@ -161,6 +162,8 @@ int esk_cm_exec_prio(struct esk_cm_state *cs)
 static int watched(struct esk_cm_state *cs, u32 a, int n, int write)
 {
     struct esk_bus *b = &cs->sim->bus;
+    if (cs->dbg.dwt_on && cs->executing)
+        esk_cm_dbg_access(cs, a, n, write);
     if (!b->nwatch || !esk_bus_watch_check(b, a, n, write) || !cs->executing)
         return 0;
     cs->fault_exc = FAULT_WATCH;
@@ -168,14 +171,26 @@ static int watched(struct esk_cm_state *cs, u32 a, int n, int write)
 }
 
 /* what is not plain memory, or is watched: through the bus */
+/* ARMv6-M's single-cycle I/O port: the RP2040's 0xd0000000-0xdfffffff
+ * (its datasheet 2.3.1) */
+static void ioport_note(struct esk_cm_state *cs, u32 a)
+{
+    if (cs->model->arch == ARCH_V6M && (a >> 28) == 0xD && cs->executing && cs->access == ACC_NORMAL)
+        cs->ioport_hit = 1;
+}
+
 u32 esk_cm_ld_bus(struct esk_cm_state *cs, u32 a, int n)
 {
     u32 v;
     if (watched(cs, a, n, 0) || ppb_refused(cs, a, 0))
         return 0;
+    ioport_note(cs, a);
     cs->sim->bus.unmapped = 0;
-    if (esk_bus_read(&cs->sim->bus, a, n, &v) == 0)
+    if (esk_bus_read(&cs->sim->bus, a, n, &v) == 0) {
+        esk_bus_traced(&cs->sim->bus, a, n, 0, v, 0);
         return v;
+    }
+    esk_bus_traced(&cs->sim->bus, a, n, 0, 0, 1);
     if (cs->sim->bus.unmapped)
         esk_mach_bus_error(cs->sim, cs->sim->bus.fail_addr, n, 0);
     bus_error(cs, cs->sim->bus.fail_addr, 0);
@@ -186,11 +201,15 @@ void esk_cm_st_bus(struct esk_cm_state *cs, u32 a, int n, u32 v)
 {
     if (watched(cs, a, n, 1) || ppb_refused(cs, a, 1))
         return;
+    ioport_note(cs, a);
     cs->sim->bus.unmapped = 0;
     if (esk_bus_write(&cs->sim->bus, a, n, v)) {
+        esk_bus_traced(&cs->sim->bus, a, n, 1, v, 1);
         if (cs->sim->bus.unmapped)
             esk_mach_bus_error(cs->sim, cs->sim->bus.fail_addr, n, 1);
         bus_error(cs, cs->sim->bus.fail_addr, 0);
+    } else {
+        esk_bus_traced(&cs->sim->bus, a, n, 1, v, 0);
     }
 }
 
@@ -377,6 +396,42 @@ static int derived_fault(struct esk_cm_state *cs, int prio)
     return EXC_HARD;
 }
 
+/* Exception timing on ARMv7-M at zero wait states, from the Cortex-M4 TRM
+ * (ARM DDI 0439B 3.9.1): at most 12 cycles from an interrupt to the first
+ * instruction of its handler, 12 for a return, 6 for a tail-chain (no
+ * unstacking and stacking, only the next handler's fetch). A higher
+ * priority interrupt that arrives while a frame is being stacked takes
+ * that frame (late arrival). Not charged, for want of a documented figure:
+ * the extended frame's 17 extra words when FP state is stacked, lazy
+ * stacking's later write, flash wait states on the stacking and vector
+ * fetch, an interrupt during unstacking (it is taken after the return).
+ * ARMv6-M's figures are exc_cost's. */
+static int pending_to_take(struct esk_cm_state *cs);
+
+enum { CM_ENTRY, CM_RETURN, CM_TAIL };
+
+/* ARMv6-M (the Cortex-M0+ TRM, ARM DDI 0484C 3.4, and the RP2040
+ * datasheet 2.4): a worst-case interrupt latency of 15 cycles at zero wait
+ * states, charged on every entry; the TRM gives no figure for the return or
+ * a tail-chain, and none is charged for them. */
+static u32 exc_cost(const struct esk_cm_state *cs, int what)
+{
+    static const u32 v7m[3] = { 12u, 12u, 6u }, v6m[3] = { 15u, 0u, 0u };
+    return cs->model->arch == ARCH_V7M ? v7m[what] : v6m[what];
+}
+
+static void charge_exc(struct esk_cm_state *cs, int what)
+{
+    struct esk_mach *s = cs->sim;
+    u32 c = exc_cost(cs, what);
+    if (!c)
+        return;
+    s->cycles += c;
+    cs->exc_cycles += c;
+    if (s->counting)
+        esk_mach_advance(s, c);
+}
+
 /* ExceptionEntry: push the frame onto the stack in use, with the
  * interrupted code's privilege, and go to the handler. `ret` is the
  * address the frame returns to. With an active floating-point context the
@@ -385,8 +440,23 @@ static int derived_fault(struct esk_cm_state *cs, int prio)
  * (lazy state preservation, FPCCR.LSPACT). A fault while stacking takes
  * its derived exception instead, from the frame as far as it was written;
  * the exception being entered stays pending if it was asynchronous. */
-static void exc_entry(struct esk_cm_state *cs, int n, u32 ret)
+static void exc_enter(struct esk_cm_state *cs, int n, u32 ret, int charge)
 {
+    if (charge) {
+        /* the stacking's cycles: an interrupt that becomes pending in them
+         * and outranks n takes the frame, n staying pending (SVC pends) */
+        charge_exc(cs, CM_ENTRY);
+        {
+            /* both architectures implement late arrival (ARMv7-M; ARMv6-M,
+             * the Cortex-M0+ TRM 3.4) */
+            int m = pending_to_take(cs);
+            if (m && m != n && group_prio(cs, m) < group_prio(cs, n)) {
+                if (n == EXC_SVC)
+                    esk_cm_set_pend(cs, EXC_SVC);
+                n = m;
+            }
+        }
+    }
     int fp_frame = cs->model->fpu && (cs->control & 4);
     int lazy = fp_frame && (cs->fpccr & 0x40000000u);
     int was_thread = cs->ipsr == 0, was_priv = esk_cm_privileged(cs);
@@ -467,6 +537,11 @@ static void exc_entry(struct esk_cm_state *cs, int n, u32 ret)
     exc_taken(cs, n, lr);
 }
 
+static void exc_entry(struct esk_cm_state *cs, int n, u32 ret)
+{
+    exc_enter(cs, n, ret, 1);
+}
+
 /* A synchronous fault, or SVC: taken at once, escalated to HardFault when
  * its own handler is disabled or cannot preempt, and a lockup when even
  * HardFault cannot. */
@@ -497,6 +572,29 @@ static void take_sync(struct esk_cm_state *cs, int n, u32 bits, u32 ret)
         return;
     }
     exc_entry(cs, n, ret);
+    if ((cs->dbg.ctrl & DHCSR_C_DEBUGEN) && n != EXC_SVC) {
+        /* DEMCR's vector catch: the core halts at the handler's first
+         * instruction */
+        u32 vc = 0;
+        if (n == EXC_HARD)
+            vc |= 1u << 10;                                         /* VC_HARDERR */
+        if (bits & (BFSR_STKERR | BFSR_UNSTKERR | MMFSR_MSTKERR | MMFSR_MUNSTKERR | UFSR_INVPC))
+            vc |= 1u << 9;                                          /* VC_INTERR */
+        if (bits & (BFSR_IBUSERR | BFSR_PRECISERR | BFSR_LSPERR))
+            vc |= 1u << 8;                                          /* VC_BUSERR */
+        if (bits & (UFSR_UNDEFINSTR | UFSR_INVSTATE))
+            vc |= 1u << 7;                                          /* VC_STATERR */
+        if (bits & (UFSR_UNALIGNED | UFSR_DIVBYZERO))
+            vc |= 1u << 6;                                          /* VC_CHKERR */
+        if (bits & UFSR_NOCP)
+            vc |= 1u << 5;                                          /* VC_NOCPERR */
+        if (bits & (MMFSR_IACCVIOL | MMFSR_DACCVIOL | MMFSR_MLSPERR))
+            vc |= 1u << 4;                                          /* VC_MMERR */
+        if (cs->model->arch == ARCH_V6M)
+            vc &= 1u << 10;
+        if (vc & cs->demcr)
+            esk_cm_dbg_halt(cs, DFSR_VCATCH);
+    }
 }
 
 /* the most urgent pending exception that can preempt now, or 0 */
@@ -506,6 +604,8 @@ static int pending_to_take(struct esk_cm_state *cs)
     for (int n = 2; n < NEXC; n++) {
         if (!cs->pend[n] || (n >= 16 && !cs->irq_en[n]))
             continue;
+        if (n >= EXC_PENDSV && (cs->dbg.ctrl & DHCSR_C_MASKINTS))
+            continue; /* a debugger's step keeps them out */
         int p = group_prio(cs, n);
         if (!best || p < bp) {
             best = n;
@@ -576,6 +676,7 @@ static void exc_return(struct esk_cm_state *cs, u32 ret)
             esk_cm_use_psp(cs, psp_was);
         cs->control = control;
         cs->other_sp = other;
+        charge_exc(cs, CM_RETURN);
         exc_taken(cs, d, ret);
         return;
     }
@@ -603,8 +704,12 @@ static void exc_return(struct esk_cm_state *cs, u32 ret)
     cs->ipsr = to_thread ? 0 : (x & 0x1ff);
     cs->excl_valid = 0;
     cs->pc = ra & ~1u;
-    if (to_thread && (cs->scr & SCR_SLEEPONEXIT))
+    if (to_thread && (cs->scr & SCR_SLEEPONEXIT)) {
+        charge_exc(cs, CM_RETURN);
         sleep_now(cs, 0);
+        return;
+    }
+    cs->tail_window = 1;
 }
 
 /* ---- semihosting ------------------------------------------------------ */
@@ -733,9 +838,27 @@ static int fetch16(struct esk_mach *s, u32 a, u8 *b, const struct esk_region **r
     return 1;
 }
 
+static void step_one(struct esk_cm_state *cs);
+
+/* one step, as a debugger sees it: nothing in Debug state, a breakpoint
+ * comparator's halt before the instruction, a step's or a watchpoint's
+ * after it */
 static void step(struct esk_cpu *c)
 {
     struct esk_cm_state *cs = (struct esk_cm_state *)c;
+    cs->dbg.resumed = 0;
+    if (cs->dbg.ctrl) {
+        if (cs->sim->bus_stall == 0 && !cs->tail_window && esk_cm_dbg_before(cs))
+            return;
+        step_one(cs);
+        esk_cm_dbg_after(cs);
+        return;
+    }
+    step_one(cs);
+}
+
+static void step_one(struct esk_cm_state *cs)
+{
     struct esk_mach *s = cs->sim;
     u32 snap[16];
     int sN = cs->N, sZ = cs->Z, sC = cs->C, sV = cs->V, sQ = cs->Q;
@@ -751,6 +874,20 @@ static void step(struct esk_cpu *c)
         if (s->counting)
             esk_mach_advance(s, n);
         return;
+    }
+    if (cs->tail_window) {
+        /* the instruction after an exception return: an exception that can
+         * be taken now tail-chains, in place of the return's cycles and the
+         * next entry's */
+        int n = pending_to_take(cs);
+        cs->tail_window = 0;
+        if (n) {
+            charge_exc(cs, CM_TAIL);
+            exc_enter(cs, n, cs->pc, 0);
+            return;
+        }
+        charge_exc(cs, CM_RETURN);
+        return; /* a step of its own: the next instruction starts after it */
     }
     if (cs->npend) {
         int n = pending_to_take(cs);
@@ -769,7 +906,7 @@ static void step(struct esk_cpu *c)
         return;
     }
     u32 h[2];
-    int size, br;
+    int size, br, ls;
     u32 cost;
     struct esk_cm_dc *e = &cs->dc[(cs->pc >> 1) & (ESK_CM_DC - 1)];
     if (e->r && e->pc == cs->pc && e->gen == e->r->gen) {
@@ -779,6 +916,7 @@ static void step(struct esk_cpu *c)
         size = e->size;
         cost = e->cost;
         br = e->br;
+        ls = e->ls;
         if (size == 4 && (cs->mpu_on || cs->pc + 2 >= 0x40000000u) &&
             esk_cm_mpu_denied(cs, cs->pc + 2, 2, 0, 1)) {
             take_sync(cs, EXC_MEM, MMFSR_IACCVIOL, cs->pc);
@@ -805,7 +943,13 @@ static void step(struct esk_cpu *c)
             h[1] = (u32)b[2] | (u32)b[3] << 8;
             size = 4;
         }
-        cost = (u32)esk_cm_cost(b, (size_t)size, &br);
+        if (cs->model->arch == ARCH_V6M) {
+            cost = (u32)esk_cm0p_cost(b, (size_t)size, &br, &ls);
+        } else {
+            cost = (u32)esk_cm_cost(b, (size_t)size, &br);
+            br = br ? 2 : 0; /* the M4 table's refill */
+            ls = 0;
+        }
         /* kept when it all came from one read-only region */
         if (r0 && (size == 2 || r1 == r0) && cost < 256) {
             e->r = r0;
@@ -816,6 +960,17 @@ static void step(struct esk_cpu *c)
             e->size = (u8)size;
             e->cost = (u8)cost;
             e->br = (u8)br;
+            e->ls = (u8)ls;
+        }
+    }
+    if (s->ftime.ifetch) {
+        /* an instruction from the flash waits for its line (flash_f4.c) */
+        const struct esk_region *fr = esk_bus_region(&s->bus, cs->pc, 2);
+        if (fr && fr->mem == s->ftime.mem) {
+            u32 off = cs->pc - fr->base, st = s->ftime.ifetch(s->ftime.ctx, off, s->cycles);
+            if (size == 4 && ((off + 2) >> 4) != (off >> 4))
+                st += s->ftime.ifetch(s->ftime.ctx, off + 2, s->cycles + st);
+            cost += st;
         }
     }
     s->insns++;
@@ -876,8 +1031,16 @@ static void step(struct esk_cpu *c)
     if (was_in_it && !is_it)
         esk_cm_it_advance(cs);
     if (br && cs->npc != cs->pc + (u32)size) {
-        s->cycles += 2;
-        cost += 2;
+        s->cycles += (u32)br;
+        cost += (u32)br;
+    }
+    if (cs->ioport_hit) {
+        /* a single load or store on the IOPORT: 1 cycle, not 2 */
+        cs->ioport_hit = 0;
+        if (ls && cost > 1) {
+            s->cycles -= 1;
+            cost -= 1;
+        }
     }
     if (cs->extra_cycles) {
         s->cycles += cs->extra_cycles;
@@ -921,7 +1084,15 @@ static void cpu_reset(struct esk_cpu *c)
     void *sev_ctx = k->sev_ctx;
     int mpu_regions = k->mpu_regions;
     struct esk_cm_dc *dc = k->dc;
+    /* the debug domain: a system reset keeps it, a power-on clears it */
+    struct esk_cm_debug dbg = k->dbg;
+    u32 demcr = k->demcr;
+    int keep_debug = s->reset_cause != ESK_RESET_POWER && s->reset_cause != ESK_RESET_RESCUE;
     memset(k, 0, sizeof *k);
+    if (keep_debug) {
+        k->dbg = dbg;
+        k->demcr = demcr;
+    }
     k->mpu_regions = mpu_regions;
     k->dc = dc;
     if (dc)
@@ -950,6 +1121,7 @@ static void cpu_reset(struct esk_cpu *c)
     cs->pc = entry & ~1u;
     for (int n = 4; n < NEXC; n++)
         cs->prio[n] = 0;
+    esk_cm_dbg_reset(cs);
 }
 
 static u32 cpu_pc(struct esk_cpu *c)
@@ -961,7 +1133,7 @@ static void cpu_interrupt(struct esk_cpu *c, int n)
 {
     struct esk_cm_state *cs = (struct esk_cm_state *)c;
     esk_cm_set_pend(cs, n);
-    if (cs->sim->asleep && !cs->sim->powered_down && wake_pending(cs)) {
+    if (cs->sim->asleep && !cs->sim->powered_down && !cs->dbg.halted && wake_pending(cs)) {
         cs->sim->asleep = 0;
         if (cs->in_wfe)
             cs->event = 0; /* SEVONPEND's event ended the WFE with it */
@@ -981,8 +1153,12 @@ static void cpu_irq_level(struct esk_cpu *c, int n, int level)
 static int cpu_wake_pending(struct esk_cpu *c)
 {
     struct esk_cm_state *cs = (struct esk_cm_state *)c;
-    if (cs->sim->powered_down)
-        return 0;
+    if (cs->sim->powered_down || cs->dbg.halted)
+        return 0; /* Debug state ends only by the debugger */
+    if (cs->dbg.resumed) {
+        cs->dbg.resumed = 0; /* the debugger restarted it */
+        return 1;
+    }
     if (cs->in_wfe && cs->event) {
         cs->event = 0; /* the event that ends a WFE is consumed (SEVONPEND's) */
         return 1;
@@ -1098,6 +1274,72 @@ static int cpu_reg_write(struct esk_cpu *c, int n, const u8 *buf)
     }
     case 4: if (!v7) return 0; cs->basepri = v & 0xff; return 4;
     case 5: if (!v7) return 0; cs->faultmask = v & 1; return 4;
+    }
+    return 0;
+}
+
+/* DCRSR's REGSEL (ARM DDI 0403E C1.6.3): R0-R12, SP, LR,
+ * DebugReturnAddress (15), xPSR (16), MSP (17), PSP (18), CONTROL,
+ * FAULTMASK, BASEPRI and PRIMASK in one word (20), FPSCR (0x21) and S0-S31
+ * (0x40-0x5f) with an FPU. 0 for a REGSEL the core has not. */
+int esk_cm_dcrsr(struct esk_cm_state *cs, u32 regsel, int write, u32 *v)
+{
+    struct esk_cpu *c = &cs->cpu;
+    u8 b[8];
+    int v7 = cs->model->arch == ARCH_V7M;
+    int gdb = -1;
+    if (regsel <= 15)
+        gdb = (int)regsel;
+    else if (regsel == 16)
+        gdb = GR_XPSR;
+    else if (regsel == 17)
+        gdb = sys_base(cs);
+    else if (regsel == 18)
+        gdb = sys_base(cs) + 1;
+    if (gdb >= 0) {
+        if (write) {
+            put32(b, *v);
+            return cpu_reg_write(c, gdb, b) > 0;
+        }
+        if (cpu_reg_read(c, gdb, b) <= 0)
+            return 0;
+        *v = get32(b);
+        return 1;
+    }
+    if (regsel == 20) {
+        if (write) {
+            u32 ctl = *v >> 24 & (cs->model->fpu ? 7u : 3u);
+            if (!v7)
+                ctl &= ~1u;
+            cs->primask = *v & 1u;
+            if (v7) {
+                cs->basepri = *v >> 8 & 0xffu;
+                cs->faultmask = *v >> 16 & 1u;
+            }
+            cs->control = ctl;
+            if (!cs->ipsr)
+                esk_cm_use_psp(cs, (ctl & 2) != 0);
+        } else {
+            *v = (cs->control & (cs->model->fpu ? 7u : 3u)) << 24 | (v7 ? cs->faultmask << 16 | cs->basepri << 8 : 0) |
+                 cs->primask;
+        }
+        return 1;
+    }
+    if (!cs->model->fpu)
+        return 0;
+    if (regsel == 0x21) {
+        if (write)
+            cs->fpscr = *v & 0xF7C0009Fu;
+        else
+            *v = cs->fpscr;
+        return 1;
+    }
+    if (regsel >= 0x40 && regsel <= 0x5f) {
+        if (write)
+            cs->S[regsel - 0x40] = *v;
+        else
+            *v = cs->S[regsel - 0x40];
+        return 1;
     }
     return 0;
 }
@@ -1267,7 +1509,7 @@ es_status esk_cortexm_create(struct esk_mach *s, const char *model, int prio_bit
                              struct esk_cpu **out)
 {
     struct esk_cm_state *k;
-    void *st, *dw;
+    void *st, *dw, *it = 0;
     size_t i;
     int known = 0;
     for (i = 0; i < sizeof cpus / sizeof cpus[0]; i++)
@@ -1282,13 +1524,23 @@ es_status esk_cortexm_create(struct esk_mach *s, const char *model, int prio_bit
     dw = esk_dwt_create(s);
     if (!k || !st || !dw)
         return ES_ENOMEM;
+    esk_dwt_core(dw, k);
     s->cpu = &k->cpu;
     s->bus.snoop = excl_snoop;
     s->bus.snoop_ctx = k;
     if (esk_mach_add_dev(s, 0xE000E010u, 0x10, &esk_systick_ops, st) != ES_OK ||
         esk_mach_add_dev(s, 0xE000E000u, 0x1000, &esk_scs_ops, k) != ES_OK ||
         esk_mach_add_dev(s, 0xE0001000u, 0x1000, &esk_dwt_ops, dw) != ES_OK ||
-        esk_mach_add_dev(s, 0xE0000000u, 0x20000000u, &zero_ops, 0) != ES_OK)
+        esk_mach_add_dev(s, 0xE0002000u, 0x1000, &esk_fpb_ops, k) != ES_OK ||
+        esk_mach_add_dev(s, 0xE00FF000u, 0x1000, &esk_romtable_ops, k) != ES_OK ||
+        (k->model->arch != ARCH_V6M && (!(it = esk_itm_create(s, k)) ||
+                                        esk_mach_add_dev(s, 0xE0000000u, 0x1000, &esk_itm_ops, it) != ES_OK ||
+                                        esk_mach_add_dev(s, 0xE0040000u, 0x1000, &esk_tpiu_ops, it) != ES_OK)) ||
+        /* the internal private peripheral bus's other blocks and the
+         * vendor's system region read as zero; the external PPB
+         * (0xE0040000-0xE00FFFFF) is the part's own (an STM32's DBGMCU) */
+        esk_mach_add_dev(s, 0xE0000000u, 0x40000u, &zero_ops, 0) != ES_OK ||
+        esk_mach_add_dev(s, 0xE0100000u, 0x1FF00000u, &zero_ops, 0) != ES_OK)
         return ES_ELIMIT;
     *out = &k->cpu;
     return ES_OK;

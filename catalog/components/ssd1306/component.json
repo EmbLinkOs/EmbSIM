@@ -4,7 +4,8 @@
   "id": "emblink/ssd1306",
   "version": "1.1.0",
   "name": "SSD1306 OLED 128x64",
-  "category": "displays",
+  "category": "optoelectronics",
+  "subcategory": "oled",
   "description": "SSD1306 OLED module (128x64 or 128x32) on I2C at 0x3C or 0x3D: write-only control bytes and commands, the three addressing modes, segment and COM remap, multiplex, offset and start line, the charge pump the panel needs to light, scrolling at the panel's frame rate. The image shows on the board view.",
   "keywords": [
     "display",
@@ -213,5 +214,47 @@
   },
   "tests": [
     "tests/*.json"
-  ]
+  ],
+  "i18n": {
+    "fr": {
+      "source": "59c60fc9e36d",
+      "description": "Module OLED SSD1306 (128x64 ou 128x32) sur I2C en 0x3C ou 0x3D : octets de contrôle et commandes en écriture seule, les trois modes d'adressage, le remappage des segments et des COM, le multiplexage, le décalage et la ligne de départ, la pompe de charge dont la dalle a besoin pour s'allumer, le défilement à la fréquence d'image de la dalle. L'image s'affiche sur la vue de la carte.",
+      "fidelity": {
+        "functional": {
+          "claims": "I2C en écriture seule avec octets de contrôle (Co, D/C#) ; chaque commande avec ses arguments ; les trois modes d'adressage ; l'image de la dalle à travers le remappage des segments, le sens de balayage des COM, le taux de multiplexage, le décalage, la ligne de départ et la configuration des broches COM face au câblage de la dalle (lignes entrelacées en cas d'erreur) ; la dalle du module montée pour que A1/C8 montrent la RAM à l'endroit ; allumée seulement avec la pompe de charge (ou un VCC externe) et 100 ms après l'activation de l'affichage ; défilement horizontal et vertical à la fréquence d'image tirée du rapport de division, des phases de précharge et du taux de multiplexage, la RAM laissée défilée par 2Eh ; aucune réponse sous 1,65 V.",
+          "omissions": [
+            "l'effet du réglage de fréquence de l'oscillateur sur la fréquence d'image (370 kHz quel que soit le quartet haut de D5h)",
+            "le contraste en tant que luminosité (une sortie seulement)",
+            "les interfaces SPI et parallèle",
+            "la broche RES#",
+            "le fondu et le zoom (commandes du SSD1306B)",
+            "la RAM écrite pendant un défilement actif (écrite comme au repos ; la fiche technique la dit indéfinie)"
+          ]
+        },
+        "timed": {
+          "claims": "I2C en écriture seule avec octets de contrôle (Co, D/C#) ; chaque commande avec ses arguments ; les trois modes d'adressage ; l'image de la dalle à travers le remappage des segments, le sens de balayage des COM, le taux de multiplexage, le décalage, la ligne de départ et la configuration des broches COM face au câblage de la dalle (lignes entrelacées en cas d'erreur) ; la dalle du module montée pour que A1/C8 montrent la RAM à l'endroit ; allumée seulement avec la pompe de charge (ou un VCC externe) et 100 ms après l'activation de l'affichage ; défilement horizontal et vertical à la fréquence d'image tirée du rapport de division, des phases de précharge et du taux de multiplexage, la RAM laissée défilée par 2Eh ; aucune réponse sous 1,65 V.",
+          "omissions": [
+            "l'effet du réglage de fréquence de l'oscillateur sur la fréquence d'image (370 kHz quel que soit le quartet haut de D5h)",
+            "le contraste en tant que luminosité (une sortie seulement)",
+            "les interfaces SPI et parallèle",
+            "la broche RES#",
+            "le fondu et le zoom (commandes du SSD1306B)",
+            "la RAM écrite pendant un défilement actif (écrite comme au repos ; la fiche technique la dit indéfinie)"
+          ]
+        },
+        "electrical": {
+          "claims": "Les broches se relient aux réseaux analogiques avec les modèles de broche par défaut de la famille ; la tension de VCC conditionne l'interface ; le comportement est celui du modèle Lua.",
+          "omissions": [
+            "l'effet du réglage de fréquence de l'oscillateur sur la fréquence d'image (370 kHz quel que soit le quartet haut de D5h)",
+            "le contraste en tant que luminosité (une sortie seulement)",
+            "les interfaces SPI et parallèle",
+            "la broche RES#",
+            "le fondu et le zoom (commandes du SSD1306B)",
+            "la RAM écrite pendant un défilement actif (écrite comme au repos ; la fiche technique la dit indéfinie)",
+            "le courant d'alimentation"
+          ]
+        }
+      }
+    }
+  }
 }

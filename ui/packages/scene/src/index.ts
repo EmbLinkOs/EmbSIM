@@ -31,3 +31,5 @@ export { canvasBackground, normalizeAppearance, DEFAULT_CANVAS_APPEARANCE, type 
 export { shiftWireSegment, projectPinPoints, cleanWirePoints, segmentContacts } from './wireEditing';
 export { checkSchematic, type SchematicIssue, type CheckSeverity } from './schematicChecks';
 export { liveElectricalIssues, type ElectricalIssue } from './electricalFeedback';
+// the shared packages' words in the application's language (bench, instruments)
+export { uiText } from '@embsim/design';

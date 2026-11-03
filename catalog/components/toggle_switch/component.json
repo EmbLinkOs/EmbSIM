@@ -4,7 +4,8 @@
   "id": "emblink/toggle_switch",
   "version": "1.0.0",
   "name": "Toggle switch",
-  "category": "switches",
+  "category": "switches_relays",
+  "subcategory": "switches",
   "description": "Single-pole single-throw latching switch (slide or toggle).",
   "keywords": [
     "switch",
@@ -58,8 +59,9 @@
     },
     "bounce": {
       "type": "boolean",
-      "default": false,
-      "doc": "Model contact bounce"
+      "default": true,
+      "doc": "Contact bounce on press and release, on by default as on a real part (ADR-034); off for an ideal contact",
+      "imperfection": true
     },
     "bounce_ms": {
       "type": "number",
@@ -160,7 +162,7 @@
       ]
     },
     "timed": {
-      "claims": "Optional bounce on each transition.",
+      "claims": "Bounce (on by default, ADR-034) on each transition.",
       "omissions": [
         "wear"
       ]
@@ -193,5 +195,32 @@
   },
   "tests": [
     "tests/*.json"
-  ]
+  ],
+  "i18n": {
+    "fr": {
+      "source": "e1eada9a6a5a",
+      "description": "Interrupteur unipolaire à une position à maintien (à glissière ou à levier).",
+      "fidelity": {
+        "functional": {
+          "claims": "Ouvert ou fermé selon l'entrée closed (SPEC-003 §5 switch).",
+          "omissions": [
+            "le rebond"
+          ]
+        },
+        "timed": {
+          "claims": "Rebond (actif par défaut, ADR-034) à chaque transition.",
+          "omissions": [
+            "l'usure"
+          ]
+        },
+        "electrical": {
+          "claims": "Résistance ron fermé, roff ouvert (SPEC-004 §7 switch).",
+          "omissions": [
+            "la capacité de contact",
+            "l'usure"
+          ]
+        }
+      }
+    }
+  }
 }

@@ -4,7 +4,8 @@
   "id": "emblink/sr_latch",
   "version": "1.0.0",
   "name": "SR latch",
-  "category": "logic",
+  "category": "simulator_primitives",
+  "subcategory": "flip_flops",
   "description": "Set-reset latch with active-low inputs (NAND latch, as in a 74HC279): S_N sets Q, R_N resets it; both low drive Q and QN high.",
   "keywords": [
     "logic",
@@ -166,5 +167,33 @@
   },
   "tests": [
     "tests/*.json"
-  ]
+  ],
+  "i18n": {
+    "fr": {
+      "source": "1fc3060a32f0",
+      "description": "Bascule RS à entrées actives à l'état bas (bascule NAND, comme dans un 74HC279) : S_N met Q à un, R_N le remet à zéro ; les deux basses imposent Q et QN hauts.",
+      "fidelity": {
+        "functional": {
+          "claims": "Table de vérité de la bascule NAND ; mémorise avec les deux entrées hautes.",
+          "omissions": [
+            "la métastabilité"
+          ]
+        },
+        "timed": {
+          "claims": "Comme en fonctionnel ; délais tels qu'indiqués.",
+          "omissions": [
+            "la métastabilité"
+          ]
+        },
+        "electrical": {
+          "claims": "Les broches se relient aux réseaux analogiques avec les modèles de broche par défaut de la famille ; le comportement est celui du modèle Lua.",
+          "omissions": [
+            "la métastabilité",
+            "le courant d'alimentation",
+            "les limites de courant de sortie"
+          ]
+        }
+      }
+    }
+  }
 }

@@ -9,7 +9,7 @@ local function delay(ctx)
 end
 local function out(ctx, p, bit) ctx.drive(p, bit and 1 or 0, "strong", delay(ctx)) end
 
-local WINDOW = 50000000000      -- 50 ms without an edge: silent (passive buzzer)
+local WINDOW = 50000000000      -- 50 ms: the longest period heard (20 Hz) and the wait for a second edge
 local function active_on(ctx) return v(ctx, "+") == 1 and v(ctx, "-") ~= 1 end
 function M.reset(ctx) ctx.state.last, ctx.state.period, ctx.state.on = nil, nil, false; ctx.state.lvl = v(ctx, "+") end
 function M.on_input(ctx, pin)
@@ -20,12 +20,20 @@ function M.on_input(ctx, pin)
   if s.lvl == 0 and l == 1 then
     local now = ctx.now()
     if s.last then s.period = now - s.last end
+    if s.period and s.period > WINDOW then s.period = nil end    -- below 20 Hz: clicks, not a tone
     s.last, s.on = now, s.period ~= nil
-    ctx.wake_at(now + WINDOW, 0)
+    -- a passive piezo stops sounding when its drive stops: silent once two
+    -- periods pass without a rising edge (or 50 ms while no period is known)
+    ctx.wake_at(now + (s.period and 2 * s.period or WINDOW), 0)
   end
   s.lvl = l
 end
-function M.on_time(ctx) ctx.state.on, ctx.state.period, ctx.state.last = false, nil, nil end
+function M.on_time(ctx)
+  local s = ctx.state
+  if not s.last then return end
+  local quiet = s.period and 2 * s.period or WINDOW
+  if ctx.now() - s.last >= quiet then s.on, s.period, s.last = false, nil, nil end
+end
 function M.observe(ctx)
   local s = ctx.state
   local hz = 0

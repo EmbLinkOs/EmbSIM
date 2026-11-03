@@ -11,7 +11,9 @@ import { useTimeInteraction, type Cursors } from './interaction';
 import { axisLabels, formatMeterValue } from './Meter';
 import { ticks, timeToX, unitLabel, type TimeWindow } from './timeAxis';
 import { cssVar, useCanvas } from './useCanvas';
+import { plotMetrics, usePlotLook } from './plotMetrics';
 import type { WaveformRecord } from './waveform';
+import { uiText } from '@embsim/design';
 
 export interface ScopeTrace {
   record: WaveformRecord;
@@ -37,9 +39,6 @@ export interface OscilloscopeProps {
   className?: string;
 }
 
-const PLOT_LEFT = 52;
-const PLOT_BOTTOM = 22;
-const PLOT_TOP = 8;
 
 function niceStep(range: number, target: number): number {
   const rough = range / Math.max(1, target);
@@ -76,6 +75,9 @@ export function Oscilloscope({ traces, window: win, onWindowChange, cursors, onC
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [current, win.start, end, cursors.a, cursors.b, revision, now]);
 
+  const look = usePlotLook();
+  const metrics = plotMetrics('analog', look);
+  const { left: PLOT_LEFT, bottom: PLOT_BOTTOM, top: PLOT_TOP } = metrics;
   const { ref, size, redraw } = useCanvas((ctx, { width, height }) => {
     const el = wrapRef.current;
     const colors = {
@@ -86,7 +88,8 @@ export function Oscilloscope({ traces, window: win, onWindowChange, cursors, onC
       cursorB: cssVar(el, '--warning', '#e9bd55'),
       now: cssVar(el, '--text-faint', '#6b7689'),
     };
-    const mono = `11px ${cssVar(el, '--font-mono', 'monospace')}`;
+    // the rows, margins and labels follow the workbench's density and text size (plotMetrics)
+    const mono = `${metrics.font}px ${cssVar(el, '--font-mono', 'monospace')}`;
     ctx.clearRect(0, 0, width, height);
     ctx.fillStyle = colors.bg;
     ctx.fillRect(0, 0, width, height);
@@ -241,7 +244,7 @@ export function Oscilloscope({ traces, window: win, onWindowChange, cursors, onC
   // Redraw whenever inputs change.
   useEffect(() => {
     redraw();
-  }, [redraw, win, cursors, now, revision, traces, selected]);
+  }, [redraw, win, cursors, now, revision, traces, selected, look]);
 
   const handlers = useTimeInteraction(wrapRef, { window: win, onWindowChange, cursors, onCursorsChange, plotLeft: PLOT_LEFT, width: size.width });
 
@@ -262,10 +265,10 @@ export function Oscilloscope({ traces, window: win, onWindowChange, cursors, onC
         {...handlers}
       >
         <canvas ref={ref} className="es-instrument__canvas" />
-        {visibleTraces.length === 0 && <div className="es-instrument__empty">No analog probes subscribed</div>}
+        {visibleTraces.length === 0 && <div className="es-instrument__empty">{uiText('scope.noProbes', 'No analog probes subscribed')}</div>}
       </div>
       <div className="es-instrument__strip">
-        <div className="es-instrument__traces" role="radiogroup" aria-label="Measured trace">
+        <div className="es-instrument__traces" role="radiogroup" aria-label={uiText('scope.measured', 'Measured trace')}>
           {traces.map((t) => (
             <button
               key={t.record.id}
@@ -282,14 +285,14 @@ export function Oscilloscope({ traces, window: win, onWindowChange, cursors, onC
         </div>
         {measurements && current && (
           <dl className="es-instrument__measurements">
-            <Measure label="min" value={fmt(measurements.stats.min, current.record.unit)} />
-            <Measure label="max" value={fmt(measurements.stats.max, current.record.unit)} />
-            <Measure label="mean" value={fmt(measurements.weighted.mean, current.record.unit)} />
+            <Measure label={uiText('scope.min', 'min')} value={fmt(measurements.stats.min, current.record.unit)} />
+            <Measure label={uiText('scope.max', 'max')} value={fmt(measurements.stats.max, current.record.unit)} />
+            <Measure label={uiText('scope.mean', 'mean')} value={fmt(measurements.weighted.mean, current.record.unit)} />
             <Measure label="RMS" value={fmt(measurements.weighted.rms, current.record.unit)} />
-            {current.record.kind === 'digital' && <Measure label="duty" value={Number.isFinite(measurements.weighted.dutyCycle) ? `${(100 * measurements.weighted.dutyCycle).toFixed(2)} %` : '—'} />}
-            <Measure label="coverage" value={`${(100 * measurements.weighted.coverage).toFixed(1)} %`} />
-            <Measure label="period" value={measurements.pf.period !== null ? formatTime(measurements.pf.period, { padZeros: false }) : '—'} />
-            <Measure label="freq" value={measurements.pf.frequencyHz !== null ? formatFrequency(measurements.pf.frequencyHz) : '—'} />
+            {current.record.kind === 'digital' && <Measure label={uiText('la.duty', 'duty')} value={Number.isFinite(measurements.weighted.dutyCycle) ? `${(100 * measurements.weighted.dutyCycle).toFixed(2)} %` : '—'} />}
+            <Measure label={uiText('la.coverage', 'coverage')} value={`${(100 * measurements.weighted.coverage).toFixed(1)} %`} />
+            <Measure label={uiText('la.period', 'period')} value={measurements.pf.period !== null ? formatTime(measurements.pf.period, { padZeros: false }) : '—'} />
+            <Measure label={uiText('la.freq', 'freq')} value={measurements.pf.frequencyHz !== null ? formatFrequency(measurements.pf.frequencyHz) : '—'} />
             {cursors.a !== null && <Measure label="A" value={`${formatTime(cursors.a, { padZeros: false })} · ${fmt(measurements.ca, current.record.unit)}`} />}
             {cursors.b !== null && <Measure label="B" value={`${formatTime(cursors.b, { padZeros: false })} · ${fmt(measurements.cb, current.record.unit)}`} />}
             {cursors.a !== null && cursors.b !== null && <Measure label="Δ" value={formatTime(cursors.b - cursors.a, { padZeros: false })} />}

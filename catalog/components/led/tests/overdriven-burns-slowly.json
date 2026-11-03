@@ -1,0 +1,61 @@
+{
+  "schema_version": 1,
+  "kind": "component_test",
+  "name": "overdriven-burns-slowly",
+  "description": "About 110 mA (27 ohm from 5 V): its steady junction would pass 125 C. The die rises at once, then the package over tens of seconds: it survives the first second and burns out within two minutes.",
+  "policy": "electrical",
+  "until": "120s",
+  "circuit": {
+    "components": [
+      {
+        "id": "DUT",
+        "component": "emblink/led"
+      },
+      {
+        "id": "G",
+        "component": "emblink/gnd"
+      },
+      {
+        "id": "SUP",
+        "component": "emblink/vsource",
+        "params": {
+          "kind": "dc",
+          "dc": 5
+        }
+      },
+      {
+        "id": "R1",
+        "component": "emblink/resistor",
+        "params": {
+          "resistance": 27,
+          "tolerance": 0
+        }
+      }
+    ],
+    "nets": {
+      "P": [
+        "SUP.+",
+        "R1.1"
+      ],
+      "A": [
+        "R1.2",
+        "DUT.A"
+      ],
+      "GND": [
+        "DUT.K",
+        "SUP.-",
+        "G.GND"
+      ]
+    }
+  },
+  "expect": {
+    "output:DUT.lit": {
+      "at": "1s",
+      "equals": true
+    },
+    "output:DUT.damaged": {
+      "at": "120s",
+      "equals": true
+    }
+  }
+}

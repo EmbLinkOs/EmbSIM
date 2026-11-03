@@ -3,7 +3,7 @@
   "kind": "component_test",
   "name": "light-0",
   "policy": "electrical",
-  "until": "1ms",
+  "until": "450ms",
   "circuit": {
     "components": [
       {
@@ -22,7 +22,10 @@
       },
       {
         "id": "DUT",
-        "component": "emblink/gl5528"
+        "component": "emblink/gl5528",
+        "params": {
+          "tolerance": 0
+        }
       },
       {
         "id": "G",
@@ -47,7 +50,7 @@
   },
   "expect": {
     "net:SENSE": {
-      "at": "500us",
+      "at": "400ms",
       "min_v": 4.9231083743842365,
       "max_v": 4.929108374384237
     }
@@ -59,5 +62,6 @@
       "input": "illuminance",
       "value": 0
     }
-  ]
+  ],
+  "description": "At no light the GL5528 is at its 1 MOhm dark resistance. Read 400 ms after the light goes: more than ten of the 30 ms decay constants."
 }

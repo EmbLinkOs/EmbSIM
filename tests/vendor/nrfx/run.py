@@ -40,7 +40,7 @@ LDFLAGS = ["--specs=nano.specs", "--specs=nosys.specs", "-Wl,--gc-sections"]
 SOURCES = ["drivers/src/nrfx_clock.c", "drivers/src/nrfx_clock_hfclk.c", "drivers/src/nrfx_clock_lfclk.c",
            "drivers/src/nrfx_gpiote.c", "drivers/src/nrfx_timer.c", "drivers/src/nrfx_rtc.c",
            "drivers/src/nrfx_uarte.c", "drivers/src/nrfx_spim.c", "drivers/src/nrfx_twim.c",
-           "drivers/src/nrfx_twi_twim.c", "drivers/src/nrfx_pwm.c", "drivers/src/nrfx_saadc.c",
+           "drivers/src/nrfx_twi_twim.c", "drivers/src/nrfx_pwm.c", "drivers/src/nrfx_saadc.c", "drivers/src/nrfx_nvmc.c",
            "drivers/src/prs/nrfx_prs.c", "helpers/nrfx_flag32_allocator.c",
            "bsp/stable/mdk/nrf52/nrf52840/system_nrf52840.c"]
 STARTUP = "bsp/stable/mdk/nrf52/nrf52840/gcc_startup_nrf52840.S"

@@ -415,10 +415,15 @@ static void test_wfi_wakes(void)
 static char uart_out[65536];
 static size_t uart_n;
 
+static u8 uart1_out[256];
+static size_t uart1_n;
+
 static void uart_tx(void *ctx, const char *unit, int c, u32 bit_cycles)
 {
     (void)ctx;
     (void)bit_cycles;
+    if (strcmp(unit, "UART1") == 0 && uart1_n < sizeof uart1_out)
+        uart1_out[uart1_n++] = (u8)c;
     if (strcmp(unit, "UART0") == 0 && uart_n + 1 < sizeof uart_out) {
         uart_out[uart_n++] = (char)c;
         uart_out[uart_n] = 0;
@@ -2848,6 +2853,521 @@ static void test_ledc_dither_and_fade(void)
     c3_close(&f);
 }
 
+#define GPIO_SD 0x60004F00u
+#define SD_CONF(n) (GPIO_SD + 4u * (n))
+#define SD_MISC (GPIO_SD + 0x24u)
+
+/* channel 0 on GPIO8; APB_CLK is CPU_CLK (XTAL_CLK / 2) out of reset, so a
+ * bit of PRESCALE + 1 APB cycles is as many CPU cycles */
+static int sdm_open(c3 *f, int in, u32 prescale)
+{
+    if (!gpio_open(f))
+        return 0;
+    f->m.host.pin_cfg = h_edges;
+    edge_m = &f->m;
+    edge_pin = 8;
+    wr(f, SD_CONF(0), (u32)(in & 0xff) | prescale << 8);
+    wr(f, GPIO + 0x574u, 55u); /* GPIO8 out: gpio_sd0_out */
+    wr(f, G_EN_W1TS, 1u << 8);
+    nedge = 0;
+    wr(f, SD_MISC, 1u << 30); /* FUNCTION_CLK_EN */
+    return 1;
+}
+
+static void test_sdm_density(void)
+{
+    c3 f;
+    int i;
+    u64 high = 0;
+    /* SD0_IN 0: half the bits, alternating, 4 cycles each */
+    if (!sdm_open(&f, 0, 3u))
+        return;
+    esk_mach_idle(&f.m, 100u);
+    CHECK(nedge >= 20);
+    for (i = 1; i < 20; i++)
+        CHECK_EQ(edge_t[i] - edge_t[i - 1], 4u);
+    c3_close(&f);
+    /* SD0_IN -64: one bit of four, high 4 cycles of every 16 */
+    if (!sdm_open(&f, -64, 3u))
+        return;
+    esk_mach_idle(&f.m, 400u);
+    CHECK(nedge >= 40);
+    for (i = 0; i + 1 < 40; i++)
+        if (edge_lv[i])
+            high += edge_t[i + 1] - edge_t[i];
+    CHECK_EQ(high, 20u * 4u);
+    CHECK_EQ(edge_t[2] - edge_t[0], 16u);
+    /* SD0_IN 127: 255 bits of 256 high, one low bit */
+    wr(&f, SD_CONF(0), 127u | 3u << 8);
+    esk_mach_idle(&f.m, 2u * 256u * 4u + 8u);
+    nedge = 0;
+    esk_mach_idle(&f.m, 2u * 256u * 4u);
+    CHECK(nedge >= 3 && nedge <= 4);
+    CHECK_EQ(edge_lv[0] ? edge_t[2] - edge_t[1] : edge_t[1] - edge_t[0], 4u); /* the low bit */
+    /* -128: low throughout */
+    wr(&f, SD_CONF(0), 0x80u | 3u << 8);
+    esk_mach_idle(&f.m, 16u);
+    nedge = 0;
+    esk_mach_idle(&f.m, 400u);
+    CHECK_EQ(nedge, 0);
+    CHECK_EQ(pins_out[8].drive, 0);
+    /* unclocked, it holds */
+    wr(&f, SD_CONF(0), 0u | 3u << 8);
+    esk_mach_idle(&f.m, 9u);
+    wr(&f, SD_MISC, 0u);
+    nedge = 0;
+    esk_mach_idle(&f.m, 100u);
+    CHECK_EQ(nedge, 0);
+    c3_close(&f);
+}
+
+#define TWAI 0x6002B000u
+#define TWAI_MODE (TWAI + 0x00u)
+#define TWAI_CMD (TWAI + 0x04u)
+#define TWAI_STATUS (TWAI + 0x08u)
+#define TWAI_INT (TWAI + 0x0Cu)
+#define TWAI_BUF(i) (TWAI + 0x40u + 4u * (i))
+#define TWAI_RMC (TWAI + 0x74u)
+
+/* ID 0x555, one data byte 0x00, as sent: its stuff bits, CRC 0x3B93, the
+ * delimiters, an unacknowledged ACK slot and EOF (computed apart, in
+ * Python, from ISO 11898-1's CRC-15 and stuffing rule) */
+static const char twai_wire[] = "010101010101000001010000010000111011100100111111111111";
+
+/* TWAI's TX on GPIO8, its RX from the same pad; bits of 9 quanta of 2
+ * cycles: BRP 0, TSEG1 5, TSEG2 1, at APB_CLK = CPU_CLK */
+static void test_twai_frame(void)
+{
+    c3 f;
+    int i, n = (int)sizeof twai_wire - 1, level = 1, e = 0;
+    if (!gpio_open(&f))
+        return;
+    f.m.host.pin_cfg = h_edges;
+    edge_m = &f.m;
+    edge_pin = 8;
+    wr(&f, SYSTEM + 0x10u, rd(&f, SYSTEM + 0x10u) | 1u << 19); /* PERIP_CLK_EN0's TWAI */
+    wr(&f, SYSTEM + 0x18u, rd(&f, SYSTEM + 0x18u) & ~(1u << 19));
+    wr(&f, 0x60009004u + 4u * 8u, 1u << 12 | 1u << 9); /* IO MUX: GPIO, IE */
+    wr(&f, GPIO + 0x574u, 74u);                        /* GPIO8 out: twai_tx */
+    wr(&f, GPIO + 0x154u + 4u * 74u, 1u << 6 | 8u);    /* twai_rx from GPIO8 */
+    wr(&f, G_EN_W1TS, 1u << 8);
+    CHECK_EQ(rd(&f, TWAI_MODE) & 1u, 1u); /* in reset mode out of reset */
+    wr(&f, TWAI + 0x18u, 0u);             /* BRP 0 */
+    wr(&f, TWAI + 0x1Cu, 1u << 4 | 5u);   /* TSEG2 1, TSEG1 5 */
+    wr(&f, TWAI_BUF(0), 0xAAu);           /* ACR0: ID 0x555's top bits */
+    wr(&f, TWAI_BUF(1), 0xA0u);
+    wr(&f, TWAI_BUF(4), 0x00u);
+    wr(&f, TWAI_BUF(5), 0x1Fu); /* AMR1: RTR and the unused bits */
+    wr(&f, TWAI_BUF(6), 0xFFu);
+    wr(&f, TWAI_BUF(7), 0xFFu);
+    wr(&f, TWAI + 0x10u, 0xFFu);  /* INT_ENA */
+    wr(&f, TWAI_MODE, 4u | 8u);   /* operating, self test, single filter */
+    esk_mach_idle(&f.m, 12u * 18u); /* integrated: 11 recessive bits */
+    nedge = 0;
+    wr(&f, TWAI_BUF(0), 1u);    /* base frame, data, DLC 1 */
+    wr(&f, TWAI_BUF(1), 0xAAu); /* ID 0x555: 10101010 101 */
+    wr(&f, TWAI_BUF(2), 0xA0u);
+    wr(&f, TWAI_BUF(3), 0x00u);
+    wr(&f, TWAI_CMD, 0x10u); /* SRR: send and receive it */
+    CHECK_EQ(rd(&f, TWAI_STATUS) & 0x04u, 0u); /* TBS: the buffer is taken */
+    esk_mach_idle(&f.m, 70u * 18u);
+    /* every edge where the wire changes level, a bit's 18 cycles apart */
+    for (i = 0; i < n; i++) {
+        int b = twai_wire[i] - '0';
+        if (b != level) {
+            CHECK(e < nedge);
+            if (e >= nedge)
+                break;
+            CHECK_EQ(edge_lv[e], b);
+            CHECK_EQ(edge_t[e] - edge_t[0], (u64)i * 18u);
+            e++;
+            level = b;
+        }
+    }
+    CHECK_EQ(e, nedge);
+    /* sent, and received through the filter */
+    CHECK_EQ(rd(&f, TWAI_STATUS) & 0x0Du, 0x0Du); /* RBS, TBS, TCS */
+    CHECK_EQ(rd(&f, TWAI_RMC), 1u);
+    CHECK_EQ(rd(&f, TWAI_BUF(0)), 1u);
+    CHECK_EQ(rd(&f, TWAI_BUF(1)), 0xAAu);
+    CHECK_EQ(rd(&f, TWAI_BUF(2)), 0xA0u);
+    CHECK_EQ(rd(&f, TWAI_BUF(3)), 0x00u);
+    CHECK_EQ(rd(&f, TWAI_INT) & 3u, 3u); /* RI, TI */
+    CHECK_EQ(rd(&f, TWAI_INT) & 3u, 1u); /* the read cleared TI; RI stays */
+    wr(&f, TWAI_CMD, 0x04u);             /* RRB */
+    CHECK_EQ(rd(&f, TWAI_RMC), 0u);
+    CHECK_EQ(rd(&f, TWAI_INT) & 1u, 0u);
+    /* without self test nothing acknowledges: an ACK error, counted */
+    wr(&f, TWAI_MODE, 1u);
+    wr(&f, TWAI_MODE, 8u);
+    esk_mach_idle(&f.m, 12u * 18u);
+    wr(&f, TWAI_BUF(0), 1u);
+    wr(&f, TWAI_BUF(1), 0xAAu);
+    wr(&f, TWAI_BUF(2), 0xA0u);
+    wr(&f, TWAI_BUF(3), 0x00u);
+    wr(&f, TWAI_CMD, 0x03u); /* TR and AT: once */
+    esk_mach_idle(&f.m, 90u * 18u);
+    CHECK_EQ(rd(&f, TWAI + 0x3Cu), 8u);           /* TX_ERR_CNT */
+    CHECK_EQ(rd(&f, TWAI + 0x30u) & 0xffu, 0xD9u); /* ECC: other, TX, the ACK slot */
+    CHECK_EQ(rd(&f, TWAI_STATUS) & 0x0Cu, 0x04u);  /* released, not completed */
+    c3_close(&f);
+}
+
+#define I2S 0x6002D000u
+
+/* I2S's transmitter as a master: XTAL_CLK / 4 / 4 is BCK at 2.5 MHz, 8
+ * CPU cycles at XTAL_CLK / 2; two slots of 8 bits, WS low for the first
+ * (WS_IDLE_POL 0, WS width 8): WS on GPIO8 toggles every 64 cycles. With no
+ * GDMA list the samples are zeros and TX_HUNG is raised. */
+static void test_i2s_frame(void)
+{
+    c3 f;
+    int i;
+    if (!gpio_open(&f))
+        return;
+    f.m.host.pin_cfg = h_edges;
+    edge_m = &f.m;
+    edge_pin = 8;
+    wr(&f, SYSTEM + 0x10u, rd(&f, SYSTEM + 0x10u) | 1u << 21); /* PERIP_CLK_EN0's I2S0 */
+    wr(&f, SYSTEM + 0x18u, rd(&f, SYSTEM + 0x18u) & ~(1u << 21));
+    wr(&f, GPIO + 0x574u, 14u); /* GPIO8 out: I2SO_WS */
+    wr(&f, G_EN_W1TS, 1u << 8);
+    wr(&f, I2S + 0x34u, 1u << 26 | 0u << 27 | 4u);              /* TX_CLKM_CONF: active, XTAL, N 4 */
+    wr(&f, I2S + 0x3Cu, 0u);                                     /* no fraction */
+    wr(&f, I2S + 0x2Cu, 1u << 29 | 7u << 24 | 7u << 13 | 3u << 7 | 7u); /* shift, 8-bit slots and data, BCK /4, WS 8 */
+    wr(&f, I2S + 0x54u, 1u << 16 | 3u);                          /* two slots, both enabled */
+    wr(&f, I2S + 0x14u, 8u);                                     /* INT_ENA: TX_HUNG */
+    nedge = 0;
+    wr(&f, I2S + 0x24u, 1u << 19 | 1u << 2); /* TDM, start */
+    esk_mach_idle(&f.m, 64u * 12u);
+    CHECK(nedge >= 10);
+    for (i = 2; i < 10; i++)
+        CHECK_EQ(edge_t[i] - edge_t[i - 1], 64u);
+    CHECK_EQ(edge_lv[1], !edge_lv[2]);
+    CHECK(rd(&f, I2S + 0x0Cu) & 8u); /* TX_HUNG */
+    /* stopped: WS back at its idle level */
+    wr(&f, I2S + 0x24u, 1u << 19);
+    CHECK_EQ(pins_out[8].drive, 0);
+    c3_close(&f);
+}
+
+#define HMAC 0x6003E000u
+
+/* program eFuse block `blk` with eight words, then reload the RD_ registers */
+static void efuse_burn(c3 *f, u32 blk, const u32 w[8])
+{
+    int i;
+    for (i = 0; i < 8; i++)
+        wr(f, EFUSE + 4u * (u32)i, w[i]);
+    wr(f, EFUSE + 0x1CCu, 0x5A5Au);
+    wr(f, EFUSE + 0x1D4u, blk << 2 | 2u);
+    wr(f, EFUSE + 0x1CCu, 0x5AA5u);
+    wr(f, EFUSE + 0x1D4u, 1u);
+}
+
+/* HMAC-SHA256 under key block 0 (bytes 0..31, purpose HMAC_UP, read
+ * protected), of "The quick brown fox": the digest Python's hmac gives */
+static void test_hmac_upstream(void)
+{
+    static const u32 want[8] = { 0x1ff55b6bu, 0x5f4e87cdu, 0xef0ed024u, 0xc60c34afu,
+                                 0xc36bd928u, 0x55861e8bu, 0x7cdf9a81u, 0xdb3415ecu };
+    static const char msg[] = "The quick brown fox";
+    u32 key[8], b0[8] = { 0 }, blk[16], bitlen;
+    u8 bytes[64];
+    c3 f;
+    int i;
+    if (!c3_open(&f, NULL, 0, NULL, 0))
+        return;
+    for (i = 0; i < 8; i++)
+        key[i] = 0x03020100u + 0x04040404u * (u32)i;
+    efuse_burn(&f, 4u, key);
+    b0[1] = 1u;        /* RD_DIS.BLOCK_KEY0 */
+    b0[2] = 8u << 24;  /* KEY_PURPOSE_0: HMAC_UP */
+    efuse_burn(&f, 0u, b0);
+    CHECK_EQ(rd(&f, EFUSE + 0x9Cu), 0u); /* read protected: software sees 0 */
+    wr(&f, SYSTEM + 0x14u, rd(&f, SYSTEM + 0x14u) | 1u << 5); /* PERIP_CLK_EN1's HMAC */
+    wr(&f, SYSTEM + 0x1Cu, rd(&f, SYSTEM + 0x1Cu) & ~(1u << 5));
+    wr(&f, HMAC + 0x40u, 1u);
+    wr(&f, HMAC + 0x44u, 8u);
+    wr(&f, HMAC + 0x48u, 0u);
+    wr(&f, HMAC + 0x4Cu, 1u);
+    CHECK_EQ(rd(&f, HMAC + 0x68u), 0u);
+    /* the message padded by software, its length counting the ipad block */
+    memset(bytes, 0, sizeof bytes);
+    memcpy(bytes, msg, sizeof msg - 1u);
+    bytes[sizeof msg - 1u] = 0x80u;
+    bitlen = (u32)(sizeof msg - 1u + 64u) * 8u;
+    bytes[62] = (u8)((bitlen >> 8) & 0xffu);
+    bytes[63] = (u8)(bitlen & 0xffu);
+    for (i = 0; i < 16; i++)
+        blk[i] = (u32)bytes[4 * i] | (u32)bytes[4 * i + 1] << 8 | (u32)bytes[4 * i + 2] << 16 |
+                 (u32)bytes[4 * i + 3] << 24;
+    for (i = 0; i < 16; i++)
+        wr(&f, HMAC + 0x80u + 4u * (u32)i, blk[i]);
+    wr(&f, HMAC + 0x50u, 1u); /* SET_MESSAGE_ONE */
+    wr(&f, HMAC + 0xF4u, 1u); /* ONE_BLOCK */
+    CHECK_EQ(rd(&f, HMAC + 0x6Cu), 0u);
+    for (i = 0; i < 8; i++)
+        CHECK_EQ(rd(&f, HMAC + 0xC0u + 4u * (u32)i), want[i]);
+    wr(&f, HMAC + 0x5Cu, 2u); /* SET_RESULT_FINISH clears it */
+    CHECK_EQ(rd(&f, HMAC + 0xC0u), 0u);
+    /* the digital signature's purpose against an HMAC_UP key: refused */
+    wr(&f, HMAC + 0x40u, 1u);
+    wr(&f, HMAC + 0x44u, 7u);
+    wr(&f, HMAC + 0x48u, 0u);
+    wr(&f, HMAC + 0x4Cu, 1u);
+    CHECK_EQ(rd(&f, HMAC + 0x68u), 1u);
+    c3_close(&f);
+}
+
+#define DSIG 0x6003D000u
+#include "esp32c3_ds_vector.h"
+
+/* the digital signature: key block 1 (bytes 0..31, purpose
+ * HMAC_DOWN_DIGITAL_SIGNATURE), the HMAC accelerator downstream, then
+ * ESP-IDF's layout of encrypted RSA-1024 parameters: Z is Python's pow */
+static void ds_load(c3 *f, const u8 *c)
+{
+    static const u32 frag_off[4] = { 0x000u, 0x200u, 0x400u, 0x600u };
+    static const u32 frag_len[4] = { 384u, 384u, 384u, 48u };
+    u32 i, j, at = 0;
+    for (i = 0; i < 4; i++)
+        for (j = 0; j < frag_len[i]; j += 4, at += 4)
+            wr(f, DSIG + frag_off[i] + j,
+               (u32)c[at] | (u32)c[at + 1] << 8 | (u32)c[at + 2] << 16 | (u32)c[at + 3] << 24);
+    for (i = 0; i < 16; i += 4)
+        wr(f, DSIG + 0x630u + i, (u32)ds_iv[i] | (u32)ds_iv[i + 1] << 8 | (u32)ds_iv[i + 2] << 16 | (u32)ds_iv[i + 3] << 24);
+    for (i = 0; i < 128; i += 4)
+        wr(f, DSIG + 0x800u + i, (u32)ds_x[i] | (u32)ds_x[i + 1] << 8 | (u32)ds_x[i + 2] << 16 | (u32)ds_x[i + 3] << 24);
+}
+
+static void test_ds_sign(void)
+{
+    u32 key[8], b0[8] = { 0 };
+    u8 bad[1200];
+    c3 f;
+    int i;
+    if (!c3_open(&f, NULL, 0, NULL, 0))
+        return;
+    for (i = 0; i < 8; i++)
+        key[i] = 0x03020100u + 0x04040404u * (u32)i;
+    efuse_burn(&f, 5u, key);       /* BLOCK_KEY1 */
+    b0[1] = 1u << 1;               /* RD_DIS.BLOCK_KEY1 */
+    b0[2] = 7u << 28;              /* KEY_PURPOSE_1: HMAC_DOWN_DIGITAL_SIGNATURE */
+    efuse_burn(&f, 0u, b0);
+    wr(&f, SYSTEM + 0x14u, rd(&f, SYSTEM + 0x14u) | 3u << 4); /* PERIP_CLK_EN1's DS and HMAC */
+    wr(&f, SYSTEM + 0x1Cu, rd(&f, SYSTEM + 0x1Cu) & ~(3u << 4));
+    /* without a key the DS stays busy */
+    wr(&f, DSIG + 0xE00u, 1u);
+    CHECK_EQ(rd(&f, DSIG + 0xE0Cu), 1u);
+    wr(&f, DSIG + 0xE08u, 1u);
+    wr(&f, HMAC + 0x40u, 1u);
+    wr(&f, HMAC + 0x44u, 7u);
+    wr(&f, HMAC + 0x48u, 1u);
+    wr(&f, HMAC + 0x4Cu, 1u);
+    CHECK_EQ(rd(&f, HMAC + 0x68u), 0u);
+    wr(&f, DSIG + 0xE00u, 1u); /* SET_START: the key from the HMAC accelerator */
+    CHECK_EQ(rd(&f, DSIG + 0xE0Cu), 0u);
+    ds_load(&f, ds_c);
+    wr(&f, DSIG + 0xE04u, 1u); /* SET_ME */
+    CHECK_EQ(rd(&f, DSIG + 0xE14u), 0u);
+    for (i = 0; i < 128; i += 4)
+        CHECK_EQ(rd(&f, DSIG + 0xA00u + (u32)i),
+                 (u32)ds_z[i] | (u32)ds_z[i + 1] << 8 | (u32)ds_z[i + 2] << 16 | (u32)ds_z[i + 3] << 24);
+    wr(&f, DSIG + 0xE08u, 1u); /* SET_FINISH */
+    /* one byte of C changed: the MD check fails */
+    memcpy(bad, ds_c, sizeof bad);
+    bad[5] ^= 1u;
+    wr(&f, DSIG + 0xE00u, 1u);
+    ds_load(&f, bad);
+    wr(&f, DSIG + 0xE04u, 1u);
+    CHECK_EQ(rd(&f, DSIG + 0xE14u) & 1u, 1u);
+    c3_close(&f);
+}
+
+#define XTS 0x600CC000u
+
+/* XTS-AES: a key file of bytes (7i + 1), burned as espefuse burn_key does
+ * (reversed) into BLOCK_KEY0 with purpose XTS_AES_128_KEY; 64 bytes of
+ * (13i + 5) encrypted by hand at 0x20040 in two lines and programmed by SPI1 give what
+ * `espsecure.py encrypt_flash_data --aes_xts --address 0x20040` gives, and
+ * the cache reads them back decrypted once SPI_BOOT_CRYPT_CNT is odd */
+static void test_xts_flash_encryption(void)
+{
+    static const u8 want[64] = { 0x2du, 0xd1u, 0x75u, 0x08u, 0xf2u, 0x7cu, 0x26u, 0x4au, 0x64u, 0x9bu, 0x60u, 0xd9u, 0x2bu, 0xd4u, 0xd2u, 0xdeu, 0x34u, 0xddu, 0x15u, 0xe7u, 0x4bu, 0x0du, 0x8au, 0x52u, 0xefu, 0x29u, 0xe3u, 0xa3u, 0x53u, 0xf1u, 0xdbu, 0x31u, 0x9fu, 0x93u, 0x87u, 0xc6u, 0xeeu, 0x66u, 0xcbu, 0xacu, 0x64u, 0x67u, 0x7fu, 0x94u, 0x03u, 0x1au, 0xa4u, 0xb7u, 0xadu, 0xeeu, 0x70u, 0x84u, 0x31u, 0xb0u, 0x35u, 0x31u, 0xb5u, 0x97u, 0x53u, 0x89u, 0x5au, 0x7du, 0x89u, 0x3au };
+    u8 keyfile[32], plain[64];
+    u32 key[8], b0[8] = { 0 }, line;
+    struct esk_store *fl;
+    c3 f;
+    int i;
+    if (!c3_open(&f, NULL, 0, NULL, 0))
+        return;
+    for (i = 0; i < 32; i++)
+        keyfile[i] = (u8)((7 * i + 1) & 0xff);
+    for (i = 0; i < 64; i++)
+        plain[i] = (u8)((13 * i + 5) & 0xff);
+    for (i = 0; i < 8; i++)
+        key[i] = (u32)keyfile[31 - 4 * i] | (u32)keyfile[30 - 4 * i] << 8 |
+                 (u32)keyfile[29 - 4 * i] << 16 | (u32)keyfile[28 - 4 * i] << 24;
+    efuse_burn(&f, 4u, key);
+    b0[1] = 1u;       /* RD_DIS.BLOCK_KEY0 */
+    b0[2] = 4u << 24; /* KEY_PURPOSE_0: XTS_AES_128_KEY */
+    efuse_burn(&f, 0u, b0);
+    /* manual encryption is refused until SYSTEM enables it */
+    wr(&f, XTS + 0x40u, 1u);       /* LINESIZE: 32 bytes */
+    wr(&f, XTS + 0x44u, 0u);       /* DESTINATION: flash */
+    wr(&f, XTS + 0x48u, 0x20040u); /* PHYSICAL_ADDRESS */
+    wr(&f, XTS + 0x4Cu, 1u);
+    CHECK_EQ(rd(&f, XTS + 0x58u), 0u);
+    wr(&f, SYSTEM + 0x44u, 1u); /* ENABLE_SPI_MANUAL_ENCRYPT */
+    /* two lines of 32 bytes, as esp_flash_write_encrypted writes them */
+    for (line = 0; line < 2; line++) {
+        u32 at = 0x20040u + 32u * line;
+        for (i = 0; i < 32; i += 4)
+            wr(&f, XTS + (at % 32u) + (u32)i,
+               (u32)plain[32u * line + (u32)i] | (u32)plain[32u * line + (u32)i + 1u] << 8 |
+                   (u32)plain[32u * line + (u32)i + 2u] << 16 | (u32)plain[32u * line + (u32)i + 3u] << 24);
+        wr(&f, XTS + 0x48u, at);
+        wr(&f, XTS + 0x4Cu, 1u); /* TRIGGER */
+        CHECK_EQ(rd(&f, XTS + 0x58u), 2u);
+        wr(&f, XTS + 0x50u, 1u); /* RELEASE */
+        CHECK_EQ(rd(&f, XTS + 0x58u), 3u);
+        /* SPI1 programs its own (zero) bytes: the ciphertext lands instead */
+        wr(&f, SPI_CMD, 1u << 30);
+        for (i = 0; i < 8; i++)
+            wr(&f, SPI_W0 + 4u * (u32)i, 0u);
+        if (line == 0u)
+            wr(&f, SPI_ADDR, at | 32u << 24);
+        /* the second as the ROM's esp_rom_spiflash_write_encrypted: ADDR
+         * left as it was, the line giving the address */
+        wr(&f, SPI_CMD, 1u << 25);
+        esk_mach_idle(&f.m, esk_mach_core_hz(&f.m) / 2000u + 100u); /* tPP 0.5 ms */
+        wr(&f, XTS + 0x54u, 1u); /* DESTROY */
+        CHECK_EQ(rd(&f, XTS + 0x58u), 0u);
+    }
+    fl = esk_mach_store(&f.m, "flash");
+    CHECK(memcmp(fl->mem + 0x20040, want, 64) == 0);
+    /* flash encryption on: the cache decrypts */
+    memset(b0, 0, sizeof b0);
+    b0[2] = 1u << 18; /* SPI_BOOT_CRYPT_CNT = 1 */
+    efuse_burn(&f, 0u, b0);
+    wr(&f, MMU + 4u * 5u, 2u);
+    for (i = 0; i < 64; i += 4)
+        CHECK_EQ(rd(&f, 0x3C050040u + (u32)i),
+                 (u32)plain[i] | (u32)plain[i + 1] << 8 | (u32)plain[i + 2] << 16 |
+                     (u32)plain[i + 3] << 24);
+    c3_close(&f);
+}
+
+#define PMS 0x600C1000u
+
+static u32 sw(u32 rs2, u32 rs1, s32 imm)
+{
+    u32 u = (u32)imm & 0xfffu;
+    return (u >> 5) << 25 | rs2 << 20 | rs1 << 15 | 2u << 12 | (u & 0x1fu) << 7 | 0x23u;
+}
+
+/* the permission control, set as ESP-IDF's esp_memprot sets it with its
+ * main line at 0x403A0000 (0x3FCA0000 on the data bus): DRAM0's area 0
+ * (below the line) neither read nor written, IRAM0's area 3 (above it) not
+ * executed. A load there reads 0 and the DRAM0 monitor latches it (address,
+ * world 0, the byte lanes); a store there writes nothing; area 1 works; a
+ * jump into IRAM0's area 3 fetches 0, an illegal instruction, and the
+ * IRAM0 monitor latches a fetch */
+static void test_pms(void)
+{
+    const u32 prog[] = { MTVEC_AT_VEC, lui(8, 0x3fc90), lw(10, 8, 0), lui(9, 0x3fca0), lw(11, 9, 0),
+                         addi(12, 0, 7), sw(12, 9, 0), sw(12, 8, 0), lui(13, 0x403a0),
+                         0x000680e7u /* jalr ra, 0(x13) */, JAL_SELF };
+    u32 v = 0;
+    c3 f;
+    if (!c3_open(&f, prog, sizeof prog / sizeof prog[0], vec5(), NVEC5))
+        return;
+    CHECK_EQ(esk_bus_debug_write(&f.m.bus, 0x3FC90000u, 4, 0x1234u), 0);
+    CHECK_EQ(esk_bus_debug_write(&f.m.bus, 0x3FCA0000u, 4, 0x5678u), 0);
+    wr(&f, PMS + 0x94u, 2u << 2 | 3u << 4); /* the main line: the start of the second block */
+    wr(&f, PMS + 0x98u, 2u << 2 | 3u << 4); /* I0 and I1 at it too */
+    wr(&f, PMS + 0x9Cu, 2u << 2 | 3u << 4);
+    wr(&f, PMS + 0xA0u, 2u << 2 | 3u << 4); /* D0 and D1 */
+    wr(&f, PMS + 0xA4u, 2u << 2 | 3u << 4);
+    wr(&f, PMS + 0xB0u, 0x001C7FFFu & ~(7u << 9)); /* IRAM0 area 3: nothing */
+    wr(&f, PMS + 0xC4u, 0x0F0FF0FFu & ~3u);        /* DRAM0 area 0: nothing */
+    wr(&f, PMS + 0xB8u, 3u);
+    wr(&f, PMS + 0xB8u, 2u); /* the IRAM0 monitor: cleared, enabled */
+    wr(&f, PMS + 0xCCu, 3u);
+    wr(&f, PMS + 0xCCu, 2u);
+    esk_mach_run(&f.m, 0xffffff, 20);
+    CHECK_EQ(x(&f, 10), 0u);      /* the load blocked */
+    CHECK_EQ(x(&f, 11), 0x5678u); /* area 1 */
+    CHECK_EQ(rd(&f, PMS + 0xD0u),
+             1u | 1u << 2 | ((0x3FC90000u - 0x3C000000u) >> 2) << 4); /* its first violation */
+    CHECK_EQ(rd(&f, PMS + 0xD4u), 0xfu << 1);                          /* a read of four bytes */
+    CHECK_EQ(esk_bus_debug_read(&f.m.bus, 0x3FCA0000u, 4, &v), 0);
+    CHECK_EQ(v, 7u);
+    CHECK_EQ(esk_bus_debug_read(&f.m.bus, 0x3FC90000u, 4, &v), 0);
+    CHECK_EQ(v, 0x1234u); /* the store blocked */
+    CHECK_EQ(x(&f, 20), 2u); /* an illegal instruction */
+    CHECK_EQ(x(&f, 21), 0x403A0000u);
+    CHECK_EQ(rd(&f, PMS + 0xBCu), 1u | 1u << 3 | ((0x403A0000u - 0x40000000u) >> 2) << 5); /* a fetch */
+    wr(&f, PMS + 0xCCu, 3u); /* VIOLATE_CLR */
+    CHECK_EQ(rd(&f, PMS + 0xD0u), 0u);
+    /* locked, the permissions no longer change */
+    wr(&f, PMS + 0xC0u, 1u);
+    wr(&f, PMS + 0xC4u, 0x0F0FF0FFu);
+    CHECK_EQ(rd(&f, PMS + 0xC4u), 0x0F0FF0FFu & ~3u);
+    c3_close(&f);
+}
+
+#define UHCI0 0x60014000u
+#define UART1 0x60010000u
+
+/* UHCI0 on UART1 in SLIP mode (SEPER_EN, the reset's escapes of 0xC0 and
+ * 0xDB), UART1 looped back: four bytes from the GDMA's transmit list leave
+ * framed by separators with 0xC0 and 0xDB escaped, come back through the
+ * receiver, and land in the receive list as they were, closed by the
+ * second separator (suc_eof) */
+static void test_uhci_slip(void)
+{
+    static const u8 want_line[] = { 0xC0, 0x01, 0xDB, 0xDC, 0xDB, 0xDD, 0x03, 0xC0 };
+    const u32 prog[] = { JAL_SELF };
+    const u32 tx = 0x3FC90000u, rx = 0x3FC90100u, dtx = 0x3FC90200u, drx = 0x3FC90210u;
+    u32 got;
+    c3 f;
+    size_t i;
+    if (!c3_open(&f, prog, 1, NULL, 0))
+        return;
+    f.m.host.uart_tx = uart_tx;
+    uart1_n = 0;
+    wr(&f, SYSTEM + 0x10u, rd(&f, SYSTEM + 0x10u) | 1u << 5 | 1u << 8); /* UART1, UHCI0 */
+    wr(&f, SYSTEM + 0x18u, rd(&f, SYSTEM + 0x18u) & ~(1u << 5 | 1u << 8));
+    wr(&f, SYSTEM + 0x14u, rd(&f, SYSTEM + 0x14u) | 1u << 6); /* DMA */
+    wr(&f, SYSTEM + 0x1Cu, rd(&f, SYSTEM + 0x1Cu) & ~(1u << 6));
+    wr(&f, UART1 + 0x20u, rd(&f, UART1 + 0x20u) | 1u << 14); /* LOOPBACK */
+    wr(&f, tx, 0x03DBC001u);                                 /* 01 C0 DB 03 */
+    wr(&f, dtx, 1u << 31 | 1u << 30 | 4u << 12 | 4u);
+    wr(&f, dtx + 4u, tx);
+    wr(&f, dtx + 8u, 0u);
+    wr(&f, drx, 1u << 31 | 64u);
+    wr(&f, drx + 4u, rx);
+    wr(&f, drx + 8u, 0u);
+    wr(&f, GDMA + 0x100u, 2u); /* OUT_PERI_SEL: UHCI0 */
+    wr(&f, GDMA + 0xA0u, 2u);  /* IN_PERI_SEL */
+    wr(&f, GDMA + 0x80u, (drx & 0xfffffu) | 1u << 22);
+    wr(&f, UHCI0 + 0x00u, 1u << 11 | 1u << 3 | 1u << 5); /* CLK_EN, UART1_CE, SEPER_EN */
+    wr(&f, GDMA + 0xE0u, (dtx & 0xfffffu) | 1u << 21);
+    c3_run(&f, 200000u);
+    CHECK_EQ(uart1_n, sizeof want_line);
+    for (i = 0; i < sizeof want_line && i < uart1_n; i++)
+        CHECK_EQ(uart1_out[i], want_line[i]);
+    CHECK_EQ(rd(&f, drx), 1u << 30 | 4u << 12 | 64u); /* four bytes, suc_eof */
+    got = rd(&f, rx);
+    CHECK_EQ(got, 0x03DBC001u);
+    /* RX_START for the separators sent, TX_START for those the receiver
+     * found (TRM 26.4.12) */
+    CHECK_EQ(rd(&f, UHCI0 + 0x04u) & 3u, 3u);
+    c3_close(&f);
+}
+
 #define I2C 0x60013000u
 #define I2C_SCL_LOW (I2C + 0x00u)
 #define I2C_CTR (I2C + 0x04u)
@@ -3640,6 +4160,14 @@ RUN(test_rmt_carrier_and_filter);
 RUN(test_rmt_rx_filter);
 RUN(test_ledc_pwm);
 RUN(test_ledc_dither_and_fade);
+RUN(test_sdm_density);
+RUN(test_twai_frame);
+RUN(test_i2s_frame);
+RUN(test_hmac_upstream);
+RUN(test_ds_sign);
+RUN(test_xts_flash_encryption);
+RUN(test_pms);
+RUN(test_uhci_slip);
 RUN(test_i2c_master);
 RUN(test_i2c_stretch_and_end);
 RUN(test_i2c_slave);

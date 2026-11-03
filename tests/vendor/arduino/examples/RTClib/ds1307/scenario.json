@@ -1,0 +1,37 @@
+{
+  "schema_version": 1,
+  "kind": "scenario",
+  "name": "ds1307",
+  "until": "3500ms",
+  "inputs": [],
+  "assertions": [
+    {
+      "id": "clock",
+      "at": "3500ms",
+      "probe": "terminal",
+      "expect": {
+        "contains": "RTC is NOT running, let's set the time!\r\n2026/10/18 (Sunday) 12:0:0\r\n since midnight 1/1/1970 = 1792324800s = 20744d\r\n now + 7d + 12h + 30m + 6s: 2026/10/26 0:30:6\r\n\r\n2026/10/18 (Sunday) 12:0:3\r\n since midnight 1/1/1970 = 1792324803s = 20744d\r\n now + 7d + 12h + 30m + 6s: 2026/10/26 0:30:9\r\n\r\n"
+      }
+    },
+    {
+      "id": "running",
+      "at": "3500ms",
+      "probe": "time",
+      "expect": {
+        "equals": "2026-10-18 12:00:03"
+      }
+    },
+    {
+      "id": "clean",
+      "always": true,
+      "diagnostics": {
+        "forbid": [
+          "mcu.fault",
+          "mcu.bus_error",
+          "mcu.unsupported_access"
+        ]
+      }
+    }
+  ],
+  "description": "RTClib's ds1307 example, unmodified: a new DS1307 powers up with CH set, so isrunning() is false and the sketch sets the clock to its build time (2026-10-18 12:00:00: run.py fixes SOURCE_DATE_EPOCH) with a write that clears CH. The clock then counts: 12:0:0, and 12:0:3 three seconds later, with the date arithmetic the library does on it."
+}

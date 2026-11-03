@@ -1,0 +1,74 @@
+{
+  "schema_version": 1,
+  "kind": "component_test",
+  "name": "cut-until-active",
+  "description": "A cut in series with 1 kOhm from 5 V, injected at 1 ms: no current afterwards, the resistor's end pulled to ground.",
+  "policy": "electrical",
+  "until": "2ms",
+  "circuit": {
+    "components": [
+      {
+        "id": "SUP",
+        "component": "emblink/vsource",
+        "params": {
+          "kind": "dc",
+          "dc": 5
+        }
+      },
+      {
+        "id": "R1",
+        "component": "emblink/resistor",
+        "params": {
+          "resistance": "1k",
+          "tolerance": 0
+        }
+      },
+      {
+        "id": "G",
+        "component": "emblink/gnd"
+      },
+      {
+        "id": "DUT",
+        "component": "emblink/fault",
+        "params": {
+          "fault": "open"
+        }
+      }
+    ],
+    "nets": {
+      "P": [
+        "SUP.+",
+        "DUT.1"
+      ],
+      "M": [
+        "DUT.2",
+        "R1.1"
+      ],
+      "GND": [
+        "R1.2",
+        "SUP.-",
+        "G.GND"
+      ]
+    }
+  },
+  "expect": {
+    "device:R1.i": {
+      "at": "2ms",
+      "min": -1e-07,
+      "max": 1e-07
+    },
+    "net:M": {
+      "at": "2ms",
+      "min": -0.01,
+      "max": 0.01
+    }
+  },
+  "inputs": [
+    {
+      "at": "1ms",
+      "target": "DUT",
+      "input": "active",
+      "value": true
+    }
+  ]
+}

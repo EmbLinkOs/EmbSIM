@@ -4,7 +4,8 @@
   "id": "emblink/l293d",
   "version": "1.0.0",
   "name": "L293D dual H-bridge",
-  "category": "power",
+  "category": "analog_ics",
+  "subcategory": "drivers",
   "description": "Quadruple half-H driver (L293D) for two DC motors or one stepper: each output follows its input while the pair's enable is high and is released while low; motor1/motor2 report forward, reverse, brake or coast.",
   "keywords": [
     "motor driver",
@@ -326,5 +327,42 @@
   },
   "tests": [
     "tests/*.json"
-  ]
+  ],
+  "i18n": {
+    "fr": {
+      "source": "70e6257e501a",
+      "description": "Quadruple pilote en demi-pont (L293D) pour deux moteurs à courant continu ou un moteur pas à pas : chaque sortie suit son entrée tant que l'activation de la paire est haute et est libérée sinon ; motor1/motor2 rapportent avant, arrière, frein ou roue libre.",
+      "fidelity": {
+        "functional": {
+          "claims": "Les sorties en demi-pont suivent leurs entrées tant qu'elles sont activées, libérées sinon ; l'état moteur de la paire.",
+          "omissions": [
+            "les sorties en tensions à VCC2 (les sorties sont des niveaux logiques)",
+            "les diodes d'écrêtage des sorties",
+            "la protection thermique",
+            "les limites de courant (600 mA)"
+          ]
+        },
+        "timed": {
+          "claims": "Comme en fonctionnel ; délais tels qu'indiqués.",
+          "omissions": [
+            "les sorties en tensions à VCC2 (les sorties sont des niveaux logiques)",
+            "les diodes d'écrêtage des sorties",
+            "la protection thermique",
+            "les limites de courant (600 mA)"
+          ]
+        },
+        "electrical": {
+          "claims": "Les broches se relient aux réseaux analogiques avec les modèles de broche par défaut de la famille ; le comportement est celui du modèle Lua.",
+          "omissions": [
+            "les sorties en tensions à VCC2 (les sorties sont des niveaux logiques)",
+            "les diodes d'écrêtage des sorties",
+            "la protection thermique",
+            "les limites de courant (600 mA)",
+            "le courant d'alimentation",
+            "les limites de courant de sortie"
+          ]
+        }
+      }
+    }
+  }
 }

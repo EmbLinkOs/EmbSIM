@@ -4,7 +4,8 @@
   "id": "emblink/lmv358",
   "version": "1.0.0",
   "name": "LMV358 dual op-amp",
-  "category": "amplifiers",
+  "category": "operational_amplifiers",
+  "subcategory": "dual",
   "description": "TI LMV358, a dual low-voltage (2.7 to 5.5 V) op-amp with rail-to-rail output: the Arduino Uno's U5, one half comparing VIN/2 with 3.3 V to switch USB power, the other buffering the L LED.",
   "keywords": [
     "opamp",
@@ -239,5 +240,32 @@
     "manufacturer": "Texas Instruments",
     "package": "VSSOP-8",
     "datasheet": "https://www.ti.com/lit/ds/symlink/lmv358.pdf"
+  },
+  "i18n": {
+    "fr": {
+      "source": "c7dbe55c1a3c",
+      "description": "TI LMV358, un double ampli-op basse tension (2,7 à 5,5 V) à sortie rail à rail : le U5 de l'Arduino Uno, une moitié comparant VIN/2 à 3,3 V pour commuter l'alimentation USB, l'autre servant de tampon à la LED L.",
+      "fidelity": {
+        "functional": {
+          "claims": "Broches seulement : la politique fonctionnelle n'a pas de tensions analogiques.",
+          "omissions": [
+            "l'amplification"
+          ]
+        },
+        "timed": {
+          "claims": "Comme en électrique."
+        },
+        "electrical": {
+          "claims": "Deux ampli-op avec un gain en boucle ouverte de 100 V/mV et un pôle dominant pour une bande passante à gain unité de 1 MHz, vitesse de balayage de 1 V/us, alimentés par VCC et GND : la sortie va jusqu'à environ 10 mV de VCC et 65 mV de la masse sur 10 kOhms (sortie rail à rail), avec 30 ohms de résistance de sortie.",
+          "omissions": [
+            "le décalage d'entrée (1,7 mV typique) et le courant de polarisation",
+            "la limite de mode commun en entrée (VCC - 0,8 V)",
+            "la limite de court-circuit en sortie (40 mA)",
+            "le courant d'alimentation (210 uA)",
+            "le fonctionnement sous 2,7 V"
+          ]
+        }
+      }
+    }
   }
 }

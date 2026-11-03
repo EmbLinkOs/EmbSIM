@@ -4,8 +4,9 @@
   "id": "emblink/max7219_display",
   "version": "1.1.0",
   "name": "MAX7219 8-digit display",
-  "category": "displays",
-  "description": "An 8-digit 7-segment display module driven by a MAX7219: 16-bit frames shifted on CLK rising (MSB first) and latched when CS rises set the digits, the code-B decode mode, intensity, scan limit and shutdown. The display shows on the board view.",
+  "category": "optoelectronics",
+  "subcategory": "seven_segment",
+  "description": "An 8-digit 7-segment display module driven by a MAX7219: 16-bit frames shifted in on CLK's rising edge (MSB first) and latched when LOAD (CS) rises set the digits, the code-B decode mode, intensity, scan limit, shutdown and display test; DOUT shifts each bit out on CLK's falling edge, 16 clocks later, for a chained device. The display shows on the board view.",
   "keywords": [
     "display",
     "MAX7219",
@@ -81,7 +82,12 @@
     {
       "name": "text",
       "type": "string",
-      "doc": "The eight digits, left to right"
+      "doc": "The eight digits, DIG7 (left) to DIG0 (right), as a person reads them: '.' after a digit whose decimal point is lit, '?' for a lit pattern that is no character"
+    },
+    {
+      "name": "segments",
+      "type": "string",
+      "doc": "Each digit's lit segments, DIG7 to DIG0, as hex bytes (bit 7 DP, bit 6 A ... bit 0 G; datasheet Table 6)"
     },
     {
       "name": "on",
@@ -92,6 +98,13 @@
       "type": "integer",
       "min": 0,
       "max": 15
+    },
+    {
+      "name": "scan_limit",
+      "type": "integer",
+      "min": 0,
+      "max": 7,
+      "doc": "The scan-limit register: the digits shown are DIG0 to this one"
     }
   ],
   "model": {
@@ -114,7 +127,7 @@
   },
   "fidelity": {
     "functional": {
-      "claims": "The MAX7219 register map: digits, decode mode, intensity, scan limit, shutdown and display test; DOUT shifts the frame out 16 clocks later.",
+      "claims": "The MAX7219 register map: digits with their decimal points, the code-B font (Table 5) per digit, intensity, scan limit, shutdown (power-up state) and display test; each digit's lit segments as an output; DOUT presenting bit 15 on CLK's falling edge.",
       "omissions": [
         "the segment and digit driver pins (the display is part of the module)",
         "multiplexing and brightness",
@@ -202,5 +215,39 @@
   },
   "tests": [
     "tests/*.json"
-  ]
+  ],
+  "i18n": {
+    "fr": {
+      "source": "a9b2dc98e961",
+      "description": "Un module afficheur 7 segments à 8 chiffres piloté par un MAX7219 : des trames de 16 bits entrées par décalage sur le front montant de CLK (MSB en premier) et verrouillées au front montant de LOAD (CS) règlent les chiffres, le mode de décodage code B, l'intensité, la limite de balayage, l'arrêt et le test d'affichage ; DOUT ressort chaque bit sur le front descendant de CLK, 16 coups d'horloge plus tard, pour un composant chaîné. L'affichage apparaît sur la vue de la carte.",
+      "fidelity": {
+        "functional": {
+          "claims": "La carte des registres du MAX7219 : chiffres avec leurs points décimaux, la police code B (tableau 5) par chiffre, l'intensité, la limite de balayage, l'arrêt (état à la mise sous tension) et le test d'affichage ; les segments allumés de chaque chiffre en sortie ; DOUT présentant le bit 15 sur le front descendant de CLK.",
+          "omissions": [
+            "les broches de commande des segments et des chiffres (l'afficheur fait partie du module)",
+            "le multiplexage et la luminosité",
+            "la sémantique des no-op en chaîne au-delà de DOUT"
+          ]
+        },
+        "timed": {
+          "claims": "Comme en fonctionnel ; délais tels qu'indiqués.",
+          "omissions": [
+            "les broches de commande des segments et des chiffres (l'afficheur fait partie du module)",
+            "le multiplexage et la luminosité",
+            "la sémantique des no-op en chaîne au-delà de DOUT"
+          ]
+        },
+        "electrical": {
+          "claims": "Les broches se relient aux réseaux analogiques avec les modèles de broche par défaut de la famille ; le comportement est celui du modèle Lua.",
+          "omissions": [
+            "les broches de commande des segments et des chiffres (l'afficheur fait partie du module)",
+            "le multiplexage et la luminosité",
+            "la sémantique des no-op en chaîne au-delà de DOUT",
+            "le courant d'alimentation",
+            "les limites de courant de sortie"
+          ]
+        }
+      }
+    }
+  }
 }

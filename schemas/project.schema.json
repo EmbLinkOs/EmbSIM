@@ -45,7 +45,8 @@
             "properties": {
               "sram_size": {"$ref": "common.schema.json#/$defs/hex_or_size", "description": "Resize of the MCU's main RAM region."},
               "flash_size": {"$ref": "common.schema.json#/$defs/hex_or_size"},
-              "mac": {"type": "string", "pattern": "^[0-9a-fA-F]{2}(:[0-9a-fA-F]{2}){5}$", "description": "The chip's factory MAC address, for a part that keeps one (an ESP32-C3's eFuse BLOCK1): two boards of a project are two chips. Without it, the part description's."}
+              "mac": {"type": "string", "pattern": "^[0-9a-fA-F]{2}(:[0-9a-fA-F]{2}){5}$", "description": "The chip's factory MAC address, for a part that keeps one (an ESP32-C3's eFuse BLOCK1): two boards of a project are two chips. Without it, the part description's."},
+              "fuses": {"$ref": "common.schema.json#/$defs/fuses", "description": "The fuse and lock bytes as this project programmed them (an ISP programmer's), in place of the board's."}
             }
           }
         }
@@ -266,6 +267,7 @@
           "target": {"type": "string", "pattern": "^(net|pin|device|reg|mem|var|serial|output):.+$"},
           "kind": {"type": "string", "enum": ["digital", "analog", "serial", "value"]},
           "rate_hz": {"type": "number", "exclusiveMinimum": 0},
+          "capacity": {"type": "integer", "minimum": 1, "maximum": 16777216, "description": "samples the probe keeps (its memory depth); 65536 when absent"},
           "decode": {
             "type": "object",
             "required": ["protocol"],
@@ -280,6 +282,26 @@
       }
     },
     "scenarios": {"type": "array", "items": {"type": "string", "pattern": "\\.json$"}},
+    "faults": {
+      "type": "array",
+      "description": "The fault mode (ADR-034): cuts, shorts and failed parts wired in on purpose, each a part (emblink/fault) whose input `active` turns it on and off; `active` is its state at the start.",
+      "items": {
+        "type": "object",
+        "required": ["id", "kind"],
+        "additionalProperties": false,
+        "properties": {
+          "id": {"$ref": "common.schema.json#/$defs/instance_id"},
+          "kind": {"type": "string", "enum": ["open", "short", "fail_open", "fail_short"]},
+          "pin": {"type": "string", "description": "open: the pin cut from its net"},
+          "nets": {"type": "array", "items": {"type": "string"}, "minItems": 2, "maxItems": 2, "description": "short: the two nets bridged"},
+          "pins": {"type": "array", "items": {"type": "string"}, "minItems": 2, "maxItems": 2, "description": "short: two pins whose nets are bridged"},
+          "part": {"type": "string", "description": "fail_open, fail_short: a two-terminal part"},
+          "resistance": {"$ref": "common.schema.json#/$defs/si_number", "description": "Its resistance while it conducts (1 mOhm by default)"},
+          "active": {"type": "boolean", "description": "Injected from the start"},
+          "doc": {"type": "string"}
+        }
+      }
+    },
     "settings": {"$ref": "common.schema.json#/$defs/settings"}
   }
 }

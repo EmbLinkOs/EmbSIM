@@ -35,7 +35,7 @@ struct gate {
 static const struct gate gates[] = {
     { "UART0", "PERIP_CLK_EN0", 2 },         { "UART1", "PERIP_CLK_EN0", 5 },
     { "SPI0", "PERIP_CLK_EN0", 1 },          { "SPI1", "PERIP_CLK_EN0", 1 },
-    { "I2S0", "PERIP_CLK_EN0", 4 },          { "SPI2", "PERIP_CLK_EN0", 6 },
+    { "I2S0", "PERIP_CLK_EN0", 21 },         { "SPI2", "PERIP_CLK_EN0", 6 },
     { "I2C0", "PERIP_CLK_EN0", 7 },          { "UHCI0", "PERIP_CLK_EN0", 8 },
     { "RMT", "PERIP_CLK_EN0", 9 },           { "LEDC", "PERIP_CLK_EN0", 11 },
     { "UHCI1", "PERIP_CLK_EN0", 12 },        { "TIMG0", "PERIP_CLK_EN0", 13 },
@@ -60,19 +60,6 @@ struct c3_system {
 
 static u32 reg(const struct esk_rf_reg *r) { return (u32)r->value; }
 
-static struct c3_system *system_of(struct esk_mach *m)
-{
-    int i;
-    for (i = 0; m->rf; i++) {
-        struct esk_rf_periph *p = esk_rf_periph_at(m->rf, i);
-        if (!p)
-            break;
-        if (p->ops == &esk_esp32c3_system_ops)
-            return (struct c3_system *)p->ctx;
-    }
-    return NULL;
-}
-
 static u32 cpu_hz(const struct c3_system *k)
 {
     u32 c = reg(k->sysclk), sel = (c >> 10) & 3u, div = (c & 0x3ffu) + 1u;
@@ -89,7 +76,7 @@ static u32 core_hz(struct esk_mach *m)
 
 u32 esk_esp32c3_apb_hz(struct esk_mach *m)
 {
-    struct c3_system *k = system_of(m);
+    struct c3_system *k = (struct c3_system *)m->clock_ctx;
     if (!k)
         return esk_mach_core_hz(m) > 80000000u ? 80000000u : esk_mach_core_hz(m);
     return ((reg(k->sysclk) >> 10) & 3u) == 1u ? 80000000u : k->hz;

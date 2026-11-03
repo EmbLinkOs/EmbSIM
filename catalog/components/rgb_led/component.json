@@ -4,7 +4,8 @@
   "id": "emblink/rgb_led",
   "version": "1.0.0",
   "name": "RGB LED",
-  "category": "indicators",
+  "category": "optoelectronics",
+  "subcategory": "leds",
   "description": "Four-lead RGB LED: three independent diode junctions sharing a cathode or anode. Electrical policy reports channel current, brightness and mixed color; other policies use explicitly ideal logic.",
   "keywords": [
     "led",
@@ -409,5 +410,39 @@
   ],
   "functional": {
     "primitive": "rgb_indicator"
+  },
+  "i18n": {
+    "fr": {
+      "source": "5784259f0276",
+      "description": "LED RVB à quatre pattes : trois jonctions de diode indépendantes partageant une cathode ou une anode. La politique électrique rapporte le courant par canal, la luminosité et la couleur mélangée ; les autres politiques utilisent une logique explicitement idéale.",
+      "fidelity": {
+        "functional": {
+          "claims": "Chaque couleur allumée ou éteinte selon les niveaux logiques (pas de moyenne de la MLI).",
+          "omissions": [
+            "les tensions directes par couleur",
+            "la gradation par MLI",
+            "le mélange des couleurs par intensité"
+          ]
+        },
+        "timed": {
+          "claims": "Comme en fonctionnel ; délais tels qu'indiqués.",
+          "omissions": [
+            "les tensions directes par couleur",
+            "la gradation par MLI",
+            "le mélange des couleurs par intensité"
+          ]
+        },
+        "electrical": {
+          "claims": "Trois jonctions de Shockley avec caractéristiques directes et résistance série indépendantes, orientation anode/cathode commune, courants par canal, luminance normalisée et mélange de couleurs indicatif.",
+          "omissions": [
+            "la qualification par le fabricant",
+            "la dépendance à la température et le vieillissement",
+            "le claquage inverse et les dommages",
+            "l'étalonnage spectral et colorimétrique",
+            "la moyenne perçue de la MLI"
+          ]
+        }
+      }
+    }
   }
 }

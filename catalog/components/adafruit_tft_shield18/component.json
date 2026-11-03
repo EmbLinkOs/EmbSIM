@@ -4,7 +4,8 @@
  "id": "emblink/adafruit_tft_shield18",
  "version": "0.1.0",
  "name": "Adafruit 1.8\" TFT shield",
- "category": "displays",
+ "category": "optoelectronics",
+ "subcategory": "lcd",
  "description": "Adafruit's 1.8\" TFT shield (v1, product 802) on an Arduino Uno V3 header: a 128 x 160 ST7735R TFT on SPI (SCK D13, MOSI D11, TFT_CS D10, TFT_DC D8, its reset on the header's RESET), a five-way joystick read as one analog voltage on A3 (a resistor ladder), and a microSD socket (SD_CS D4). ST's NUCLEO examples use it (STM32CubeF4's USB host and FatFs demos): they look for it by reading A3 high with a pull-down.",
  "keywords": [
   "shield",
@@ -366,5 +367,32 @@
  },
  "tests": [
   "tests/*.json"
- ]
+ ],
+  "i18n": {
+    "fr": {
+      "source": "99561db1aab0",
+      "description": "Le shield TFT 1,8\" d'Adafruit (v1, produit 802) sur un connecteur d'Arduino Uno V3 : un TFT ST7735R de 128 x 160 en SPI (SCK D13, MOSI D11, TFT_CS D10, TFT_DC D8, sa réinitialisation sur le RESET du connecteur), un joystick à cinq directions lu comme une seule tension analogique sur A3 (une échelle de résistances) et un support microSD (SD_CS D4). Les exemples NUCLEO de ST l'utilisent (les démonstrations hôte USB et FatFs de STM32CubeF4) : ils le détectent en lisant A3 au niveau haut avec un rappel au niveau bas.",
+      "fidelity": {
+        "functional": {
+          "claims": "Son TFT comme le dit emblink/st7735_tft18, câblé comme le shield le câble ; les cinq contacts du joystick (LEFT, UP, SEL, RIGHT, DOWN, les cinq contacts de BTN1, chacun un bouton-poussoir : son entrée pressed) comme une échelle sur A3.",
+          "omissions": [
+            "les tensions du joystick : niveaux logiques seulement (la politique électrique les donne)"
+          ]
+        },
+        "timed": {
+          "claims": "Comme en fonctionnel."
+        },
+        "electrical": {
+          "claims": "A3 (NAV sur le schéma) rappelé au 3V3 par R8 (1 kOhm), une direction pressée du contacteur à cinq directions BTN1 le tirant à la masse par sa résistance : LEFT R6 (10 kOhm, 3,0 V), UP R3 (1,0 kOhm, 1,65 V), SEL R4 (470 Ohm, 1,05 V), RIGHT R5 (220 Ohm, 0,60 V), DOWN R7 (22 Ohm, 71 mV) ; 3,3 V sans rien de pressé, si bien qu'un rappel au niveau bas de quelques dizaines de kOhm (la détection du shield par ST) lit toujours un niveau haut. Chacune tombe dans la fenêtre que décode le BSP de ST (BSP_JOY_GetState).",
+          "omissions": [
+            "le support microSD (D4, D12) : vide, chaque ligne une fuite de 1 GOhm",
+            "le régulateur 3,3 V RT9193 (IC2) et l'adaptation de niveaux de 5 V à 3,3 V (IC1) : le TFT est alimenté par le 5V et piloté directement",
+            "le NPN du rétroéclairage (Q1, R1, R2, R9 sur BACKLITE) : toujours allumé",
+            "le bouton de réinitialisation propre au shield et les découplages de 0,1 uF et 10 uF",
+            "deux directions pressées à la fois lues comme leur résistance en parallèle, comme sur le shield"
+          ]
+        }
+      }
+    }
+  }
 }

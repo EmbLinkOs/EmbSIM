@@ -42,7 +42,7 @@ jobs:
           sudo apt-get install -y ninja-build clang tcc
       - name: Install firmware toolchains (the build test's GNU and clang profiles)
         if: matrix.name == 'linux-gcc'
-        run: sudo apt-get install -y lld gcc-arm-none-eabi gcc-avr avr-libc gcc-riscv64-unknown-elf picolibc-riscv64-unknown-elf
+        run: sudo apt-get install -y lld gcc-arm-none-eabi gcc-avr avr-libc avrdude gcc-riscv64-unknown-elf picolibc-riscv64-unknown-elf openocd gdb-multiarch
       - name: Install tools (macOS)
         if: runner.os == 'macOS'
         run: brew install ninja
@@ -63,6 +63,7 @@ jobs:
           git -C "$RUNNER_TEMP/ArduinoCore-avr" fetch -q --depth 1 https://github.com/arduino/ArduinoCore-avr.git 11b9130371e8447920edb65a75706a6c951e51fc
           git -C "$RUNNER_TEMP/ArduinoCore-avr" checkout -q FETCH_HEAD
           python3 tests/vendor/arduino/run.py --core "$RUNNER_TEMP/ArduinoCore-avr" --libs "$RUNNER_TEMP/arduino-libs" --fetch --embsim build/${{ matrix.preset }}/bin/embsim
+          python3 tests/vendor/arduino/optiboot.py --core "$RUNNER_TEMP/ArduinoCore-avr" --embsim build/${{ matrix.preset }}/bin/embsim
       - name: STM32 HAL applications on the unmodified STM32F1 HAL
         if: matrix.name == 'linux-gcc'
         run: |
@@ -98,13 +99,38 @@ jobs:
           fetch stm32-bsp-common https://github.com/STMicroelectronics/stm32-bsp-common.git 1e18c5afdf1f5971a35c8e2f88b6a21e5568ed92
           python3 tests/vendor/stm32cubef4/run.py --st "$RUNNER_TEMP/st" --embsim build/${{ matrix.preset }}/bin/embsim
           python3 tests/vendor/stm32cubef4/run.py --st "$RUNNER_TEMP/st" --board nucleo_f446ze --embsim build/${{ matrix.preset }}/bin/embsim
+      - name: The ST-LINK and the Debug Probe over USB/IP on the kernel's vhci-hcd, driven by stlink-tools and OpenOCD
+        if: matrix.name == 'linux-gcc'
+        run: |
+          sudo apt-get install -y "linux-tools-$(uname -r)" stlink-tools openocd || true
+          sh tests/protocol/usbip_kernel.sh build/${{ matrix.preset }}/bin/embsim
       - name: Pico SDK applications on the unmodified SDK
         if: matrix.name == 'linux-gcc'
         run: |
           git init -q "$RUNNER_TEMP/pico-sdk"
           git -C "$RUNNER_TEMP/pico-sdk" fetch -q --depth 1 https://github.com/raspberrypi/pico-sdk.git 079c6f39023649b154152db30f1d781e884879bc
           git -C "$RUNNER_TEMP/pico-sdk" checkout -q FETCH_HEAD
+          # TinyUSB at the commit the SDK pins (lib/tinyusb), for usb_hello's stdio over USB
+          git init -q "$RUNNER_TEMP/pico-sdk/lib/tinyusb"
+          git -C "$RUNNER_TEMP/pico-sdk/lib/tinyusb" fetch -q --depth 1 https://github.com/hathach/tinyusb.git 86ad6e56c1700e85f1c5678607a762cfe3aa2f47
+          git -C "$RUNNER_TEMP/pico-sdk/lib/tinyusb" checkout -q FETCH_HEAD
           python3 tests/vendor/pico-sdk/run.py --sdk "$RUNNER_TEMP/pico-sdk" --embsim build/${{ matrix.preset }}/bin/embsim
+      - name: MicroPython on the Pico, copied onto its BOOTSEL drive
+        if: matrix.name == 'linux-gcc'
+        run: |
+          mp="$RUNNER_TEMP/micropython"
+          git init -q "$mp"
+          git -C "$mp" fetch -q --depth 1 https://github.com/micropython/micropython.git refs/tags/v1.24.1
+          git -C "$mp" checkout -q FETCH_HEAD
+          # the submodules the RPI_PICO build needs, at the commits v1.24.1 pins
+          for sub in lib/pico-sdk lib/tinyusb lib/micropython-lib lib/mbedtls; do
+            url=$(git -C "$mp" config -f .gitmodules "submodule.$sub.url")
+            rev=$(git -C "$mp" ls-tree HEAD "$sub" | awk '{print $3}')
+            git init -q "$mp/$sub"
+            git -C "$mp/$sub" fetch -q --depth 1 "$url" "$rev"
+            git -C "$mp/$sub" checkout -q FETCH_HEAD
+          done
+          python3 tests/vendor/micropython/run.py --mp "$mp" --embsim build/${{ matrix.preset }}/bin/embsim
       - name: nrfx applications on Nordic's unmodified nrfx and MDK
         if: matrix.name == 'linux-gcc'
         # CMSIS_5's core headers are the STM32 step's checkout

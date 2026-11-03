@@ -423,6 +423,113 @@ static void test_pwm_saadc(void)
     nf_close(&f);
 }
 
+/* ---- the NVMC and the UICR ---- */
+
+#define NVMC 0x4001E000u
+#define NV_READY (NVMC + 0x400u)
+#define NV_CONFIG (NVMC + 0x504u)
+#define NV_ERASEPAGE (NVMC + 0x508u)
+#define NV_ERASEALL (NVMC + 0x50Cu)
+#define NV_ERASEUICR (NVMC + 0x514u)
+#define NV_PARTIAL (NVMC + 0x518u)
+#define UICR_CUSTOMER0 0x10001080u
+#define NV_PAGE 0x000F0000u
+
+static u32 nv_word(nf *f, u32 a)
+{
+    u32 v = 0;
+    CHECK_EQ(esk_bus_debug_read(&f->m.bus, a, 4, &v), 0);
+    return v;
+}
+
+/* the cycles at 64 MHz until READY, the core (in the flash) waiting, or 0 */
+static u64 nv_busy(nf *f, u64 max)
+{
+    u64 c0 = f->m.cycles;
+    while (!(rd(f, NV_READY) & 1u)) {
+        if (f->m.cycles - c0 > max)
+            return 0;
+        esk_mach_run(&f->m, 256, 0);
+    }
+    return f->m.cycles - c0;
+}
+
+/* writing a word with Wen (bits to 0 only) in tWRITE, nothing without it
+ * or for a byte; a page's erase with Een in 85 ms with the core stalled;
+ * partial erases adding up to a page's; UICR written, kept through a reset
+ * and erased; ERASEALL */
+static void test_nvmc(void)
+{
+    nf f;
+    int r;
+    u64 c, i0;
+    if (!nf_open(&f))
+        return;
+    for (r = 0; r < f.m.bus.nrg; r++) /* read-only to the core, as an image's load leaves it */
+        f.m.bus.rg[r].rom = f.m.bus.rg[r].kind == ESK_MEM_FLASH;
+    CHECK_EQ(rd(&f, NV_READY), 1u);
+    CHECK(esk_bus_write(&f.m.bus, NV_PAGE, 4, 0x12345678u) == 0); /* Ren: ignored */
+    CHECK_EQ(nv_word(&f, NV_PAGE), 0xFFFFFFFFu);
+    wr(&f, NV_CONFIG, 1u); /* Wen */
+    CHECK(esk_bus_write(&f.m.bus, NV_PAGE, 1, 0u) == 0); /* a byte: nothing */
+    CHECK_EQ(nv_word(&f, NV_PAGE), 0xFFFFFFFFu);
+    CHECK(esk_bus_write(&f.m.bus, NV_PAGE, 4, 0x12345678u) == 0);
+    CHECK_EQ(nv_word(&f, NV_PAGE), 0x12345678u);
+    CHECK_EQ(rd(&f, NV_READY), 0u);
+    i0 = f.m.insns;
+    c = nv_busy(&f, 100000);
+    CHECK(c >= 2624 && c <= 2700); /* 41 us at 64 MHz */
+    CHECK(f.m.insns - i0 <= 2);
+    CHECK(esk_bus_write(&f.m.bus, NV_PAGE, 4, 0xFF00FF00u) == 0); /* bits only go to 0 */
+    CHECK(nv_busy(&f, 100000) > 0);
+    CHECK_EQ(nv_word(&f, NV_PAGE), 0x12005600u);
+    /* the UICR: written with Wen, kept through a reset */
+    wr(&f, UICR_CUSTOMER0, 0x00C0FFEEu);
+    CHECK(nv_busy(&f, 100000) > 0);
+    CHECK_EQ(rd(&f, UICR_CUSTOMER0), 0x00C0FFEEu);
+    wr(&f, NV_CONFIG, 0u);
+    wr(&f, UICR_CUSTOMER0, 0u); /* Ren: not written */
+    CHECK_EQ(rd(&f, UICR_CUSTOMER0), 0x00C0FFEEu);
+    esk_mach_reset(&f.m);
+    CHECK_EQ(rd(&f, UICR_CUSTOMER0), 0x00C0FFEEu);
+    for (r = 0; r < f.m.bus.nrg; r++)
+        f.m.bus.rg[r].rom = f.m.bus.rg[r].kind == ESK_MEM_FLASH;
+    /* a page's erase: Een, 85 ms */
+    wr(&f, NV_ERASEPAGE, NV_PAGE); /* Ren: nothing */
+    CHECK_EQ(rd(&f, NV_READY), 1u);
+    CHECK_EQ(nv_word(&f, NV_PAGE), 0x12005600u);
+    wr(&f, NV_CONFIG, 2u);
+    wr(&f, NV_ERASEPAGE, NV_PAGE);
+    CHECK_EQ(nv_word(&f, NV_PAGE), 0xFFFFFFFFu);
+    i0 = f.m.insns;
+    c = nv_busy(&f, 10000000);
+    CHECK(c >= 5440000 && c <= 5440300); /* 85 ms */
+    CHECK(f.m.insns - i0 <= 2);
+    /* partial erases of 10 ms: the page erased at the ninth (90 ms) */
+    wr(&f, NV_CONFIG, 1u);
+    wr(&f, NV_PAGE, 0u);
+    CHECK(nv_busy(&f, 100000) > 0);
+    wr(&f, NV_CONFIG, 2u);
+    for (r = 0; r < 8; r++) {
+        wr(&f, NV_PARTIAL, NV_PAGE);
+        c = nv_busy(&f, 1000000);
+        CHECK(c >= 640000 && c <= 640300);
+        CHECK_EQ(nv_word(&f, NV_PAGE), 0u);
+    }
+    wr(&f, NV_PARTIAL, NV_PAGE);
+    CHECK(nv_busy(&f, 1000000) > 0);
+    CHECK_EQ(nv_word(&f, NV_PAGE), 0xFFFFFFFFu);
+    /* the UICR's erase, then ERASEALL */
+    wr(&f, NV_ERASEUICR, 1u);
+    CHECK(nv_busy(&f, 10000000) >= 5440000);
+    CHECK_EQ(rd(&f, UICR_CUSTOMER0), 0xFFFFFFFFu);
+    wr(&f, NV_ERASEALL, 1u);
+    CHECK_EQ(nv_word(&f, 0u), 0xFFFFFFFFu);
+    c = nv_busy(&f, 20000000);
+    CHECK(c >= 10816000 && c <= 10816300); /* 169 ms */
+    nf_close(&f);
+}
+
 TEST_MAIN_BEGIN
 RUN(test_ficr);
 RUN(test_clock);
@@ -432,4 +539,5 @@ RUN(test_timer_compare);
 RUN(test_rtc_compare);
 RUN(test_spim_twim);
 RUN(test_pwm_saadc);
+RUN(test_nvmc);
 TEST_MAIN_END

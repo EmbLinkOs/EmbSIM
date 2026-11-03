@@ -794,7 +794,14 @@ schematic's renderer and the instruments may need WebGL paths; the 3D view
 carries level-of-detail and a 2D fallback for machines that cannot meet the
 budget.
 
-**Status.** Accepted (owner, 2026-10-17); the harness is planned with M7.
+**Status.** Accepted (owner, 2026-10-17). The harness (2026-11-02): the 3D
+bench orbited in draft and quality (`e2e/frame-budget.spec.ts`) and the
+schematic zoomed, panned and dragged on a 500-part sheet
+(`e2e/schematic-frame-budget.spec.ts`), each frame's work reported in CI
+and judged with `EMBSIM_FRAME_BUDGET=enforce` on a reference machine. The
+schematic misses the budget zoomed out on a large sheet (Blink's repaint of
+every symbol, 27 to 30 ms at the 95th percentile on CI's CPU), so its WebGL
+path is the next step; the instruments join the harness after.
 
 ---
 
@@ -1015,6 +1022,32 @@ seed is part of a recording.
 
 **Status.** Accepted direction (owner, 2026-10-18).
 
+The first step is in (2026-11-01):
+- Contact bounce is on by default on push buttons, toggle switches and the
+  keypad.
+- R, C and L tolerances are drawn per instance from `settings.seed` (a
+  parameter's `spread` names its tolerance).
+- `settings.imperfections: "ideal"` labels a project's ideal parts.
+- The seed is in the project, which a recording carries.
+- Limits, damage, noise and the fault mode remain.
+
+The second step (2026-11-02):
+- An LED's limits from its datasheet: above its DC current or reverse
+  voltage rating a warning; its junction heated by its own power through
+  the datasheet's thermal resistances (two thermal nodes, the room the
+  world's temperature), burning out (open, `part.damaged`) when it passes
+  its absolute maximum junction temperature, until its `replace` input.
+- The fault mode: a project's `faults` (open, short, fail_open,
+  fail_short) wired in as `emblink/fault` switches, each turned on and off
+  by its `active` input while the session runs.
+- A multimeter's fuses blow (ADR-033).
+- A regulator's thermal shutdown (the Uno's NCP1117ST50).
+- An MCU pin's absolute maximum ratings (the ATmega328P's 40 mA and
+  -0.5 V to VCC + 0.5 V) raise warnings, and its protection diodes hold it
+  near its rails. Datasheets give a stress rating, not a point of failure,
+  so a pin is warned of, not stuck; that stays declared in the fidelity.
+- Noise remains.
+
 ## ADR-035 AI assistants and scripts use the same session as people
 
 **Context.** The owner wants AIs to be able to use the app. Everything the
@@ -1033,7 +1066,9 @@ gives no access a person lacks and no shortcut past the models.
 the protocol's conformance suite; examples show an assistant building and
 verifying a circuit.
 
-**Status.** Accepted direction (owner, 2026-10-18).
+**Status.** Accepted direction (owner, 2026-10-18); implemented 2026-11-02:
+`embsim-mcp` (`python/embsim/mcp.py`), its use in `docs/user/ai-assistants.md`,
+tested by `python/tests/test_mcp.py`.
 
 ## ADR-036 Parts draw the current their datasheets give
 

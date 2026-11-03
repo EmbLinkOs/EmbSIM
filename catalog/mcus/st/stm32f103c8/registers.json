@@ -858,7 +858,7 @@
           "name": "OBR",
           "offset": "0x1C",
           "reset": "0x03FFFFFC",
-          "fields": [["OBR", 0, 32, "r"]]
+          "fields": [["OPTERR", 0, 1, "r"], ["RDPRT", 1, 1, "r"], ["WDG_SW", 2, 1, "r"], ["nRST_STOP", 3, 1, "r"], ["nRST_STDBY", 4, 1, "r"], ["Data0", 10, 8, "r"], ["Data1", 18, 8, "r"]]
         },
         {
           "name": "WRPR",

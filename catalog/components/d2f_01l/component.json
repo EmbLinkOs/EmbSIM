@@ -4,7 +4,8 @@
   "id": "emblink/d2f_01l",
   "version": "1.0.0",
   "name": "D2F-01L",
-  "category": "switches",
+  "category": "switches_relays",
+  "subcategory": "switches",
   "description": "Omron D2F-01L SPDT lever microswitch; resting COM-NC and pressed COM-NO.",
   "keywords": [
     "switches",
@@ -141,5 +142,23 @@
     "manufacturer": "Omron",
     "package": "PCB microswitch",
     "datasheet": "https://omronfs.omron.com/en_US/ecb/products/pdf/en-d2f.pdf"
+  },
+  "i18n": {
+    "fr": {
+      "source": "2be1048a14d8",
+      "description": "Microrupteur inverseur à levier Omron D2F-01L ; au repos COM-NC, appuyé COM-NO.",
+      "fidelity": {
+        "electrical": {
+          "claims": "Microrupteur inverseur à levier Omron D2F-01L ; au repos COM-NC, appuyé COM-NO.",
+          "omissions": [
+            "le rebond",
+            "la course mécanique et l'hystérésis",
+            "les arcs aux contacts",
+            "les cas extrêmes des paramètres du fabricant",
+            "les dommages thermiques et les limites destructives"
+          ]
+        }
+      }
+    }
   }
 }

@@ -1,0 +1,62 @@
+{
+  "schema_version": 1,
+  "kind": "component_test",
+  "name": "rate-four-channels",
+  "description": "All four channels on at 10 us/div: 250 MSa/s, the maximum for three or four channels.",
+  "policy": "electrical",
+  "until": "1ms",
+  "circuit": {
+    "components": [
+      {
+        "id": "DUT",
+        "component": "emblink/rigol_ds1054z",
+        "params": {
+          "timebase": "10u",
+          "ch2_on": true,
+          "ch3_on": true,
+          "ch4_on": true
+        }
+      },
+      {
+        "id": "V",
+        "component": "emblink/vsource",
+        "params": {
+          "kind": "dc",
+          "dc": 1.0
+        }
+      },
+      {
+        "id": "RS",
+        "component": "emblink/resistor",
+        "params": {
+          "resistance": 1
+        }
+      },
+      {
+        "id": "G",
+        "component": "emblink/gnd"
+      }
+    ],
+    "nets": {
+      "SRC": [
+        "V.+",
+        "RS.1"
+      ],
+      "TIP": [
+        "RS.2",
+        "DUT.CH1"
+      ],
+      "GND": [
+        "V.-",
+        "G.GND",
+        "DUT.GND"
+      ]
+    }
+  },
+  "expect": {
+    "output:DUT.sample_rate": {
+      "at": "1ms",
+      "equals": 250000000.0
+    }
+  }
+}

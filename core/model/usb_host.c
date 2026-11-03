@@ -74,7 +74,9 @@ enum { S_DETACHED, S_ATTACHED, S_DEFAULT, S_ADDRESS, S_CONFIGURED, S_ERROR };
 enum { C_SETUP, C_DATA_IN, C_DATA_OUT, C_STATUS_OUT, C_STATUS_IN };
 enum {
     E_DESC64, E_SET_ADDRESS, E_DESC18, E_CFG9, E_CFG, E_LANG, E_STR_MANU, E_STR_PROD, E_STR_SER, E_SET_CONFIG,
-    E_HID_IDLE, E_HID_REPORT, E_DONE, E_WAKE_ON, E_WAKE_OFF, E_DFU_LAYOUT, E_DFU_STATUS, E_DFU_CLEAR, E_DFU_DNLOAD
+    E_HID_IDLE, E_HID_REPORT, E_DONE, E_WAKE_ON, E_WAKE_OFF, E_CDC_LINE, E_CDC_STATE,
+    /* the DFU requests come last: a step from E_DFU_LAYOUT on is DFU's */
+    E_DFU_LAYOUT, E_DFU_STATUS, E_DFU_CLEAR, E_DFU_DNLOAD
 };
 
 static const char *const state_names[] = { "detached", "attached", "default", "address", "configured", "error" };
@@ -161,6 +163,47 @@ typedef struct uh_state {
     int dfu_leave;
     int dfu_again;   /* DFU_GETSTATUS again once bwPollTimeout has passed */
     int dfu_pending; /* the download asked for before the device was configured */
+    /* mass storage (bulk only, SCSI) and the file copied onto its drive */
+    struct {
+        int present, intf, ep_in, ep_out, mps;
+        int tin, tout;  /* the bulk endpoints' data toggles */
+        int phase;      /* M_* */
+        int job;        /* J_*: the copy's step */
+        int pending;    /* the copy asked for before the device was configured */
+        uint32_t tag;
+        uint8_t cbw[31];
+        uint8_t *data;  /* the command's data: what is read, or written */
+        uint32_t data_len, data_off, data_cap;
+        int data_in;
+        uint8_t csw[13];
+        /* the volume */
+        uint32_t spc, fat_lba, fat_sectors, nfats, root_lba, data_lba, total;
+        uint32_t first_cluster, clusters, fat_k;
+        /* the file */
+        char *file;
+        size_t file_len;
+        uint32_t sent;
+        uint64_t bytes, commands;
+        char name11[12];
+        char why[96];
+        int result;     /* 0 none yet, 1 copied, -1 failed */
+    } msc;
+    char copy_path[256];
+    /* CDC ACM (a USB serial port): its interfaces, endpoints, and what came
+     * and what is to go */
+    struct {
+        int present, intf, ep_in, ep_out, mps, open, due, tin, tout;
+        char text[8192]; /* what came, the last of it (a NUL ends the observed text, not the bytes) */
+        size_t len;
+        uint64_t bytes;
+        uint8_t tx[4096];
+        uint32_t tx_len;
+        /* a program on the computer has the port (a host port, hostport.c):
+         * DTR follows it, and its line coding is sent; else the port opens
+         * at enumeration as a terminal left open does */
+        int held, dtr, want_dtr, line_due, state_due;
+        uint32_t baud;
+    } cdc;
     /* what came */
     uint64_t reports;
     uint8_t last[64];
@@ -248,10 +291,13 @@ static unsigned u16le(const uint8_t *p) { return (unsigned)p[0] | (unsigned)p[1]
 static void parse_config(uh_state *s)
 {
     uint32_t i = 0;
-    int intf = -1, is_hid = 0, is_dfu = 0, proto = 0;
+    int intf = -1, is_hid = 0, is_dfu = 0, is_msc = 0, is_cdc_data = 0, proto = 0;
     uint32_t rlen = 0;
     s->nhid = 0;
     s->dfu.present = 0;
+    s->msc.present = 0;
+    s->cdc.present = 0;
+    s->cdc.ep_in = s->cdc.ep_out = 0;
     s->cfg_value = s->cfg_len >= 6 ? s->cfg[5] : 1;
     while (i + 2u <= s->cfg_len && s->cfg[i] >= 2) {
         const uint8_t *d = s->cfg + i;
@@ -264,6 +310,16 @@ static void parse_config(uh_state *s)
             proto = d[7];
             rlen = 0;
             is_dfu = d[5] == 0xFE && d[6] == 1;
+            is_msc = d[5] == 8 && d[6] == 6 && d[7] == 0x50 && !s->msc.present;
+            if (d[5] == 2 && d[6] == 2 && !s->cdc.present) { /* communications, abstract control model */
+                s->cdc.present = 1;
+                s->cdc.intf = intf;
+            }
+            is_cdc_data = d[5] == 0x0A && s->cdc.present && !s->cdc.ep_in;
+            if (is_msc) {
+                s->msc.intf = intf;
+                s->msc.ep_in = s->msc.ep_out = 0;
+            }
             if (is_dfu && !s->dfu.present) { /* its first alternate setting */
                 s->dfu.present = 1;
                 s->dfu.intf = intf;
@@ -276,6 +332,19 @@ static void parse_config(uh_state *s)
         } else if (d[1] == 0x21 && len >= 9 && is_hid) { /* HID */
             if (d[6] == 0x22)
                 rlen = u16le(d + 7);
+        } else if (d[1] == 5 && len >= 7 && is_cdc_data && (d[3] & 3) == 2) { /* the data interface's bulk pair */
+            if (d[2] & 0x80)
+                s->cdc.ep_in = d[2] & 0x0f;
+            else
+                s->cdc.ep_out = d[2] & 0x0f;
+            s->cdc.mps = (int)(u16le(d + 4) & 0x7ffu);
+        } else if (d[1] == 5 && len >= 7 && is_msc && (d[3] & 3) == 2) { /* a bulk endpoint of the drive */
+            if (d[2] & 0x80)
+                s->msc.ep_in = d[2] & 0x0f;
+            else
+                s->msc.ep_out = d[2] & 0x0f;
+            s->msc.mps = (int)(u16le(d + 4) & 0x7ffu);
+            s->msc.present = s->msc.ep_in && s->msc.ep_out;
         } else if (d[1] == 5 && len >= 7 && is_hid && (d[2] & 0x80) && (d[3] & 3) == 3 && s->nhid < MAX_HID) {
             uh_hid *h = &s->hid[s->nhid++];
             memset(h, 0, sizeof *h);
@@ -363,6 +432,8 @@ static const char *step_name(int step)
     case E_DFU_STATUS: return "DFU_GETSTATUS";
     case E_DFU_CLEAR: return "DFU_CLRSTATUS";
     case E_DFU_DNLOAD: return "DFU_DNLOAD";
+    case E_CDC_LINE: return "SET_LINE_CODING";
+    case E_CDC_STATE: return "SET_CONTROL_LINE_STATE";
     default: return "?";
     }
 }
@@ -370,6 +441,8 @@ static const char *step_name(int step)
 static void start_reset(uh_state *s, int then);
 
 /* the next request of enumeration, from `step` on */
+static void cdc_opened(uh_state *s);
+
 static void begin(uh_state *s, int step)
 {
     for (;;) {
@@ -401,7 +474,7 @@ static void begin(uh_state *s, int step)
         case E_SET_CONFIG: control(s, 0x00, 9, (unsigned)s->cfg_value, 0, 0); return;
         case E_HID_IDLE:
             if (s->hid_i >= s->nhid) {
-                step = E_DONE;
+                step = s->cdc.present && s->cdc.ep_in && s->cdc.ep_out ? E_CDC_LINE : E_DONE;
                 continue;
             }
             control(s, 0x21, 0x0A, 0, (unsigned)s->hid[s->hid_i].intf, 0);
@@ -409,6 +482,20 @@ static void begin(uh_state *s, int step)
         case E_HID_REPORT:
             control(s, 0x81, 6, 0x2200, (unsigned)s->hid[s->hid_i].intf,
                     s->hid[s->hid_i].report_len ? s->hid[s->hid_i].report_len : 255u);
+            return;
+        case E_CDC_LINE: { /* SET_LINE_CODING: the terminal's rate (115200 unless a program set one), 8N1 */
+            uint32_t b = s->cdc.baud ? s->cdc.baud : 115200u;
+            uint8_t lc[7] = { 0, 0, 0, 0, 0, 0, 8 };
+            lc[0] = (uint8_t)(b & 0xffu);
+            lc[1] = (uint8_t)(b >> 8 & 0xffu);
+            lc[2] = (uint8_t)(b >> 16 & 0xffu);
+            lc[3] = (uint8_t)(b >> 24);
+            control_out(s, 0x21, 0x20, 0, (unsigned)s->cdc.intf, lc, 7);
+            return;
+        }
+        case E_CDC_STATE: /* DTR and RTS, raised or dropped */
+            s->cdc.dtr = s->cdc.held ? s->cdc.want_dtr : 1;
+            control(s, 0x21, 0x22, s->cdc.dtr ? 3u : 0u, (unsigned)s->cdc.intf, 0);
             return;
         case E_WAKE_ON: control(s, 0x00, 3, 1, 0, 0); return;
         case E_WAKE_OFF: control(s, 0x00, 1, 1, 0, 0); return;
@@ -552,6 +639,13 @@ static void done(uh_state *s)
         s->wake_armed = 0;
         s->step = E_DONE;
         return;
+    case E_CDC_LINE:
+        break;
+    case E_CDC_STATE:
+        cdc_opened(s);
+        s->step = E_DONE;
+        s->ct.on = 0;
+        return;
     case E_HID_REPORT:
         if (s->hid_i == 0) {
             memcpy(s->rep, b, got);
@@ -572,8 +666,27 @@ static void done(uh_state *s)
 }
 
 /* a request's STALL: the ones that may be refused go on */
+static void cdc_opened(uh_state *s)
+{
+    if (!s->cdc.open)
+        s->cdc.tin = s->cdc.tout = 0;
+    s->cdc.open = 1;
+    say(s, "CDC ACM interface %d: %lu 8N1, DTR and RTS %s", s->cdc.intf,
+        (unsigned long)(s->cdc.baud ? s->cdc.baud : 115200u), s->cdc.dtr ? "raised" : "dropped");
+}
+
 static void stalled(uh_state *s)
 {
+    if (s->step == E_CDC_LINE || s->step == E_CDC_STATE) { /* a port that refuses them is used all the same */
+        s->ct.on = 0;
+        if (s->step == E_CDC_LINE) {
+            begin(s, E_CDC_STATE);
+        } else {
+            cdc_opened(s);
+            s->step = E_DONE;
+        }
+        return;
+    }
     if (s->step >= E_DFU_LAYOUT) {
         fail(s, "STALL");
         return;
@@ -713,6 +826,422 @@ static es_time_t poll_hid(uh_state *s, esk_usb_dev *d, uh_hid *h, es_time_t now)
     return xtime(s, -1, r != ESK_USB_NONE) + (r == ESK_USB_NONE ? TIMEOUT_EXTRA_PS : 0);
 }
 
+
+/* ---- CDC ACM: the device's serial port, as a terminal on the computer
+ * uses it: once a frame the bulk IN endpoint is read (all it has, a
+ * packet a transaction) and what is to be sent goes out on bulk OUT */
+static es_time_t poll_cdc(uh_state *s, esk_usb_dev *d, es_time_t now)
+{
+    uint8_t pkt[64];
+    uint32_t len = 0, mps = s->cdc.mps > 0 && s->cdc.mps <= 64 ? (uint32_t)s->cdc.mps : 64u, i;
+    int pid = 0, r;
+    if (s->cdc.tx_len) {
+        uint32_t n = s->cdc.tx_len < mps ? s->cdc.tx_len : mps;
+        r = d->out(d->ctx, s->addr, s->cdc.ep_out, s->cdc.tout, s->cdc.tx, n, now);
+        if (r == ESK_USB_ACK) {
+            s->cdc.tout ^= 1;
+            memmove(s->cdc.tx, s->cdc.tx + n, s->cdc.tx_len - n);
+            s->cdc.tx_len -= n;
+            return esk_usb_fs_time((int)n, 1);
+        }
+        if (r == ESK_USB_STALL) {
+            say(s, "CDC OUT endpoint %d stalls", s->cdc.ep_out);
+            s->cdc.tx_len = 0;
+        }
+    }
+    r = d->in(d->ctx, s->addr, s->cdc.ep_in, pkt, mps, &len, &pid, now);
+    if (r == ESK_USB_ACK) {
+        if ((pid != 0) == (s->cdc.tin != 0)) {
+            s->cdc.tin ^= 1;
+            s->cdc.bytes += len;
+            for (i = 0; i < len; i++) {
+                if (s->cdc.len + 1u >= sizeof s->cdc.text) { /* the oldest half goes */
+                    memmove(s->cdc.text, s->cdc.text + sizeof s->cdc.text / 2, s->cdc.len - sizeof s->cdc.text / 2);
+                    s->cdc.len -= sizeof s->cdc.text / 2;
+                }
+                s->cdc.text[s->cdc.len++] = (char)pkt[i];
+            }
+            s->cdc.text[s->cdc.len] = 0;
+        }
+        if (len < mps)
+            s->cdc.due = 0; /* a short packet: all it had */
+        return esk_usb_fs_time((int)len, 1);
+    }
+    s->cdc.due = 0; /* a NAK: nothing until the next frame */
+    if (r == ESK_USB_STALL)
+        say(s, "CDC IN endpoint %d stalls", s->cdc.ep_in);
+    return esk_usb_fs_time(-1, r != ESK_USB_NONE) + (r == ESK_USB_NONE ? TIMEOUT_EXTRA_PS : 0);
+}
+
+/* ---- mass storage: bulk only transport and SCSI (USB MSC BOT 1.0, SPC/SBC) ----
+ *
+ * A file copied onto the drive the way a computer's file system does it on
+ * a FAT volume: INQUIRY and READ CAPACITY as the drive is mounted, the boot
+ * sector, the root directory and the FAT read, clusters taken after the
+ * last one in use, the FAT's copies and the directory entry written, then
+ * the file's data in WRITE(10) commands of up to 64 KiB. Each command is a
+ * command block wrapper, its data and the status wrapper, as bulk
+ * transactions of the endpoints' packet size; a NAK is tried again 125 us
+ * later. Inside: one file into the root directory, under its 8.3 name;
+ * the FAT's free clusters looked for in its first sector only; no
+ * REQUEST SENSE after a failed command (the copy stops). */
+
+static uint32_t u32le(const uint8_t *p);
+
+enum { M_IDLE, M_CBW, M_IN, M_OUT, M_CSW };
+enum { J_IDLE, J_INQUIRY, J_CAPACITY, J_BOOT, J_ROOT, J_FAT0, J_FAT_READ, J_FAT_WRITE1, J_FAT_WRITE2, J_DIR, J_DATA,
+       J_DONE, J_FAILED };
+static const char *const job_names[] = { "idle", "inquiry", "capacity", "boot sector", "root directory", "FAT",
+                                         "FAT", "FAT", "FAT", "directory", "data", "done", "failed" };
+#define MSC_CHUNK (128u * 512u)
+#define MSC_NAK_PS (125u * PS_US)
+
+static void msc_fail(uh_state *s, const char *why)
+{
+    snprintf(s->msc.why, sizeof s->msc.why, "%s", why);
+    s->msc.job = J_FAILED;
+    s->msc.phase = M_IDLE;
+    s->msc.result = -1;
+    say(s, "copy failed: %s", why);
+}
+
+static int msc_buf(uh_state *s, uint32_t n)
+{
+    if (n > s->msc.data_cap) {
+        uint8_t *b = (uint8_t *)esk_malloc(s->c->e->a, n);
+        if (!b)
+            return 0;
+        if (s->msc.data)
+            esk_free(s->c->e->a, s->msc.data, s->msc.data_cap);
+        s->msc.data = b;
+        s->msc.data_cap = n;
+    }
+    return 1;
+}
+
+/* a command: its block, `n` bytes of data in or out (the data to write in
+ * s->msc.data already) */
+static void msc_command(uh_state *s, const uint8_t *cb, int cb_len, uint32_t n, int in)
+{
+    uint8_t *w = s->msc.cbw;
+    memset(w, 0, sizeof s->msc.cbw);
+    w[0] = 'U';
+    w[1] = 'S';
+    w[2] = 'B';
+    w[3] = 'C';
+    s->msc.tag++;
+    w[4] = (uint8_t)(s->msc.tag & 0xffu);
+    w[5] = (uint8_t)(s->msc.tag >> 8 & 0xffu);
+    w[6] = (uint8_t)(s->msc.tag >> 16 & 0xffu);
+    w[7] = (uint8_t)(s->msc.tag >> 24);
+    w[8] = (uint8_t)(n & 0xffu);
+    w[9] = (uint8_t)(n >> 8 & 0xffu);
+    w[10] = (uint8_t)(n >> 16 & 0xffu);
+    w[11] = (uint8_t)(n >> 24);
+    w[12] = in ? 0x80 : 0;
+    w[14] = (uint8_t)cb_len;
+    memcpy(w + 15, cb, (size_t)cb_len);
+    s->msc.data_len = n;
+    s->msc.data_off = 0;
+    s->msc.data_in = in;
+    s->msc.phase = M_CBW;
+    s->msc.commands++;
+}
+
+static void msc_rw(uh_state *s, int write, uint32_t lba, uint32_t count)
+{
+    uint8_t cb[10] = { 0 };
+    cb[0] = write ? 0x2a : 0x28;
+    cb[2] = (uint8_t)(lba >> 24);
+    cb[3] = (uint8_t)(lba >> 16 & 0xffu);
+    cb[4] = (uint8_t)(lba >> 8 & 0xffu);
+    cb[5] = (uint8_t)(lba & 0xffu);
+    cb[7] = (uint8_t)(count >> 8);
+    cb[8] = (uint8_t)(count & 0xffu);
+    msc_command(s, cb, 10, count * 512u, !write);
+}
+
+static uint32_t fat_get(const uint8_t *sec, uint32_t i) { return u16le(sec + 2u * i); }
+static void fat_set(uint8_t *sec, uint32_t i, uint32_t v)
+{
+    sec[2u * i] = (uint8_t)(v & 0xffu);
+    sec[2u * i + 1u] = (uint8_t)(v >> 8);
+}
+
+/* this FAT sector's entries for the file's chain */
+static void fat_chain(uh_state *s, uint8_t *sec, uint32_t k)
+{
+    uint32_t first = k * 256u, i, last = s->msc.first_cluster + s->msc.clusters - 1u;
+    for (i = 0; i < 256u; i++) {
+        uint32_t cl = first + i;
+        if (cl < s->msc.first_cluster || cl > last)
+            continue;
+        fat_set(sec, i, cl == last ? 0xffffu : cl + 1u);
+    }
+}
+
+/* the copy's next command, from what the last one gave */
+static void msc_next(uh_state *s)
+{
+    uint8_t *b = s->msc.data;
+    switch (s->msc.job) {
+    case J_INQUIRY: {
+        uint8_t cb[6] = { 0x12, 0, 0, 0, 36, 0 };
+        msc_command(s, cb, 6, 36, 1);
+        s->msc.job = J_CAPACITY;
+        break;
+    }
+    case J_CAPACITY: {
+        uint8_t cb[10] = { 0x25 };
+        char vendor[9], product[17];
+        memcpy(vendor, b + 8, 8);
+        vendor[8] = 0;
+        memcpy(product, b + 16, 16);
+        product[16] = 0;
+        say(s, "drive: \"%s\" \"%s\"", vendor, product);
+        msc_command(s, cb, 10, 8, 1);
+        s->msc.job = J_BOOT;
+        break;
+    }
+    case J_BOOT:
+        s->msc.total = (uint32_t)b[0] << 24 | (uint32_t)b[1] << 16 | (uint32_t)b[2] << 8 | b[3];
+        s->msc.total++;
+        say(s, "drive: %lu sectors of %lu bytes", (unsigned long)s->msc.total,
+            (unsigned long)((uint32_t)b[4] << 24 | (uint32_t)b[5] << 16 | (uint32_t)b[6] << 8 | b[7]));
+        msc_rw(s, 0, 0, 1);
+        s->msc.job = J_ROOT;
+        break;
+    case J_ROOT: {
+        uint32_t bps = u16le(b + 11), res = u16le(b + 14), entries = u16le(b + 17);
+        if (bps != 512u || b[510] != 0x55 || b[511] != 0xaa || !b[13] || !b[16] || memcmp(b + 54, "FAT16", 5)) {
+            msc_fail(s, "the drive's volume is not FAT16 with 512-byte sectors");
+            return;
+        }
+        s->msc.spc = b[13];
+        s->msc.nfats = b[16];
+        s->msc.fat_lba = res;
+        s->msc.fat_sectors = u16le(b + 22);
+        s->msc.root_lba = res + s->msc.nfats * s->msc.fat_sectors;
+        s->msc.data_lba = s->msc.root_lba + (entries * 32u + 511u) / 512u;
+        msc_rw(s, 0, s->msc.fat_lba, 1);
+        s->msc.job = J_FAT0;
+        break;
+    }
+    case J_FAT0: {
+        /* clusters after the last one in use */
+        uint32_t i, last = 1, need;
+        for (i = 2; i < 256u; i++)
+            if (fat_get(b, i))
+                last = i;
+        need = ((uint32_t)s->msc.file_len + 512u * s->msc.spc - 1u) / (512u * s->msc.spc);
+        s->msc.first_cluster = last + 1u;
+        s->msc.clusters = need ? need : 1u;
+        if (s->msc.data_lba + (s->msc.first_cluster - 2u + s->msc.clusters) * s->msc.spc > s->msc.total) {
+            msc_fail(s, "the file does not fit on the drive");
+            return;
+        }
+        s->msc.fat_k = 0;
+        fat_chain(s, b, 0);
+        msc_rw(s, 1, s->msc.fat_lba, 1);
+        s->msc.job = J_FAT_WRITE2;
+        break;
+    }
+    case J_FAT_READ: /* the next FAT sector read: the chain into it, written */
+        fat_chain(s, b, s->msc.fat_k);
+        msc_rw(s, 1, s->msc.fat_lba + s->msc.fat_k, 1);
+        s->msc.job = J_FAT_WRITE2;
+        break;
+    case J_FAT_WRITE2: /* the same sector into the second FAT */
+        if (s->msc.nfats > 1u) {
+            msc_rw(s, 1, s->msc.fat_lba + s->msc.fat_sectors + s->msc.fat_k, 1);
+            s->msc.job = J_FAT_WRITE1;
+            break;
+        }
+        /* fall through */
+    case J_FAT_WRITE1: {
+        uint32_t last = s->msc.first_cluster + s->msc.clusters - 1u;
+        s->msc.fat_k++;
+        if (s->msc.fat_k * 256u <= last && s->msc.fat_k < s->msc.fat_sectors) {
+            msc_rw(s, 0, s->msc.fat_lba + s->msc.fat_k, 1);
+            s->msc.job = J_FAT_READ;
+        } else {
+            msc_rw(s, 0, s->msc.root_lba, 1);
+            s->msc.job = J_DIR;
+        }
+        break;
+    }
+    case J_DIR: {
+        /* the file's entry in the first free slot of the root directory's first sector */
+        uint32_t i;
+        for (i = 0; i < 16u && b[32u * i] && b[32u * i] != 0xe5; i++)
+            ;
+        if (i == 16u) {
+            msc_fail(s, "the root directory's first sector is full");
+            return;
+        }
+        memset(b + 32u * i, 0, 32);
+        memcpy(b + 32u * i, s->msc.name11, 11);
+        b[32u * i + 11u] = 0x20; /* archive */
+        b[32u * i + 26u] = (uint8_t)(s->msc.first_cluster & 0xffu);
+        b[32u * i + 27u] = (uint8_t)(s->msc.first_cluster >> 8);
+        b[32u * i + 28u] = (uint8_t)(s->msc.file_len & 0xffu);
+        b[32u * i + 29u] = (uint8_t)(s->msc.file_len >> 8 & 0xffu);
+        b[32u * i + 30u] = (uint8_t)(s->msc.file_len >> 16 & 0xffu);
+        b[32u * i + 31u] = (uint8_t)(s->msc.file_len >> 24 & 0xffu);
+        msc_rw(s, 1, s->msc.root_lba, 1);
+        s->msc.sent = 0;
+        s->msc.job = J_DATA;
+        break;
+    }
+    case J_DATA: {
+        uint32_t left = (uint32_t)s->msc.file_len - s->msc.sent, n, secs, lba;
+        if (!left) {
+            s->msc.job = J_DONE;
+            s->msc.phase = M_IDLE;
+            s->msc.result = 1;
+            say(s, "copied %s (%lu bytes, %lu commands)", s->msc.name11, (unsigned long)s->msc.file_len,
+                (unsigned long)s->msc.commands);
+            return;
+        }
+        n = left < MSC_CHUNK ? left : MSC_CHUNK;
+        secs = (n + 511u) / 512u;
+        if (!msc_buf(s, secs * 512u)) {
+            msc_fail(s, "out of memory");
+            return;
+        }
+        memset(s->msc.data, 0, secs * 512u);
+        memcpy(s->msc.data, s->msc.file + s->msc.sent, n);
+        lba = s->msc.data_lba + (s->msc.first_cluster - 2u) * s->msc.spc + s->msc.sent / 512u;
+        msc_rw(s, 1, lba, secs);
+        s->msc.sent += n;
+        s->msc.bytes += n;
+        break;
+    }
+    default:
+        break;
+    }
+}
+
+/* the copy starts: the file read and named */
+static void msc_start(uh_state *s)
+{
+    char *path;
+    const char *base, *dot;
+    size_t i, k;
+    if (s->msc.file) {
+        esk_free(s->c->e->a, s->msc.file, s->msc.file_len + 1u);
+        s->msc.file = NULL;
+    }
+    s->msc.why[0] = 0;
+    s->msc.result = 0;
+    s->msc.bytes = s->msc.commands = 0;
+    if (!s->msc.present) {
+        msc_fail(s, "the device has no mass storage interface");
+        return;
+    }
+    if (!s->copy_path[0]) {
+        msc_fail(s, "no copy_file");
+        return;
+    }
+    path = esk_host_path_join(s->c->e->a, s->c->e->base_dir ? s->c->e->base_dir : ".", s->copy_path);
+    if (!path || esk_host_read_file(s->c->e->a, path, &s->msc.file, &s->msc.file_len) != ES_OK) {
+        if (path)
+            esk_strfree(s->c->e->a, path);
+        s->msc.file = NULL;
+        msc_fail(s, "copy_file cannot be read");
+        return;
+    }
+    esk_strfree(s->c->e->a, path);
+    /* the 8.3 name, in capitals, as FAT keeps it */
+    base = strrchr(s->copy_path, '/');
+    base = base ? base + 1 : s->copy_path;
+    dot = strrchr(base, '.');
+    memset(s->msc.name11, ' ', 11);
+    s->msc.name11[11] = 0;
+    for (i = 0, k = 0; base + i < (dot ? dot : base + strlen(base)) && k < 8; i++)
+        if (base[i] != ' ')
+            s->msc.name11[k++] = (char)(base[i] >= 'a' && base[i] <= 'z' ? base[i] - 32 : base[i]);
+    for (i = 1, k = 8; dot && dot[i] && k < 11; i++)
+        s->msc.name11[k++] = (char)(dot[i] >= 'a' && dot[i] <= 'z' ? dot[i] - 32 : dot[i]);
+    if (!msc_buf(s, 512u)) {
+        msc_fail(s, "out of memory");
+        return;
+    }
+    s->msc.tin = s->msc.tout = 0;
+    s->msc.job = J_INQUIRY;
+    say(s, "copying %s (%lu bytes) to the drive", s->copy_path, (unsigned long)s->msc.file_len);
+    msc_next(s);
+}
+
+/* one bulk transaction of the command under way; its time on the bus */
+static es_time_t msc_step(uh_state *s, esk_usb_dev *d, es_time_t now)
+{
+    uint8_t pkt[64];
+    uint32_t len = 0, n, mps = s->msc.mps > 0 && s->msc.mps <= 64 ? (uint32_t)s->msc.mps : 64u;
+    int r, pid = 0;
+    switch (s->msc.phase) {
+    case M_CBW:
+        r = d->out(d->ctx, s->addr, s->msc.ep_out, s->msc.tout, s->msc.cbw, 31, now);
+        if (r == ESK_USB_ACK) {
+            s->msc.tout ^= 1;
+            s->msc.phase = s->msc.data_len ? (s->msc.data_in ? M_IN : M_OUT) : M_CSW;
+        }
+        break;
+    case M_OUT:
+        n = s->msc.data_len - s->msc.data_off < mps ? s->msc.data_len - s->msc.data_off : mps;
+        r = d->out(d->ctx, s->addr, s->msc.ep_out, s->msc.tout, s->msc.data + s->msc.data_off, n, now);
+        if (r == ESK_USB_ACK) {
+            s->msc.tout ^= 1;
+            s->msc.data_off += n;
+            if (s->msc.data_off >= s->msc.data_len)
+                s->msc.phase = M_CSW;
+        }
+        len = n;
+        break;
+    case M_IN:
+        r = d->in(d->ctx, s->addr, s->msc.ep_in, pkt, mps, &len, &pid, now);
+        if (r == ESK_USB_ACK && (pid != 0) == (s->msc.tin != 0)) {
+            s->msc.tin ^= 1;
+            n = len < s->msc.data_len - s->msc.data_off ? len : s->msc.data_len - s->msc.data_off;
+            if (msc_buf(s, s->msc.data_len))
+                memcpy(s->msc.data + s->msc.data_off, pkt, n);
+            s->msc.data_off += n;
+            if (len < mps || s->msc.data_off >= s->msc.data_len)
+                s->msc.phase = M_CSW;
+        }
+        break;
+    case M_CSW:
+        r = d->in(d->ctx, s->addr, s->msc.ep_in, pkt, mps, &len, &pid, now);
+        if (r == ESK_USB_ACK && (pid != 0) == (s->msc.tin != 0)) {
+            s->msc.tin ^= 1;
+            memcpy(s->msc.csw, pkt, len < 13u ? len : 13u);
+            if (len != 13u || memcmp(pkt, "USBS", 4) || u32le(pkt + 4) != s->msc.tag) {
+                msc_fail(s, "a status wrapper that is not the command's");
+                break;
+            }
+            if (pkt[12] != 0) {
+                char why[96];
+                snprintf(why, sizeof why, "the drive failed a command (%s, status %u)", job_names[s->msc.job], pkt[12]);
+                msc_fail(s, why);
+                break;
+            }
+            s->msc.phase = M_IDLE;
+            msc_next(s);
+        }
+        break;
+    default:
+        return 0;
+    }
+    if (r == ESK_USB_STALL) {
+        msc_fail(s, "a bulk endpoint stalls");
+        return esk_usb_fs_time(-1, 1);
+    }
+    if (r == ESK_USB_NAK)
+        return MSC_NAK_PS;
+    if (r == ESK_USB_NONE)
+        return esk_usb_fs_time(-1, 0) + TIMEOUT_EXTRA_PS;
+    return esk_usb_fs_time((int)len, 1);
+}
 
 /* ---- DFU (DFU 1.1, ST's DfuSe 1.1a extension: UM0424, UM0391) ----------------- */
 
@@ -1064,6 +1593,20 @@ static void detach(uh_state *s)
     } else if (s->dfu.phase != D_IDLE && s->dfu.phase != D_DONE && s->dfu.phase != D_FAILED) {
         dfu_fail(s, "the device went away");
     }
+    s->msc.present = 0;
+    s->cdc.open = s->cdc.due = 0;
+    s->cdc.tx_len = 0;
+    if (s->msc.job == J_DATA && s->msc.sent >= s->msc.file_len && s->msc.phase == M_IDLE) {
+        /* the last command was answered, then the drive went (a UF2
+         * bootloader reboots once a file is all written) */
+        s->msc.job = J_DONE;
+        s->msc.result = 1;
+        say(s, "copied %s (%lu bytes, %lu commands); the drive went away", s->msc.name11,
+            (unsigned long)s->msc.file_len, (unsigned long)s->msc.commands);
+    } else if (s->msc.job != J_IDLE && s->msc.job != J_DONE && s->msc.job != J_FAILED) {
+        msc_fail(s, "the drive went away");
+    }
+    s->msc.phase = M_IDLE;
 }
 
 static void run(uh_state *s)
@@ -1148,6 +1691,8 @@ static void run(uh_state *s)
         d->bus(d->ctx, ESK_USB_SOF, s->frame, now);
         s->next_sof += FRAME_PS;
         s->busy_until = now + xtime(s, -1, 0);
+        if (s->cdc.open && s->state == S_CONFIGURED)
+            s->cdc.due = 1;
         for (i = 0; i < s->nhid && s->state == S_CONFIGURED; i++) {
             uh_hid *h = &s->hid[i];
             if (s->hid_i > i && ((s->frame - h->next_frame) & 0x7ffu) < 0x400u) {
@@ -1171,6 +1716,8 @@ static void run(uh_state *s)
                 d_t = poll_hid(s, d, &s->hid[i], now);
                 break;
             }
+        if (!d_t && s->cdc.due && s->cdc.open)
+            d_t = poll_cdc(s, d, now);
         if (!d_t && !s->ct.on && s->dfu_again) {
             if (now < s->dfu.poll_until) {
                 kick(s, s->dfu.poll_until < s->next_sof ? s->dfu.poll_until : s->next_sof);
@@ -1182,6 +1729,25 @@ static void run(uh_state *s)
         if (!d_t && !s->ct.on && s->dfu_pending && s->state == S_CONFIGURED && s->step == E_DONE) {
             s->dfu_pending = 0;
             dfu_start(s);
+        }
+        if (!d_t && !s->ct.on && s->cdc.open && (s->cdc.line_due || s->cdc.state_due) && s->state == S_CONFIGURED &&
+            s->step == E_DONE) {
+            /* a program opened or closed the port, or set its rate */
+            int line = s->cdc.line_due;
+            s->cdc.line_due = 0;
+            s->cdc.state_due = 0;
+            begin(s, line ? E_CDC_LINE : E_CDC_STATE);
+        }
+        if (!d_t && !s->ct.on && s->msc.pending && s->state == S_CONFIGURED && s->step == E_DONE) {
+            s->msc.pending = 0;
+            msc_start(s);
+        }
+        if (!d_t && !s->ct.on && s->msc.phase != M_IDLE && s->state == S_CONFIGURED) {
+            if (now + xtime(s, 64, 1) + EOF_PS > s->next_sof) {
+                kick(s, s->next_sof); /* not across the frame's start */
+                return;
+            }
+            d_t = msc_step(s, d, now);
         }
         if (!d_t && s->ct.on) {
             if (now + xtime(s, 64, 1) + EOF_PS > s->next_sof) {
@@ -1244,6 +1810,23 @@ static es_status uh_set(esk_comp *c, const char *input, const esk_json *value)
         }
         return ES_OK;
     }
+    if (!strcmp(input, "copy") && value->type == ESK_JSON_BOOL) {
+        if (value->u.boolean) { /* as a file is dropped on the drive: once it is mounted */
+            s->msc.pending = 1;
+            s->msc.result = 0;
+            kick(s, esk_comp_now(c));
+        }
+        return ES_OK;
+    }
+    if (!strcmp(input, "cdc_send") && esk_json_str(value)) {
+        size_t n = value->u.string.len;
+        if (n > sizeof s->cdc.tx - s->cdc.tx_len)
+            n = sizeof s->cdc.tx - s->cdc.tx_len;
+        memcpy(s->cdc.tx + s->cdc.tx_len, value->u.string.data, n);
+        s->cdc.tx_len += (uint32_t)n;
+        kick(s, esk_comp_now(c));
+        return ES_OK;
+    }
     if (!strcmp(input, "suspend") && value->type == ESK_JSON_BOOL) {
         int want = value->u.boolean != 0;
         if (want == s->want_suspend)
@@ -1290,6 +1873,7 @@ static es_status uh_create(esk_comp *c)
     esk_comp_param_bool(c, "remote_wakeup", &s->allow_wakeup);
     s->vbus = esk_comp_pin(c, "VBUS");
     snprintf(s->dfu_path, sizeof s->dfu_path, "%s", esk_comp_param_str(c, "dfu_file", ""));
+    snprintf(s->copy_path, sizeof s->copy_path, "%s", esk_comp_param_str(c, "copy_file", ""));
     {
         int64_t at = 0x08000000;
         esk_comp_param_int(c, "dfu_address", &at);
@@ -1308,6 +1892,10 @@ static void uh_destroy(esk_comp *c)
     uh_state *s = st_of(c);
     if (s && s->dfu.file)
         esk_free(c->e->a, s->dfu.file, s->dfu.file_len + 1u);
+    if (s && s->msc.file)
+        esk_free(c->e->a, s->msc.file, s->msc.file_len + 1u);
+    if (s && s->msc.data)
+        esk_free(c->e->a, s->msc.data, s->msc.data_cap);
     if (s && s->linked)
         esk_usb_detach_host(c->e, &s->link);
 }
@@ -1318,11 +1906,16 @@ static void uh_reset(esk_comp *c)
     es_time_t deb = s->debounce_ps, rst = s->reset_ps;
     int a = s->new_addr, wake = s->allow_wakeup, leave = s->dfu_leave;
     esk_pin *vbus = s->vbus;
-    char path[sizeof s->dfu_path];
+    char path[sizeof s->dfu_path], copy[sizeof s->copy_path];
     uint32_t dfu_at = s->dfu_address;
     memcpy(path, s->dfu_path, sizeof path);
+    memcpy(copy, s->copy_path, sizeof copy);
     if (s->dfu.file)
         esk_free(c->e->a, s->dfu.file, s->dfu.file_len + 1u);
+    if (s->msc.file)
+        esk_free(c->e->a, s->msc.file, s->msc.file_len + 1u);
+    if (s->msc.data)
+        esk_free(c->e->a, s->msc.data, s->msc.data_cap);
     esk_usb_host link = s->link;
     int linked = s->linked;
     memset(s, 0, sizeof *s);
@@ -1335,6 +1928,7 @@ static void uh_reset(esk_comp *c)
     s->allow_wakeup = wake;
     s->vbus = vbus;
     memcpy(s->dfu_path, path, sizeof path);
+    memcpy(s->copy_path, copy, sizeof copy);
     s->dfu_address = dfu_at;
     s->dfu_leave = leave;
     if (vbus && vbus->net) {
@@ -1390,8 +1984,66 @@ static void uh_observe(esk_comp *c, esk_json *out)
     esk_json_set_integer(a, out, "dfu_bytes", (int64_t)s->dfu.bytes);
     esk_json_set_integer(a, out, "dfu_erased", (int64_t)s->dfu.erased);
     esk_json_set_string(a, out, "dfu_error", s->dfu.why);
+    esk_json_set_bool(a, out, "cdc_open", s->cdc.open != 0);
+    esk_json_set_string(a, out, "cdc_text", s->cdc.text);
+    esk_json_set_integer(a, out, "cdc_bytes", (int64_t)s->cdc.bytes);
+    esk_json_set_string(a, out, "copy_state", job_names[s->msc.job]);
+    esk_json_set_integer(a, out, "copy_bytes", (int64_t)s->msc.bytes);
+    esk_json_set_string(a, out, "copy_result", s->msc.result > 0 ? "copied" : s->msc.result < 0 ? "failed" : "");
+    esk_json_set_string(a, out, "copy_error", s->msc.why);
     esk_json_set_string(a, out, "log", s->log);
 }
 
 const esk_model_ops esk_usb_host_ops = { "usb_host", sizeof(uh_state), uh_create, uh_destroy, uh_reset, uh_input,
                                          uh_time, uh_set, uh_observe, NULL, 0 };
+
+/* ---- the CDC ACM port for a host port (hostport.c) ---------------------- */
+
+const uint8_t *esk_usb_host_cdc_rx(esk_comp *c, uint64_t *total, size_t *len)
+{
+    uh_state *s = st_of(c);
+    *total = s->cdc.bytes;
+    *len = s->cdc.len;
+    return (const uint8_t *)s->cdc.text;
+}
+
+int esk_usb_host_cdc_open(esk_comp *c)
+{
+    uh_state *s = st_of(c);
+    return s->cdc.open && s->state == S_CONFIGURED;
+}
+
+size_t esk_usb_host_cdc_room(esk_comp *c)
+{
+    uh_state *s = st_of(c);
+    return sizeof s->cdc.tx - s->cdc.tx_len;
+}
+
+size_t esk_usb_host_cdc_write(esk_comp *c, const uint8_t *b, size_t n)
+{
+    uh_state *s = st_of(c);
+    size_t room = sizeof s->cdc.tx - s->cdc.tx_len;
+    if (n > room)
+        n = room;
+    memcpy(s->cdc.tx + s->cdc.tx_len, b, n);
+    s->cdc.tx_len += (uint32_t)n;
+    if (n)
+        kick(s, esk_comp_now(c));
+    return n;
+}
+
+void esk_usb_host_cdc_line(esk_comp *c, int held, int dtr, uint32_t baud)
+{
+    uh_state *s = st_of(c);
+    int was_held = s->cdc.held;
+    s->cdc.held = held;
+    if (held && (dtr != s->cdc.want_dtr || !was_held)) {
+        s->cdc.want_dtr = dtr;
+        s->cdc.state_due = 1;
+    }
+    if (held && baud && baud != s->cdc.baud) {
+        s->cdc.baud = baud;
+        s->cdc.line_due = 1;
+    }
+    kick(s, esk_comp_now(c));
+}

@@ -374,7 +374,7 @@ static int watched(struct mips_state *ms, u32 va, int n, int write)
 }
 
 /* n aligned bytes at physical pa: 0, or -1 for nothing there */
-static int pread(struct mips_state *ms, u32 pa, int n, u32 *v)
+static int pread_raw(struct mips_state *ms, u32 pa, int n, u32 *v)
 {
     struct esk_region *r = esk_bus_region(&ms->sim->bus, pa, (u32)n);
     if (r) {
@@ -387,7 +387,7 @@ static int pread(struct mips_state *ms, u32 pa, int n, u32 *v)
 /* n bytes, any of 1 to 4, from pa up (swl and swr write 3, and swr at
  * any address): a device gets its aligned accesses, the rest a byte at
  * a time */
-static int pwrite(struct mips_state *ms, u32 pa, int n, u32 v)
+static int pwrite_raw(struct mips_state *ms, u32 pa, int n, u32 v)
 {
     struct esk_bus *b = &ms->sim->bus;
     struct esk_region *r = esk_bus_region(b, pa, (u32)n);
@@ -403,6 +403,21 @@ static int pwrite(struct mips_state *ms, u32 pa, int n, u32 v)
         if (esk_bus_write(b, pa + (u32)i, 1, (v >> (8 * i)) & 0xff))
             return -1;
     return 0;
+}
+
+/* the data accesses, for the trace when one records */
+static int pread(struct mips_state *ms, u32 pa, int n, u32 *v)
+{
+    int r = pread_raw(ms, pa, n, v);
+    esk_bus_traced(&ms->sim->bus, pa, n, 0, r ? 0 : *v, r != 0);
+    return r;
+}
+
+static int pwrite(struct mips_state *ms, u32 pa, int n, u32 v)
+{
+    int r = pwrite_raw(ms, pa, n, v);
+    esk_bus_traced(&ms->sim->bus, pa, n, 1, v, r != 0);
+    return r;
 }
 
 static u32 load(struct mips_state *ms, u32 va, int n)

@@ -4,7 +4,8 @@
   "id": "emblink/nand3",
   "version": "1.0.0",
   "name": "3-input NAND",
-  "category": "logic",
+  "category": "simulator_primitives",
+  "subcategory": "gates",
   "description": "3-input NAND, CMOS 3.3 V family; propagation delay from the timed section.",
   "keywords": [
     "logic",
@@ -160,5 +161,34 @@
   },
   "tests": [
     "tests/*.json"
-  ]
+  ],
+  "i18n": {
+    "fr": {
+      "source": "aab9c26624f7",
+      "description": "NON-ET à 3 entrées, famille CMOS 3,3 V ; délai de propagation de la section temporisée.",
+      "fidelity": {
+        "functional": {
+          "claims": "Fonction booléenne évaluée à chaque changement d'entrée, délai nul (SPEC-003 §5).",
+          "omissions": [
+            "le délai",
+            "le traitement de X au-delà de sa propagation"
+          ]
+        },
+        "timed": {
+          "claims": "Délai de propagation inertiel tpd de la section temporisée.",
+          "omissions": [
+            "des délais distincts en montée et en descente"
+          ]
+        },
+        "electrical": {
+          "claims": "Les broches se relient aux réseaux analogiques avec les valeurs par défaut du modèle de broche cmos_3v3 (SPEC-004 §8) ; la fonction elle-même est numérique.",
+          "omissions": [
+            "les limites de courant de sortie",
+            "le courant d'alimentation",
+            "la capacité d'entrée"
+          ]
+        }
+      }
+    }
+  }
 }

@@ -1,0 +1,52 @@
+{
+  "schema_version": 1,
+  "kind": "component_test",
+  "name": "tolerance",
+  "description": "With seed 7 the 1 kOhm, 5 % resistor is drawn at 1026.41 Ohm, inside its 950 to 1050 Ohm band (ADR-034): 3.3 V across it gives 3.2151 mA, not the nominal part's 3.3 mA. The draw depends on the seed, the instance's id and the parameter alone, so every host draws the same part.",
+  "policy": "electrical",
+  "until": "1ms",
+  "settings": {
+    "seed": 7
+  },
+  "circuit": {
+    "components": [
+      {
+        "id": "V1",
+        "component": "emblink/vsource",
+        "params": {
+          "kind": "dc",
+          "dc": 3.3
+        }
+      },
+      {
+        "id": "DUT",
+        "component": "emblink/resistor",
+        "params": {
+          "resistance": "1k"
+        }
+      },
+      {
+        "id": "G",
+        "component": "emblink/gnd"
+      }
+    ],
+    "nets": {
+      "VIN": [
+        "V1.+",
+        "DUT.1"
+      ],
+      "GND": [
+        "V1.-",
+        "DUT.2",
+        "G.GND"
+      ]
+    }
+  },
+  "expect": {
+    "device:DUT.i": {
+      "at": "0.5ms",
+      "min": 0.003214,
+      "max": 0.0032162
+    }
+  }
+}

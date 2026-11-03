@@ -4,7 +4,8 @@
   "id": "emblink/ferrite_bead",
   "version": "1.0.0",
   "name": "Ferrite bead",
-  "category": "passives",
+  "category": "inductors",
+  "subcategory": "ferrite_beads",
   "description": "SMD ferrite bead for supply filtering: a small series inductance with its DC resistance (BLM18 style).",
   "keywords": [
     "ferrite",
@@ -122,5 +123,29 @@
   },
   "tests": [
     "tests/*.json"
-  ]
+  ],
+  "i18n": {
+    "fr": {
+      "source": "6dbe10d50b5f",
+      "description": "Ferrite CMS pour le filtrage d'alimentation : une petite inductance série avec sa résistance continue (style BLM18).",
+      "fidelity": {
+        "functional": {
+          "claims": "Un fil.",
+          "omissions": [
+            "tout ce qui est électrique"
+          ]
+        },
+        "timed": {
+          "claims": "Comme en électrique quand ses réseaux sont analogiques ; sinon un fil."
+        },
+        "electrical": {
+          "claims": "Inductance avec résistance série en continu (SPEC-004 §7 inductor).",
+          "omissions": [
+            "l'impédance résistive à haute fréquence qui fait d'une ferrite une ferrite",
+            "la saturation avec le courant"
+          ]
+        }
+      }
+    }
+  }
 }

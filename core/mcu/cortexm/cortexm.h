@@ -71,7 +71,38 @@ struct esk_cm_dc {
     const struct esk_region *r; /* the region it came from; 0: empty */
     u32 gen, pc;
     u16 h0, h1;
-    u8 size, cost, br;
+    u8 size, cost, br, ls; /* br: a taken branch's refill cycles; ls: a single load or store */
+};
+
+/* the core's halting debug (debug.c, ARM DDI 0403E C1, DDI 0419E C1): its
+ * debug domain's registers, which a system reset keeps and a power-on
+ * clears */
+#define DHCSR_C_DEBUGEN 0x1u
+#define DHCSR_C_HALT 0x2u
+#define DHCSR_C_STEP 0x4u
+#define DHCSR_C_MASKINTS 0x8u
+#define DHCSR_C_SNAPSTALL 0x20u
+#define DFSR_HALTED 0x1u
+#define DFSR_BKPT 0x2u
+#define DFSR_DWTTRAP 0x4u
+#define DFSR_VCATCH 0x8u
+#define DFSR_EXTERNAL 0x10u
+#define DEMCR_VC_CORERESET 0x1u
+#define DEMCR_TRCENA (1u << 24)
+#define CM_FP_MAX 8
+#define CM_DWT_MAX 4
+struct esk_cm_debug {
+    u32 ctrl;                       /* DHCSR's C_ bits */
+    int halted;                     /* in Debug state */
+    int stepping;                   /* left Debug state with C_STEP: one instruction */
+    int resumed;                    /* left Debug state, not yet run (a core scheduler's wake) */
+    int retire_st, reset_st;        /* DHCSR's sticky S_RETIRE_ST, S_RESET_ST */
+    u32 dcrdr, dfsr;
+    u32 fp_ctrl, fp_comp[CM_FP_MAX];
+    int fp_on;                      /* FP_CTRL.ENABLE and a comparator enabled */
+    u32 dwt_comp[CM_DWT_MAX], dwt_mask[CM_DWT_MAX], dwt_func[CM_DWT_MAX];
+    int dwt_on;                     /* a comparator watches data */
+    int dwt_hit;                    /* a watchpoint matched in this instruction */
 };
 
 struct esk_cm_state {
@@ -140,6 +171,15 @@ struct esk_cm_state {
     /* the cycles an instruction takes beyond its cost (a ROM host
      * function's), charged when it completes */
     u32 extra_cycles;
+    /* an exception return's cycles, charged at the next step unless an
+     * exception tail-chains in their place (ARM DDI 0439B 3.9.1) */
+    int tail_window;
+    /* the instruction under way made a load or store on the single-cycle
+     * I/O port (ARMv6-M's IOPORT: 1 cycle, not the AHB's 2) */
+    int ioport_hit;
+    /* cycles spent in exception entry, return and tail-chaining */
+    u64 exc_cycles;
+    struct esk_cm_debug dbg;
 };
 
 
@@ -176,6 +216,25 @@ void esk_cm_sev(struct esk_cm_state *cs);
 struct esk_cm_state *esk_cm_new(struct esk_mach *m, const char *model, int prio_bits);
 void esk_cm_semihost(struct esk_cm_state *cs);
 
+/* debug.c: DHCSR, DCRSR, DCRDR, DEMCR and DFSR in the SCS (1 when `o`
+ * is one of them); the FPB's device at 0xE0002000; the core entering
+ * Debug state with DFSR's `why`; the checks around an instruction: before
+ * it (1: it does not run, the core halted on a breakpoint comparator) and
+ * after it (a step's or a watchpoint's halt); a data access the DWT's
+ * comparators may match; the core's register `regsel` as DCRSR numbers
+ * them (cortexm.c: 0 when there is none) */
+int esk_cm_dbg_read(struct esk_cm_state *cs, u32 o, u32 *v);
+int esk_cm_dbg_write(struct esk_cm_state *cs, u32 o, u32 v);
+extern const struct esk_dev_ops esk_fpb_ops;
+/* the processor's ROM table at 0xE00FF000 (ARM DDI 0403E C1.2): the SCS,
+ * DWT and FPB present, the ITM, TPIU and ETM not */
+extern const struct esk_dev_ops esk_romtable_ops;
+void esk_cm_dbg_halt(struct esk_cm_state *cs, u32 why);
+int esk_cm_dbg_before(struct esk_cm_state *cs);
+void esk_cm_dbg_after(struct esk_cm_state *cs);
+void esk_cm_dbg_access(struct esk_cm_state *cs, u32 a, int n, int write);
+void esk_cm_dbg_reset(struct esk_cm_state *cs);
+int esk_cm_dcrsr(struct esk_cm_state *cs, u32 regsel, int write, u32 *v);
 /* mpu.c */
 /* whether an access of n bytes at a is refused (the fault raised): data
  * when exec is 0, an instruction fetch when it is 1 */
@@ -224,8 +283,20 @@ ES_INLINE u32 esk_cm_ld(struct esk_cm_state *cs, u32 a, int n)
     struct esk_bus *b = &cs->sim->bus;
     if (!b->nwatch) {
         struct esk_region *r = esk_bus_region(b, a, (u32)n);
-        if (r)
+        if (r) {
+            if (cs->dbg.dwt_on && cs->executing)
+                esk_cm_dbg_access(cs, a, n, 0);
+            if (r->mem == cs->sim->ftime.mem && cs->sim->ftime.dread && cs->executing && cs->access == ACC_NORMAL)
+                cs->extra_cycles += cs->sim->ftime.dread(cs->sim->ftime.ctx, a - r->base); /* the flash's wait */
+            if (b->arb && !b->dap)
+                b->arb(b->arb_ctx, a); /* the crossbar's arbiter (an RP2040's) */
+            if (b->trace) {
+                u32 v = esk_mem_rd_le(r->mem + (a - r->base), n);
+                esk_bus_traced(b, a, n, 0, v, 0);
+                return v;
+            }
             return esk_mem_rd_le(r->mem + (a - r->base), n);
+        }
     }
     return esk_cm_ld_bus(cs, a, n);
 }
@@ -240,12 +311,18 @@ ES_INLINE void esk_cm_st(struct esk_cm_state *cs, u32 a, int n, u32 v)
     if (!b->nwatch) {
         struct esk_region *r = esk_bus_region(b, a, (u32)n);
         if (r) {
+            if (cs->dbg.dwt_on && cs->executing)
+                esk_cm_dbg_access(cs, a, n, 1);
             if (cs->excl_valid && a - cs->excl_addr < 4)
                 cs->excl_valid = 0;
-            if (!r->rom)
+            if (b->arb && !b->dap && !r->rom)
+                b->arb(b->arb_ctx, a); /* the crossbar's arbiter (an RP2040's) */
+            if (!r->rom) {
                 esk_mem_wr_le(r->mem + (a - r->base), n, v);
-            else if (b->rom_write)
-                b->rom_write(b->rom_write_ctx, r, a, n, v); /* the flash interface's */
+                esk_bus_traced(b, a, n, 1, v, 0);
+            } else if (b->rom_write) {
+                esk_cm_st_bus(cs, a, n, v); /* the flash interface's, which may refuse it */
+            }
             return;
         }
     }
@@ -321,5 +398,10 @@ void esk_systick_target(void *systick, void (*pend)(void *ctx, int n), void *ctx
  * CALIB's value */
 void esk_systick_config(void *systick, u32 ref_div, u32 calib);
 void *esk_dwt_create(struct esk_mach *m);
+/* the ITM and the TPIU of an ARMv7-M core (itm.c): one context for both */
+extern const struct esk_dev_ops esk_itm_ops, esk_tpiu_ops;
+void *esk_itm_create(struct esk_mach *m, struct esk_cm_state *core);
+/* the core whose accesses its comparators watch */
+void esk_dwt_core(void *dwt, struct esk_cm_state *cs);
 
 #endif

@@ -100,6 +100,19 @@ void esk_diag_raise(esk_diag *d, es_severity_t sev, const char *code, es_time_t 
     }
 }
 
+void esk_diag_messages(esk_alloc *a, esk_json *o, const char *code, const char *subject, const char *message)
+{
+    char fr[512];
+    esk_json *m;
+    if (!esk_diag_french(code, subject, message, fr, sizeof fr))
+        return;
+    m = esk_json_new_object(a);
+    if (!m)
+        return;
+    esk_json_set_string(a, m, "fr", fr);
+    esk_json_object_set(a, o, "messages", m);
+}
+
 static const char *sevname(es_severity_t s)
 {
     switch (s) {
@@ -124,6 +137,7 @@ esk_json *esk_diag_to_json(const esk_diag *d)
         esk_json_set_string(d->a, o, "severity", sevname(r->severity));
         esk_json_set_string(d->a, o, "code", r->code);
         esk_json_set_string(d->a, o, "message", r->message);
+        esk_diag_messages(d->a, o, r->code, r->subject_kind[0] ? r->subject : NULL, r->message);
         esk_json_set_u64_string(d->a, o, "time_ps", r->time_ps);
         esk_json_set_string(d->a, o, "phase", r->phase == ESK_DIAG_LOAD ? "load" : "run");
         if (r->subject_kind[0]) {

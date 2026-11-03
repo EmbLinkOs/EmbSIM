@@ -68,6 +68,7 @@ static void ee_write(void *ctx, u32 off, int n, u32 v)
         e->left = (u64)(ms[e->mode] * 1e-3 * (double)esk_mach_core_hz(m));
         e->window = 0;
         e->since = m->cycles;
+        esk_avr_spm_buffer_lost(m); /* an SPM page load in progress is lost */
         esk_rf_hw(e->cr, (v & (EERIE | 0x30u)) | EEPE);
         esk_rf_clock(e->p, &e->running, 1);
     } else {

@@ -4,7 +4,8 @@
   "id": "emblink/jk_flip_flop",
   "version": "1.0.0",
   "name": "JK flip-flop",
-  "category": "logic",
+  "category": "simulator_primitives",
+  "subcategory": "flip_flops",
   "description": "Positive-edge JK flip-flop with active-low asynchronous preset and clear (one half of a 74HC109 with K true): J=K=1 toggles.",
   "keywords": [
     "logic",
@@ -204,5 +205,33 @@
   },
   "tests": [
     "tests/*.json"
-  ]
+  ],
+  "i18n": {
+    "fr": {
+      "source": "e41c949784b4",
+      "description": "Bascule JK sur front montant avec mise à un et remise à zéro asynchrones actives à l'état bas (une moitié d'un 74HC109 avec K vrai) : J=K=1 bascule.",
+      "fidelity": {
+        "functional": {
+          "claims": "Comportement JK sur front montant ; PRE_N et CLR_N agissent tout de suite (la remise à zéro l'emporte) ; PRE_N/CLR_N non connectées sont inactives.",
+          "omissions": [
+            "les temps d'établissement et de maintien"
+          ]
+        },
+        "timed": {
+          "claims": "Comme en fonctionnel ; délais tels qu'indiqués.",
+          "omissions": [
+            "les temps d'établissement et de maintien"
+          ]
+        },
+        "electrical": {
+          "claims": "Les broches se relient aux réseaux analogiques avec les modèles de broche par défaut de la famille ; le comportement est celui du modèle Lua.",
+          "omissions": [
+            "les temps d'établissement et de maintien",
+            "le courant d'alimentation",
+            "les limites de courant de sortie"
+          ]
+        }
+      }
+    }
+  }
 }

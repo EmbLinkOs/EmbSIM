@@ -1,0 +1,71 @@
+{
+ "schema_version": 1,
+ "kind": "project",
+ "name": "esp-idf-twai_self_test",
+ "description": "ESP-IDF's twai_self_test on the ESP32-C3-DevKitM-1: TWAI's TX on GPIO0 jumpered to its RX on GPIO2, as the example's README allows without a transceiver.",
+ "policy": "electrical",
+ "boards": [
+  {
+   "id": "B1",
+   "board": "emblink/esp32c3_devkitm1",
+   "layout": {
+    "x": 360,
+    "y": 120
+   },
+   "firmware": {
+    "image": "flash.bin",
+    "format": "bin"
+   }
+  }
+ ],
+ "components": [
+  {
+   "id": "USB",
+   "component": "emblink/vsource",
+   "params": {
+    "kind": "dc",
+    "dc": 5
+   },
+   "layout": {
+    "x": 120,
+    "y": 160
+   }
+  },
+  {
+   "id": "GND1",
+   "component": "emblink/gnd",
+   "layout": {
+    "x": 120,
+    "y": 320
+   }
+  }
+ ],
+ "nets": {
+  "USB5V": [
+   "USB.+",
+   "B1.VBUS"
+  ],
+  "GND": [
+   "USB.-",
+   "GND1.GND",
+   "B1.GND"
+  ],
+  "CAN": [
+   "B1.IO0",
+   "B1.IO2"
+  ]
+ },
+ "probes": [
+  {
+   "id": "console",
+   "target": "serial:B1",
+   "kind": "serial"
+  },
+  {
+   "id": "can",
+   "target": "net:CAN",
+   "kind": "digital",
+   "capacity": 400000
+  }
+ ]
+}

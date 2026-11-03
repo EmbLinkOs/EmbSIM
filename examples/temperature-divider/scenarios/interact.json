@@ -2,6 +2,7 @@
   "schema_version": 1,
   "kind": "scenario",
   "name": "temperature-divider interaction",
+  "description": "The divider's bounds allow R1's 5 % tolerance (ADR-034): at 25 degC it sits within 2.5 V +/- 70 mV, at 85 degC within 0.48 V +/- 30 mV, either side of the 2 V threshold.",
   "until": "5ms",
   "inputs": [
     {
@@ -29,8 +30,8 @@
       "probe": "temp",
       "at": "500us",
       "expect": {
-        "min_v": 2.49,
-        "max_v": 2.51
+        "min_v": 2.43,
+        "max_v": 2.57
       }
     },
     {
@@ -47,8 +48,8 @@
       "probe": "temp",
       "at": "2ms",
       "expect": {
-        "min_v": 0.47,
-        "max_v": 0.49
+        "min_v": 0.45,
+        "max_v": 0.51
       }
     },
     {

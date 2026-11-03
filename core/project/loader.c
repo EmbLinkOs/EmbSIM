@@ -68,6 +68,13 @@ static void mcu_electrical(const esk_json *el, esk_pin_model *m)
         m->rout = v;
     if (esk_json_to_double(esk_json_get(el, "slew_v_per_us"), &v) == 0 && isfinite(v) && v > 0)
         m->slew_v_per_us = v;
+    /* the absolute maximum ratings (ADR-034) */
+    if (esk_json_to_double(esk_json_get(el, "iabs_max"), &v) == 0 && isfinite(v) && v > 0)
+        m->iabs_max = v;
+    if (esk_json_to_double(esk_json_get(el, "vabs_hi"), &v) == 0 && isfinite(v) && v > 0)
+        m->vabs_hi = v;
+    if (esk_json_to_double(esk_json_get(el, "vabs_lo"), &v) == 0 && isfinite(v) && v > 0)
+        m->vabs_lo = v;
 }
 
 static void mcu_signal_model(const char *sig, const char *family, esk_pin_model *m)
@@ -104,6 +111,99 @@ static esk_json *num_param(esk_alloc *a, const char *type, double d)
     if (!strcmp(type, "integer") && d >= -9.0e15 && d <= 9.0e15 && d == (double)(int64_t)d)
         return esk_json_new_integer(a, (int64_t)d);
     return esk_json_new_number(a, d);
+}
+
+/* ---- tolerances (ADR-034) --------------------------------------------------------
+ * A parameter whose definition names `"spread": "<param>"` is drawn, per instance,
+ * inside the band that parameter gives in percent: nominal x (1 + tol x (2u - 1)),
+ * u uniform in [0, 1). A manufacturer guarantees the band, not a distribution, so
+ * uniform is the choice that claims nothing more. u comes from the project's seed
+ * and the instance's id and parameter name alone: the same project draws the same
+ * parts on every host and every run, two resistors of one project differ, and a
+ * part keeps its value when others are added. Ideal projects (settings.imperfections
+ * "ideal", Q17) keep the nominal values. */
+
+static uint64_t mix64(uint64_t z)
+{
+    z += 0x9E3779B97F4A7C15ull;
+    z = (z ^ (z >> 30)) * 0xBF58476D1CE4E5B9ull;
+    z = (z ^ (z >> 27)) * 0x94D049BB133111EBull;
+    return z ^ (z >> 31);
+}
+
+static uint64_t fnv1a(uint64_t h, const char *str)
+{
+    for (; *str; str++) {
+        h ^= (unsigned char)*str;
+        h *= 0x100000001B3ull;
+    }
+    h ^= 0xFF; /* a separator: ("ab", "c") and ("a", "bc") differ */
+    h *= 0x100000001B3ull;
+    return h;
+}
+
+static double tolerance_unit(uint64_t seed, const char *id, const char *param)
+{
+    uint64_t h = fnv1a(fnv1a(0xCBF29CE484222325ull, id), param);
+    return (double)(mix64(h ^ mix64(seed)) >> 11) * (1.0 / 9007199254740992.0);
+}
+
+static es_status draw_tolerances(es_session *s, const char *id, const esk_json *pdefs, esk_json *params)
+{
+    size_t i;
+    if (s->ideal) {
+        /* an imperfection a part switches on (a contact's bounce) is off */
+        for (i = 0; i < esk_json_len(pdefs); i++) {
+            const esk_json *pd = esk_json_at(pdefs, i);
+            esk_json *f;
+            if (!esk_json_get_bool(pd, "imperfection", 0) || !esk_json_get(params, pd->key))
+                continue;
+            f = esk_json_new_bool(s->a, 0);
+            if (!f || esk_json_object_set(s->a, params, pd->key, f)) {
+                esk_json_free(s->a, f);
+                return ES_ENOMEM;
+            }
+        }
+        return ES_OK;
+    }
+    for (i = 0; i < esk_json_len(pdefs); i++) {
+        const esk_json *pd = esk_json_at(pdefs, i);
+        const char *tolp = esk_json_get_str(pd, "spread", NULL);
+        double nominal, tol = 0.0, u, v;
+        esk_json *rec, *one, *nv;
+        if (!tolp || esk_json_to_double(esk_json_get(params, pd->key), &nominal) != 0)
+            continue;
+        if (esk_json_to_double(esk_json_get(params, tolp), &tol) != 0 || !(tol > 0.0))
+            continue;
+        u = tolerance_unit(s->seed, id, pd->key);
+        v = nominal * (1.0 + tol * 0.01 * (2.0 * u - 1.0));
+        nv = esk_json_new_number(s->a, v);
+        if (!nv || esk_json_object_set(s->a, params, pd->key, nv)) {
+            esk_json_free(s->a, nv);
+            return ES_ENOMEM;
+        }
+        if (!s->drawn && !(s->drawn = esk_json_new_object(s->a)))
+            return ES_ENOMEM;
+        rec = esk_json_get_mut(s->drawn, id);
+        if (!rec) {
+            rec = esk_json_new_object(s->a);
+            if (!rec || esk_json_object_set(s->a, s->drawn, id, rec)) {
+                esk_json_free(s->a, rec);
+                return ES_ENOMEM;
+            }
+        }
+        one = esk_json_new_object(s->a);
+        if (!one)
+            return ES_ENOMEM;
+        esk_json_set_number(s->a, one, "nominal", nominal);
+        esk_json_set_number(s->a, one, "value", v);
+        esk_json_set_number(s->a, one, "tolerance_pct", tol);
+        if (esk_json_object_set(s->a, rec, pd->key, one)) {
+            esk_json_free(s->a, one);
+            return ES_ENOMEM;
+        }
+    }
+    return ES_OK;
 }
 
 static es_status build_params(es_session *s, const char *id, const esk_json *desc, const esk_json *inst_params, esk_json **out)
@@ -215,6 +315,8 @@ static es_status build_params(es_session *s, const char *id, const esk_json *des
             }
         }
     }
+    if (st == ES_OK)
+        st = draw_tolerances(s, id, pdefs, params);
     if (st != ES_OK) {
         esk_json_free(s->a, params);
         return st;
@@ -856,6 +958,26 @@ static es_status attach_firmware(es_session *s, esk_board_inst *bi, const esk_ca
                 su.mac = mac_bytes;
             }
         }
+        {
+            /* the fuses as the board ships them, or as the project's board
+             * settings reprogrammed them */
+            static const char *const fname[4] = { "low", "high", "extended", "lock" };
+            const esk_json *fz[3];
+            int j;
+            fz[0] = esk_json_get(esk_json_get(mi->desc, "fuses"), "factory");
+            fz[1] = esk_json_get(esk_json_get(board->desc, "mcu"), "fuses");
+            fz[2] = bi->settings ? esk_json_get(bi->settings, "fuses") : NULL;
+            for (j = 0; j < 3; j++)
+                for (k = 0; fz[j] && k < 4; k++) {
+                    u64 v = 0;
+                    if (esk_json_get(fz[j], fname[k]) && !esk_json_to_u64(esk_json_get(fz[j], fname[k]), &v) &&
+                        v <= 0xff) {
+                        su.fuse[k] = (unsigned char)v;
+                        if (j)
+                            su.has_fuses = 1;
+                    }
+                }
+        }
         st = esk_mcu_attach(mc, &su, why, sizeof why);
         if (st != ES_OK)
             esk_diag_raise(&s->diag, ES_SEV_ERROR, "mcu.image", 0, "board", bi->id, NULL, 0, "%s: %s", bi->id, why);
@@ -1055,6 +1177,8 @@ static es_status apply_settings(es_session *s, const esk_json *settings)
     n = esk_json_get_int(settings, "max_pending_events", 0);
     if (n > 0)
         s->eng.sched.max = (size_t)n;
+    s->seed = (uint64_t)esk_json_get_int(settings, "seed", 0);
+    s->ideal = esk_str_eq(esk_json_get_str(settings, "imperfections", "real"), "ideal");
     return ES_OK;
 }
 
@@ -1172,9 +1296,18 @@ static es_status project_load(es_session *s, const esk_json *project, const char
     esk_map_init(&g.rec_by_name, s->a);
     /* settings first: the MCU runtime reads its quantum when a board is loaded */
     apply_settings(s, esk_json_get(project, "settings"));
+    /* the fault mode: the project's faults wired in for the load (ADR-034) */
+    {
+        char why[256];
+        s->fault_view = esk_project_with_faults(s->a, project, why, sizeof why);
+        if (why[0]) {
+            ld_diag(s, ES_SEV_ERROR, "schema.faults", "faults", "%s%s", why, "");
+            return ES_ESCHEMA;
+        }
+    }
     /* boards */
     boards = esk_json_get(project, "boards");
-    comps = esk_json_get(project, "components");
+    comps = esk_json_get(s->fault_view ? s->fault_view : project, "components");
     for (i = 0; i < esk_json_len(boards) && st == ES_OK; i++)
         st = load_board(s, &g, esk_json_at(boards, i), comps);
     /* components */
@@ -1197,7 +1330,12 @@ static es_status project_load(es_session *s, const esk_json *project, const char
         st = instantiate(s, &g, cid, ci, esk_json_get(ce, "params"), 0, &c);
     }
     /* project nets */
-    nets = esk_json_get(project, "nets");
+    nets = esk_json_get(s->fault_view ? s->fault_view : project, "nets");
+    if (nets && nets->type != ESK_JSON_OBJECT && esk_json_len(nets) && st == ES_OK) {
+        /* an array of nets is not the format: refused, not read */
+        ld_diag(s, ES_SEV_ERROR, "schema.type", "nets", "nets is an object of net names to pin lists%s%s", "", "");
+        st = ES_ESCHEMA;
+    }
     for (i = 0; i < esk_json_len(nets) && st == ES_OK; i++) {
         const esk_json *ne = esk_json_at(nets, i);
         int rec = rec_get(&g, ne->key, 1);
@@ -1322,6 +1460,15 @@ static es_status project_load(es_session *s, const esk_json *project, const char
         esk_probe *p = NULL;
         es_status ps = esk_session_probe_add(s, esk_json_get_str(pe, "id", NULL), esk_json_get_str(pe, "target", ""),
                                              esk_json_get_str(pe, "kind", NULL), esk_json_get_num(pe, "rate_hz", 0), &p);
+        if (ps == ES_OK && esk_json_get(pe, "capacity")) {
+            double cap = esk_json_get_num(pe, "capacity", 0);
+            if (esk_session_probe_capacity(s, p, cap >= 1.0 && cap <= 16777216.0 ? (size_t)cap : 0u) != ES_OK) {
+                ld_diag(s, ES_SEV_ERROR, "probe.invalid", esk_json_get_str(pe, "id", "probe"),
+                        "probe %s: %s", esk_json_get_str(pe, "id", "?"),
+                        "capacity is 1 to 16777216 samples, on a probe that records samples");
+                st = ES_ESCHEMA;
+            }
+        }
         if (ps != ES_OK) {
             char why[320];
             probe_problem(s, esk_json_get_str(pe, "target", ""), why, sizeof why);
@@ -1353,6 +1500,8 @@ es_status esk_project_load(es_session *s, const esk_json *project, const char *b
 void esk_project_unload(es_session *s)
 {
     size_t i;
+    esk_json_free(s->a, s->fault_view);
+    s->fault_view = NULL;
     for (i = 0; i < s->probes.len; i++) {
         esk_probe *p = s->probes.data[i];
         esk_strfree(s->a, p->name);
@@ -1379,6 +1528,8 @@ void esk_project_unload(es_session *s)
     s->eng.on_irq_ctx = s;
     esk_json_free(s->a, s->project);
     s->project = NULL;
+    esk_json_free(s->a, s->drawn);
+    s->drawn = NULL;
     esk_strfree(s->a, s->base_dir);
     esk_strfree(s->a, s->name);
     s->base_dir = s->name = NULL;

@@ -1,0 +1,69 @@
+{
+  "schema_version": 1,
+  "kind": "component_test",
+  "name": "ampere-meter",
+  "description": "Ampere meter in series with a 5 V supply and a 250 ohm load: 19.996 mA through its 50 mOhm, read at 50 uA resolution as 20.00 mA.",
+  "policy": "electrical",
+  "until": "2ms",
+  "circuit": {
+    "components": [
+      {
+        "id": "DUT",
+        "component": "emblink/ppk2_core",
+        "params": {
+          "mode": "ampere"
+        }
+      },
+      {
+        "id": "SUP",
+        "component": "emblink/vsource",
+        "params": {
+          "kind": "dc",
+          "dc": 5.0
+        }
+      },
+      {
+        "id": "LOAD",
+        "component": "emblink/resistor",
+        "params": {
+          "resistance": 250
+        }
+      },
+      {
+        "id": "G",
+        "component": "emblink/gnd"
+      }
+    ],
+    "nets": {
+      "SUP": [
+        "SUP.+",
+        "DUT.VIN"
+      ],
+      "OUT": [
+        "DUT.VOUT",
+        "LOAD.1"
+      ],
+      "GND": [
+        "SUP.-",
+        "DUT.GND",
+        "LOAD.2",
+        "G.GND"
+      ]
+    }
+  },
+  "inputs": [
+    {
+      "at": "0s",
+      "target": "DUT",
+      "input": "run",
+      "value": true
+    }
+  ],
+  "expect": {
+    "output:DUT.current": {
+      "at": "2ms",
+      "min": 0.019999,
+      "max": 0.020001
+    }
+  }
+}

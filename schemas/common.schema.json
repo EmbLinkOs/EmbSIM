@@ -157,6 +157,36 @@
         }
       }
     },
+    "i18n": {
+      "description": "The entry's text in other languages, by language tag (fr): its description, and its fidelity's claims and omissions tier by tier, in the same order as the English (checked semantically). Technical identifiers stay as written.",
+      "type": "object",
+      "additionalProperties": false,
+      "patternProperties": {
+        "^[a-z]{2}(-[A-Z]{2})?$": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "source": {"type": "string", "pattern": "^[0-9a-f]{12}$", "description": "The first 12 hex digits of the SHA-256 of the English text the translation was made from (tools/i18n/catalog_text.py): a translation whose English has changed since is out of date."},
+            "description": {"type": "string", "minLength": 1},
+            "fidelity": {
+              "type": "object",
+              "additionalProperties": false,
+              "patternProperties": {
+                "^(functional|timed|electrical)$": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": ["claims"],
+                  "properties": {
+                    "claims": {"type": "string", "minLength": 1},
+                    "omissions": {"type": "array", "items": {"type": "string", "minLength": 1}}
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "fidelity": {
       "description": "Per-tier declaration: null (not provided) or a declaration. At least one tier must be declared (checked semantically).",
       "type": "object",
@@ -257,6 +287,17 @@
         }
       }
     },
+    "fuses": {
+      "type": "object",
+      "description": "Fuse and lock bytes as programmed (an AVR's: low, high, extended, lock), as numbers or hex strings.",
+      "additionalProperties": false,
+      "properties": {
+        "low": {"$ref": "#/$defs/hex_or_size"},
+        "high": {"$ref": "#/$defs/hex_or_size"},
+        "extended": {"$ref": "#/$defs/hex_or_size"},
+        "lock": {"$ref": "#/$defs/hex_or_size"}
+      }
+    },
     "hex_or_size": {
       "description": "An address or size: decimal, 0x hexadecimal, or decimal with a K/M/G power-of-two suffix.",
       "oneOf": [
@@ -334,6 +375,16 @@
         },
         "strict": {
           "type": "boolean"
+        },
+        "seed": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Draws each part's values inside its tolerance (ADR-034); the same seed draws the same parts."
+        },
+        "imperfections": {
+          "type": "string",
+          "enum": ["real", "ideal"],
+          "description": "real (the default): parts carry their tolerances and bounce; ideal: nominal values, for a lesson that says so (Q17)."
         }
       }
     },

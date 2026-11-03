@@ -3,8 +3,7 @@
 /* storage.c -- a peripheral whose registers only keep what is written, by
  * the description's access rules, without the register file's "no model"
  * warning: for registers whose effect the simulation has no use for, such
- * as the F1 flash interface's ACR (wait states and the prefetch buffer;
- * the core's timing is estimated, ADR-015) and PWR's CR. */
+ * as PWR's CR. */
 #include "mcu/stm32/stm32.h"
 
 static u32 st_read(void *ctx, u32 off, int n)

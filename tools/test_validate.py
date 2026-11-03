@@ -22,7 +22,7 @@ ARTWORK = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 10 10"><circle i
 
 COMPONENT = {
     "schema_version": 1, "kind": "component", "id": "testlib/widget", "version": "1.0.0", "name": "Widget",
-    "category": "passives", "description": "A test part.",
+    "category": "resistors", "subcategory": "fixed", "description": "A test part.",
     "pins": [{"name": "1", "number": 1, "model": {"kind": "passive"}}, {"name": "2", "number": 2, "model": {"kind": "passive"}, "aliases": ["B"]}],
     "params": {"resistance": {"type": "number", "unit": "ohm", "default": "4.7k", "min": "1m", "max": "1G"},
                "mode": {"type": "enum", "enum": ["a", "b"], "default": "a"}},

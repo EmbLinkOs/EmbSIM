@@ -5,6 +5,7 @@
   "version": "1.0.0",
   "name": "1N4007",
   "category": "diodes",
+  "subcategory": "rectifiers",
   "description": "1N4007 (DO-41). Parameterized diode approximation for low-frequency circuit development; not a vendor SPICE model. The nominal forward curve uses an illustrative 7 nA / n=1.8 fit; reverse recovery and rectifier surge ratings are not simulated.",
   "keywords": [
     "Vishay",
@@ -140,5 +141,28 @@
   },
   "artwork": {
     "svg": "artwork.svg"
+  },
+  "i18n": {
+    "fr": {
+      "source": "3acb05c736bd",
+      "description": "1N4007 (DO-41). Approximation paramétrée par une diode pour la conception de circuits basse fréquence ; pas un modèle SPICE du fabricant. La courbe directe nominale utilise un ajustement indicatif de 7 nA / n=1,8 ; le recouvrement inverse et les surintensités nominales de redresseur ne sont pas simulés.",
+      "fidelity": {
+        "electrical": {
+          "claims": "Approximation paramétrée par une diode ; couverture par des cas de test en continu et basse fréquence uniquement.",
+          "omissions": [
+            "la dépendance à la température",
+            "le recouvrement inverse au-delà de tt",
+            "le bruit",
+            "les tolérances min/max du fabricant",
+            "le comportement thermique ou destructif",
+            "la dispersion d'un exemplaire à l'autre",
+            "le comportement à haute fréquence, non vérifié",
+            "aucune qualification par un modèle du fabricant",
+            "les capacités de jonction",
+            "le stockage de charge et la recouvrement inverse"
+          ]
+        }
+      }
+    }
   }
 }

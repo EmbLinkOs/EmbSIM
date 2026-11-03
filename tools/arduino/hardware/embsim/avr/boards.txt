@@ -1,0 +1,5 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright 2026 Junior Deogracias
+#
+# No boards: the simulated boards are the real boards' own entries (Arduino
+# Uno is arduino:avr:uno); this platform only lists their ports.

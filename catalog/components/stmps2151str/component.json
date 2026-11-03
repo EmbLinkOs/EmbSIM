@@ -4,7 +4,8 @@
   "id": "emblink/stmps2151str",
   "version": "1.0.0",
   "name": "STMPS2151STR power distribution switch",
-  "category": "power",
+  "category": "analog_ics",
+  "subcategory": "power_switches",
   "description": "STMicroelectronics STMPS2151STR, a 500 mA P-channel high-side power distribution switch for USB with an active-high enable and an open-drain fault output, in SOT23-5: the NUCLEO-144's (MB1137) U12, which powers CN13's VBUS from +5V when the MCU drives PG6 (USB_PowerSwitchOn) high, for the OTG core's host mode.",
   "keywords": [
     "power switch",
@@ -226,5 +227,33 @@
     "manufacturer": "STMicroelectronics",
     "package": "SOT23-5",
     "datasheet": "https://www.st.com/resource/en/datasheet/stmps2141.pdf"
+  },
+  "i18n": {
+    "fr": {
+      "source": "94ad88e4e27c",
+      "description": "STMicroelectronics STMPS2151STR, un interrupteur de distribution d'alimentation côté haut à canal P de 500 mA pour l'USB, avec une activation au niveau haut et une sortie de défaut à drain ouvert, en SOT23-5 : le U12 des NUCLEO-144 (MB1137), qui alimente le VBUS de CN13 depuis le +5V quand le MCU met PG6 (USB_PowerSwitchOn) au niveau haut, pour le mode hôte du cœur OTG.",
+      "fidelity": {
+        "functional": {
+          "claims": "Les broches seulement : la politique fonctionnelle n'a pas de tensions d'alimentation.",
+          "omissions": [
+            "la commutation"
+          ]
+        },
+        "timed": {
+          "claims": "Comme en électrique."
+        },
+        "electrical": {
+          "claims": "L'interrupteur entre IN et OUT, fermé tant que EN est au niveau haut et ouvert tant qu'il est au niveau bas, son seuil à 1,4 V entre la VIL (0,8 V) et la VIH (2,0 V) de la fiche technique ; fermé, environ 90 mOhm avec 5 V sur IN (les 90 mOhm typiques et 110 mOhm maximum de la fiche technique, SOT23-5L à 25 °C) ; ouvert, haute impédance dans les deux sens (le blocage du courant inverse de la section 3.4) ; EN ne consomme aucun courant (au plus 0,5 uA). À l'intérieur : un canal P en remplacement de l'interrupteur à canal N et de la pompe de charge du composant, avec la même résistance et le même comportement vu de l'extérieur.",
+          "omissions": [
+            "la limitation de courant (0,6 à 1,0 A, 0,8 A typique, environ 120 % des 500 mA nominaux) et le courant de court-circuit (0,9 A) : l'interrupteur laisse passer ce que tire la charge",
+            "FAULT : le signalement de surintensité après son masquage de 4 à 15 ms, le signalement immédiat de surchauffe et de sous-tension ; il ne s'active jamais",
+            "la coupure thermique (145 °C, reprise à 120 °C) et la hausse de la résistance à l'état passant avec la température (jusqu'à 135 mOhm à 125 °C)",
+            "le verrouillage en sous-tension (2,0 à 2,5 V, 75 mV d'hystérésis) : la résistance de l'interrupteur ne fait que croître quand IN baisse",
+            "le temps de montée de la sortie (0,05 à 2 ms), les temps d'enclenchement et de déclenchement (jusqu'à 5 et 10 ms) et le courant d'alimentation (40 uA fermé, 6 uA ouvert)",
+            "les dommages"
+          ]
+        }
+      }
+    }
   }
 }

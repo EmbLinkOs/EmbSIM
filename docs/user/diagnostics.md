@@ -11,6 +11,10 @@ see both; loading another project forgets them all. `embsim validate` reports
 the load's and those of the circuit settled at its first instant (firmware not
 run).
 
+Each message is in English; in JSON a record also carries `messages.fr`, the
+same message in French (SPEC-001 §7), which the workbench shows when its
+language is French.
+
 | Code | Default severity | Subject | Meaning |
 |---|---|---|---|
 | `schema.parse` | error | file | a description is not valid JSON |
@@ -62,8 +66,10 @@ run).
 | `mcu.usb_fifo` | warning | board | an STM32 OTG core's FIFOs as the program placed them: an IN endpoint's FIFO overlapping the receive FIFO or past the 320 words of FIFO RAM, or the receive FIFO read before GRXSTSP took a packet's status |
 | `usb.dfu` | warning | component | a USB host part's DFU download stopped: the device's status, a request it refused, an image outside its memory layout or a read-only segment, a file it could not read |
 | `usb.enumeration` | warning | component | a USB host part could not enumerate the device on its cable: the request that failed and why (a STALL, no answer, 5 s); its log has the steps |
-| `mcu.usb_boot` | warning | board | the program called the RP2040's `reset_to_usb_boot`: the part waits in its USB boot, which is not modelled |
-| `mcu.no_boot2` | warning | board | the RP2040's bootrom finds no boot2 with a good CRC in flash: the part waits in its USB boot |
+| `mcu.usb_boot` | warning or info | board | the RP2040 goes to its USB boot (the program called `reset_to_usb_boot`, a warning; BOOTSEL held at reset, info): the RPI-RP2 drive on its USB cable |
+| `mcu.uf2_written` | info | board | every block of a UF2 file copied onto the RP2040's USB boot drive is in flash: the part reboots into it |
+| `mcu.no_boot2` | warning | board | the RP2040's bootrom finds no boot2 with a good CRC in flash: the part waits in its USB boot (the RPI-RP2 drive) |
+| `mcu.rescue` | info | board | the RP2040 was reset by its Rescue DP (a probe set the Rescue DP's CDBGPWRUPREQ, then cleared it): its bootrom halts in its dead loop for the debugger to take over |
 | `mcu.watchdog_reset` | info | board | the watchdog reset the chip (the RP2040's counter reached 0 or CTRL.TRIGGER; the FE310's comparator fired with wdogrsten) |
 | `mcu.low_power_reset` | info | board | an STM32F4 entered Stop or Standby while its option bytes' nRST_STOP or nRST_STDBY is 0: the part resets instead (LPWRRSTF) |
 | `mcu.easydma_range` | warning | board, peripheral | an nRF52840 EasyDMA buffer outside Data RAM: nothing is moved |

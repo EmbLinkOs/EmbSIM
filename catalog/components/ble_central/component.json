@@ -4,7 +4,8 @@
   "id": "emblink/ble_central",
   "version": "0.1.0",
   "name": "Phone with a GATT browser (BLE central)",
-  "category": "instruments",
+  "category": "networks",
+  "subcategory": "phones",
   "description": "A phone running a Bluetooth LE browser (nRF Connect, LightBlue): it scans, connects to the peripheral it is told to as the connection's central, and lists its GATT database: services, characteristics, their properties and the values it can read. It reaches the circuit only through the air.",
   "keywords": [
     "bluetooth",
@@ -141,5 +142,33 @@
   },
   "tests": [
     "tests/*.json"
-  ]
+  ],
+  "i18n": {
+    "fr": {
+      "source": "4b8f842cab5b",
+      "description": "Un téléphone exécutant un navigateur Bluetooth LE (nRF Connect, LightBlue) : il balaie, se connecte au périphérique indiqué en tant que central de la connexion, et liste sa base GATT : services, caractéristiques, leurs propriétés et les valeurs qu'il peut lire. Il n'atteint le circuit que par l'air.",
+      "fidelity": {
+        "functional": {
+          "claims": "Balayage des canaux d'annonce primaires à tour de rôle, un CONNECT_IND T_IFS après l'ADV_IND de la cible (Bluetooth Core 5.4 Vol 6 Part B 2.3.3.1) ; la connexion en tant que central en 1M : événements de connexion à chaque intervalle sur l'algorithme de sélection de canal n° 1, l'acquittement et le renvoi par numéros de séquence, charges utiles de 27 octets avec la fragmentation L2CAP, le délai de supervision, une connexion sans nouvelles pendant six intervalles considérée comme non établie (0x3E) et retentée (4.5) ; l'échange de fonctionnalités, la version, la longueur de données et la terminaison de l'esclave reçoivent une réponse, LL_UNKNOWN_RSP sinon (5.1) ; la découverte GATT en client : l'échange de MTU, les services primaires, les caractéristiques, la lecture de celles qui sont lisibles (Vol 3 Part G 4) ; les indications confirmées ; les requêtes de mise à jour de paramètres L2CAP rejetées ; l'appairage non pris en charge.",
+          "omissions": [
+            "le balayage actif",
+            "l'algorithme de sélection de canal n° 2",
+            "les PHY 2M et Coded",
+            "l'extension de longueur de données",
+            "le chiffrement et l'appairage",
+            "les écritures, les abonnements et les descripteurs",
+            "les mises à jour des paramètres de connexion",
+            "la latence de l'esclave",
+            "plus de 16 services et 48 caractéristiques"
+          ]
+        },
+        "timed": {
+          "claims": "Comme en fonctionnel."
+        },
+        "electrical": {
+          "claims": "Comme en fonctionnel : il n'a pas de broches."
+        }
+      }
+    }
+  }
 }

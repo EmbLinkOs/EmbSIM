@@ -1,0 +1,73 @@
+{
+  "schema_version": 1,
+  "kind": "component_test",
+  "name": "response-decay",
+  "policy": "electrical",
+  "until": "240ms",
+  "circuit": {
+    "components": [
+      {
+        "id": "V",
+        "component": "emblink/vsource",
+        "params": {
+          "dc": 5
+        }
+      },
+      {
+        "id": "R",
+        "component": "emblink/resistor",
+        "params": {
+          "resistance": 15000
+        }
+      },
+      {
+        "id": "DUT",
+        "component": "emblink/gl5528",
+        "params": {
+          "tolerance": 0
+        }
+      },
+      {
+        "id": "G",
+        "component": "emblink/gnd"
+      }
+    ],
+    "nets": {
+      "VCC": [
+        "V.+",
+        "R.1"
+      ],
+      "SENSE": [
+        "R.2",
+        "DUT.1"
+      ],
+      "GND": [
+        "DUT.2",
+        "V.-",
+        "G.GND"
+      ]
+    }
+  },
+  "expect": {
+    "net:SENSE": {
+      "at": "230ms",
+      "min_v": 1.599,
+      "max_v": 1.631
+    }
+  },
+  "inputs": [
+    {
+      "at": "10ms",
+      "target": "DUT",
+      "input": "illuminance",
+      "value": 100
+    },
+    {
+      "at": "200ms",
+      "target": "DUT",
+      "input": "illuminance",
+      "value": 10
+    }
+  ],
+  "description": "The datasheet's 30 ms decay at 10 lux: settled at 100 lux (3.77 kOhm), the light goes back to 10 lux at 200 ms; one decay constant later the conductance is 1/e of the way back from 265.3 uS to 66.7 uS, 139.7 uS: 7.16 kOhm, 1.615 V under 15 kOhm from 5 V."
+}

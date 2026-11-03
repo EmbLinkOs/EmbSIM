@@ -4,7 +4,8 @@
   "id": "emblink/cd4017",
   "version": "1.0.0",
   "name": "CD4017 decade counter",
-  "category": "logic",
+  "category": "cmos_4000",
+  "subcategory": "counters",
   "description": "Decade counter with ten decoded outputs (CD4017): each CP0 rising edge (CP1_N low) moves the high output from Q0 to Q9 and round; MR resets to Q0; CO is high for counts 0-4. The classic LED chaser.",
   "keywords": [
     "logic",
@@ -320,5 +321,36 @@
   },
   "tests": [
     "tests/*.json"
-  ]
+  ],
+  "i18n": {
+    "fr": {
+      "source": "429bc3b0ff9b",
+      "description": "Compteur décimal à dix sorties décodées (CD4017) : chaque front montant de CP0 (CP1_N basse) déplace la sortie haute de Q0 à Q9 puis recommence ; MR ramène à Q0 ; CO est haute pour les comptes 0-4. Le chenillard à LED classique.",
+      "fidelity": {
+        "functional": {
+          "claims": "Compte sur les fronts montants de CP0 tant que CP1_N est bas ; MR remet à zéro ; CO haut pour 0-4.",
+          "omissions": [
+            "le comptage sur les fronts descendants de CP1_N",
+            "les états internes du compteur Johnson à 5 étages"
+          ]
+        },
+        "timed": {
+          "claims": "Comme en fonctionnel ; délais tels qu'indiqués.",
+          "omissions": [
+            "le comptage sur les fronts descendants de CP1_N",
+            "les états internes du compteur Johnson à 5 étages"
+          ]
+        },
+        "electrical": {
+          "claims": "Les broches se relient aux réseaux analogiques avec les modèles de broche par défaut de la famille ; le comportement est celui du modèle Lua.",
+          "omissions": [
+            "le comptage sur les fronts descendants de CP1_N",
+            "les états internes du compteur Johnson à 5 étages",
+            "le courant d'alimentation",
+            "les limites de courant de sortie"
+          ]
+        }
+      }
+    }
+  }
 }

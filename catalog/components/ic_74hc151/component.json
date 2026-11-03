@@ -4,7 +4,8 @@
   "id": "emblink/ic_74hc151",
   "version": "1.0.0",
   "name": "74HC151 8-input multiplexer",
-  "category": "logic",
+  "category": "ttl_74",
+  "subcategory": "multiplexers",
   "description": "8-input multiplexer with complementary outputs (74HC151): Y is the input chosen by S2-S0 while E_N is low.",
   "keywords": [
     "logic",
@@ -294,5 +295,33 @@
   },
   "tests": [
     "tests/*.json"
-  ]
+  ],
+  "i18n": {
+    "fr": {
+      "source": "6d302949a75a",
+      "description": "Multiplexeur à 8 entrées avec sorties complémentaires (74HC151) : Y est l'entrée choisie par S2-S0 tant que E_N est bas.",
+      "fidelity": {
+        "functional": {
+          "claims": "Table de fonctions du 74HC151.",
+          "omissions": [
+            "les parasites pendant les changements de sélection"
+          ]
+        },
+        "timed": {
+          "claims": "Comme en fonctionnel ; délais tels qu'indiqués.",
+          "omissions": [
+            "les parasites pendant les changements de sélection"
+          ]
+        },
+        "electrical": {
+          "claims": "Les broches se relient aux réseaux analogiques avec les modèles de broche par défaut de la famille ; le comportement est celui du modèle Lua.",
+          "omissions": [
+            "les parasites pendant les changements de sélection",
+            "le courant d'alimentation",
+            "les limites de courant de sortie"
+          ]
+        }
+      }
+    }
+  }
 }

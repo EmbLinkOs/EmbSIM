@@ -86,6 +86,11 @@ void esk_nrf_pwm_roles(struct esk_mach *m, signed char *drive);
 /* the ports' levels and DETECT signal after a change, for GPIOTE */
 void esk_nrf_gpiote_levels(struct esk_mach *m, const u32 *levels, int detect);
 
+/* the NVMC and the UICR it programs (nvmc.c) */
+extern const struct esk_dev_ops esk_nrf_nvmc_ops, esk_nrf_uicr_ops;
+void *esk_nrf_nvmc_create(struct esk_mach *m, struct esk_rf_periph *p);
+void *esk_nrf_uicr_create(struct esk_mach *m, struct esk_rf_periph *p);
+
 extern const struct esk_dev_ops esk_nrf_clock_ops, esk_nrf_gpio_ops, esk_nrf_gpiote_ops, esk_nrf_uart_ops,
     esk_nrf_timer_ops, esk_nrf_rtc_ops, esk_nrf_spim_ops, esk_nrf_pwm_ops, esk_nrf_saadc_ops;
 void *esk_nrf_clock_create(struct esk_mach *m, struct esk_rf_periph *p);

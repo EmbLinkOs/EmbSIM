@@ -8,10 +8,13 @@
  * interactive input touches the island so the step restarts from now */
 static es_status adev_on_set(esk_comp *c, const char *input, const esk_json *value)
 {
-    ES_UNUSED(input);
     ES_UNUSED(value);
-    if (c->adev && c->adev->isl)
+    if (c->adev && c->adev->isl) {
+        /* a device that acts on an input at once (an instrument's Run): told now, so two
+         * changes at the same instant are both seen */
+        esk_adev_on_input(c->adev, input, c->e->sched.now);
         esk_island_touch(c->adev->isl, c->e->sched.now);
+    }
     return ES_OK;
 }
 

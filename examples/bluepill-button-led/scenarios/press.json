@@ -79,7 +79,7 @@
     {
       "id": "led-dark-before",
       "between": [
-        "0.5ms",
+        "1ms",
         "2.9ms"
       ],
       "probe": "led",

@@ -124,16 +124,24 @@ static void xfer(struct c3_spimem *k, const struct bits *t, int nin, int at)
 static void user_cmd(struct c3_spimem *k)
 {
     struct bits t;
-    u32 user = reg(k->user);
-    int nin = 0, at = 0, i;
+    u32 user = reg(k->user), rel_addr = 0;
+    u8 rel[64];
+    int nin = 0, at = 0, i, rel_len = 0, released = 0;
     memset(&t, 0, sizeof t);
+    /* a page program while a manual encryption's line is released writes
+     * that line's ciphertext at its address (xts.c) */
+    if ((user & USER_COMMAND) && (reg(k->user2) & 0xffu) == 0x02u)
+        released = esk_esp32c3_xts_take(k->s, &rel_addr, rel, &rel_len);
     if (user & USER_COMMAND)
         put_bits(&t, reg(k->user2) & 0xffffu, (int)(reg(k->user2) >> 28 & 15u) + 1);
     if (user & USER_ADDR) {
         int n = (int)(reg(k->user1) >> 26 & 63u) + 1;
-        put_bits(&t, reg(k->addr) & (n >= 32 ? 0xffffffffu : ((1u << n) - 1u)), n);
+        put_bits(&t, (released ? rel_addr : reg(k->addr)) & (n >= 32 ? 0xffffffffu : ((1u << n) - 1u)), n);
     }
-    if (user & USER_MOSI) {
+    if (released) {
+        for (i = 0; i < rel_len; i++)
+            put_bits(&t, rel[i], 8);
+    } else if (user & USER_MOSI) {
         int nbits = (int)(reg(k->mosi_dlen) & 0x3ffu) + 1,
             from = user & USER_MOSI_HIGHPART ? 32 : 0;
         for (i = 0; i < nbits / 8; i++)
@@ -160,8 +168,17 @@ static void simple(struct c3_spimem *k, u8 op, const u8 *data, int n, int nin)
 static void addr_cmd(struct c3_spimem *k, u8 op, int with_data)
 {
     u8 d[3 + 64];
-    u32 a = reg(k->addr);
-    int n = 3, i;
+    u32 a = reg(k->addr), rel_addr = 0;
+    int n = 3, i, rel_len = 0;
+    /* a page program while a manual encryption's line is released writes
+     * that line's ciphertext at its address, ADDR aside (xts.c) */
+    if (op == 0x02 && esk_esp32c3_xts_take(k->s, &rel_addr, d + 3, &rel_len)) {
+        d[0] = (u8)(rel_addr >> 16);
+        d[1] = (u8)(rel_addr >> 8);
+        d[2] = (u8)rel_addr;
+        simple(k, op, d, 3 + rel_len, 0);
+        return;
+    }
     d[0] = (u8)(a >> 16);
     d[1] = (u8)(a >> 8);
     d[2] = (u8)a;

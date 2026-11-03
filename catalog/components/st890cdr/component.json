@@ -4,7 +4,8 @@
   "id": "emblink/st890cdr",
   "version": "1.0.0",
   "name": "ST890CDR power distribution switch",
-  "category": "power",
+  "category": "analog_ics",
+  "subcategory": "power_switches",
   "description": "STMicroelectronics ST890CDR, a P-channel high-side power distribution switch with an active-low ON input, a programmable current limit (SET) and a fault output, in SO-8: the NUCLEO-144's (MB1137) U4, which joins the ST-LINK's USB 5 V to the board once the ST-LINK pulls ON low.",
   "keywords": [
     "power switch",
@@ -193,5 +194,32 @@
     "manufacturer": "STMicroelectronics",
     "package": "SO-8",
     "datasheet": "https://www.st.com/resource/en/datasheet/st890.pdf"
+  },
+  "i18n": {
+    "fr": {
+      "source": "78ec0eabd3aa",
+      "description": "STMicroelectronics ST890CDR, un interrupteur de distribution d'alimentation côté haut canal P avec une entrée ON active à l'état bas, une limite de courant programmable (SET) et une sortie de défaut, en SO-8 : le U4 de la NUCLEO-144 (MB1137), qui relie le 5 V USB du ST-LINK à la carte une fois que le ST-LINK tire ON vers le bas.",
+      "fidelity": {
+        "functional": {
+          "claims": "Broches seulement : la politique fonctionnelle n'a pas de tensions d'alimentation.",
+          "omissions": [
+            "la commutation"
+          ]
+        },
+        "timed": {
+          "claims": "Comme en électrique."
+        },
+        "electrical": {
+          "claims": "L'interrupteur entre IN et OUT, fermé tant que ON est maintenu bas et ouvert tant que ON est à IN, comme un MOSFET canal P d'environ 70 mOhms avec 5 V sur IN et ON à 0 V.",
+          "omissions": [
+            "la fiche technique n'était pas disponible : la résistance à l'état passant (environ 70 mOhms) et le seuil de ON (environ 1 V sous IN) sont supposés, pas les valeurs du ST890",
+            "la limite de courant que programme SET, la protection thermique et la sortie de défaut (FAULT ne s'active jamais)",
+            "le blocage du courant inverse et la diode intrinsèque",
+            "la vitesse de mise en marche et le courant d'alimentation",
+            "la température, les dommages"
+          ]
+        }
+      }
+    }
   }
 }

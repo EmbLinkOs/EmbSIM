@@ -4,7 +4,8 @@
  "id": "emblink/st7735_tft18",
  "version": "0.1.0",
  "name": "1.8\" 128 x 160 TFT (ST7735R)",
- "category": "displays",
+ "category": "optoelectronics",
+ "subcategory": "lcd",
  "description": "A 1.8 inch 128 x 160 colour TFT on a Sitronix ST7735R controller, driven over its 4-wire SPI interface (SCK, SDA, CS, D/C, RESET), with its backlight: the display of Adafruit's 1.8\" TFT breakout and shield and of many 1.8\" modules.",
  "keywords": [
   "tft",
@@ -258,5 +259,30 @@
  },
  "tests": [
   "tests/*.json"
- ]
+ ],
+  "i18n": {
+    "fr": {
+      "source": "e309132fa04a",
+      "description": "Un TFT couleur de 1,8 pouce, 128 x 160, sur un contrôleur Sitronix ST7735R, piloté par son interface SPI à 4 fils (SCK, SDA, CS, D/C, RESET), avec son rétroéclairage : l'afficheur du module et du shield TFT 1,8\" d'Adafruit et de nombreux modules de 1,8\".",
+      "fidelity": {
+        "functional": {
+          "claims": "L'interface série à 4 fils du ST7735R (les bits sur le front montant de SCL, D/CX avec le dernier bit, CSX ne remettant à zéro que le compteur de bits) et sa mémoire d'image de 128 x 160 pixels sur 18 bits : CASET, RASET (chaque adresse prise à mesure que ses deux octets arrivent, si bien qu'une commande interrompue après son début garde la fin, ce sur quoi compte le pilote de ST) et RAMWR dans la fenêtre, MV, MX, MY et RGB de MADCTL, les 12, 16 et 18 bits par pixel de COLMOD, SLPIN/SLPOUT, DISPON/DISPOFF, INVON/INVOFF, IDMON/IDMOFF, PTLON avec PTLAR, NORON, SWRESET et RESX, un octet arrivé pendant leur temps d'annulation de réinitialisation de 5 ms (le maximum de la fiche technique) pris et signalé une fois ; après une réinitialisation il dort, son affichage éteint. La dalle montre du blanc tant qu'elle est vide et rien sans alimentation ni rétroéclairage ; la mémoire contient du bruit tant qu'elle n'est pas écrite. La dalle telle qu'on tient le module (ses broches en haut) : le point (0, 0) de la mémoire d'image en bas à droite, si bien que MX et MY de MADCTL (tels que les règlent les pilotes d'Adafruit et de ST) donnent une image droite ; les sorties la montrent ainsi.",
+          "omissions": [
+            "les interfaces à 3 fils (9 bits) et parallèles",
+            "les commandes de lecture (RDDID, RDDST, RAMRD) : SDA n'est jamais piloté",
+            "le défilement vertical (SCRLAR, VSCSAD) et la sortie d'effet de déchirement",
+            "la fréquence d'image, le temps de réponse de la dalle et l'effet des courbes de gamma sur les couleurs (B1 à C5, E0, E1 et GAMSET sont pris sans effet)",
+            "les 120 ms qu'un SLPOUT demande avant un SLPIN, et le courant d'alimentation",
+            "un exemplaire plus lent que le typique : un octet arrivé pendant le temps d'annulation de réinitialisation est toujours pris"
+          ]
+        },
+        "timed": {
+          "claims": "Comme en fonctionnel."
+        },
+        "electrical": {
+          "claims": "Comme en fonctionnel, son alimentation un seuil sur VCC."
+        }
+      }
+    }
+  }
 }

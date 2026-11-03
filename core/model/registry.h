@@ -37,6 +37,29 @@ extern const esk_model_ops esk_usb_mouse_ops;
 extern const esk_model_ops esk_st7735_ops;
 /* a USB flash drive: Bulk-Only mass storage, SCSI, a FAT16 medium (usb_flash_drive.c) */
 extern const esk_model_ops esk_usb_flash_drive_ops;
+/* its CDC ACM serial port, for a host port (session/hostport.c): the bytes
+ * come so far (the last *len of *total), whether it is open, room to send,
+ * what is sent, and the terminal's side of the line (a program holds the
+ * port: DTR with it, its baud rate as the line coding) */
+const uint8_t *esk_usb_host_cdc_rx(struct esk_comp *c, uint64_t *total, size_t *len);
+int esk_usb_host_cdc_open(struct esk_comp *c);
+size_t esk_usb_host_cdc_room(struct esk_comp *c);
+size_t esk_usb_host_cdc_write(struct esk_comp *c, const uint8_t *b, size_t n);
+void esk_usb_host_cdc_line(struct esk_comp *c, int held, int dtr, uint32_t baud);
+/* ST's ST-LINK/V2-1 debug probe (st_link.c): its command interface as its
+ * USB bulk endpoints carry it, a 16-byte command `cmd` with a write's `out`
+ * data, answered into `in` (at most `cap` bytes; the length answered);
+ * whether a component is one; its serial number */
+extern const esk_model_ops esk_st_link_ops;
+size_t esk_stlink_command(struct esk_comp *c, const uint8_t cmd[16], const uint8_t *out, size_t nout, uint8_t *in,
+                          size_t cap);
+int esk_stlink_is(const struct esk_comp *c);
+/* the probe's trace read (its trace endpoint, stlink-server's READ_SWO):
+ * up to `cap` bytes of the SWO it has received */
+size_t esk_stlink_trace(struct esk_comp *c, uint8_t *in, size_t cap);
+const char *esk_stlink_serial(struct esk_comp *c);
+/* the Raspberry Pi Debug Probe: CMSIS-DAP v2 and a UART on its USB (debug_probe.c) */
+extern const esk_model_ops esk_debug_probe_ops;
 /* a web server on the internet beyond the routers (web_server.c) */
 extern const esk_model_ops esk_web_server_ops;
 /* an 8-channel logic analyzer, the Saleae Logic 8 (logic_analyzer.c) */

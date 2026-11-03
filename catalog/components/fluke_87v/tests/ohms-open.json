@@ -1,0 +1,44 @@
+{
+  "schema_version": 1,
+  "kind": "component_test",
+  "name": "ohms-open",
+  "description": "Nothing between the leads on ohms: OL.",
+  "policy": "electrical",
+  "until": "1500ms",
+  "circuit": {
+    "components": [
+      {
+        "id": "DUT",
+        "component": "emblink/fluke_87v"
+      },
+      {
+        "id": "G",
+        "component": "emblink/gnd"
+      }
+    ],
+    "nets": {
+      "GND": [
+        "DUT.COM",
+        "G.GND"
+      ]
+    }
+  },
+  "expect": {
+    "output:DUT.display": {
+      "at": "1500ms",
+      "equals": "OL"
+    },
+    "output:DUT.overload": {
+      "at": "1500ms",
+      "equals": true
+    }
+  },
+  "inputs": [
+    {
+      "at": "0s",
+      "target": "DUT",
+      "input": "function",
+      "value": "ohm"
+    }
+  ]
+}

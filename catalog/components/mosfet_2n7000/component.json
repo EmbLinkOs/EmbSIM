@@ -5,6 +5,7 @@
   "version": "1.0.0",
   "name": "2N7000",
   "category": "transistors",
+  "subcategory": "mosfet_n",
   "description": "2N7000 (TO-92). Parameterized nmos approximation for low-frequency circuit development; not a vendor SPICE model.",
   "keywords": [
     "onsemi",
@@ -162,5 +163,30 @@
   },
   "artwork": {
     "svg": "artwork.svg"
+  },
+  "i18n": {
+    "fr": {
+      "source": "1c7c3e2d253a",
+      "description": "2N7000 (TO-92). Approximation paramétrée par nmos pour la conception de circuits basse fréquence ; pas un modèle SPICE du fabricant.",
+      "fidelity": {
+        "electrical": {
+          "claims": "Approximation paramétrée par nmos ; couverture par des cas de test en continu et basse fréquence uniquement.",
+          "omissions": [
+            "la diode intrinsèque",
+            "la conduction sous le seuil",
+            "la température",
+            "l'avalanche",
+            "la non-linéarité de la charge de grille",
+            "les tolérances min/max du fabricant",
+            "le comportement thermique ou destructif",
+            "la dispersion d'un exemplaire à l'autre",
+            "le comportement à haute fréquence, non vérifié",
+            "aucune qualification par un modèle du fabricant",
+            "les capacités de jonction",
+            "le stockage de charge et la recouvrement inverse"
+          ]
+        }
+      }
+    }
   }
 }

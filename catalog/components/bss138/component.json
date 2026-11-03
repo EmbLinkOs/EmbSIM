@@ -5,6 +5,7 @@
   "version": "1.0.0",
   "name": "BSS138",
   "category": "transistors",
+  "subcategory": "mosfet_n",
   "description": "BSS138 (SOT-23). Parameterized nmos approximation for low-frequency circuit development; not a vendor SPICE model.",
   "keywords": [
     "onsemi",
@@ -186,5 +187,30 @@
       ]
     },
     "label": "BSS138"
+  },
+  "i18n": {
+    "fr": {
+      "source": "10b99ca182df",
+      "description": "BSS138 (SOT-23). Approximation paramétrée par nmos pour la conception de circuits basse fréquence ; pas un modèle SPICE du fabricant.",
+      "fidelity": {
+        "electrical": {
+          "claims": "Approximation paramétrée par nmos ; couverture par des cas de test en continu et basse fréquence uniquement.",
+          "omissions": [
+            "la diode intrinsèque",
+            "la conduction sous le seuil",
+            "la température",
+            "l'avalanche",
+            "la non-linéarité de la charge de grille",
+            "les tolérances min/max du fabricant",
+            "le comportement thermique ou destructif",
+            "la dispersion d'un exemplaire à l'autre",
+            "le comportement à haute fréquence, non vérifié",
+            "aucune qualification par un modèle du fabricant",
+            "les capacités de jonction",
+            "le stockage de charge et la recouvrement inverse"
+          ]
+        }
+      }
+    }
   }
 }

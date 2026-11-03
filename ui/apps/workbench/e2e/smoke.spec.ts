@@ -15,7 +15,7 @@ test('open, run, press, observe, export', async ({ page }) => {
   await expect(page.getByRole('img', { name: /Oscilloscope/ })).toBeVisible();
 
   await page.getByRole('button', { name: 'Run', exact: true }).click();
-  await expect(page.getByTestId('clock')).toContainText('run');
+  await expect(page.getByTestId('sim-state')).toHaveAttribute('data-state', 'running');
 
   // Operate the on-sheet contact while the demo engine runs. The optional
   // 3D bench is no longer mounted automatically in Run.
@@ -30,7 +30,7 @@ test('open, run, press, observe, export', async ({ page }) => {
   await expect(schematic.locator('#emitter')).not.toHaveAttribute('opacity', '0.000');
 
   await page.getByRole('button', { name: 'Pause' }).click();
-  await expect(page.getByTestId('clock')).toContainText('paused');
+  await expect(page.getByTestId('sim-state')).toHaveAttribute('data-state', 'paused');
 
   const download = page.waitForEvent('download');
   await page.getByRole('button', { name: 'CSV' }).first().click();
@@ -48,11 +48,13 @@ test('keyboard: place and wire from the library, light theme contrast', async ({
   await page.keyboard.press('Enter');
   await expect(page.getByRole('button', { name: /Pin C1.1, net COLL/ })).toBeVisible();
 
-  // the theme follows the system first; the toggle switches to the other
+  // the theme follows the system first; Settings switches it to the other, at once
   const before = await page.locator('html').getAttribute('data-theme');
   const other = before === 'dark' ? 'light' : 'dark';
-  await page.getByRole('button', { name: `Switch to ${other} theme` }).click();
+  await page.getByRole('button', { name: 'Settings', exact: true }).click();
+  await page.getByRole('radio', { name: other === 'dark' ? 'Dark' : 'Light', exact: true }).click();
   await expect(page.locator('html')).toHaveAttribute('data-theme', other);
+  await page.getByRole('button', { name: 'Back to the workbench' }).click();
 });
 
 test('schematic studio: worker preview, apply, undo and focus mode', async ({ page }) => {

@@ -5,6 +5,7 @@
   "version": "0.1.0",
   "name": "Ammeter (shunt burden)",
   "category": "instruments",
+  "subcategory": "meters",
   "description": "Insert in series. The shunt resistance develops a burden voltage and reduces the current being measured; + to - is positive current.",
   "keywords": [
     "instrument",
@@ -108,5 +109,22 @@
   },
   "tests": [
     "tests/*.json"
-  ]
+  ],
+  "i18n": {
+    "fr": {
+      "source": "ad9822aaec45",
+      "description": "À insérer en série. La résistance du shunt crée une chute de tension et réduit le courant mesuré ; de + vers - est un courant positif.",
+      "fidelity": {
+        "electrical": {
+          "claims": "Résistance linéaire finie ; tension aux bornes et courant observés avec leur signe.",
+          "omissions": [
+            "Les calibres, la précision, le bruit et l'étalonnage propres au fabricant",
+            "La protection contre les surcharges, la fusion du fusible, l'échauffement et les dommages",
+            "Les limites de bande passante et la quantification de l'échantillonnage et de l'ADC",
+            "Les limites de mode commun et une liaison à la terre ou au châssis ; le cordon de référence doit être câblé explicitement"
+          ]
+        }
+      }
+    }
+  }
 }

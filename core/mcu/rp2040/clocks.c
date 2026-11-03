@@ -62,6 +62,8 @@ u64 esk_rp_put(u64 v, u64 mask, u32 x)
     return (v & ~mask) | (((u64)x << sh) & mask);
 }
 
+static void hz_forget(struct esk_mach *s);
+
 void *esk_rp_model(struct esk_mach *m, const char *name, const struct esk_dev_ops *ops)
 {
     struct esk_rf_periph *p = m->rf ? esk_rf_periph(m->rf, name) : 0;
@@ -156,6 +158,7 @@ static void xosc_reset(void *ctx)
     x->stable_at = 0;
     x->count_from = 0;
     xosc_status(x);
+    hz_forget(x->s);
 }
 
 const struct esk_dev_ops esk_rp2040_xosc_ops = {
@@ -234,7 +237,11 @@ static void rosc_write(void *ctx, u32 off, int n, u32 v)
     esk_rp2040_clock_change(r->s);
 }
 
-static void rosc_reset(void *ctx) { rosc_status((struct rosc *)ctx); }
+static void rosc_reset(void *ctx)
+{
+    rosc_status((struct rosc *)ctx);
+    hz_forget(((struct rosc *)ctx)->s);
+}
 
 const struct esk_dev_ops esk_rp2040_rosc_ops = {
     "rp2040-rosc", rosc_read, rosc_write, rosc_reset, 0, 0,
@@ -319,7 +326,11 @@ static void pll_write(void *ctx, u32 off, int n, u32 v)
     esk_rp2040_clock_change(q->s);
 }
 
-static void pll_reset(void *ctx) { pll_status((struct pll *)ctx); }
+static void pll_reset(void *ctx)
+{
+    pll_status((struct pll *)ctx);
+    hz_forget(((struct pll *)ctx)->s);
+}
 
 const struct esk_dev_ops esk_rp2040_pll_ops = {
     "rp2040-pll", pll_read, pll_write, pll_reset, 0, 0,
@@ -371,10 +382,19 @@ struct clocks {
     u64 m_done, m_pass, m_khz, m_frac_khz;
     u32 sys_hz; /* clk_sys as the runtime last had it */
     int in_change;
+    /* each clock's frequency as last worked out, good until hz_until (the
+     * crystal's startup ending) or a change to the clocks: the watchdog's
+     * tick asks for clk_ref and clk_sys at every step */
+    u32 hz[RP_NCLK];
+    u8 hz_ok[RP_NCLK];
+    u64 hz_until;
 };
 
 static struct clocks *clocks_of(struct esk_mach *s)
 {
+    /* the clock model registers itself as the machine's clock (its create) */
+    if (s->clock_ctx)
+        return (struct clocks *)s->clock_ctx;
     return (struct clocks *)esk_rp_model(s, "CLOCKS", &esk_rp2040_clocks_ops);
 }
 
@@ -431,12 +451,30 @@ static u32 clk_hz(struct esk_mach *s, const struct clocks *c, int k)
     return 0;
 }
 
+/* the clocks' frequencies are to be worked out again */
+static void hz_forget(struct esk_mach *s)
+{
+    struct clocks *c = s->clock_ctx ? (struct clocks *)s->clock_ctx : 0;
+    if (c)
+        memset(c->hz_ok, 0, sizeof c->hz_ok);
+}
+
 u32 esk_rp2040_hz(struct esk_mach *s, int clk)
 {
     struct clocks *c = clocks_of(s);
+    struct xosc *x;
     if (!c)
         return clk == RP_CLK_SYS || clk == RP_CLK_REF || clk == RP_CLK_PERI ? RP_ROSC_HZ : 0;
-    return clk_hz(s, c, clk);
+    if (clk < 0 || clk >= RP_NCLK)
+        return 0;
+    if (c->hz_ok[clk] && s->cycles < c->hz_until)
+        return c->hz[clk];
+    c->hz[clk] = clk_hz(s, c, clk);
+    c->hz_ok[clk] = 1;
+    /* until the crystal is stable, a frequency from it may change on its own */
+    x = (struct xosc *)esk_rp_model(s, "XOSC", &esk_rp2040_xosc_ops);
+    c->hz_until = x && xosc_on(x) && s->cycles < x->stable_at ? x->stable_at : ~UINT64_C(0);
+    return c->hz[clk];
 }
 
 static u32 core_hz(struct esk_mach *m)
@@ -449,6 +487,7 @@ void esk_rp2040_clock_change(struct esk_mach *s)
 {
     struct clocks *c = clocks_of(s);
     u32 hz;
+    hz_forget(s);
     if (!c || c->in_change)
         return;
     c->in_change = 1;
@@ -519,6 +558,7 @@ static void clocks_reset(void *ctx)
     struct clocks *c = (struct clocks *)ctx;
     selected(c);
     c->sys_hz = RP_ROSC_HZ;
+    memset(c->hz_ok, 0, sizeof c->hz_ok);
 }
 
 const struct esk_dev_ops esk_rp2040_clocks_ops = {
@@ -577,6 +617,7 @@ struct resets {
 
 static void resets_apply(struct resets *r, u64 was)
 {
+    hz_forget(r->s);
     u64 now = r->reset->value & r->mask, d;
     int b, k;
     for (b = 0; b < 32; b++)
@@ -799,7 +840,7 @@ static void wd_tick(void *ctx, u32 cycles)
     struct watchdog *w = (struct watchdog *)ctx;
     struct esk_mach *s = w->s;
     u64 ref = esk_rp2040_hz(s, RP_CLK_REF), sys = esk_rp2040_hz(s, RP_CLK_SYS), one;
-    u32 per = esk_rp2040_tick_cycles(s), n;
+    u32 per = fld(w->tick, w->m_tick_en) ? (u32)fld(w->tick, w->m_cycles) : 0u, n; /* its own TICK: no lookup */
     if (!ref || !sys || !per)
         return;
     cycles = esk_mach_after(s, cycles, w->since); /* the instruction that started it */

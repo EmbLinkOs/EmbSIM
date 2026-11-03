@@ -130,9 +130,10 @@ control), per island. Design points:
 - **Transient.** Step proposals from LTE; events clip steps; breakpoints from
   sources (PWL corners, pulse edges) are honoured exactly; threshold crossings
   at bridges are bisected to the configured resolution.
-- **Linear algebra.** Dense LU for small islands (the common case around an
-  MCU: tens of nodes), a sparse direct solver for larger ones, selected by
-  size; both deterministic (fixed pivot order per topology).
+- **Linear algebra.** LU with partial pivoting in a minimum-degree order
+  computed once per topology, eliminating over each pivot row's nonzeros
+  (SPEC-004 §5); deterministic (the order is the topology's alone). Sparse
+  storage for very large islands is not yet done.
 - **Device models, 1.0:** resistor, capacitor, inductor, independent V and I
   sources (DC, pulse, sine, PWL, from a digital bridge), voltage-controlled
   switch, potentiometer, diode (Shockley with series resistance and optional

@@ -4,7 +4,8 @@
   "id": "emblink/usb_mouse",
   "version": "0.1.0",
   "name": "USB mouse (low-speed HID boot mouse)",
-  "category": "inputs",
+  "category": "miscellaneous",
+  "subcategory": "usb_devices",
   "description": "A wired USB mouse on its cable: a low-speed HID device of the boot mouse protocol (three buttons, X, Y and a wheel), bus powered. Its inputs move it and press its buttons; a host (a computer's port, a microcontroller's USB host) enumerates it and polls its reports.",
   "keywords": [
     "usb",
@@ -200,5 +201,27 @@
   },
   "tests": [
     "tests/*.json"
-  ]
+  ],
+  "i18n": {
+    "fr": {
+      "source": "0354d5eccae9",
+      "description": "Une souris USB filaire sur son câble : un périphérique HID basse vitesse du protocole de souris d'amorçage (trois boutons, X, Y et une molette), alimenté par le bus. Ses entrées la déplacent et pressent ses boutons ; un hôte (le port d'un ordinateur, l'hôte USB d'un microcontrôleur) l'énumère et interroge ses rapports.",
+      "fidelity": {
+        "functional": {
+          "claims": "Un périphérique USB 2.0 basse vitesse (D- rappelé au niveau haut) avec les requêtes standard du chapitre 9 (GET_DESCRIPTOR, SET_ADDRESS effectif après son étape d'état, SET/GET_CONFIGURATION, GET_STATUS, SET/CLEAR_FEATURE pour le réveil à distance et l'arrêt d'un point de terminaison, GET/SET_INTERFACE), EP0 en paquets de 8 octets, les bascules de données par point de terminaison, connecté tant que VBUS dépasse 4,4 V ; la souris d'amorçage de HID 1.11 : ses descripteurs HID et de rapport, GET_REPORT, GET/SET_IDLE (un rapport d'inactivité à chaque durée), GET/SET_PROTOCOL, un point de terminaison d'interruption IN de 4 octets interrogé toutes les 10 ms qui répond par un rapport quand les boutons ou le mouvement ont changé (au plus 127 pas dans chaque sens par rapport), NAK sinon.",
+          "omissions": [
+            "son courant d'alimentation sur VBUS (les 20 à 100 mA d'une souris)",
+            "la signalisation de réveil à distance (un appui sur un bouton sur un bus en veille)",
+            "la résolution et l'accélération d'un capteur optique : le mouvement est le nombre de pas des entrées"
+          ]
+        },
+        "timed": {
+          "claims": "Comme en fonctionnel."
+        },
+        "electrical": {
+          "claims": "Comme en fonctionnel."
+        }
+      }
+    }
+  }
 }

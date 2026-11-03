@@ -1,0 +1,225 @@
+{
+  "schema_version": 1,
+  "kind": "scenario",
+  "name": "LCDemo7Segment",
+  "until": "7s",
+  "inputs": [],
+  "assertions": [
+    {
+      "id": "woken",
+      "at": "100ms",
+      "probe": "on",
+      "expect": {
+        "equals": true
+      }
+    },
+    {
+      "id": "intensity",
+      "at": "100ms",
+      "probe": "intensity",
+      "expect": {
+        "equals": 8
+      }
+    },
+    {
+      "id": "step00",
+      "at": "125ms",
+      "probe": "text",
+      "expect": {
+        "equals": "       A"
+      }
+    },
+    {
+      "id": "step01",
+      "at": "375ms",
+      "probe": "text",
+      "expect": {
+        "equals": "       r"
+      }
+    },
+    {
+      "id": "step02",
+      "at": "625ms",
+      "probe": "text",
+      "expect": {
+        "equals": "       d"
+      }
+    },
+    {
+      "id": "step03",
+      "at": "875ms",
+      "probe": "text",
+      "expect": {
+        "equals": "       u"
+      }
+    },
+    {
+      "id": "step04",
+      "at": "1125ms",
+      "probe": "text",
+      "expect": {
+        "equals": "       i"
+      }
+    },
+    {
+      "id": "step05",
+      "at": "1375ms",
+      "probe": "text",
+      "expect": {
+        "equals": "       n"
+      }
+    },
+    {
+      "id": "step06",
+      "at": "1625ms",
+      "probe": "text",
+      "expect": {
+        "equals": "       o"
+      }
+    },
+    {
+      "id": "step07",
+      "at": "1875ms",
+      "probe": "text",
+      "expect": {
+        "equals": "        "
+      }
+    },
+    {
+      "id": "step08",
+      "at": "2125ms",
+      "probe": "text",
+      "expect": {
+        "equals": "    0123"
+      }
+    },
+    {
+      "id": "step09",
+      "at": "2375ms",
+      "probe": "text",
+      "expect": {
+        "equals": "    1234"
+      }
+    },
+    {
+      "id": "step10",
+      "at": "2625ms",
+      "probe": "text",
+      "expect": {
+        "equals": "    2345"
+      }
+    },
+    {
+      "id": "step11",
+      "at": "2875ms",
+      "probe": "text",
+      "expect": {
+        "equals": "    3456"
+      }
+    },
+    {
+      "id": "step12",
+      "at": "3125ms",
+      "probe": "text",
+      "expect": {
+        "equals": "    4567"
+      }
+    },
+    {
+      "id": "step13",
+      "at": "3375ms",
+      "probe": "text",
+      "expect": {
+        "equals": "    5678"
+      }
+    },
+    {
+      "id": "step14",
+      "at": "3625ms",
+      "probe": "text",
+      "expect": {
+        "equals": "    6789"
+      }
+    },
+    {
+      "id": "step15",
+      "at": "3875ms",
+      "probe": "text",
+      "expect": {
+        "equals": "    789A"
+      }
+    },
+    {
+      "id": "step16",
+      "at": "4125ms",
+      "probe": "text",
+      "expect": {
+        "equals": "    89Ab"
+      }
+    },
+    {
+      "id": "step17",
+      "at": "4375ms",
+      "probe": "text",
+      "expect": {
+        "equals": "    9Abc"
+      }
+    },
+    {
+      "id": "step18",
+      "at": "4625ms",
+      "probe": "text",
+      "expect": {
+        "equals": "    Abcd"
+      }
+    },
+    {
+      "id": "step19",
+      "at": "4875ms",
+      "probe": "text",
+      "expect": {
+        "equals": "    bcdE"
+      }
+    },
+    {
+      "id": "step20",
+      "at": "5125ms",
+      "probe": "text",
+      "expect": {
+        "equals": "    cdEF"
+      }
+    },
+    {
+      "id": "step21",
+      "at": "5375ms",
+      "probe": "text",
+      "expect": {
+        "equals": "        "
+      }
+    },
+    {
+      "id": "r-segments",
+      "at": "375ms",
+      "probe": "segments",
+      "expect": {
+        "equals": "00 00 00 00 00 00 00 05"
+      }
+    },
+    {
+      "id": "hex-segments",
+      "at": "4625ms",
+      "probe": "segments",
+      "expect": {
+        "equals": "00 00 00 00 77 1f 0d 3d"
+      }
+    },
+    {
+      "id": "again",
+      "at": "5625ms",
+      "probe": "text",
+      "expect": {
+        "equals": "       A"
+      }
+    }
+  ]
+}

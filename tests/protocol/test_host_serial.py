@@ -80,6 +80,17 @@ def open_port(path: str, baud: int) -> int:
     return fd
 
 
+def discover() -> dict:
+    """The Arduino IDE's view: tools/arduino's pluggable discovery, spoken to
+    as arduino-cli speaks to it."""
+    import subprocess
+    tool = ROOT / "tools/arduino/hardware/embsim/avr/embsim-discovery.py"
+    r = subprocess.run([sys.executable, str(tool)], input='HELLO 1 "test"\nSTART\nLIST\nSTOP\nQUIT\n',
+                       capture_output=True, text=True, timeout=30)
+    events = [json.loads(line) for line in r.stdout.splitlines() if line.strip()]
+    return {e["eventType"]: e for e in events}
+
+
 def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__)
     ap.add_argument("--embsim", required=True)
@@ -103,6 +114,12 @@ def main() -> int:
             path = port["path"]
             check(os.path.exists(path) and not port["connected"], f"B1's port is {path}, no program on it")
             check(c.call("port.open", {"target": "B1"})["path"] == path, "opening it again gives the same port")
+            ev = discover()
+            listed = [p for p in ev.get("list", {}).get("ports", []) if p["address"] == path]
+            check(ev.get("hello", {}).get("protocolVersion") == 1 and ev.get("quit", {}).get("message") == "OK"
+                  and len(listed) == 1 and listed[0]["protocol"] == "serial"
+                  and listed[0]["properties"].get("vid") == "0x2341" and listed[0]["properties"].get("pid") == "0x0043",
+                  f"the Arduino IDE's discovery lists it as an Uno (2341:0043): {listed}")
             c.call("control.run", {"speed": 1})
             # the power-on banner goes out to no one
             wait_for(lambda: int(c.call("session.info")["now_ps"]) > 50_000_000_000)
@@ -124,8 +141,9 @@ def main() -> int:
             states = [n.params for n in heard if n.method == "port.state"]
             check(any(s["connected"] for s in states), "port.state told of the connection")
             inputs = [n.params for n in heard if n.method == "record.input"]
-            check(any(i["target"] == "B1.SW_RESET" and i["input"] == "pressed" for i in inputs)
-                  and any(i["target"] == "B1" and i["input"] == "serial" and i["value"] == "hello, uno\n" for i in inputs),
+            check(any(i["target"] == "B1.DTR_RESET" and i["input"] == "pressed" for i in inputs)
+                  and any(i["target"] == "B1" and i["input"] == "serial"
+                         and i["value"] == {"text": "hello, uno\n", "wire": True} for i in inputs),
                   "the DTR reset and the host's bytes are recorded inputs")
 
             # the program sets 115200 on the line; the sketch stays at 9600
@@ -149,6 +167,8 @@ def main() -> int:
             c.call("control.pause")
             c.call("port.close", {"target": "B1"})
             check(c.call("port.list")["ports"] == [], "port.close removes it")
+            check(not [p for p in discover().get("list", {}).get("ports", []) if p["address"] == path],
+                  "and the discovery no longer lists it")
             try:
                 c.call("port.open", {"target": "U9"})
                 check(False, "a port on a target that is neither a board nor a terminal is refused")

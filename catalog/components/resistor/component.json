@@ -4,7 +4,8 @@
   "id": "emblink/resistor",
   "version": "1.0.0",
   "name": "Resistor",
-  "category": "passives",
+  "category": "resistors",
+  "subcategory": "fixed",
   "description": "Ideal linear resistor with optional temperature coefficients.",
   "keywords": [
     "resistor",
@@ -34,7 +35,16 @@
       "default": "1k",
       "doc": "Resistance",
       "min": "1m",
-      "max": "1G"
+      "max": "1G",
+      "spread": "tolerance"
+    },
+    "tolerance": {
+      "type": "number",
+      "unit": "%",
+      "default": 5,
+      "min": 0,
+      "max": 50,
+      "doc": "Tolerance: each part's resistance lies within this band of the nominal, drawn from the project's seed (ADR-034). 5 % is IEC 60062's code J, the usual grade of general-purpose carbon-film resistors; 0 for an exact part."
     },
     "tc1": {
       "type": "number",
@@ -104,12 +114,13 @@
       ]
     },
     "electrical": {
-      "claims": "Linear resistance r with tc1/tc2 temperature dependence (SPEC-004 §7 resistor).",
+      "claims": "Linear resistance r with tc1/tc2 temperature dependence (SPEC-004 §7 resistor); each instance's resistance drawn uniformly inside ±tolerance of the nominal from the project's seed and its id (ADR-034; nominal with settings.imperfections \"ideal\").",
       "omissions": [
         "thermal noise",
         "self-heating",
         "parasitic inductance and capacitance",
-        "power rating"
+        "power rating",
+        "the distribution inside the tolerance band (uniform: a manufacturer guarantees the band only)"
       ],
       "range": {
         "current_a": [
@@ -133,5 +144,36 @@
   },
   "tests": [
     "tests/*.json"
-  ]
+  ],
+  "i18n": {
+    "fr": {
+      "source": "5e39e2a3975b",
+      "description": "Résistance linéaire idéale avec coefficients de température facultatifs.",
+      "fidelity": {
+        "functional": {
+          "claims": "Un fil : les deux broches sont le même nœud logique.",
+          "omissions": [
+            "la résistance",
+            "les rappels formés avec d'autres composants"
+          ]
+        },
+        "timed": {
+          "claims": "Comme en électrique quand ses réseaux sont analogiques ; sinon un fil.",
+          "omissions": [
+            "le bruit"
+          ]
+        },
+        "electrical": {
+          "claims": "Résistance linéaire r avec dépendance à la température tc1/tc2 (SPEC-004 §7 resistor) ; la résistance de chaque instance tirée uniformément dans ±tolerance autour de la valeur nominale à partir de la graine du projet et de son id (ADR-034 ; nominale avec settings.imperfections \"ideal\").",
+          "omissions": [
+            "le bruit thermique",
+            "l'auto-échauffement",
+            "l'inductance et la capacité parasites",
+            "la puissance nominale",
+            "la répartition dans la plage de tolérance (uniforme : un fabricant ne garantit que la plage)"
+          ]
+        }
+      }
+    }
+  }
 }

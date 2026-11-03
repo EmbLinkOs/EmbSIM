@@ -128,4 +128,41 @@ void esk_rp2040_bootrom_resets(struct esk_mach *m);
 void esk_rp2040_rom(u8 *rom, u32 size);
 void esk_rp2040_rom_install(struct esk_mach *m);
 
+/* the DMA controller (dma.c) and the peripherals' DMA requests: a level
+ * (1 while the peripheral wants a transfer) or, for the PWM wraps and the
+ * pacing timers, a pulse the DMA counts (esk_rp2040_dreq_pulse, `dma`
+ * the caller's cache of the controller, 0 at first) */
+extern const struct esk_dev_ops esk_rp2040_dma_ops;
+void *esk_rp2040_dma_create(struct esk_mach *m, struct esk_rf_periph *p);
+/* the crossbar made the DMA wait (busctrl.c) */
+void esk_rp2040_dma_stall(struct esk_mach *m, u32 n);
+/* the bus fabric's arbiters and BUSCTRL's priorities and counters (busctrl.c) */
+extern const struct esk_dev_ops esk_rp2040_busctrl_ops;
+void *esk_rp2040_busctrl_create(struct esk_mach *m, struct esk_rf_periph *p);
+void esk_rp2040_dreq_pulse(struct esk_mach *m, void **dma, int dreq);
+int esk_rp2040_uart_dreq(struct esk_mach *m, int unit, int rx);
+int esk_rp2040_spi_dreq(struct esk_mach *m, int unit, int rx);
+int esk_rp2040_i2c_dreq(struct esk_mach *m, int unit, int rx);
+int esk_rp2040_adc_dreq(struct esk_mach *m);
+
+/* the PIO blocks (pio.c): their pins' outputs and enables, their FIFOs'
+ * DMA requests */
+extern const struct esk_dev_ops esk_rp2040_pio_ops;
+void *esk_rp2040_pio_create(struct esk_mach *m, struct esk_rf_periph *p);
+void esk_rp2040_pio_pins(struct esk_mach *m, int unit, u32 *out, u32 *oe);
+int esk_rp2040_pio_dreq(struct esk_mach *m, int unit, int sm, int rx);
+
+/* the real-time clock (rtc.c) */
+extern const struct esk_dev_ops esk_rp2040_rtc_ops;
+void *esk_rp2040_rtc_create(struct esk_mach *m, struct esk_rf_periph *p);
+
+/* the USB boot (usbboot.c): the bootrom's drive on the USB cable */
+extern const struct esk_dev_ops esk_rp2040_usb_ops;
+void *esk_rp2040_usb_create(struct esk_mach *m, struct esk_rf_periph *p);
+void esk_rp2040_usb_boot(struct esk_mach *m);
+void esk_rp2040_usb_leave(struct esk_mach *m);
+int esk_rp2040_in_usb_boot(struct esk_mach *m);
+/* BOOTSEL held at reset (boot.c): the part goes to its USB boot */
+void esk_rp2040_enter_usb_boot(struct esk_mach *m);
+
 #endif

@@ -12,9 +12,47 @@
  * an interrupt's entry 4 (and 4 more from SLEEP). The part has no wait
  * states, so the count is what the silicon takes.
  *
- * An instruction this part does not have (ELPM, the XMEGA's, SPM, which is
- * not modelled) locks the core up naming it, rather than doing something
- * no part does.
+ * An instruction this part does not have (ELPM, the XMEGA's) locks the
+ * core up naming it, rather than doing something no part does. Erased
+ * flash (0xffff, a reserved encoding) runs on to the next word, as the part
+ * runs through a missing boot loader to its application at 0.
+ *
+ * Boot loader support (datasheet 26, 27), what Optiboot and every Arduino
+ * boot loader use:
+ *
+ *   - the fuses as the board has them programmed (the Uno's 0xFF, 0xDE,
+ *     0xFD, lock 0xCF): BOOTSZ sizes the boot section at the top of flash
+ *     (256 to 2048 words on the ATmega328P), BOOTRST programmed starts
+ *     the part there after every reset, MCUCR's IVSEL (cpu.c) moves the
+ *     vectors to its start;
+ *   - SPM, from the boot section only (from the application it does
+ *     nothing): SPMCSR's SELFPRGEN alone loads r1:r0 into the temporary
+ *     page buffer at Z's word (once per word until the buffer is erased);
+ *     with PGERS it erases Z's page, with PGWRT writes the buffer into it
+ *     (bits only fall, as on the part: a write over a page not erased
+ *     ANDs) and erases the buffer, with BLBSET programs the boot lock bits
+ *     from r0, with RWWSRE re-enables the RWW section and erases the
+ *     buffer. SPM must follow the write of SPMCSR within 4 cycles, or the
+ *     bits clear;
+ *   - an erase or a write takes 4.1 ms (the middle of the datasheet's 3.7
+ *     to 4.5 ms; its own oscillator times it, not the core clock). On a
+ *     page of the RWW section the core runs on and RWWSB stays set until
+ *     RWWSRE; on a page of the NRWW section the core halts for the whole
+ *     operation. SELFPRGEN clears at the end; with SPMIE set, the SPM
+ *     Ready interrupt (vector 25) is pending while it is clear;
+ *   - the boot lock bits refuse SPM's writes to the section they protect
+ *     (BLB0 the application, BLB1 the boot section);
+ *   - LPM within 3 cycles of SIGRD with SELFPRGEN reads the signature row
+ *     (Z 0, 2, 4: 0x1e 0x95 0x0f; Z 1 the oscillator's calibration byte),
+ *     after BLBSET with SELFPRGEN the fuse and lock bits (Z 0 low, 1 lock,
+ *     2 extended, 3 high).
+ *
+ * Not modelled: LPM's read protection by the boot lock bits (what such a
+ * read returns is not documented) and the interrupts they hold off; a
+ * read of the RWW section while RWWSB is set returns 0xff and warns, and
+ * code there runs as flash holds it (the datasheet calls both undefined);
+ * a reset during an erase or a
+ * write leaves the page as the operation would have left it.
  *
  * Provenance: EmbLinkOs/EmbCC aa4f10a tools/embsim/avr.c, whose
  * instruction set and flags are refereed against QEMU's uno there.
@@ -49,14 +87,27 @@ struct avr_model {
     const char *name;
     u32 flash_words;
     u16 ramend;
+    u32 page_words;   /* a flash page */
+    u32 boot_min;     /* the smallest boot section (BOOTSZ 11), in words */
+    int boot_fuse;    /* the fuse byte with BOOTSZ and BOOTRST */
+    u8 sig[3];        /* the signature bytes */
+    u8 factory[4];    /* the fuses as shipped: low, high, extended, lock */
 };
 
 static const struct avr_model models[] = {
-    { "atmega328p", 0x4000, 0x08ff },
-    { "atmega328", 0x4000, 0x08ff },
-    { "atmega168", 0x2000, 0x04ff },
-    { "atmega88", 0x1000, 0x04ff },
+    { "atmega328p", 0x4000, 0x08ff, 64, 256, 1, { 0x1e, 0x95, 0x0f }, { 0x62, 0xd9, 0xff, 0xff } },
+    { "atmega328", 0x4000, 0x08ff, 64, 256, 1, { 0x1e, 0x95, 0x14 }, { 0x62, 0xd9, 0xff, 0xff } },
+    { "atmega168", 0x2000, 0x04ff, 64, 128, 2, { 0x1e, 0x94, 0x06 }, { 0x62, 0xdf, 0xf9, 0xff } },
+    { "atmega88", 0x1000, 0x04ff, 32, 128, 2, { 0x1e, 0x93, 0x0a }, { 0x62, 0xdf, 0xf9, 0xff } },
 };
+
+/* SPMCSR's bits */
+enum { SPM_EN = 0x01, SPM_PGERS = 0x02, SPM_PGWRT = 0x04, SPM_BLBSET = 0x08, SPM_RWWSRE = 0x10,
+       SPM_SIGRD = 0x20, SPM_RWWSB = 0x40, SPM_IE = 0x80 };
+
+#define SPM_READY_VEC 25
+#define SPM_PS 4100000000ull /* an erase or a write: 4.1 ms */
+#define PAGE_MAX 64
 
 typedef struct esk_avr {
     struct esk_cpu cpu; /* the interface; first */
@@ -79,6 +130,22 @@ typedef struct esk_avr {
     u64 skipped; /* instructions a skip passed over */
     void (*wdr)(void *ctx); /* the watchdog's WDR */
     void *wdr_ctx;
+    /* boot loader support */
+    u8 fuse[4];       /* low, high, extended, lock */
+    u32 boot_start;   /* the boot section's first word (BOOTSZ) */
+    u32 nrww_start;   /* the NRWW section's first word */
+    u32 vec_base;     /* IVSEL: the boot section's start, else 0 */
+    u64 irq_hold;     /* IVCE's window: no interrupt before this cycle */
+    u8 spmcsr;
+    u64 spm_window;   /* the last cycle SPM may follow SPMCSR's write */
+    u64 lpm_window;   /* the last cycle LPM reads the signature or fuses */
+    int spm_op;       /* the operation in progress: SPM_PGERS, SPM_PGWRT, SPM_BLBSET, or 0 */
+    u64 spm_done;     /* the cycle it ends */
+    u32 spm_page;     /* its page's first word */
+    u8 spm_lock;      /* BLBSET's lock byte */
+    int rww_warned;
+    u16 buf[PAGE_MAX]; /* the temporary page buffer */
+    u8 buf_set[PAGE_MAX];
 } esk_avr;
 
 /* ---- the data space -------------------------------------------------------- */
@@ -107,12 +174,17 @@ static u8 dread(esk_avr *as, u16 a)
     case 0x5f: return as->sreg;
     }
     r = esk_bus_region(bus(as), ESK_AVR_DATA + a, 1);
-    if (r)
-        return r->mem[ESK_AVR_DATA + a - r->base];
+    if (r) {
+        u8 m = r->mem[ESK_AVR_DATA + a - r->base];
+        esk_bus_traced(bus(as), ESK_AVR_DATA + a, 1, 0, m, 0);
+        return m;
+    }
     if (esk_bus_read(bus(as), ESK_AVR_DATA + a, 1, &v)) {
+        esk_bus_traced(bus(as), ESK_AVR_DATA + a, 1, 0, 0, 1);
         esk_mach_bus_error(as->sim, ESK_AVR_DATA + a, 1, 0);
         return 0;
     }
+    esk_bus_traced(bus(as), ESK_AVR_DATA + a, 1, 0, v & 0xffu, 0);
     return (u8)v;
 }
 
@@ -137,10 +209,15 @@ static void dwrite(esk_avr *as, u16 a, u8 v)
     if (r) {
         if (!r->rom)
             r->mem[ESK_AVR_DATA + a - r->base] = v;
+        esk_bus_traced(bus(as), ESK_AVR_DATA + a, 1, 1, v, 0);
         return;
     }
-    if (esk_bus_write(bus(as), ESK_AVR_DATA + a, 1, v))
+    if (esk_bus_write(bus(as), ESK_AVR_DATA + a, 1, v)) {
+        esk_bus_traced(bus(as), ESK_AVR_DATA + a, 1, 1, v, 1);
         esk_mach_bus_error(as->sim, ESK_AVR_DATA + a, 1, 1);
+    } else {
+        esk_bus_traced(bus(as), ESK_AVR_DATA + a, 1, 1, v, 0);
+    }
 }
 
 static u8 flash_byte(esk_avr *as, u32 a)
@@ -193,6 +270,220 @@ static u32 pop_pc(esk_avr *as)
     return (hi << 8 | pop(as)) % as->flash_words;
 }
 
+/* ---- boot loader support --------------------------------------------------- */
+
+static u32 spm_cycles(esk_avr *as)
+{
+    u64 hz = esk_mach_core_hz(as->sim);
+    return (u32)((hz ? hz : 16000000u) * SPM_PS / 1000000000000ull);
+}
+
+static void buf_erase(esk_avr *as)
+{
+    memset(as->buf, 0xff, sizeof as->buf);
+    memset(as->buf_set, 0, sizeof as->buf_set);
+}
+
+/* the boot lock bits refuse SPM's writes to the section a word is in */
+static int spm_locked(const esk_avr *as, u32 word)
+{
+    /* BLB11 (BLB01) programmed: modes 2 and 3 of the section's pair */
+    return !(as->fuse[3] & (word >= as->boot_start ? 0x10 : 0x04));
+}
+
+/* an erase or a write's end: flash as the operation leaves it */
+static void spm_finish(esk_avr *as)
+{
+    struct esk_region *r = esk_bus_region(bus(as), 0, as->flash_words * 2);
+    u32 i, a = as->spm_page * 2;
+    if (as->spm_op == SPM_BLBSET) {
+        as->fuse[3] &= (u8)(as->spm_lock | 0xc3); /* lock bits only program */
+    } else if (r && r->base == 0 && a + as->model->page_words * 2 <= r->size) {
+        for (i = 0; i < as->model->page_words; i++) {
+            if (as->spm_op == SPM_PGERS) {
+                r->mem[a + 2 * i] = 0xff;
+                r->mem[a + 2 * i + 1] = 0xff;
+            } else {
+                r->mem[a + 2 * i] &= (u8)as->buf[i];
+                r->mem[a + 2 * i + 1] &= (u8)(as->buf[i] >> 8);
+            }
+        }
+        r->gen++;
+        as->sim->flash_written = 1;
+    }
+    if (as->spm_op == SPM_PGWRT)
+        buf_erase(as);
+    as->spm_op = 0;
+    as->spmcsr &= (u8)(SPM_IE | SPM_RWWSB);
+    esk_avr_irq_changed(as->sim);
+}
+
+/* SPMCSR as time has it: the operation done, the windows shut */
+static void spm_update(esk_avr *as)
+{
+    u64 now = as->sim->cycles;
+    if (as->spm_op && now >= as->spm_done)
+        spm_finish(as);
+    if (!as->spm_op && (as->spmcsr & 0x3f) && now > as->spm_window && now > as->lpm_window) {
+        as->spmcsr &= (u8)(SPM_IE | SPM_RWWSB);
+        esk_avr_irq_changed(as->sim);
+    }
+}
+
+static esk_avr *core_of(struct esk_mach *m);
+
+u8 esk_avr_spmcsr_read(struct esk_mach *m)
+{
+    esk_avr *k = core_of(m);
+    if (!k)
+        return 0;
+    spm_update(k);
+    return k->spmcsr;
+}
+
+void esk_avr_spmcsr_write(struct esk_mach *m, u8 v)
+{
+    esk_avr *k = core_of(m);
+    if (!k)
+        return;
+    spm_update(k);
+    if (k->spm_op) { /* busy: only SPMIE changes */
+        k->spmcsr = (u8)((k->spmcsr & ~SPM_IE) | (v & SPM_IE));
+    } else {
+        k->spmcsr = (u8)((k->spmcsr & SPM_RWWSB) | (v & ~SPM_RWWSB));
+        if (v & SPM_EN) {
+            /* the last cycle an SPM (one cycle) or an LPM (three) that
+             * starts within the window ends */
+            k->spm_window = m->cycles + 4 + 1;
+            k->lpm_window = m->cycles + 3 + 3;
+        }
+    }
+    esk_avr_irq_changed(m);
+}
+
+int esk_avr_spm_next(struct esk_mach *m, u32 *cycles)
+{
+    esk_avr *k = core_of(m);
+    if (!k || (!k->spm_op && !(k->spmcsr & 0x3f)))
+        return 0;
+    if (k->spm_op)
+        *cycles = k->spm_done > m->cycles ? (u32)(k->spm_done - m->cycles) : 0;
+    else
+        *cycles = k->spm_window >= m->cycles ? (u32)(k->spm_window - m->cycles + 1) : 1;
+    return 1;
+}
+
+void esk_avr_spm_buffer_lost(struct esk_mach *m)
+{
+    esk_avr *k = core_of(m);
+    if (k)
+        buf_erase(k);
+}
+
+void esk_avr_ivsel(struct esk_mach *m, int on)
+{
+    esk_avr *k = core_of(m);
+    if (k)
+        k->vec_base = on ? k->boot_start : 0;
+}
+
+void esk_avr_irq_hold(struct esk_mach *m, u64 until)
+{
+    esk_avr *k = core_of(m);
+    if (!k)
+        return;
+    k->irq_hold = until;
+    if (!until)
+        k->inhibit = 1; /* the instruction after IVSEL's write runs first */
+}
+
+/* SPM: the operation SPMCSR set up, from the boot section only */
+static void do_spm(esk_avr *as)
+{
+    struct esk_mach *s = as->sim;
+    u8 op = as->spmcsr;
+    u16 z = (u16)(as->r[30] | as->r[31] << 8);
+    u32 pw = as->model->page_words, word = (u32)(z >> 1) % as->flash_words;
+    spm_update(as);
+    op = as->spmcsr;
+    if (as->pc < as->boot_start || !(op & SPM_EN) || as->spm_op || s->cycles > as->spm_window)
+        return;
+    switch (op & (SPM_PGERS | SPM_PGWRT | SPM_BLBSET | SPM_RWWSRE | SPM_SIGRD)) {
+    case 0: /* a word into the temporary buffer */
+        if (!as->buf_set[word % pw]) {
+            as->buf[word % pw] = (u16)(as->r[0] | as->r[1] << 8);
+            as->buf_set[word % pw] = 1;
+        }
+        as->spmcsr &= (u8)(SPM_IE | SPM_RWWSB);
+        break;
+    case SPM_RWWSRE:
+        buf_erase(as);
+        as->spmcsr &= (u8)SPM_IE;
+        break;
+    case SPM_PGERS:
+    case SPM_PGWRT:
+    case SPM_BLBSET:
+        if ((op & SPM_BLBSET) ? 0 : spm_locked(as, word)) {
+            as->spmcsr &= (u8)(SPM_IE | SPM_RWWSB);
+            break;
+        }
+        as->spm_op = op & (SPM_PGERS | SPM_PGWRT | SPM_BLBSET);
+        as->spm_page = word - word % pw;
+        as->spm_lock = as->r[0];
+        as->spm_done = s->cycles + spm_cycles(as);
+        if (as->spm_op != SPM_BLBSET && as->spm_page < as->nrww_start) {
+            as->spmcsr |= SPM_RWWSB; /* the core runs on from the NRWW section */
+        } else {
+            /* the NRWW section (or the lock bits): the core halts */
+            u32 c = (u32)(as->spm_done - s->cycles);
+            s->cycles += c;
+            if (s->counting)
+                esk_mach_advance(s, c);
+            spm_finish(as);
+        }
+        break;
+    default:
+        as->spmcsr &= (u8)(SPM_IE | SPM_RWWSB);
+        break;
+    }
+    esk_avr_irq_changed(s);
+}
+
+/* LPM's byte: the signature row or the fuses just after SPMCSR set them
+ * up, else flash (the RWW section blocked while RWWSB is set) */
+static u8 lpm_byte(esk_avr *as, u16 z)
+{
+    if (as->spmcsr & 0x3f)
+        spm_update(as);
+    if ((as->spmcsr & SPM_EN) && as->sim->cycles <= as->lpm_window) {
+        if (as->spmcsr & SPM_SIGRD) {
+            as->spmcsr &= (u8)(SPM_IE | SPM_RWWSB);
+            switch (z) {
+            case 0: return as->model->sig[0];
+            case 2: return as->model->sig[1];
+            case 4: return as->model->sig[2];
+            case 1: return 0x80; /* the calibration byte OSCCAL resets to */
+            }
+            return 0xff;
+        }
+        if (as->spmcsr & SPM_BLBSET) {
+            static const int which[4] = { 0, 3, 2, 1 };
+            as->spmcsr &= (u8)(SPM_IE | SPM_RWWSB);
+            return z < 4 ? as->fuse[which[z]] : 0xff;
+        }
+    }
+    if ((as->spmcsr & SPM_RWWSB) && (u32)(z >> 1) < as->nrww_start) {
+        if (!as->rww_warned)
+            esk_rf_diag(as->sim, ES_SEV_WARNING, "mcu.rww_read",
+                        "LPM read 0x%04x in the RWW section while it is blocked (RWWSB): the result is undefined; "
+                        "set RWWSRE first",
+                        (unsigned)z);
+        as->rww_warned = 1;
+        return 0xff;
+    }
+    return flash_byte(as, z);
+}
+
 /* ---- interrupts --------------------------------------------------------- */
 
 static esk_avr *core_of(struct esk_mach *m)
@@ -236,6 +527,8 @@ void esk_avr_irq_changed(struct esk_mach *m)
         if ((!best || q->vec < best) && q->pending(q->ctx, q->vec))
             best = q->vec;
     }
+    if (!best && (k->spmcsr & (SPM_IE | SPM_EN)) == SPM_IE)
+        best = SPM_READY_VEC;
     k->pend = best;
     if (m->asleep && best && (k->sreg & SREG_I))
         m->asleep = 0;
@@ -252,7 +545,7 @@ static void take_interrupt(esk_avr *as)
     esk_mach_exc(s, 0, v, as->pc * 2);
     push_pc(as, as->pc);
     as->sreg &= (u8)~SREG_I;
-    as->pc = (u32)v * 2;
+    as->pc = as->vec_base + (u32)v * 2;
     as->sw_pend &= ~(1u << v);
     for (i = 0; i < as->nsrc; i++)
         if (as->src[i].vec == v && as->src[i].ack)
@@ -516,6 +809,8 @@ static int exec(esk_avr *as, u16 w, u16 w2)
             set_flags(as, SREG_T, as->r[d] >> b & 1 ? SREG_T : 0);
             return 1;
         default: /* SBRC, SBRS */
+            if (w == 0xffff) /* erased flash: on to the next word */
+                return 1;
             if (w & 8)
                 return unsupported(as, w);
             if ((as->r[d] >> b & 1) == ((w >> 9) & 1))
@@ -533,7 +828,7 @@ static int exec(esk_avr *as, u16 w, u16 w2)
         case 0x2: ldst(as, 30, 2, d, 0); return 1;
         case 0x4: case 0x5: { /* LPM Rd, Z[+] */
             u16 z = rp(as, 30);
-            as->r[d] = flash_byte(as, z);
+            as->r[d] = lpm_byte(as, z);
             if (w & 1)
                 set_rp(as, 30, (u16)(z + 1));
             return 1;
@@ -633,7 +928,10 @@ static int exec(esk_avr *as, u16 w, u16 w2)
                     as->wdr(as->wdr_ctx);
                 return 1;
             case 0x95c8: /* LPM */
-                as->r[0] = flash_byte(as, rp(as, 30));
+                as->r[0] = lpm_byte(as, rp(as, 30));
+                return 1;
+            case 0x95e8: /* SPM */
+                do_spm(as);
                 return 1;
             }
             return unsupported(as, w);
@@ -708,7 +1006,9 @@ static void step(struct esk_cpu *c)
     u16 w, w2 = 0;
     int size = 1, br;
     u64 c0;
-    if (as->pend && (as->sreg & SREG_I) && !as->inhibit) {
+    if (as->spm_op && s->cycles >= as->spm_done)
+        spm_finish(as);
+    if (as->pend && (as->sreg & SREG_I) && !as->inhibit && s->cycles >= as->irq_hold) {
         take_interrupt(as);
         return;
     }
@@ -727,7 +1027,7 @@ static void step(struct esk_cpu *c)
         return;
     if (s->counting)
         esk_mach_advance(s, (u32)(s->cycles - c0));
-    if (as->npc == as->pc && !as->changed && s->state == ESK_MACH_RUN && jumps(w)) {
+    if (as->npc == as->pc && !as->changed && s->state == ESK_MACH_RUN && jumps(w) && !as->spm_op) {
         /* a jump to itself waits, as SLEEP does, for an interrupt */
         if (!((as->sreg & SREG_I) && as->pend))
             s->asleep = 1;
@@ -746,11 +1046,26 @@ static void cpu_reset(struct esk_cpu *c)
     memset(k->r, 0, sizeof k->r);
     k->sreg = 0;
     k->sp = k->model->ramend;
-    k->pc = k->npc = 0;
     k->inhibit = k->sleeping = 0;
     k->sw_pend = 0;
     k->pend = 0;
     k->skipped = 0;
+    /* the fuses as programmed: BOOTRST starts the part in the boot section */
+    memcpy(k->fuse, k->sim->has_fuses ? k->sim->fuse : k->model->factory, 4);
+    {
+        u8 bf = k->fuse[k->model->boot_fuse];
+        k->boot_start = k->flash_words - (k->model->boot_min << (3 - (bf >> 1 & 3)));
+        k->nrww_start = k->flash_words - (k->model->boot_min << 3);
+        k->pc = k->npc = (bf & 1) ? 0 : k->boot_start;
+    }
+    k->vec_base = 0;
+    k->irq_hold = 0;
+    if (k->spm_op) /* a reset mid-operation: the page as it would have ended */
+        spm_finish(k);
+    k->spmcsr = 0;
+    k->spm_window = k->lpm_window = 0;
+    k->rww_warned = 0;
+    buf_erase(k);
 }
 
 static u32 cpu_pc(struct esk_cpu *c) { return ((esk_avr *)c)->pc * 2; }

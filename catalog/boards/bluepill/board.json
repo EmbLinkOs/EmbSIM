@@ -80,7 +80,15 @@
         "resistance": "10k",
         "voltage": 3.3
       },
-      "doc": "NRST pull-up (the 100 nF reset capacitor is omitted)"
+      "doc": "NRST pull-up"
+    },
+    {
+      "id": "C_RESET",
+      "component": "emblink/capacitor",
+      "params": {
+        "capacitance": "100n"
+      },
+      "doc": "The 100 nF NRST capacitor: with the 10k pull-up it holds NRST low through the reset button's bounce"
     },
     {
       "id": "Y1",
@@ -185,6 +193,7 @@
       "J3.1"
     ],
     "GND": [
+      "C_RESET.2",
       "U2.GND",
       "U1.VSS",
       "U1.VSSA",
@@ -212,6 +221,7 @@
       "U1.NRST",
       "SW_RESET.1",
       "R_RESET.1",
+      "C_RESET.1",
       "J1.17"
     ],
     "BOOT0": [
@@ -877,11 +887,10 @@
       "validation": []
     },
     "electrical": {
-      "claims": "LDO, LEDs with series resistors, pull-ups and pull-downs, crystals as BVD equivalents, headers; GPIO bridges use the MCU pin-model defaults.",
+      "claims": "LDO, LEDs with series resistors, pull-ups and pull-downs, the 100 nF NRST capacitor (with the 10k pull-up it holds NRST low about 0.8 ms after power-up and through the reset button's bounce), crystals as BVD equivalents, headers; GPIO bridges use the MCU pin-model defaults.",
       "omissions": [
         "decoupling",
         "USB",
-        "reset capacitor",
         "ESD diodes",
         "trace impedance"
       ],
@@ -907,5 +916,37 @@
   },
   "tests": [
     "tests/*.json"
-  ]
+  ],
+  "i18n": {
+    "fr": {
+      "source": "e61b6bbd2043",
+      "description": "La carte de développement générique « Blue Pill » STM32F103C8T6 : LDO 3,3 V, quartz de 8 MHz et 32,768 kHz, LED utilisateur sur PC13, bouton de réinitialisation, cavaliers BOOT0/BOOT1, deux connecteurs de 20 broches et un connecteur SWD de 4 broches.",
+      "fidelity": {
+        "functional": {
+          "claims": "Réseaux, ports, LED, bouton de réinitialisation et cavaliers d'amorçage comme composants logiques ; le MCU n'a pas encore de modèle de comportement (M1).",
+          "omissions": [
+            "l'USB",
+            "le découplage",
+            "l'exécution du micrologiciel"
+          ]
+        },
+        "timed": {
+          "claims": "Comme en fonctionnel.",
+          "omissions": [
+            "l'USB",
+            "le découplage"
+          ]
+        },
+        "electrical": {
+          "claims": "LDO, LED avec résistances série, rappels au niveau haut et au niveau bas, le condensateur de 100 nF sur NRST (avec le rappel de 10k il maintient NRST bas environ 0,8 ms après la mise sous tension et pendant le rebond du bouton de réinitialisation), quartz en équivalents BVD, connecteurs ; les liaisons GPIO utilisent les modèles de broche par défaut du MCU.",
+          "omissions": [
+            "le découplage",
+            "l'USB",
+            "les diodes ESD",
+            "l'impédance des pistes"
+          ]
+        }
+      }
+    }
+  }
 }

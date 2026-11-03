@@ -1,0 +1,62 @@
+{
+  "schema_version": 1,
+  "kind": "component_test",
+  "name": "rated-current-holds",
+  "description": "20 mA through 150 ohm from 5 V for 10 minutes: within its ratings, the junction settles near 50 C and the LED lives.",
+  "policy": "electrical",
+  "until": "600s",
+  "circuit": {
+    "components": [
+      {
+        "id": "DUT",
+        "component": "emblink/led"
+      },
+      {
+        "id": "G",
+        "component": "emblink/gnd"
+      },
+      {
+        "id": "SUP",
+        "component": "emblink/vsource",
+        "params": {
+          "kind": "dc",
+          "dc": 5
+        }
+      },
+      {
+        "id": "R1",
+        "component": "emblink/resistor",
+        "params": {
+          "resistance": 150,
+          "tolerance": 0
+        }
+      }
+    ],
+    "nets": {
+      "P": [
+        "SUP.+",
+        "R1.1"
+      ],
+      "A": [
+        "R1.2",
+        "DUT.A"
+      ],
+      "GND": [
+        "DUT.K",
+        "SUP.-",
+        "G.GND"
+      ]
+    }
+  },
+  "expect": {
+    "output:DUT.damaged": {
+      "at": "600s",
+      "equals": false
+    },
+    "output:DUT.tj": {
+      "at": "600s",
+      "min": 40,
+      "max": 60
+    }
+  }
+}

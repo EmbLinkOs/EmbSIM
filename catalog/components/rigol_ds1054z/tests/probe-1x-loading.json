@@ -1,0 +1,60 @@
+{
+  "schema_version": 1,
+  "kind": "component_test",
+  "name": "probe-1x-loading",
+  "description": "The same 1 V behind 1 Mohm at 1x (1 Mohm): the tip reads half, 0.5 V.",
+  "policy": "electrical",
+  "until": "5ms",
+  "circuit": {
+    "components": [
+      {
+        "id": "DUT",
+        "component": "emblink/rigol_ds1054z",
+        "params": {
+          "ch1_probe": "1x"
+        }
+      },
+      {
+        "id": "V",
+        "component": "emblink/vsource",
+        "params": {
+          "kind": "dc",
+          "dc": 1.0
+        }
+      },
+      {
+        "id": "RS",
+        "component": "emblink/resistor",
+        "params": {
+          "resistance": 1000000.0
+        }
+      },
+      {
+        "id": "G",
+        "component": "emblink/gnd"
+      }
+    ],
+    "nets": {
+      "SRC": [
+        "V.+",
+        "RS.1"
+      ],
+      "TIP": [
+        "RS.2",
+        "DUT.CH1"
+      ],
+      "GND": [
+        "V.-",
+        "G.GND",
+        "DUT.GND"
+      ]
+    }
+  },
+  "expect": {
+    "output:DUT.ch1_v": {
+      "at": "5ms",
+      "min": 0.499,
+      "max": 0.501
+    }
+  }
+}

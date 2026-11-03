@@ -1,6 +1,6 @@
 /* SPDX-License-Identifier: Apache-2.0 */
 /* Copyright 2026 Junior Deogracias */
-/* sha.c -- the ESP32-C3's SHA accelerator (TRM v1.4 chapter 21) in its
+/* sha.c -- the ESP32-C3's SHA accelerator (TRM v1.4 chapter 18) in its
  * Typical SHA mode: MODE selects SHA-1 (0), SHA-224 (1) or SHA-256 (2); a
  * write to START hashes the block in M_MEM0-15 from the algorithm's
  * initial hash value, one to CONTINUE from the hash in H_MEM0-7 (which the

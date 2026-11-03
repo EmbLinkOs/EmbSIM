@@ -1,0 +1,67 @@
+{
+  "schema_version": 1,
+  "kind": "component_test",
+  "name": "source-reads-load",
+  "description": "Source meter at 3.3 V into 330 ohm: 9.999 mA, read on the 5-50 mA range at its 50 uA resolution as 10.00 mA; 200 samples in 2 ms (100 kS/s).",
+  "policy": "electrical",
+  "until": "2ms",
+  "circuit": {
+    "components": [
+      {
+        "id": "DUT",
+        "component": "emblink/ppk2_core",
+        "params": {
+          "mode": "source",
+          "voltage": 3.3
+        }
+      },
+      {
+        "id": "LOAD",
+        "component": "emblink/resistor",
+        "params": {
+          "resistance": 330
+        }
+      },
+      {
+        "id": "G",
+        "component": "emblink/gnd"
+      }
+    ],
+    "nets": {
+      "OUT": [
+        "DUT.VOUT",
+        "LOAD.1"
+      ],
+      "GND": [
+        "DUT.GND",
+        "LOAD.2",
+        "G.GND"
+      ]
+    }
+  },
+  "inputs": [
+    {
+      "at": "0s",
+      "target": "DUT",
+      "input": "run",
+      "value": true
+    }
+  ],
+  "expect": {
+    "output:DUT.current": {
+      "at": "2ms",
+      "min": 0.009999,
+      "max": 0.010001
+    },
+    "output:DUT.samples": {
+      "at": "2ms",
+      "min": 199,
+      "max": 200
+    },
+    "output:DUT.vout": {
+      "at": "2ms",
+      "min": 3.299,
+      "max": 3.3
+    }
+  }
+}

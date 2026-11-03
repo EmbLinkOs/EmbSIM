@@ -1,0 +1,19 @@
+; SPDX-License-Identifier: Apache-2.0
+; Copyright 2026 Junior Deogracias
+;
+; serial_tx: 8N1 out of one pin, eight state-machine cycles a bit. The idle
+; and stop level and the start bit are side-set; each data bit is shifted out
+; of the OSR, least significant first.
+.program serial_tx
+.side_set 1 opt
+    pull        side 1 [7]  ; the stop bit (and idle), then wait for a byte
+    set x, 7    side 0 [7]  ; the start bit
+bit:
+    out pins, 1        [6]  ; a data bit
+    jmp x-- bit
+
+; square: a pin high for 32 cycles and low for 32, a square wave of a 64th
+; of the state machine's clock
+.program square
+    set pins, 1 [31]
+    set pins, 0 [31]

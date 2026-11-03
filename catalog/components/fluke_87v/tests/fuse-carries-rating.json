@@ -1,0 +1,57 @@
+{
+  "schema_version": 1,
+  "kind": "component_test",
+  "name": "fuse-carries-rating",
+  "description": "400 mA through the mA jack (its continuous rating) for 2 s: F1 holds.",
+  "policy": "electrical",
+  "until": "2s",
+  "circuit": {
+    "components": [
+      {
+        "id": "DUT",
+        "component": "emblink/fluke_87v"
+      },
+      {
+        "id": "G",
+        "component": "emblink/gnd"
+      },
+      {
+        "id": "SUP",
+        "component": "emblink/isource",
+        "params": {
+          "kind": "dc",
+          "dc": 0.4
+        }
+      }
+    ],
+    "nets": {
+      "P": [
+        "SUP.-",
+        "DUT.MA"
+      ],
+      "GND": [
+        "SUP.+",
+        "DUT.COM",
+        "G.GND"
+      ]
+    }
+  },
+  "expect": {
+    "output:DUT.fuse_ma": {
+      "at": "2s",
+      "equals": "ok"
+    },
+    "output:DUT.display": {
+      "at": "2s",
+      "equals": "400.0"
+    }
+  },
+  "inputs": [
+    {
+      "at": "0s",
+      "target": "DUT",
+      "input": "function",
+      "value": "ma_dc"
+    }
+  ]
+}

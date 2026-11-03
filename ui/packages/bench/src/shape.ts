@@ -119,7 +119,23 @@ export function boardStack(shape: BenchShape): { standoff: number; thickness: nu
   return { standoff, thickness, surface, headers, contact: surface + (headers === 'female' ? 8.5 : headers === 'male' ? 8 : 0) };
 }
 
-type Desc = Pick<ComponentDescription, 'id' | 'name' | 'category' | 'pins' | 'bench' | 'artwork'> & { kind?: string; ports?: Record<string, unknown> };
+type Desc = Pick<ComponentDescription, 'id' | 'name' | 'category' | 'pins' | 'bench' | 'artwork'> & Partial<Pick<ComponentDescription, 'subcategory'>> & { kind?: string; ports?: Record<string, unknown> };
+
+/** an integrated circuit's function block (a gate, an op-amp, a comparator, a converter), by
+ *  its library category and sub-category; the pre-taxonomy names are kept for older libraries */
+function isBlock(desc: Desc): boolean {
+  const c = desc.category, s = desc.subcategory ?? '';
+  return c === 'logic' || c === 'analog' || c === 'comparators'
+    || c === 'ttl_74' || c === 'cmos_4000' || c === 'operational_amplifiers' || c === 'data_converters'
+    || (c === 'simulator_primitives' && (s === 'gates' || s === 'flip_flops'))
+    || (c === 'analog_ics' && s === 'comparators');
+}
+
+/** a chip a DIP package suits: a block, or a timer or amplifier */
+function isChip(desc: Desc): boolean {
+  return isBlock(desc) || desc.category === 'timers' || desc.category === 'amplifiers'
+    || (desc.category === 'analog_ics' && desc.subcategory === 'timers');
+}
 
 /** parts with no body of their own: supply symbols and abstract stand-ins */
 const VIRTUAL = new Set(['vcc', 'gnd', 'pull_up', 'pull_down', 'logic_level', 'test_point']);
@@ -479,7 +495,7 @@ function deriveShape(desc: Desc, params?: Record<string, unknown>, artwork?: str
     const { size, pins } = dipPins(names, 12.7);
     return { package: 'module', size: [Math.max(size[0], 20.3), Math.max(size[1], 15.2), 1.6], pins: Object.fromEntries(Object.entries(pins).map(([n, [x, y]]) => [n, [x, y + (15.2 - size[1]) / 2]])), color: '#1e7a3a', label: 'A4988' };
   }
-  if (DIP_CHIPS.test(short) || ((desc.category === 'logic' || desc.category === 'analog' || desc.category === 'timers' || desc.category === 'amplifiers' || desc.category === 'comparators') && names.length >= 8 && names.length % 2 === 0 && !MODULES[short])) {
+  if (DIP_CHIPS.test(short) || (isChip(desc) && names.length >= 8 && names.length % 2 === 0 && !MODULES[short])) {
     const wide = names.length >= 28 && !/328/.test(short);
     const { size, pins } = dipPins(names, wide ? 15.24 : 7.62);
     return { package: 'dip', size, pins, label: desc.name.split(' ')[0] };
@@ -495,7 +511,7 @@ function deriveShape(desc: Desc, params?: Record<string, unknown>, artwork?: str
     return { package: 'module', size, pins: inRow(names, size, PITCH, 2.5), color: '#1b4f9c', label: desc.name };
   }
   const mod = MODULES[short];
-  if (!mod && (desc.category === 'logic' || desc.category === 'analog' || desc.category === 'comparators')) {
+  if (!mod && isBlock(desc)) {
     // an abstract gate or block: a labelled box, its pins in a row
     const size: [number, number, number] = [Math.max(10, names.length * PITCH + 2), 7, 4];
     return { package: 'box', size, pins: inRow(names, size, PITCH, size[1] - 1.2), color: '#2f3640', label: desc.name };

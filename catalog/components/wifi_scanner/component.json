@@ -4,7 +4,8 @@
   "id": "emblink/wifi_scanner",
   "version": "0.1.0",
   "name": "Wi-Fi analyzer (phone)",
-  "category": "instruments",
+  "category": "networks",
+  "subcategory": "phones",
   "description": "A phone's Wi-Fi list, or a Wi-Fi analyzer app on it: it scans the 2.4 GHz channels as a phone does and lists each network it hears, its SSID, BSSID, channel, security and RSSI, the strongest first. It reaches the circuit only through the air.",
   "keywords": [
     "wifi",
@@ -129,5 +130,29 @@
   },
   "tests": [
     "tests/*.json"
-  ]
+  ],
+  "i18n": {
+    "fr": {
+      "source": "67af5598c24b",
+      "description": "La liste Wi-Fi d'un téléphone, ou une application d'analyse Wi-Fi dessus : il balaie les canaux à 2,4 GHz comme le fait un téléphone et liste chaque réseau qu'il entend, son SSID, son BSSID, son canal, sa sécurité et son RSSI, le plus fort en premier. Il n'atteint le circuit que par l'air.",
+      "fidelity": {
+        "functional": {
+          "claims": "Balayage comme le font les téléphones (IEEE 802.11-2020 11.1.4) : canaux 1 à `channels` à tour de rôle, `dwell` ms sur chacun, un balayage toutes les `period` ; balayage actif : un DIFS après l'accord, une requête de sondage pour le SSID joker depuis son adresse, les réponses de sondage qui lui sont adressées prises et acquittées ; passif : les balises seulement ; le BSSID de chaque BSS, son SSID (vide pour les masqués), son canal tiré de son DS Parameter Set, sa sécurité tirée du bit Privacy, des suites AKM de l'élément RSN (PSK, SAE, 802.1X) et de l'élément fabricant du WPA, le RSSI que donne l'affaiblissement en espace libre sur la distance du banc (engine/air.h) ; les réseaux du balayage en cours et du dernier, le plus fort en premier.",
+          "omissions": [
+            "les bandes 5 et 6 GHz",
+            "les canaux DFS",
+            "les rapports de voisinage 802.11k/v",
+            "la connexion à un réseau (ce n'est pas une station)",
+            "plus de 24 réseaux"
+          ]
+        },
+        "timed": {
+          "claims": "Comme en fonctionnel."
+        },
+        "electrical": {
+          "claims": "Comme en fonctionnel : il n'a pas de broches."
+        }
+      }
+    }
+  }
 }

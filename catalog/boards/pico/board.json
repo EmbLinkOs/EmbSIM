@@ -68,7 +68,7 @@
     {
       "id": "SW_BOOTSEL",
       "component": "emblink/push_button",
-      "doc": "BOOTSEL: pulls the flash's chip select low through R_BOOT (read by the bootrom at reset; the stand-in boots from flash whatever it reads)"
+      "doc": "BOOTSEL: pulls the flash's chip select low through R_BOOT; held as the bootrom starts (a reset, or power), the part goes to its USB boot, the RPI-RP2 drive"
     },
     {
       "id": "R_BOOT",
@@ -170,7 +170,7 @@
       "params": {
         "pins": 2
       },
-      "doc": "The micro-USB connector's data lines (USB is not modelled)"
+      "doc": "The micro-USB connector's data lines: the RP2040's USB device (its bootrom's USB boot and the USB controller in device mode, core/mcu/rp2040/usbboot.c)"
     },
     {
       "id": "J_SWD",
@@ -656,6 +656,36 @@
       "connector": "J2",
       "pin": 20,
       "doc": "Pin 40: 5 V in (USB's on a real board)"
+    },
+    "USB_DP": {
+      "net": "USB_DP",
+      "connector": "J_USB",
+      "pin": 1,
+      "doc": "Micro-USB D+ (the RP2040's USB_DP, 27 ohm on the real board)"
+    },
+    "USB_DM": {
+      "net": "USB_DM",
+      "connector": "J_USB",
+      "pin": 2,
+      "doc": "Micro-USB D- (the RP2040's USB_DM)"
+    },
+    "SWCLK": {
+      "net": "SWCLK",
+      "connector": "J_SWD",
+      "pin": 1,
+      "doc": "The debug pads' SWCLK (a Debug Probe's SC): the RP2040's serial wire clock"
+    },
+    "SWD_GND": {
+      "net": "GND",
+      "connector": "J_SWD",
+      "pin": 2,
+      "doc": "The debug pads' GND"
+    },
+    "SWDIO": {
+      "net": "SWDIO",
+      "connector": "J_SWD",
+      "pin": 3,
+      "doc": "The debug pads' SWDIO (a Debug Probe's SD): the multi-drop wire to both cores' debug ports and the Rescue DP"
     }
   },
   "leds": [
@@ -932,5 +962,36 @@
   },
   "tests": [
     "tests/*.json"
-  ]
+  ],
+  "i18n": {
+    "fr": {
+      "source": "9cdc3d62ba7c",
+      "description": "Le Raspberry Pi Pico : le RP2040 avec 2 Mio de flash QSPI W25Q16JV, un quartz de 12 MHz, la LED utilisateur sur GPIO25 (active à l'état haut), le bouton BOOTSEL, un régulateur abaisseur-élévateur 3,3 V alimenté par VSYS et le bord à 40 broches. L'USB arrive en VBUS ; la console de la session est l'UART0 sur GP0 (TX) et GP1 (RX).",
+      "fidelity": {
+        "functional": {
+          "claims": "Réseaux, ports, la LED utilisateur et le bouton BOOTSEL comme composants logiques ; le RP2040 amorce boot2 depuis les 256 premiers octets de la flash (voir sa description).",
+          "omissions": [
+            "l'USB (les lignes de données du connecteur ne mènent nulle part)",
+            "l'effet du bouton BOOTSEL (l'amorçage USB)",
+            "le mode économie d'énergie et l'activation du convertisseur à découpage"
+          ]
+        },
+        "timed": {
+          "claims": "Comme en fonctionnel.",
+          "omissions": [
+            "comme en fonctionnel"
+          ]
+        },
+        "electrical": {
+          "claims": "VBUS à travers la diode Schottky vers VSYS, le régulateur 3,3 V, la LED avec sa résistance série, les diviseurs de mesure de VBUS et VSYS sur GPIO24 et GPIO29, le filtre d'ADC_AVDD et le quartz en équivalent BVD ; les liaisons GPIO utilisent les modèles de broche par défaut du MCU.",
+          "omissions": [
+            "le découplage",
+            "le découpage du convertisseur abaisseur-élévateur (un régulateur idéal le remplace)",
+            "le rail du cœur 1,1 V (les broches d'alimentation du cœur sont ici à 3,3 V)",
+            "les diodes ESD"
+          ]
+        }
+      }
+    }
+  }
 }

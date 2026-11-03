@@ -29,6 +29,10 @@
     "until": {
       "$ref": "common.schema.json#/$defs/time"
     },
+    "settings": {
+      "$ref": "common.schema.json#/$defs/settings",
+      "description": "The fixture project's settings. Without them a fixture runs with ideal parts (nominal values); a seed checks the spread a tolerance draws (ADR-034)."
+    },
     "circuit": {
       "type": "object",
       "required": [

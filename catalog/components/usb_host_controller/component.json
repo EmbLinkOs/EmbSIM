@@ -5,6 +5,7 @@
   "version": "0.1.0",
   "name": "USB 2.0 host controller (a computer port's protocol side)",
   "category": "instruments",
+  "subcategory": "usb_hosts",
   "description": "The host controller behind a computer's USB 2.0 port, its protocol side: it enumerates the full-speed device on its D+ and D- the way Windows and Linux do (debounce, port reset, the device descriptor at address 0, a second reset, SET_ADDRESS, the descriptors and strings, SET_CONFIGURATION), then polls its HID interfaces' interrupt endpoints. emblink/usb_host is the port with its VBUS; use this part alone where VBUS comes from elsewhere.",
   "keywords": [
     "usb",
@@ -98,6 +99,11 @@
       "type": "boolean",
       "default": true,
       "doc": "After the download, leave DFU mode for the image (as dfu-util :leave does)"
+    },
+    "copy_file": {
+      "type": "string",
+      "default": "",
+      "doc": "A file to copy onto a mass storage device's drive on copy, as a computer's file manager does (a FAT volume: the FAT and the root directory written, then the data); relative to the project. A .uf2 copied onto a Pico in BOOTSEL mode reprograms it"
     }
   },
   "outputs": [
@@ -230,6 +236,41 @@
       "name": "dfu_error",
       "type": "string",
       "doc": "Why the download stopped, when it failed"
+    },
+    {
+      "name": "copy_state",
+      "type": "string",
+      "doc": "idle, inquiry, capacity, boot sector, root directory, FAT, directory, data, done or failed"
+    },
+    {
+      "name": "copy_bytes",
+      "type": "integer",
+      "doc": "Bytes of the file written to the drive"
+    },
+    {
+      "name": "copy_result",
+      "type": "string",
+      "doc": "copied, failed, or empty before a copy ends"
+    },
+    {
+      "name": "copy_error",
+      "type": "string",
+      "doc": "Why the copy failed"
+    },
+    {
+      "name": "cdc_open",
+      "type": "boolean",
+      "doc": "The device's CDC ACM serial port is open (line coding set, DTR raised)"
+    },
+    {
+      "name": "cdc_text",
+      "type": "string",
+      "doc": "What came from the serial port (the last 4 KiB)"
+    },
+    {
+      "name": "cdc_bytes",
+      "type": "integer",
+      "doc": "Bytes that came from the serial port"
     }
   ],
   "model": {
@@ -262,13 +303,14 @@
   },
   "fidelity": {
     "functional": {
-      "claims": "A USB 2.0 root port at full speed as the device on its cable sees it, carried as transactions (engine/usb.h, ADR-031): the attach debounce (100 ms), port resets of reset_ms (50 ms) and the 10 ms reset recovery, SOFs every 1.000 ms with their frame number; enumeration as Windows and Linux order it: GET_DESCRIPTOR(device, 64) at address 0, a second reset, SET_ADDRESS and its 2 ms recovery, the device descriptor, the configuration (9 bytes, then wTotalLength), the language table and the manufacturer, product and serial strings, SET_CONFIGURATION; each HID interface's SET_IDLE (a STALL allowed) and report descriptor, then its interrupt IN endpoint polled every bInterval frames at the frame's start. Control transfers by SETUP, IN packets of bMaxPacketSize0 with their data toggles checked, and the status stage; NAKs retried, three time-outs or a STALL or 5 s failing the request; each transaction's bits at 12 Mbit/s and no transaction across a frame's start. A boot mouse's reports move its cursor. Suspend (the frames stop, SET_FEATURE(DEVICE_REMOTE_WAKEUP) sent first where the configuration offers it) and resume (20 ms of resume signalling, TDRSMDN, then frames and CLEAR_FEATURE); the device's remote wakeup answered by the host's own resume; the cable sensed by VBUS at its device end, a disconnect and a new attach as it is pulled and put back. DFU 1.1 with ST's DfuSe 1.1a extension (UM0424), as dfu-util drives it: the image a DfuSe file (UM0391: its targets' elements and addresses) or a raw binary; the interface string's memory layout read and honoured (read-only segments refused), each sector the image touches erased (0x41), the address pointer set (0x21), wTransferSize blocks from wBlockNum 2 with DFU_GETSTATUS after each, its bwPollTimeout waited out while the device is busy, DFU_CLRSTATUS for an error left from before, and :leave's zero-length DNLOAD and manifestation, the device going away counted as its leaving.",
+      "claims": "A USB 2.0 root port at full speed as the device on its cable sees it, carried as transactions (engine/usb.h, ADR-031): the attach debounce (100 ms), port resets of reset_ms (50 ms) and the 10 ms reset recovery, SOFs every 1.000 ms with their frame number; enumeration as Windows and Linux order it: GET_DESCRIPTOR(device, 64) at address 0, a second reset, SET_ADDRESS and its 2 ms recovery, the device descriptor, the configuration (9 bytes, then wTotalLength), the language table and the manufacturer, product and serial strings, SET_CONFIGURATION; each HID interface's SET_IDLE (a STALL allowed) and report descriptor, then its interrupt IN endpoint polled every bInterval frames at the frame's start. Control transfers by SETUP, IN packets of bMaxPacketSize0 with their data toggles checked, and the status stage; NAKs retried, three time-outs or a STALL or 5 s failing the request; each transaction's bits at 12 Mbit/s and no transaction across a frame's start. A boot mouse's reports move its cursor. Suspend (the frames stop, SET_FEATURE(DEVICE_REMOTE_WAKEUP) sent first where the configuration offers it) and resume (20 ms of resume signalling, TDRSMDN, then frames and CLEAR_FEATURE); the device's remote wakeup answered by the host's own resume; the cable sensed by VBUS at its device end, a disconnect and a new attach as it is pulled and put back. DFU 1.1 with ST's DfuSe 1.1a extension (UM0424), as dfu-util drives it: the image a DfuSe file (UM0391: its targets' elements and addresses) or a raw binary; the interface string's memory layout read and honoured (read-only segments refused), each sector the image touches erased (0x41), the address pointer set (0x21), wTransferSize blocks from wBlockNum 2 with DFU_GETSTATUS after each, its bwPollTimeout waited out while the device is busy, DFU_CLRSTATUS for an error left from before, and :leave's zero-length DNLOAD and manifestation, the device going away counted as its leaving. Mass storage (bulk only transport, SCSI): a file copied onto the drive as a file manager does on a FAT16 volume (INQUIRY and READ CAPACITY, the boot sector, the FAT and the root directory read, clusters taken after the last one in use, the FAT's copies and the directory entry written, then the data in WRITE(10) commands of up to 64 KiB), NAKs retried every 125 us; a drive that goes away once its last command is answered (a UF2 bootloader's reboot) counts as copied. CDC ACM (a USB serial port) as a terminal opens it: SET_LINE_CODING (115200 8N1) and SET_CONTROL_LINE_STATE (DTR and RTS) once configured, the bulk IN endpoint read every frame into cdc_text, and the cdc_send input's bytes sent on bulk OUT. Its CDC ACM port can be a serial port on the computer (a host port): DTR follows a program having it open, the program's baud rate is sent as the line coding, and what the program writes goes out as the bulk endpoint takes it.",
       "omissions": [
-        "class drivers beyond HID's polling and DFU's download: a CDC or mass-storage device is configured, then left idle (no USB/IP bridge to the computer yet, ADR-031); DFU's upload, DETACH from run-time mode and plain DFU 1.1 devices without DfuSe's commands",
         "hubs and more than one device on a cable; low-speed devices",
         "J, K and SE0 levels on D+ and D- (the pins carry no signal: the cable is found by the net D+ is on)",
         "reports of HID devices that are not boot mice are kept whole but not decoded",
-        "LPM (L1) and selective suspend timers: a suspend happens when the `suspend` input asks"
+        "LPM (L1) and selective suspend timers: a suspend happens when the `suspend` input asks",
+        "mass storage: one file into the root directory under its 8.3 name, free clusters looked for in the FAT's first sector only, no long file names, no REQUEST SENSE after a failed command",
+        "CDC ACM's notifications (the interrupt endpoint) and BREAK"
       ]
     },
     "timed": {
@@ -322,6 +364,42 @@
       "type": "boolean",
       "default": false,
       "doc": "Download dfu_file to the device's DFU interface (once it is configured), as dfu-util -D does"
+    },
+    {
+      "name": "copy",
+      "type": "boolean",
+      "default": false,
+      "doc": "Copy copy_file onto the device's drive (once it is configured), as a file dropped on it"
+    },
+    {
+      "name": "cdc_send",
+      "type": "string",
+      "doc": "Text the terminal sends on the device's CDC ACM serial port (bulk OUT), once it is open"
     }
-  ]
+  ],
+  "i18n": {
+    "fr": {
+      "source": "aa0b60e7b164",
+      "description": "Le contrôleur hôte derrière le port USB 2.0 d'un ordinateur, côté protocole : il énumère le périphérique pleine vitesse sur ses D+ et D- comme le font Windows et Linux (anti-rebond, réinitialisation du port, le descripteur de périphérique à l'adresse 0, une seconde réinitialisation, SET_ADDRESS, les descripteurs et les chaînes, SET_CONFIGURATION), puis interroge les points de terminaison d'interruption de ses interfaces HID. emblink/usb_host est le port avec son VBUS ; utilisez ce composant seul quand VBUS vient d'ailleurs.",
+      "fidelity": {
+        "functional": {
+          "claims": "Un port racine USB 2.0 en pleine vitesse tel que le voit le périphérique au bout de son câble, porté sous forme de transactions (engine/usb.h, ADR-031) : l'anti-rebond de branchement (100 ms), des réinitialisations de port de reset_ms (50 ms) et les 10 ms de rétablissement après réinitialisation, des SOF toutes les 1,000 ms avec leur numéro de trame ; l'énumération dans l'ordre de Windows et Linux : GET_DESCRIPTOR(device, 64) à l'adresse 0, une seconde réinitialisation, SET_ADDRESS et ses 2 ms de rétablissement, le descripteur de périphérique, la configuration (9 octets, puis wTotalLength), la table des langues et les chaînes de fabricant, de produit et de numéro de série, SET_CONFIGURATION ; le SET_IDLE (un STALL est admis) et le descripteur de rapport de chaque interface HID, puis son point de terminaison d'interruption IN interrogé toutes les bInterval trames au début de la trame. Transferts de contrôle par SETUP, paquets IN de bMaxPacketSize0 avec leurs bascules de données vérifiées, et l'étape d'état ; les NAK retentés, trois expirations ou un STALL ou 5 s faisant échouer la requête ; les bits de chaque transaction à 12 Mbit/s et aucune transaction à cheval sur le début d'une trame. Les rapports d'une souris d'amorçage déplacent son curseur. La suspension (les trames s'arrêtent, SET_FEATURE(DEVICE_REMOTE_WAKEUP) envoyé d'abord quand la configuration le propose) et la reprise (20 ms de signalisation de reprise, TDRSMDN, puis les trames et CLEAR_FEATURE) ; le réveil à distance du périphérique répondu par la propre reprise de l'hôte ; le câble détecté par VBUS côté périphérique, une déconnexion et un nouveau branchement quand on le débranche et le rebranche. DFU 1.1 avec l'extension DfuSe 1.1a de ST (UM0424), telle que dfu-util la pilote : l'image un fichier DfuSe (UM0391 : les éléments et adresses de ses cibles) ou un binaire brut ; la disposition mémoire de la chaîne d'interface lue et respectée (segments en lecture seule refusés), chaque secteur que touche l'image effacé (0x41), le pointeur d'adresse réglé (0x21), des blocs de wTransferSize à partir de wBlockNum 2 avec DFU_GETSTATUS après chacun, son bwPollTimeout attendu tant que le périphérique est occupé, DFU_CLRSTATUS pour une erreur restée d'avant, et le DNLOAD de longueur nulle et la manifestation de :leave, le départ du périphérique compté comme sa sortie. Stockage de masse (transport bulk only, SCSI) : un fichier copié sur le lecteur comme le fait un gestionnaire de fichiers sur un volume FAT16 (INQUIRY et READ CAPACITY, le secteur d'amorçage, la FAT et le répertoire racine lus, des clusters pris après le dernier utilisé, les copies de la FAT et l'entrée de répertoire écrites, puis les données en commandes WRITE(10) de 64 Kio au plus), les NAK retentés toutes les 125 us ; un lecteur qui disparaît une fois sa dernière commande répondue (le redémarrage d'un chargeur d'amorçage UF2) compte comme copié. CDC ACM (un port série USB) tel qu'un terminal l'ouvre : SET_LINE_CODING (115200 8N1) et SET_CONTROL_LINE_STATE (DTR et RTS) une fois configuré, le point de terminaison bulk IN lu à chaque trame dans cdc_text, et les octets de l'entrée cdc_send envoyés sur bulk OUT. Son port CDC ACM peut être un port série sur l'ordinateur (un port hôte) : DTR suit l'ouverture par un programme, le débit du programme est envoyé comme codage de ligne, et ce que le programme écrit part au rythme où le point de terminaison bulk le prend.",
+          "omissions": [
+            "les concentrateurs et plus d'un périphérique par câble ; les périphériques basse vitesse",
+            "les niveaux J, K et SE0 sur D+ et D- (les broches ne portent aucun signal : le câble est trouvé par le réseau où se trouve D+)",
+            "les rapports des périphériques HID qui ne sont pas des souris d'amorçage sont gardés entiers mais pas décodés",
+            "le LPM (L1) et les temporisations de suspension sélective : une suspension a lieu quand l'entrée `suspend` la demande",
+            "stockage de masse : un fichier dans le répertoire racine sous son nom 8.3, clusters libres cherchés dans le premier secteur de la FAT seulement, pas de noms longs, pas de REQUEST SENSE après une commande échouée",
+            "les notifications du CDC ACM (le point de terminaison d'interruption) et BREAK"
+          ]
+        },
+        "timed": {
+          "claims": "Comme en fonctionnel."
+        },
+        "electrical": {
+          "claims": "Comme en fonctionnel : ses broches ne portent aucun signal."
+        }
+      }
+    }
+  }
 }

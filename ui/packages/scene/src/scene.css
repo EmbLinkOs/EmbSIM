@@ -606,3 +606,13 @@
 .es-comparison-probe circle { fill: transparent; stroke: currentColor; color: #0a84ff; }
 .es-comparison-probe--b circle { color: #e98a26; }
 .es-comparison-probe text { fill: white; stroke: none; font: bold 10px var(--font-mono, monospace); }
+
+/* Compact density (the Settings page): the canvas's own screen-space chrome
+ * takes less room. The drawing itself (symbols, wires, labels in sheet
+ * units) is the schematic's and keeps its size: only the zoom changes it. */
+:root[data-density='compact'] .es-scene__tooltip { padding: 1px var(--space-1); gap: 0; }
+:root[data-density='compact'] .es-scene__hud { left: var(--space-1); bottom: var(--space-1); gap: var(--space-2); padding: 1px var(--space-1); }
+:root[data-density='compact'] .es-scene-legend { gap: var(--space-1); }
+:root[data-density='compact'] .es-scene-legend__bar { width: 56px; }
+:root[data-density='compact'] .es-scene__navigator { right: 8px; bottom: 8px; width: 120px; padding: 5px; gap: 3px; border-radius: 10px; font-size: 9px; }
+:root[data-density='compact'] .es-scene__navigator svg { height: 58px; }

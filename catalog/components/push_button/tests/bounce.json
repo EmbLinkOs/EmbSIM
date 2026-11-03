@@ -5,6 +5,9 @@
   "description": "With bounce on (2 ms), pressing the button chatters through six transitions before it closes for good.",
   "policy": "electrical",
   "until": "6ms",
+  "settings": {
+    "imperfections": "real"
+  },
   "circuit": {
     "components": [
       {

@@ -1,0 +1,64 @@
+{
+  "schema_version": 1,
+  "kind": "component_test",
+  "name": "normal-waits",
+  "description": "A steady 1 V on channel 1 in Normal with the trigger at 1.5 V: no edge crosses it, so it waits (WAIT) and acquires nothing.",
+  "policy": "electrical",
+  "until": "40ms",
+  "circuit": {
+    "components": [
+      {
+        "id": "DUT",
+        "component": "emblink/rigol_ds1054z",
+        "params": {
+          "trig_level": 1.5,
+          "sweep": "normal"
+        }
+      },
+      {
+        "id": "V",
+        "component": "emblink/vsource",
+        "params": {
+          "kind": "dc",
+          "dc": 1.0
+        }
+      },
+      {
+        "id": "RS",
+        "component": "emblink/resistor",
+        "params": {
+          "resistance": 1
+        }
+      },
+      {
+        "id": "G",
+        "component": "emblink/gnd"
+      }
+    ],
+    "nets": {
+      "SRC": [
+        "V.+",
+        "RS.1"
+      ],
+      "TIP": [
+        "RS.2",
+        "DUT.CH1"
+      ],
+      "GND": [
+        "V.-",
+        "G.GND",
+        "DUT.GND"
+      ]
+    }
+  },
+  "expect": {
+    "output:DUT.acquisitions": {
+      "at": "40ms",
+      "equals": 0
+    },
+    "output:DUT.status": {
+      "at": "40ms",
+      "equals": "WAIT"
+    }
+  }
+}

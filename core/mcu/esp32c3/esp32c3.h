@@ -32,6 +32,14 @@
  *             receivers, its RAM
  *   ledc.c    the LED PWM controller: four timers, six PWM generators,
  *             fading
+ *   sdm.c     the sigma-delta modulation's four pulse-density channels
+ *   twai.c    the TWAI (CAN 2.0) controller, SJA1000-compatible, bit by bit
+ *   i2s.c     the I2S controller as a master in TDM and standard formats
+ *   hmac.c    the HMAC accelerator under eFuse keys, upstream and downstream
+ *   ds.c      the digital signature: RSA under parameters only it decrypts
+ *   xts.c     XTS-AES flash encryption: manual encryption, the cache's decryption
+ *   pms.c     the permission control on the CPU's accesses to SRAM, RTC memory and ROM
+ *   uhci.c    UHCI0 and UHCI1: a UART's bytes to and from the GDMA, SLIP framing
  *   i2c.c     the I2C controller, master and slave, on the pins
  *   gdma.c    the GDMA controller: three transmit and three receive
  *             channels on descriptor lists
@@ -67,6 +75,20 @@ void *esk_esp32c3_iomux_create(struct esk_mach *s, struct esk_rf_periph *p);
 void esk_esp32c3_pins_changed(struct esk_mach *m);
 /* where a UART's TXD (tx) or RXD is: 0 and the runtime's port and bit */
 int esk_esp32c3_uart_pin(struct esk_mach *m, const char *unit, int tx, int *port, int *bit);
+/* UHCI's access to a UART (unit 0 or 1): the RX FIFO's oldest byte, the TX
+ * FIFO's room and a byte into it, a frame's time in core cycles */
+int esk_esp32c3_uart_rx_take(struct esk_mach *m, int unit, u8 *c);
+int esk_esp32c3_uart_tx_room(struct esk_mach *m, int unit);
+void esk_esp32c3_uart_tx_put(struct esk_mach *m, int unit, u8 c);
+u32 esk_esp32c3_uart_char_cycles(struct esk_mach *m, int unit);
+/* what a UART tells UHCI: a byte in its RX FIFO, a break, the line idle
+ * for the receive timeout */
+#define UHCI_EV_RX 0
+#define UHCI_EV_BREAK 1
+#define UHCI_EV_IDLE 2
+void esk_esp32c3_uhci_uart_event(struct esk_mach *m, int unit, int ev);
+extern const struct esk_dev_ops esk_esp32c3_uhci_ops;
+void *esk_esp32c3_uhci_create(struct esk_mach *s, struct esk_rf_periph *p);
 /* a peripheral output signal of the GPIO matrix (table 5.11-1) driven by
  * its model: its level and enable */
 void esk_esp32c3_signal(struct esk_mach *m, int sig, int level, int oe);
@@ -138,12 +160,32 @@ u32 esk_esp32c3_apb_hz(struct esk_mach *m);
 void esk_esp32c3_reset(struct esk_mach *m, int code);
 /* eFuse WDT_DELAY_SEL */
 int esk_esp32c3_efuse_wdt_delay_sel(struct esk_mach *m);
+int esk_esp32c3_efuse_key(struct esk_mach *m, int id, u8 key[32], int *purpose);
+int esk_esp32c3_efuse_flash_crypt(struct esk_mach *m);
+extern const struct esk_dev_ops esk_esp32c3_xts_ops;
+extern const struct esk_dev_ops esk_esp32c3_pms_ops;
+void *esk_esp32c3_pms_create(struct esk_mach *s, struct esk_rf_periph *p);
+void *esk_esp32c3_xts_create(struct esk_mach *s, struct esk_rf_periph *p);
+void esk_esp32c3_xts_crypt(struct esk_mach *m, u32 addr, u8 *buf, u32 len, int decrypt);
+int esk_esp32c3_xts_take(struct esk_mach *m, u32 *addr, u8 *data, int *len);
 extern const struct esk_dev_ops esk_esp32c3_usbjtag_ops;
 void *esk_esp32c3_usbjtag_create(struct esk_mach *s, struct esk_rf_periph *p);
 extern const struct esk_dev_ops esk_esp32c3_rmt_ops;
 void *esk_esp32c3_rmt_create(struct esk_mach *s, struct esk_rf_periph *p);
 extern const struct esk_dev_ops esk_esp32c3_ledc_ops;
 void *esk_esp32c3_ledc_create(struct esk_mach *s, struct esk_rf_periph *p);
+extern const struct esk_dev_ops esk_esp32c3_sdm_ops;
+void *esk_esp32c3_sdm_create(struct esk_mach *s, struct esk_rf_periph *p);
+extern const struct esk_dev_ops esk_esp32c3_twai_ops;
+void *esk_esp32c3_twai_create(struct esk_mach *s, struct esk_rf_periph *p);
+extern const struct esk_dev_ops esk_esp32c3_i2s_ops;
+void *esk_esp32c3_i2s_create(struct esk_mach *s, struct esk_rf_periph *p);
+extern const struct esk_dev_ops esk_esp32c3_hmac_ops;
+void *esk_esp32c3_hmac_create(struct esk_mach *s, struct esk_rf_periph *p);
+int esk_esp32c3_hmac_ds_key(struct esk_mach *m, u8 key[32]);
+void esk_esp32c3_mont(u32 *out, const u32 *a, const u32 *b, const u32 *m, u32 mp, int n);
+extern const struct esk_dev_ops esk_esp32c3_ds_ops;
+void *esk_esp32c3_ds_create(struct esk_mach *s, struct esk_rf_periph *p);
 extern const struct esk_dev_ops esk_esp32c3_i2c_ops;
 void *esk_esp32c3_i2c_create(struct esk_mach *s, struct esk_rf_periph *p);
 extern const struct esk_dev_ops esk_esp32c3_gdma_ops;
@@ -153,6 +195,8 @@ void *esk_esp32c3_gdma_create(struct esk_mach *s, struct esk_rf_periph *p);
 int esk_esp32c3_dma_out(struct esk_mach *m, int peri, u8 *byte, int *eof);
 /* a byte received: 1 when stored, 0 when there was no room */
 int esk_esp32c3_dma_in(struct esk_mach *m, int peri, u8 byte);
+/* a receive list is there to take bytes */
+int esk_esp32c3_dma_in_ready(struct esk_mach *m, int peri);
 /* the received data's end (the descriptor written back with suc_eof) */
 void esk_esp32c3_dma_in_eof(struct esk_mach *m, int peri);
 extern const struct esk_dev_ops esk_esp32c3_spi2_ops;

@@ -515,6 +515,33 @@ static void sw_observe(esk_comp *c, esk_json *out)
     sw_state *s = (sw_state *)c->state;
     esk_json_set_bool(c->e->a, out, "closed", s->closed);
 }
+/* an injected fault (ADR-034): a cut (closed until active) or a short (closed while active) */
+static int fault_closed(esk_comp *c, int active)
+{
+    return strcmp(esk_comp_param_str(c, "fault", "open"), "short") ? !active : active;
+}
+static es_status fault_create(esk_comp *c) { return sw_create_common(c, "active"); }
+static void fault_reset(esk_comp *c)
+{
+    sw_state *s = (sw_state *)c->state;
+    int start = 0;
+    (void)esk_comp_param_bool(c, "initially_active", &start);
+    s->closed = fault_closed(c, esk_comp_input_bool(c, "active", start));
+    esk_pin_set_direction(s->p1, 1);
+    esk_pin_set_direction(s->p2, 1);
+    sw_eval(c);
+}
+static es_status fault_set(esk_comp *c, const char *input, const esk_json *value)
+{
+    sw_state *s = (sw_state *)c->state;
+    if (strcmp(input, "active") || value->type != ESK_JSON_BOOL)
+        return ES_EINVAL;
+    s->closed = fault_closed(c, value->u.boolean);
+    esk_comp_diag(c, ES_SEV_INFO, "fault.injected", "%s: fault %s", c->id, value->u.boolean ? "injected" : "cleared");
+    sw_eval(c);
+    return ES_OK;
+}
+static const esk_model_ops fault_ops = { "fault_digital", sizeof(sw_state), fault_create, NULL, fault_reset, sw_in, NULL, fault_set, sw_observe, NULL, 0 };
 static const esk_model_ops button_ops = { "push_button_digital", sizeof(sw_state), btn_create, NULL, sw_reset, sw_in, NULL, sw_set, sw_observe, NULL, 0 };
 static const esk_model_ops switch_ops = { "switch_digital", sizeof(sw_state), swd_create, NULL, sw_reset, sw_in, NULL, sw_set, sw_observe, NULL, 0 };
 
@@ -626,6 +653,8 @@ typedef struct vt_state {
     unsigned rx_shift;
     char rx_text[VT_RX_BUF];
     size_t rx_len;
+    unsigned char rx_raw[VT_RX_BUF / 2]; /* the same bytes, for rx_hex */
+    size_t raw_len;
     unsigned char tx_queue[VT_BUF];
     size_t tx_head, tx_len;
     int tx_busy, tx_bit;
@@ -669,6 +698,12 @@ static void vt_time(esk_comp *c, uint32_t token)
             }
             s->rx_text[s->rx_len++] = (char)s->rx_shift;
             s->rx_text[s->rx_len] = 0;
+            if (s->raw_len >= sizeof s->rx_raw) {
+                size_t keep = sizeof s->rx_raw / 2;
+                memmove(s->rx_raw, s->rx_raw + (s->raw_len - keep), keep);
+                s->raw_len = keep;
+            }
+            s->rx_raw[s->raw_len++] = (unsigned char)s->rx_shift;
             s->rx_bytes++;
             s->rx_busy = 0;
         }
@@ -712,7 +747,7 @@ static es_status vt_create(esk_comp *c)
 static void vt_reset(esk_comp *c)
 {
     vt_state *s = (vt_state *)c->state;
-    s->rx_busy = 0; s->rx_len = 0; s->rx_text[0] = 0; s->tx_head = s->tx_len = 0; s->tx_busy = 0;
+    s->rx_busy = 0; s->rx_len = 0; s->rx_text[0] = 0; s->raw_len = 0; s->tx_head = s->tx_len = 0; s->tx_busy = 0;
     s->rx_bytes = s->tx_bytes = 0;
     if (s->tx)
         esk_pin_drive(s->tx, ESK_L1, ESK_STR_STRONG, 0);
@@ -722,11 +757,39 @@ static es_status vt_set(esk_comp *c, const char *input, const esk_json *value)
     vt_state *s = (vt_state *)c->state;
     const char *text;
     size_t i, n;
-    if (strcmp(input, "tx_text") && strcmp(input, "tx"))
+    if (strcmp(input, "tx_text") && strcmp(input, "tx") && strcmp(input, "tx_hex"))
         return ES_EINVAL;
     text = esk_json_str(value);
     if (!text) return ES_EINVAL;
     n = strlen(text);
+    if (!strcmp(input, "tx_hex")) {
+        /* bytes as hex digit pairs, as a terminal's hex send takes them;
+         * spaces between them are allowed */
+        int hi = -1;
+        for (i = 0; i < n; i++) {
+            int d = text[i] >= '0' && text[i] <= '9' ? text[i] - '0'
+                  : text[i] >= 'a' && text[i] <= 'f' ? text[i] - 'a' + 10
+                  : text[i] >= 'A' && text[i] <= 'F' ? text[i] - 'A' + 10 : -1;
+            if (d < 0) {
+                if (text[i] != ' ')
+                    return ES_EINVAL;
+                continue;
+            }
+            if (hi < 0) {
+                hi = d;
+                continue;
+            }
+            if (s->tx_len < VT_BUF) {
+                s->tx_queue[(s->tx_head + s->tx_len) % VT_BUF] = (unsigned char)(hi << 4 | d);
+                s->tx_len++;
+            }
+            hi = -1;
+        }
+        if (hi >= 0)
+            return ES_EINVAL;
+        vt_tx_start(c);
+        return ES_OK;
+    }
     for (i = 0; i < n && s->tx_len < VT_BUF; i++) {
         s->tx_queue[(s->tx_head + s->tx_len) % VT_BUF] = (unsigned char)text[i];
         s->tx_len++;
@@ -737,7 +800,16 @@ static es_status vt_set(esk_comp *c, const char *input, const esk_json *value)
 static void vt_observe(esk_comp *c, esk_json *out)
 {
     vt_state *s = (vt_state *)c->state;
+    char hex[VT_RX_BUF + 1];
+    size_t i;
+    static const char digits[] = "0123456789abcdef";
     esk_json_set_string(c->e->a, out, "rx_text", s->rx_text);
+    for (i = 0; i < s->raw_len; i++) {
+        hex[2 * i] = digits[s->rx_raw[i] >> 4];
+        hex[2 * i + 1] = digits[s->rx_raw[i] & 15u];
+    }
+    hex[2 * s->raw_len] = 0;
+    esk_json_set_string(c->e->a, out, "rx_hex", hex);
     esk_json_set_integer(c->e->a, out, "rx_bytes", (int64_t)s->rx_bytes);
     esk_json_set_integer(c->e->a, out, "tx_bytes", (int64_t)s->tx_bytes);
     esk_json_set_integer(c->e->a, out, "tx_pending", (int64_t)s->tx_len + (s->tx_busy ? 1 : 0));
@@ -748,9 +820,9 @@ static const esk_model_ops vt_ops = { "virtual_terminal", sizeof(vt_state), vt_c
 
 static const esk_model_ops *const digital_table[] = {
     &wire_ops, &none_ops, &buffer_ops, &inverter_ops, &and_ops, &nand_ops, &or_ops, &nor_ops, &xor_ops, &xnor_ops,
-    &tristate_ops, &dff_ops, &clock_ops, &pulse_ops, &level_ops, &pull_ops, &button_ops, &switch_ops,
+    &tristate_ops, &dff_ops, &clock_ops, &pulse_ops, &level_ops, &pull_ops, &button_ops, &switch_ops, &fault_ops,
     &indicator_ops, &rgb_indicator_ops, &probe_ops, &vt_ops, &hc_ops, &esk_wifi_ap_ops, &esk_ble_scanner_ops, &esk_web_server_ops, &esk_wifi_scanner_ops, &esk_air_sniffer_ops, &esk_usb_host_ops, &esk_usb_mouse_ops, &esk_st7735_ops, &esk_usb_flash_drive_ops,
-    &esk_ble_central_ops, &esk_logic_analyzer_ops
+    &esk_ble_central_ops, &esk_logic_analyzer_ops, &esk_st_link_ops, &esk_debug_probe_ops
 };
 
 const esk_model_ops *const *esk_digital_models(size_t *n)

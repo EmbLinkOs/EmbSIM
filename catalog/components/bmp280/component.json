@@ -4,7 +4,8 @@
   "id": "emblink/bmp280",
   "version": "1.0.0",
   "name": "BMP280 pressure and temperature sensor",
-  "category": "sensors",
+  "category": "transducers",
+  "subcategory": "pressure",
   "description": "Bosch BMP280 barometric pressure and temperature sensor on I2C (0x76/0x77 from SDO) or SPI: chip ID 0x58, sleep, forced and normal modes, oversampling x1 to x16, the IIR filter and standby times up to 4 s, trimming parameters that Bosch's compensation formulas turn into degrees and pascals; no humidity. Temperature and pressure are interactive inputs.",
   "keywords": [
     "BMP280",
@@ -266,5 +267,49 @@
   },
   "tests": [
     "tests/*.json"
-  ]
+  ],
+  "i18n": {
+    "fr": {
+      "source": "efbf3ba03d61",
+      "description": "Capteur de pression barométrique et de température Bosch BMP280 sur I2C (0x76/0x77 selon SDO) ou SPI : identifiant de puce 0x58, modes veille, forcé et normal, suréchantillonnage x1 à x16, le filtre IIR et des temps de veille jusqu'à 4 s, les paramètres d'ajustage que les formules de compensation de Bosch transforment en degrés et pascals ; pas d'humidité. La température et la pression sont des entrées interactives.",
+      "fidelity": {
+        "functional": {
+          "claims": "I2C en 0x76 + SDO avec paires adresse/donnée et lectures auto-incrémentées ; SPI à 4 fils (mode 0) dès que CSB passe bas, l'I2C coupé ensuite jusqu'à la mise hors tension ; la carte des registres avec l'identifiant de puce 0x58, la réinitialisation logicielle, l'état (measuring, im_update), config ignoré en mode normal, pas de registres d'humidité (ignorés en écriture, 0 en lecture) ; modes veille, forcé et normal avec le temps de mesure typique et les temps de veille (0,5 ms à 4 s) ; des valeurs brutes que la compensation de Bosch transforme en les entrées à la résolution du suréchantillonnage, le filtre IIR, les mesures sautées à 0x80000, les registres de données doublés ; aucune réponse sous 1,71 V.",
+          "omissions": [
+            "le bruit que le suréchantillonnage moyenne (lectures exactes à la résolution près)",
+            "la dispersion de précision entre exemplaires (+-1 C, +-1 hPa)",
+            "l'auto-échauffement",
+            "le mode SPI 3 et le SPI à 3 fils (spi3w_en)",
+            "le courant d'alimentation",
+            "les dommages au-delà du maximum absolu de 4,25 V",
+            "l'identifiant de puce 0x56 ou 0x57 des échantillons d'ingénierie"
+          ]
+        },
+        "timed": {
+          "claims": "Comme en fonctionnel.",
+          "omissions": [
+            "le bruit que le suréchantillonnage moyenne (lectures exactes à la résolution près)",
+            "la dispersion de précision entre exemplaires (+-1 C, +-1 hPa)",
+            "l'auto-échauffement",
+            "le mode SPI 3 et le SPI à 3 fils (spi3w_en)",
+            "le courant d'alimentation",
+            "les dommages au-delà du maximum absolu de 4,25 V",
+            "l'identifiant de puce 0x56 ou 0x57 des échantillons d'ingénierie"
+          ]
+        },
+        "electrical": {
+          "claims": "Les broches se relient aux réseaux analogiques avec les modèles de broche par défaut de la famille ; la tension de VDD conditionne la puce ; le comportement est celui du modèle Lua.",
+          "omissions": [
+            "le bruit que le suréchantillonnage moyenne (lectures exactes à la résolution près)",
+            "la dispersion de précision entre exemplaires (+-1 C, +-1 hPa)",
+            "l'auto-échauffement",
+            "le mode SPI 3 et le SPI à 3 fils (spi3w_en)",
+            "le courant d'alimentation",
+            "les dommages au-delà du maximum absolu de 4,25 V",
+            "l'identifiant de puce 0x56 ou 0x57 des échantillons d'ingénierie"
+          ]
+        }
+      }
+    }
+  }
 }

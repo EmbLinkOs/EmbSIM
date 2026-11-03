@@ -114,7 +114,17 @@ struct esk_bus {
     int watch_hit, watch_kind; /* the first watchpoint the core hit */
     u32 watch_addr;
     int debug;     /* the access is a debugger's */
+    int dap;       /* the access is a debug port's (a probe's MEM-AP), not a core's: 1 + the core whose debug it reaches */
     int dev_fault; /* the device refused it: esk_bus_fault */
+    /* an arbiter between the bus's masters (the RP2040's crossbar,
+     * rp2040/busctrl.c): told of each access the core or a master makes to
+     * the memory or a device, not a debugger's. `master` names the master
+     * making it (-1: the core running, at the machine's time) and
+     * `master_t` its cycle */
+    void (*arb)(void *ctx, u32 a);
+    void *arb_ctx;
+    int master;
+    u64 master_t;
     int unmapped;  /* nothing answered the failed access */
     /* a device was accessed since esk_mach_event_coming last looked */
     int touched;
@@ -130,9 +140,17 @@ struct esk_bus {
     /* a device was written since the lazy clocks' next event was found (a
      * read never brings a device's event nearer) */
     int written;
+    /* the trace of the cores' data accesses (an analysis's, latency.c): each
+     * load and store a core makes, its value, and whether it faulted; not a
+     * debugger's, a probe's or another bus master's */
+    void (*trace)(void *ctx, u32 a, int n, int write, u32 v, int fault);
+    void *trace_ctx;
 };
 
 es_status esk_bus_add_region(struct esk_mach *m, u32 base, u32 size, int kind);
+/* the device answering at `a` (its model's name: "scs", "systick") and the
+ * offset in it, or NULL */
+const char *esk_bus_device_name(struct esk_bus *b, u32 a, u32 *off);
 /* the region as before an image: every 4 bytes its `erased` word */
 void esk_bus_erase(struct esk_region *r);
 /* code changed from outside the core (an image, a debugger's write): every
@@ -186,7 +204,19 @@ es_status esk_bus_remap_mirror(struct esk_bus *b, u32 base, u32 target, u32 size
 /* a device's read or write hook refuses the access in progress: the core
  * takes its bus fault, as when nothing answers */
 ES_INLINE void esk_bus_fault(struct esk_bus *b) { b->dev_fault = 1; }
+
+/* a core's data access, for the trace when one records */
+ES_INLINE void esk_bus_traced(struct esk_bus *b, u32 a, int n, int write, u32 v, int fault)
+{
+    if (b->trace && !b->debug && !b->dap)
+        b->trace(b->trace_ctx, a, n, write, v, fault);
+}
 /* The core's accesses: 0, or -1 with fail_addr when nothing answers. */
+/* the access kinds access_denied is asked about */
+#define ESK_ACCESS_FETCH 0
+#define ESK_ACCESS_LOAD 1
+#define ESK_ACCESS_STORE 2
+
 int esk_bus_read(struct esk_bus *b, u32 a, int n, u32 *v);
 int esk_bus_write(struct esk_bus *b, u32 a, int n, u32 v);
 /* whether an access of the core's touches a watchpoint (1), recording the
@@ -348,8 +378,10 @@ struct esk_radio_port {
  * (esk_mach.usb; engine/usb.h's answers, bus states and pull-ups) */
 struct esk_usb_port {
     void *ctx;
-    /* the pin D+ is on (port * 32 + bit, port 0 being A), the cable's end */
+    /* the pin D+ is on (port * 32 + bit, port 0 being A), the cable's end;
+     * or, for a dedicated pin (an RP2040's USB_DP), dp_at -1 and its name */
     int dp_at;
+    const char *dp_pin;
     int (*pullup)(void *ctx);
     void (*bus)(void *ctx, int ev, u32 frame);
     int (*setup)(void *ctx, int addr, int ep, const u8 data[8]);
@@ -417,7 +449,10 @@ enum esk_reset_cause {
     ESK_RESET_LOW_POWER, /* entering a low-power mode the option bytes forbid */
     /* leaving a mode that powered the core's domain off (an STM32's
      * Standby): a power reset of all but the backup domain, RAM lost */
-    ESK_RESET_STANDBY
+    ESK_RESET_STANDBY,
+    /* a rescue debug port's (the RP2040's Rescue DP): as a power-on, but
+     * memory kept, the part's bootrom told */
+    ESK_RESET_RESCUE
 };
 
 struct esk_mach {
@@ -453,6 +488,31 @@ struct esk_mach {
      * settings.mac): the eFuse model's, otherwise its description's */
     u8 factory_mac[6];
     int has_factory_mac;
+    /* the fuse and lock bytes as programmed, when the board gives them (an
+     * AVR's: low, high, extended, lock); has_fuses 0 leaves the core's
+     * defaults */
+    u8 fuse[4];
+    int has_fuses;
+    /* the program wrote its own flash (an AVR's SPM): a power cycle keeps
+     * what it wrote rather than loading the image again */
+    int flash_written;
+    /* a debugger's view of the part: the core halted in Debug state
+     * (cortexm/debug.c), and an STM32's DBGMCU_CR and freeze registers
+     * (APB1_FZ, APB2_FZ) as the part's DBGMCU model holds them */
+    struct {
+        int halted;
+        u32 cr, fz[2];
+        /* the trace pin carries the serial wire output (an STM32's
+         * DBGMCU_CR TRACE_IOEN in asynchronous TRACE_MODE) */
+        int swo;
+        /* a debug access port of the part's own next to its MEM-AP (an
+         * nRF52's CTRL-AP): answers `reg` (1) or not (0); and the MEM-AP
+         * refusing access (an nRF52's APPROTECT): models set them */
+        int (*ctrl_ap)(struct esk_mach *m, u32 reg, int write, u32 *v);
+        int (*ap_locked)(struct esk_mach *m);
+    } dbg;
+    /* the ITM and TPIU (cortexm/itm.c), when the core has them */
+    void *itm;
     /* set by a model when something outside the machine must see a change
      * now (a pin, the core clock): the runtime ends its quantum */
     int yield;
@@ -475,8 +535,18 @@ struct esk_mach {
     int powered_down;
     void (*deep_sleep)(struct esk_mach *m);
     void (*deep_wake)(struct esk_mach *m);
+    /* the chip's permission control on the core's own accesses (an
+     * ESP32-C3's SENSITIVE): nonzero blocks the access, which then reads 0
+     * (a fetch 0, an illegal instruction) or writes nothing, without an
+     * exception; the model records it. NULL while nothing is checked */
+    int (*access_denied)(void *ctx, u32 addr, int n, int kind);
+    void *access_ctx;
     /* the program asked for a system reset (AIRCR.SYSRESETREQ) */
     int reset_req;
+    /* a pin the boot reads once the circuit has settled after a reset
+     * (an RP2040's QSPI_SS, BOOTSEL's): strap_low is called when it is low */
+    const char *strap_pin;
+    void (*strap_low)(struct esk_mach *m);
     /* that reset is the core's alone (an ESP32-C3's CPU reset): the
      * devices keep their state */
     int reset_cpu_only;
@@ -543,6 +613,16 @@ struct esk_mach {
      * core interface steps its cores itself, through esk_mach_step_core
      * (smp.c) */
     struct esk_an *an;
+    /* the flash interface's read timing (an STM32F4's wait states and ART
+     * accelerator, flash_f4.c), or 0s: the memory it covers (by its bytes,
+     * so an alias of it counts), the stall of an instruction fetch at
+     * offset `off` at machine cycle `now`, and of a data read */
+    struct {
+        const u8 *mem;
+        u32 (*ifetch)(void *ctx, u32 off, u64 now);
+        u32 (*dread)(void *ctx, u32 off);
+        void *ctx;
+    } ftime;
     int steps_cores;
     /* the ROM's host functions (struct esk_rom_call): 1 when `bkpt #n` at
      * `pc` is one, 0 for an ordinary breakpoint instruction */
@@ -593,6 +673,7 @@ struct esk_an;
 void esk_an_step(struct esk_an *a, int core, struct esk_cpu *cpu);
 void esk_an_exc(struct esk_an *a, int core, int n, u32 ret);
 void esk_an_exc_return(struct esk_an *a, int core);
+void esk_an_pend(struct esk_an *a, int core, int n);
 /* a core enters exception or interrupt n (esk_mach_host.exc), to return to
  * `ret` */
 ES_INLINE void esk_mach_exc(struct esk_mach *m, int core, int n, u32 ret)
@@ -601,6 +682,13 @@ ES_INLINE void esk_mach_exc(struct esk_mach *m, int core, int n, u32 ret)
         m->host.exc(m->host.ctx, core, n);
     if (m->an)
         esk_an_exc(m->an, core, n, ret);
+}
+/* exception or interrupt n of core `core` becomes pending (a measurement's
+ * boundary, latency.c) */
+ES_INLINE void esk_mach_pend(struct esk_mach *m, int core, int n)
+{
+    if (m->an)
+        esk_an_pend(m->an, core, n);
 }
 /* a core returns from an exception (RETFIE, MRET, ERET, RETI, a Cortex-M's
  * EXC_RETURN) */
@@ -745,6 +833,13 @@ void esk_cortexm_event(struct esk_mach *m);
  * that runs next) */
 int esk_cortexm_cores(struct esk_mach *m);
 int esk_cortexm_core(struct esk_mach *m);
+/* core `core` waits `n` cycles more (a bus arbiter's) */
+void esk_cortexm_core_stall(struct esk_mach *m, int core, u32 n);
+/* the serial wire output's bytes that have reached the trace pin by now
+ * (at most `cap`), its protocol (TPIU_SPPR) and bit rate (cortexm/itm.c) */
+u32 esk_cm_swo_take(struct esk_mach *m, u8 *buf, u32 cap, u32 *sppr, double *baud);
+/* the SW-DP IDCODE of the debug port in front of core 0 */
+u32 esk_cortexm_dp_idcode(struct esk_mach *m);
 /* exception n pends on one core's NVIC only */
 void esk_cortexm_core_interrupt(struct esk_mach *m, int core, int n);
 /* a core other than core 0 powered off (reset, idle) or on (waiting in its

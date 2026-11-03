@@ -5,6 +5,7 @@
   "version": "1.0.0",
   "name": "STS7PF30L P-channel MOSFET",
   "category": "transistors",
+  "subcategory": "mosfet_p",
   "description": "STMicroelectronics STS7PF30L, a -30 V, -7 A P-channel STripFET II MOSFET in SO-8 (16 mOhm typical): the NUCLEO-64's T2, which joins the ST-LINK's USB 5 V to the board once the ST-LINK enables it.",
   "keywords": [
     "mosfet",
@@ -178,5 +179,32 @@
     "manufacturer": "STMicroelectronics",
     "package": "SO-8",
     "datasheet": "https://www.st.com/resource/en/datasheet/sts7pf30l.pdf"
+  },
+  "i18n": {
+    "fr": {
+      "source": "ab09edd498da",
+      "description": "STMicroelectronics STS7PF30L, un MOSFET STripFET II canal P de -30 V, -7 A en SO-8 (16 mOhms typiques) : le T2 de la NUCLEO-64, qui relie le 5 V USB du ST-LINK à la carte une fois que le ST-LINK l'active.",
+      "fidelity": {
+        "functional": {
+          "claims": "Broches seulement : la politique fonctionnelle n'a pas de tensions de grille.",
+          "omissions": [
+            "la commutation"
+          ]
+        },
+        "timed": {
+          "claims": "Comme en électrique."
+        },
+        "electrical": {
+          "claims": "Un MOSFET canal P de niveau 1 (seuil -1,2 V, kp 7,1 A/V^2 : 16 mOhms à -10 V et 3,5 A, les 16 typiques et 21 maximum de la fiche technique) avec sa diode intrinsèque (1,0 V à 7 A, les 1,2 V maximum de la fiche technique).",
+          "omissions": [
+            "la résistance à l'état passant à -4,5 V ressort près de 43 mOhms (le niveau 1 n'a pas de dégradation de mobilité ; la valeur de la fiche technique à -4,5 V n'était pas disponible)",
+            "les capacités et la charge de grille (le Ciss de la fiche technique n'était pas disponible)",
+            "la température",
+            "la dispersion des seuils",
+            "l'avalanche et la SOA : aucun dommage"
+          ]
+        }
+      }
+    }
   }
 }

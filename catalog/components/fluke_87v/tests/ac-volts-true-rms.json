@@ -1,0 +1,60 @@
+{
+  "schema_version": 1,
+  "kind": "component_test",
+  "name": "ac-volts-true-rms",
+  "description": "A 50 Hz sine of 1.414 V peak on V AC: the true RMS, 1.000 V, within the 87V's 45-65 Hz accuracy of +-(0.7 % + 2 counts).",
+  "policy": "electrical",
+  "until": "600ms",
+  "circuit": {
+    "components": [
+      {
+        "id": "DUT",
+        "component": "emblink/fluke_87v"
+      },
+      {
+        "id": "G",
+        "component": "emblink/gnd"
+      },
+      {
+        "id": "SUP",
+        "component": "emblink/vsource",
+        "params": {
+          "kind": "sine",
+          "vo": 0,
+          "va": 1.41421356,
+          "freq": 50
+        }
+      }
+    ],
+    "nets": {
+      "P": [
+        "SUP.+",
+        "DUT.V"
+      ],
+      "GND": [
+        "SUP.-",
+        "DUT.COM",
+        "G.GND"
+      ]
+    }
+  },
+  "expect": {
+    "output:DUT.value": {
+      "at": "600ms",
+      "min": 0.991,
+      "max": 1.009
+    },
+    "output:DUT.unit": {
+      "at": "600ms",
+      "equals": "V"
+    }
+  },
+  "inputs": [
+    {
+      "at": "0s",
+      "target": "DUT",
+      "input": "function",
+      "value": "vac"
+    }
+  ]
+}

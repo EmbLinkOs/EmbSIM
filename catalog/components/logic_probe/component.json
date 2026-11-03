@@ -4,7 +4,8 @@
   "id": "emblink/logic_probe",
   "version": "1.0.0",
   "name": "Logic probe",
-  "category": "instruments",
+  "category": "optoelectronics",
+  "subcategory": "indicators",
   "description": "Shows the resolved logic value of a net; drives nothing.",
   "keywords": [
     "probe",
@@ -88,5 +89,25 @@
   },
   "tests": [
     "tests/*.json"
-  ]
+  ],
+  "i18n": {
+    "fr": {
+      "source": "f60e8c37626e",
+      "description": "Montre la valeur logique résolue d'un réseau ; ne pilote rien.",
+      "fidelity": {
+        "functional": {
+          "claims": "Rapporte la valeur résolue, Z et X compris, sans lever d'avertissement d'entrée flottante (SPEC-003 §5 logic_probe)."
+        },
+        "timed": {
+          "claims": "Comme en fonctionnel."
+        },
+        "electrical": {
+          "claims": "Une liaison à comparateur avec les seuils cmos_3v3 et sans charge.",
+          "omissions": [
+            "la capacité d'entrée"
+          ]
+        }
+      }
+    }
+  }
 }

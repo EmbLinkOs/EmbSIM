@@ -22,6 +22,11 @@ analysis, SPEC-009 §12):
     backtrace from .debug_frame through the calls that made it, the handler
     the strong symbol at the vector's address; with no fault, none;
   - the gcov-style text shows the source with its counts;
+  - the trace's loads and stores (run --trace): the NUCLEO's blink-serial
+    setting USART2.BRR and printing its banner through USART2.DR by name,
+    SysTick's entry stacking eight words and fetching its vector, each
+    access after its instruction; peripherals only and none; a load from
+    nothing as a bus error; the .vcd's address and data;
   - a project without firmware is refused (exit 2);
   - over the protocol (`embsim sidecar`): analysis.coverage before
     analysis.start is an error; after it, and a run, the reports come back,
@@ -228,6 +233,77 @@ def check_fault(embsim, tmp):
     return problems
 
 
+def trace_rows(path):
+    return [ln.split("\t") for ln in path.read_text(encoding="utf-8").splitlines() if not ln.startswith("#")]
+
+
+def check_trace(embsim, tmp):
+    """the trace's data accesses (run --trace): the NUCLEO's blink-serial setting
+    up USART2 and printing its banner through USART2.DR, SysTick's entry
+    stacking eight words and fetching its vector; peripherals only, none; a
+    load from nothing as a bus error; the .vcd's address and data"""
+    problems = []
+    ex = ROOT / "examples" / "nucleo-f446re-blink-serial" / "project.json"
+    full = tmp / "trace.txt"
+    r = run([embsim, "run", ex, "--until", "8ms", "--quiet", "--trace", full, "--trace-limit", "400000"])
+    if r.returncode:
+        return [f"exit {r.returncode}: {r.stderr.strip()}"]
+    rows = trace_rows(full)
+    acc = [x for x in rows if x[2] in ("read", "write")]
+    brr = [x for x in acc if x[2] == "write" and x[4].endswith("USART2.BRR")]
+    dr = [int(x[4].split(": ")[1].split()[0], 16) for x in acc if x[2] == "write" and x[4].endswith("USART2.DR")]
+    banner = bytes(dr).decode("latin-1")
+    if len(brr) != 1 or "0x00000187" not in brr[0][4]:
+        problems.append(f"USART2.BRR's write: {brr}")
+    if "nucleo" not in banner.lower():
+        problems.append(f"the banner through USART2.DR: {banner[:80]!r}")
+    exc = [i for i, x in enumerate(rows) if x[2] == "exc" and x[3] == "SysTick"]
+    if not exc:
+        problems.append("no SysTick entry in the trace")
+    else:
+        entry = rows[exc[0] + 1:exc[0] + 10]
+        stacked = [x for x in entry if x[2] == "write" and x[0] == rows[exc[0]][0]]
+        vector = [x for x in entry if x[2] == "read" and x[3] == "0x0000003c"]
+        if len(stacked) != 8 or len(vector) != 1:
+            problems.append(f"SysTick's entry: {len(stacked)} words stacked, {len(vector)} vector fetch")
+    # each access follows its instruction, at its cycle
+    order = all(rows[i - 1][2] != "insn" or int(rows[i - 1][0]) <= int(rows[i][0])
+                for i in range(1, len(rows)) if rows[i][2] in ("read", "write"))
+    if not order:
+        problems.append("an access stamped before its instruction")
+    per = tmp / "periph.txt"
+    run([embsim, "run", ex, "--until", "8ms", "--quiet", "--trace", per, "--trace-limit", "400000",
+         "--trace-accesses", "peripherals"])
+    pacc = [x for x in trace_rows(per) if x[2] in ("read", "write")]
+    if not pacc or any(x[3].startswith("0x2") for x in pacc):
+        problems.append(f"peripherals only: {len(pacc)} accesses, RAM among them: "
+                        f"{[x for x in pacc if x[3].startswith('0x2')][:3]}")
+    none = tmp / "none.txt"
+    run([embsim, "run", ex, "--until", "6ms", "--quiet", "--trace", none, "--trace-accesses", "none"])
+    if [x for x in trace_rows(none) if x[2] in ("read", "write")]:
+        problems.append("--trace-accesses none recorded accesses")
+    r = run([embsim, "run", ex, "--until", "1ms", "--trace", none, "--trace-accesses", "some"])
+    if r.returncode != 2:
+        problems.append(f"--trace-accesses some: exit {r.returncode}")
+    # the fault firmware's load from 0x30000000: a bus error
+    elf = ROOT / "tests" / "firmware" / "fault" / "fault.elf"
+    ft = tmp / "fault-trace.txt"
+    run([embsim, "run", "--target", "emblink/bluepill", "--image", elf, "--until", "2ms", "--quiet",
+         "--trace", ft, "--trace-limit", "400000", "--trace-accesses", "peripherals"])
+    err = [x for x in trace_rows(ft) if x[2] == "read" and x[3] == "0x30000000"]
+    if not err or "bus error" not in err[0][4]:
+        problems.append(f"the load from nothing: {err[:1]}")
+    vcd = tmp / "trace.vcd"
+    run([embsim, "run", ex, "--until", "6ms", "--quiet", "--trace", vcd, "--trace-limit", "20000"])
+    text = vcd.read_text(encoding="utf-8") if vcd.exists() else ""
+    if "$var wire 32 a address $end" not in text or "$var wire 32 d data $end" not in text or "\n1e\n" not in text:
+        problems.append("the .vcd has no address, data or access event")
+    if not problems:
+        print(f"ok    the trace's accesses: {len(acc)} loads and stores, USART2.BRR and the banner through "
+              "USART2.DR by name, SysTick's 8 stacked words and vector, peripherals only, a bus error")
+    return problems
+
+
 def check_protocol(embsim):
     problems = []
     project = ROOT / "examples" / "bluepill-button-led" / "project.json"
@@ -310,6 +386,10 @@ def main() -> int:
         problems = check_fault(args.embsim, tmp)
         for p in problems:
             print(f"FAIL  the fault: {p}")
+        failures += bool(problems)
+        problems = check_trace(args.embsim, tmp)
+        for p in problems:
+            print(f"FAIL  the trace: {p}")
         failures += bool(problems)
         # no firmware: refused
         r = run([args.embsim, "run", ROOT / "examples" / "button-led" / "project.json", "--coverage", tmp / "x"])

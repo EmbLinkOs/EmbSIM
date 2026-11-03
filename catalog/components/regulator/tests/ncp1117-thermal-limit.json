@@ -1,0 +1,71 @@
+{
+  "schema_version": 1,
+  "kind": "component_test",
+  "name": "ncp1117-thermal-limit",
+  "description": "The NCP1117ST50 from 12 V into 25 ohm without a heatsink: 200 mA would dissipate 1.4 W, a 250 C die. Within minutes its thermal shutdown holds the die near 175 C, which allows about 0.94 W: as the output sags the regulator drops more, so it settles where (12 - V) V / 25 ohm plus its ground current's 72 mW make that power, about 2.2 V.",
+  "policy": "electrical",
+  "until": "600s",
+  "circuit": {
+    "components": [
+      {
+        "id": "DUT",
+        "component": "emblink/regulator",
+        "params": {
+          "part": "NCP1117ST50"
+        }
+      },
+      {
+        "id": "SUP",
+        "component": "emblink/vsource",
+        "params": {
+          "kind": "dc",
+          "dc": 12
+        }
+      },
+      {
+        "id": "RL",
+        "component": "emblink/resistor",
+        "params": {
+          "resistance": "25",
+          "tolerance": 0
+        }
+      },
+      {
+        "id": "G",
+        "component": "emblink/gnd"
+      }
+    ],
+    "nets": {
+      "IN": [
+        "SUP.+",
+        "DUT.IN"
+      ],
+      "OUT": [
+        "DUT.OUT",
+        "RL.1"
+      ],
+      "GND": [
+        "SUP.-",
+        "DUT.GND",
+        "RL.2",
+        "G.GND"
+      ]
+    }
+  },
+  "expect": {
+    "output:DUT.tj": {
+      "at": "600s",
+      "min": 170,
+      "max": 180
+    },
+    "output:DUT.thermal_limit": {
+      "at": "600s",
+      "equals": true
+    },
+    "device:DUT.vout": {
+      "at": "600s",
+      "min": 1.9,
+      "max": 2.6
+    }
+  }
+}

@@ -14,6 +14,7 @@
 static UART_HandleTypeDef uart;
 static TIM_HandleTypeDef tim;
 static volatile unsigned presses, ticks;
+static volatile uint32_t last_edge;
 static volatile int got = -1;
 static uint8_t rx;
 
@@ -55,7 +56,7 @@ static void pins(void)
     g.Speed = GPIO_SPEED_FREQ_LOW;
     HAL_GPIO_Init(GPIOC, &g);
     g.Pin = GPIO_PIN_0;
-    g.Mode = GPIO_MODE_IT_FALLING;
+    g.Mode = GPIO_MODE_IT_RISING_FALLING; /* both edges: the debounce sees the line settle */
     g.Pull = GPIO_PULLUP;
     HAL_GPIO_Init(GPIOA, &g);
     HAL_NVIC_SetPriority(EXTI0_IRQn, 2, 0);
@@ -156,8 +157,14 @@ void HAL_TIM_Base_MspInit(TIM_HandleTypeDef *h)
 
 void HAL_GPIO_EXTI_Callback(uint16_t pin)
 {
-    if (pin == GPIO_PIN_0)
-        presses++;
+    /* the button's contacts chatter for a few milliseconds when pressed and
+     * when released: a press is a falling edge after 20 ms without an edge */
+    if (pin == GPIO_PIN_0) {
+        uint32_t now = HAL_GetTick();
+        if (HAL_GPIO_ReadPin(GPIOA, GPIO_PIN_0) == GPIO_PIN_RESET && now - last_edge >= 20u)
+            presses++;
+        last_edge = now;
+    }
 }
 
 void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *h)

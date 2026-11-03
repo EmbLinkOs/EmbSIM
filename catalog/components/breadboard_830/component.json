@@ -5,6 +5,7 @@
  "version": "1.0.0",
  "name": "Breadboard, 830 points",
  "category": "connectors",
+ "subcategory": "breadboards",
  "description": "Full-size solderless breadboard (BusBoard BB830; the MB-102 has the same layout): 0.1 in pitch, strips of five holes either side of a 0.3 in channel, power rails along both edges.",
  "keywords": [
   "breadboard",
@@ -10313,5 +10314,31 @@
  },
  "tests": [
   "tests/*.json"
- ]
+ ],
+ "i18n": {
+  "fr": {
+   "source": "a48e7d79e206",
+   "description": "Plaque d'essai sans soudure pleine taille (BusBoard BB830 ; la MB-102 a la même disposition) : pas de 0,1 in, bandes de cinq trous de part et d'autre d'une rainure de 0,3 in, rails d'alimentation le long des deux bords.",
+   "fidelity": {
+    "functional": {
+     "claims": "830 trous ; chaque bande de cinq (63 de chaque côté) et chaque rail d'alimentation forme un seul conducteur ; les bandes de part et d'autre de la rainure centrale et les bandes voisines sont isolées. Le corps (6,50 x 2,20 x 0,30 in, 165,1 x 54,6 x 8,5 mm), la zone de 630 points pour circuits intégrés et les quatre rails continus de 50 points sont ceux de la fiche technique (BPS-DOC-(BB830) Rev 7).",
+     "omissions": [
+      "la position des trous sur le corps (les décalages des rails et des bandes par rapport à ses bords) n'est pas cotée dans la fiche technique : pas de 0,1 in, la rainure DIP de 0,3 in et des paires de rails à 0,1 in, placés selon la disposition courante"
+     ]
+    },
+    "timed": {
+     "claims": "830 trous ; chaque bande de cinq (63 de chaque côté) et chaque rail d'alimentation forme un seul conducteur ; les bandes de part et d'autre de la rainure centrale et les bandes voisines sont isolées. Le corps (6,50 x 2,20 x 0,30 in, 165,1 x 54,6 x 8,5 mm), la zone de 630 points pour circuits intégrés et les quatre rails continus de 50 points sont ceux de la fiche technique (BPS-DOC-(BB830) Rev 7)."
+    },
+    "electrical": {
+     "claims": "830 trous ; chaque bande de cinq (63 de chaque côté) et chaque rail d'alimentation forme un seul conducteur ; les bandes de part et d'autre de la rainure centrale et les bandes voisines sont isolées. Le corps (6,50 x 2,20 x 0,30 in, 165,1 x 54,6 x 8,5 mm), la zone de 630 points pour circuits intégrés et les quatre rails continus de 50 points sont ceux de la fiche technique (BPS-DOC-(BB830) Rev 7). Les contacts sont idéaux.",
+     "omissions": [
+      "la résistance de contact (quelques dizaines de milliohms par contact)",
+      "la capacité entre bandes voisines (quelques pF)",
+      "la valeur nominale de 36 V et 2 A par contact n'est pas imposée",
+      "les contacts usés et les fils mal fixés"
+     ]
+    }
+   }
+  }
+ }
 }

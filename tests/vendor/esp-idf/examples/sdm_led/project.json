@@ -1,0 +1,67 @@
+{
+ "schema_version": 1,
+ "kind": "project",
+ "name": "esp-idf-sdm_led",
+ "description": "ESP-IDF's sdm_led on the ESP32-C3-DevKitM-1: sigma-delta channel 0 on GPIO0 (the IO0 header pin) at a 1 MHz sample rate.",
+ "policy": "electrical",
+ "boards": [
+  {
+   "id": "B1",
+   "board": "emblink/esp32c3_devkitm1",
+   "layout": {
+    "x": 360,
+    "y": 120
+   },
+   "firmware": {
+    "image": "flash.bin",
+    "format": "bin"
+   }
+  }
+ ],
+ "components": [
+  {
+   "id": "USB",
+   "component": "emblink/vsource",
+   "params": {
+    "kind": "dc",
+    "dc": 5
+   },
+   "layout": {
+    "x": 120,
+    "y": 160
+   }
+  },
+  {
+   "id": "GND1",
+   "component": "emblink/gnd",
+   "layout": {
+    "x": 120,
+    "y": 320
+   }
+  }
+ ],
+ "nets": {
+  "USB5V": [
+   "USB.+",
+   "B1.VBUS"
+  ],
+  "GND": [
+   "USB.-",
+   "GND1.GND",
+   "B1.GND"
+  ]
+ },
+ "probes": [
+  {
+   "id": "console",
+   "target": "serial:B1",
+   "kind": "serial"
+  },
+  {
+   "id": "sdm",
+   "target": "net:B1.GPIO0",
+   "kind": "digital",
+   "capacity": 2000000
+  }
+ ]
+}

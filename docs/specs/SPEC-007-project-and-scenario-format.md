@@ -119,6 +119,9 @@ Rules:
   board's LED). `kind` selects
   the sample type (`digital`, `analog`, `serial`, `value`); `rate_hz` resamples
   analog probes for instruments; absent, samples are at accepted steps.
+  `capacity` sets how many samples a probe keeps, its memory depth as a
+  logic analyzer's is set for a capture (1 to 16777216; 65536 when
+  absent); a waveform measurement needs its whole window kept.
   A `reg`, `mem` or `var` probe is a `value` probe of the board's memory as
   a debugger reads it at that time (no side effect): its bytes
   little-endian, up to 8 of them as a number (`var` takes the ELF symbol's

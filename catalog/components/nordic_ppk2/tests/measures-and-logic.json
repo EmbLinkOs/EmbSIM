@@ -1,0 +1,79 @@
+{
+  "schema_version": 1,
+  "kind": "component_test",
+  "name": "measures-and-logic",
+  "description": "The Power Profiler Kit II powering a 330 ohm load at 3.3 V (10.00 mA) while its logic port samples a 1 kHz clock at 100 kHz: 2 edges a millisecond.",
+  "policy": "electrical",
+  "until": "10ms",
+  "circuit": {
+    "components": [
+      {
+        "id": "DUT",
+        "component": "emblink/nordic_ppk2",
+        "params": {
+          "mode": "source",
+          "voltage": 3.3
+        }
+      },
+      {
+        "id": "LOAD",
+        "component": "emblink/resistor",
+        "params": {
+          "resistance": 330
+        }
+      },
+      {
+        "id": "G",
+        "component": "emblink/gnd"
+      },
+      {
+        "id": "CLK",
+        "component": "emblink/clock_source",
+        "params": {
+          "freq": "1k"
+        }
+      }
+    ],
+    "nets": {
+      "OUT": [
+        "DUT.VOUT",
+        "LOAD.1"
+      ],
+      "GND": [
+        "DUT.GND",
+        "LOAD.2",
+        "G.GND"
+      ],
+      "C": [
+        "CLK.OUT",
+        "DUT.D0"
+      ]
+    }
+  },
+  "inputs": [
+    {
+      "at": "0s",
+      "target": "DUT.METER",
+      "input": "run",
+      "value": true
+    },
+    {
+      "at": "0s",
+      "target": "DUT.LOGIC",
+      "input": "run",
+      "value": true
+    }
+  ],
+  "expect": {
+    "output:DUT.METER.current": {
+      "at": "10ms",
+      "min": 0.009999,
+      "max": 0.010001
+    },
+    "output:DUT.LOGIC.transitions": {
+      "at": "10ms",
+      "min": 20,
+      "max": 22
+    }
+  }
+}

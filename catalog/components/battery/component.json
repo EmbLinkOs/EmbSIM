@@ -4,7 +4,8 @@
   "id": "emblink/battery",
   "version": "1.0.0",
   "name": "Battery",
-  "category": "sources",
+  "category": "miscellaneous",
+  "subcategory": "batteries",
   "description": "A cell or battery as an ideal source behind its internal resistance: coin cells, alkaline AA/AAA/9 V, a LiPo or an 18650.",
   "keywords": [
     "battery",
@@ -174,5 +175,24 @@
   },
   "tests": [
     "tests/*.json"
-  ]
+  ],
+  "i18n": {
+    "fr": {
+      "source": "813b49a6c0f2",
+      "description": "Une pile ou une batterie comme source idéale derrière sa résistance interne : piles bouton, alcalines AA/AAA/9 V, une LiPo ou une 18650.",
+      "fidelity": {
+        "timed": {
+          "claims": "Comme en électrique."
+        },
+        "electrical": {
+          "claims": "Une source constante derrière une résistance interne constante (emblink/vsource et emblink/resistor).",
+          "omissions": [
+            "la décharge : la tension ne baisse jamais",
+            "la température",
+            "la récupération après une charge impulsionnelle"
+          ]
+        }
+      }
+    }
+  }
 }

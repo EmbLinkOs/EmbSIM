@@ -1,0 +1,54 @@
+{
+  "schema_version": 1,
+  "kind": "component_test",
+  "name": "diode-test",
+  "description": "A red LED on diode test at the meter's 0.6 mA: the catalog LED's forward voltage there (about 1.59 V), read to the millivolt.",
+  "policy": "electrical",
+  "until": "600ms",
+  "circuit": {
+    "components": [
+      {
+        "id": "DUT",
+        "component": "emblink/fluke_87v"
+      },
+      {
+        "id": "G",
+        "component": "emblink/gnd"
+      },
+      {
+        "id": "D1",
+        "component": "emblink/led"
+      }
+    ],
+    "nets": {
+      "A": [
+        "D1.A",
+        "DUT.V"
+      ],
+      "GND": [
+        "D1.K",
+        "DUT.COM",
+        "G.GND"
+      ]
+    }
+  },
+  "expect": {
+    "output:DUT.value": {
+      "at": "600ms",
+      "min": 1.5,
+      "max": 2.1
+    },
+    "output:DUT.unit": {
+      "at": "600ms",
+      "equals": "V"
+    }
+  },
+  "inputs": [
+    {
+      "at": "0s",
+      "target": "DUT",
+      "input": "function",
+      "value": "diode"
+    }
+  ]
+}

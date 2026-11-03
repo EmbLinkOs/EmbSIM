@@ -4,7 +4,8 @@
   "id": "emblink/isource",
   "version": "1.0.0",
   "name": "Current source",
-  "category": "sources",
+  "category": "simulator_primitives",
+  "subcategory": "sources",
   "description": "Independent current source: dc, pulse, sine or piecewise-linear. SPICE convention: a positive value flows through the source from + to -, so it leaves the source at - and returns at + (the arrow points from + to -).",
   "keywords": [
     "source",
@@ -183,5 +184,23 @@
   },
   "tests": [
     "tests/*.json"
-  ]
+  ],
+  "i18n": {
+    "fr": {
+      "source": "48dcc6c48c09",
+      "description": "Source de courant indépendante : continue, impulsion, sinus ou linéaire par morceaux. Convention SPICE : une valeur positive traverse la source de + vers -, donc elle sort de la source par - et y revient par + (la flèche pointe de + vers -).",
+      "fidelity": {
+        "timed": {
+          "claims": "Comme en électrique."
+        },
+        "electrical": {
+          "claims": "Source de courant idéale avec paramètres dc/pulse/sine/pwl de style SPICE (SPEC-004 §7 isource).",
+          "omissions": [
+            "la limite de compliance",
+            "la conductance de sortie"
+          ]
+        }
+      }
+    }
+  }
 }

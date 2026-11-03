@@ -4,7 +4,8 @@
   "id": "emblink/r2r_dac_4bit",
   "version": "1.0.0",
   "name": "4-bit R-2R DAC",
-  "category": "analog",
+  "category": "data_converters",
+  "subcategory": "dac",
   "description": "A 4-bit R-2R resistor ladder: OUT = Vref x (D3/2 + D2/4 + D1/8 + D0/16) when the inputs switch between Vref and ground and OUT is lightly loaded.",
   "keywords": [
     "dac",
@@ -243,5 +244,23 @@
   },
   "tests": [
     "tests/*.json"
-  ]
+  ],
+  "i18n": {
+    "fr": {
+      "source": "be1c7b83669e",
+      "description": "Une échelle de résistances R-2R à 4 bits : OUT = Vref x (D3/2 + D2/4 + D1/8 + D0/16) quand les entrées basculent entre Vref et la masse et que OUT est peu chargée.",
+      "fidelity": {
+        "timed": {
+          "claims": "Comme en électrique."
+        },
+        "electrical": {
+          "claims": "Huit emblink/resistor en topologie R-2R ; l'impédance de sortie vaut R.",
+          "omissions": [
+            "la tolérance et l'appariement des résistances",
+            "la résistance de sortie du pilote"
+          ]
+        }
+      }
+    }
+  }
 }

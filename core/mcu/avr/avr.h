@@ -52,6 +52,16 @@ void esk_avr_irq_source(struct esk_mach *m, int vec, int (*pending)(void *ctx, i
 /* a source's flag or enable changed: the core looks again */
 void esk_avr_irq_changed(struct esk_mach *m);
 /* the watchdog's: WDR starts its count again */
+/* boot loader support (avr.c): SPMCSR as the core has it, the cycles to
+ * its next change, an EEPROM write losing the page buffer, IVSEL moving
+ * the vectors, IVCE holding interrupts off until a cycle (0: released,
+ * after the next instruction) */
+u8 esk_avr_spmcsr_read(struct esk_mach *m);
+void esk_avr_spmcsr_write(struct esk_mach *m, u8 v);
+int esk_avr_spm_next(struct esk_mach *m, u32 *cycles);
+void esk_avr_spm_buffer_lost(struct esk_mach *m);
+void esk_avr_ivsel(struct esk_mach *m, int on);
+void esk_avr_irq_hold(struct esk_mach *m, u64 until);
 void esk_avr_wdr_hook(struct esk_mach *m, void (*wdr)(void *ctx), void *ctx);
 
 /* the instruction at byte address `pc` (w, then w2 for a two-word one):

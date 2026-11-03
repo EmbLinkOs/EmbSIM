@@ -1,0 +1,65 @@
+{
+  "schema_version": 1,
+  "kind": "scenario",
+  "name": "usb_hello",
+  "until": "400ms",
+  "description": "The SDK's stdio over USB on TinyUSB: the Pico enumerates as the SDK's CDC device (2e8a:000a, \"Raspberry Pi\" \"Pico\"), the computer opens its serial port (line coding, DTR), the greeting arrives, and what the terminal sends comes back in upper case.",
+  "inputs": [
+    {
+      "at": "320ms",
+      "target": "PC.HOST",
+      "input": "cdc_send",
+      "value": "abc"
+    }
+  ],
+  "assertions": [
+    {
+      "id": "enumerated",
+      "at": "300ms",
+      "expect": {
+        "equals": 11914
+      },
+      "probe": "vid"
+    },
+    {
+      "id": "pid",
+      "at": "300ms",
+      "expect": {
+        "equals": 10
+      },
+      "probe": "pid"
+    },
+    {
+      "id": "product",
+      "at": "300ms",
+      "expect": {
+        "equals": "Pico"
+      },
+      "probe": "product"
+    },
+    {
+      "id": "open",
+      "at": "300ms",
+      "expect": {
+        "equals": true
+      },
+      "probe": "cdc_open"
+    },
+    {
+      "id": "greeting",
+      "at": "300ms",
+      "expect": {
+        "contains": "hello over USB"
+      },
+      "probe": "cdc_text"
+    },
+    {
+      "id": "echo",
+      "at": "390ms",
+      "expect": {
+        "contains": "ABC"
+      },
+      "probe": "cdc_text"
+    }
+  ]
+}

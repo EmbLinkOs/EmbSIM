@@ -2,8 +2,8 @@
 /* Copyright 2026 Junior Deogracias */
 /* main.c -- the NUCLEO-F446ZE example: 180 MHz from the ST-LINK's 8 MHz MCO,
  * LD1 (PB0) blinking at 1 Hz from SysTick, the active-high B1 counted
- * through EXTI13's rising edge with LD2 (PB7) toggled at each press, LD3
- * (PB14) lit after a reset that was not a power-on one, and the ST-LINK's
+ * through EXTI13's edges (a rising edge after 20 ms without one: B1's
+ * contacts bounce) with LD2 (PB7) toggled at each press, LD3 (PB14) lit after a reset that was not a power-on one, and the ST-LINK's
  * virtual COM port (USART3 on PD8/PD9 at 115200 baud) echoing in upper case.
  * The registers are written directly, in the order STM32CubeF4's
  * SystemClock_Config writes them. */
@@ -26,6 +26,7 @@
 #define GPIOD 0x40020C00u
 #define MODER(p) REG((p) + 0x00u)
 #define BSRR(p) REG((p) + 0x18u)
+#define IDR(p) REG((p) + 0x10u)
 #define ODR(p) REG((p) + 0x14u)
 #define AFRH(p) REG((p) + 0x24u)
 #define USART3_SR REG(0x40004800u)
@@ -35,6 +36,7 @@
 #define SYSCFG_EXTICR4 REG(0x40013814u)
 #define EXTI_IMR REG(0x40013C00u)
 #define EXTI_RTSR REG(0x40013C08u)
+#define EXTI_FTSR REG(0x40013C0Cu)
 #define EXTI_PR REG(0x40013C14u)
 #define SYST_CSR REG(0xE000E010u)
 #define SYST_RVR REG(0xE000E014u)
@@ -48,7 +50,7 @@
 #define PLL_Q 7u
 #define PLL_R 2u
 
-static volatile uint32_t ticks, presses, reported;
+static volatile uint32_t ticks, presses, reported, last_edge;
 
 static void putc_(char c)
 {
@@ -118,8 +120,15 @@ void EXTI15_10_IRQHandler(void)
 {
     if (EXTI_PR & (1u << 13)) {
         EXTI_PR = 1u << 13;
-        presses++;
-        ODR(GPIOB) ^= 1u << 7; /* LD2 */
+        /* B1's contacts bounce for a few milliseconds on press and release:
+         * a press is a rising edge after the line has been still for 20 ms
+         * (both edges are watched, so a release's chatter is not one) */
+        uint32_t now = ticks;
+        if ((IDR(GPIOC) & (1u << 13)) && now - last_edge >= 20u) {
+            presses++;
+            ODR(GPIOB) ^= 1u << 7; /* LD2 */
+        }
+        last_edge = now;
     }
 }
 
@@ -156,6 +165,7 @@ int main(void)
     /* B1: EXTI13 on port C, rising edge (the NUCLEO-144's button pulls up) */
     SYSCFG_EXTICR4 = (SYSCFG_EXTICR4 & ~(0xFu << 4)) | (2u << 4);
     EXTI_RTSR |= 1u << 13;
+    EXTI_FTSR |= 1u << 13;
     EXTI_IMR |= 1u << 13;
     NVIC_ISER1 = (1u << (39 - 32)) | (1u << (40 - 32));
     /* SysTick every millisecond from HCLK */

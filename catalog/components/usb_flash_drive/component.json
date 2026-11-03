@@ -4,7 +4,8 @@
  "id": "emblink/usb_flash_drive",
  "version": "0.1.0",
  "name": "USB flash drive (mass storage)",
- "category": "misc",
+ "category": "miscellaneous",
+ "subcategory": "usb_devices",
  "description": "A USB flash drive on its cable: a full-speed USB Mass Storage device (Bulk-Only Transport, SCSI transparent command set), bus powered, its medium formatted as one comes from the shop (an MBR with one FAT16 partition, the label EMBSIM). A host (a computer's port, a microcontroller's USB host with FatFs) mounts it, reads and writes its files; its outputs list them as a computer would.",
  "keywords": [
   "usb",
@@ -205,5 +206,29 @@
  },
  "tests": [
   "tests/*.json"
- ]
+ ],
+  "i18n": {
+    "fr": {
+      "source": "d16878924e78",
+      "description": "Une clé USB sur son câble : un périphérique USB de stockage de masse pleine vitesse (Bulk-Only Transport, jeu de commandes SCSI transparent), alimenté par le bus, son support formaté comme à la sortie du magasin (un MBR avec une partition FAT16, le nom de volume EMBSIM). Un hôte (le port d'un ordinateur, l'hôte USB d'un microcontrôleur avec FatFs) le monte, lit et écrit ses fichiers ; ses sorties les listent comme le ferait un ordinateur.",
+      "fidelity": {
+        "functional": {
+          "claims": "Un périphérique USB 2.0 pleine vitesse (D+ rappelé au niveau haut) avec les requêtes standard du chapitre 9, connecté tant que VBUS dépasse 4,4 V ; le Bulk-Only Transport 1.0 de l'USB MSC : Get Max LUN (un LUN), la réinitialisation de classe, les CBW vérifiés (longueur, signature, LUN, longueur de commande ; un CBW invalide bloque les deux points de terminaison jusqu'à la reprise après réinitialisation), la phase de données et le CSW avec étiquette, reste et état, une phase de données courte terminée par un paquet court ou le STALL du point de terminaison IN, le STALL et le CHECK CONDITION d'une commande en échec ; les commandes SCSI TEST UNIT READY, REQUEST SENSE (format fixe), INQUIRY (amovible), MODE SENSE(6) et (10) avec protection en écriture, START STOP UNIT, PREVENT ALLOW MEDIUM REMOVAL, READ FORMAT CAPACITIES, READ CAPACITY(10), READ(10), WRITE(10), VERIFY(10), SYNCHRONIZE CACHE(10) ; ILLEGAL REQUEST pour toute autre, LBA OUT OF RANGE, DATA PROTECT. Le support : des secteurs de 512 octets, un MBR avec une partition FAT16 au secteur 2048, comme Windows formate une petite clé.",
+          "omissions": [
+            "les temps de programmation de page et d'effacement de bloc de la NAND (une vraie clé répond NAK tant qu'elle est occupée ; ici les données passent aussitôt)",
+            "la haute vitesse et l'UAS",
+            "plus d'un LUN",
+            "le support gardé entre deux exécutions ou chargé depuis un fichier image : chaque mise sous tension le démarre vide",
+            "son voyant d'activité et son courant d'alimentation"
+          ]
+        },
+        "timed": {
+          "claims": "Comme en fonctionnel."
+        },
+        "electrical": {
+          "claims": "Comme en fonctionnel."
+        }
+      }
+    }
+  }
 }

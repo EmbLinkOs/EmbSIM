@@ -379,3 +379,16 @@ void *esk_rp2040_spi_create(struct esk_mach *s, struct esk_rf_periph *p)
     *c = k;
     return c;
 }
+
+/* its DMA requests (SSPDMACR): TX while the transmit FIFO has room, RX
+ * while the receive FIFO holds a frame */
+int esk_rp2040_spi_dreq(struct esk_mach *s, int unit, int rx)
+{
+    const struct rpspi *k = spi_unit(s, unit);
+    struct esk_rf_reg *cr = k ? esk_rf_reg(k->p, "SSPDMACR") : 0;
+    if (!cr)
+        return 0;
+    if (rx)
+        return (cr->value & 1u) && k->nrx > 0;
+    return (cr->value & 2u) && k->ntx < DEPTH;
+}

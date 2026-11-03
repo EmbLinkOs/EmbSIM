@@ -42,7 +42,7 @@ static u32 icsr_read(struct esk_cm_state *cs)
 static int scs_read(struct esk_cm_state *cs, u32 o, u32 *v)
 {
     *v = 0;
-    if (esk_cm_mpu_read(cs, o, v))
+    if (esk_cm_mpu_read(cs, o, v) || esk_cm_dbg_read(cs, o, v))
         return 1;
     if (o >= 0x100 && o < 0x140) {          /* ISER */
         u32 w = (o - 0x100) / 4;
@@ -95,7 +95,6 @@ static int scs_read(struct esk_cm_state *cs, u32 o, u32 *v)
     case 0xd34: *v = cs->mmfar; return 1;
     case 0xd38: *v = cs->bfar; return 1;
     case 0xd88: *v = cs->model->fpu ? cs->cpacr : 0; return 1;
-    case 0xdfc: *v = cs->demcr; return 1;
     case 0xf34: *v = cs->fpccr; return 1;
     case 0xf38: *v = cs->fpcar; return 1;
     case 0xf3c: *v = cs->fpdscr; return 1;
@@ -105,7 +104,7 @@ static int scs_read(struct esk_cm_state *cs, u32 o, u32 *v)
 
 static void scs_write(struct esk_cm_state *cs, u32 o, u32 v)
 {
-    if (esk_cm_mpu_write(cs, o & 0xfff, v))
+    if (esk_cm_mpu_write(cs, o & 0xfff, v) || esk_cm_dbg_write(cs, o & 0xfff, v))
         return;
     if (o >= 0x100 && o < 0x140) {
         u32 w = (o - 0x100) / 4;
@@ -156,7 +155,12 @@ static void scs_write(struct esk_cm_state *cs, u32 o, u32 v)
             return;
         if (cs->model->arch == ARCH_V7M)
             cs->aircr_prigroup = (v >> 8) & 7;
-        if (v & 4) {                        /* SYSRESETREQ: the runtime resets */
+        if ((v & 1) && cs->model->arch == ARCH_V7M && cs->dbg.halted) {
+            /* VECTRESET (a debugger's, in Debug state): the core alone */
+            cs->sim->reset_cpu_only = 1;
+            cs->sim->reset_req = 1;
+            cs->sim->yield = 1;
+        } else if (v & 4) {                 /* SYSRESETREQ: the runtime resets */
             if (!cs->sim->reset_req)
                 cs->sim->reset_cause = ESK_RESET_SOFTWARE;
             cs->sim->reset_req = 1;
@@ -177,7 +181,6 @@ static void scs_write(struct esk_cm_state *cs, u32 o, u32 v)
     case 0xd34: cs->mmfar = v; return;
     case 0xd38: cs->bfar = v; return;
     case 0xd88: cs->cpacr = v & 0x00f00000u; return;
-    case 0xdfc: cs->demcr = v; return;
     case 0xf00: esk_cm_set_pend(cs, 16 + (int)(v & 0x1ff)); return;   /* STIR */
     case 0xf34:
         /* ASPEN, LSPEN, and the lazy-preservation state: LSPACT, USER,

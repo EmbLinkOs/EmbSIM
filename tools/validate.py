@@ -50,6 +50,7 @@ KIND_SCHEMAS = {
     "toolchain": "toolchain.schema.json",
     "library": "library.schema.json",
     "registers": "registers.schema.json",
+    "taxonomy": "taxonomy.schema.json",
     "board_reference": "board-reference.schema.json",
 }
 
@@ -83,7 +84,7 @@ PRIMITIVE_PINS = {
     "pull": ["1"], "indicator": ["A", "K"],
 }
 PRIMITIVE_INPUTS = {
-    "switch": {"pressed", "closed"}, "push_button_digital": {"pressed"},
+    "switch": {"pressed", "closed", "active"}, "push_button_digital": {"pressed"}, "fault_digital": {"active"},
     "switch_digital": {"closed"}, "potentiometer": {"position"},
 }
 TOOLCHAIN_PLACEHOLDERS = {
@@ -671,6 +672,18 @@ def check_fidelity(report: Report, file: Path, doc: dict, base_dir: Path) -> set
         for i, ref in enumerate(decl.get("validation") or []):
             if isinstance(ref, str) and not re.match(r"^[a-z]+:", ref) and not (base_dir / ref).exists() and not sorted(base_dir.glob(ref)):
                 report.error(file, ptr("fidelity", tier, "validation", i), "catalog.file_missing", f"validation reference {ref} matches no file")
+    # the text in other languages: the same tiers, each omission's translation
+    # in the English's place
+    for lang, tr in (doc.get("i18n") or {}).items():
+        for tier, decl in (tr.get("fidelity") or {}).items():
+            if tier not in tiers:
+                report.error(file, ptr("i18n", lang, "fidelity", tier), "i18n.tier", f"{lang}: a translation of tier {tier}, which is not declared")
+                continue
+            want = len(fid[tier].get("omissions") or [])
+            have = len(decl.get("omissions") or [])
+            if want != have:
+                report.error(file, ptr("i18n", lang, "fidelity", tier, "omissions"), "i18n.omissions",
+                             f"{lang}: {have} omissions translated for the English's {want}")
     return tiers
 
 
@@ -681,7 +694,34 @@ def check_provenance(report: Report, file: Path, doc: dict) -> None:
         report.error(file, "/provenance/license", "provenance.license", f"{lic!r} is not a known SPDX identifier")
 
 
+def taxonomy_doc() -> dict:
+    with open(ROOT / "catalog" / "taxonomy.json", "r", encoding="utf-8") as fh:
+        return json.load(fh)
+
+
+def taxonomy() -> dict[str, set[str]]:
+    """catalog/taxonomy.json: each category's sub-categories"""
+    return {c["id"]: {s["id"] for s in c["subcategories"]} for c in taxonomy_doc()["categories"]}
+
+
+def check_taxonomy(report: Report, file: Path, doc: dict) -> None:
+    """a component's sub-category is one of its category's (catalog/taxonomy.json)"""
+    tax = taxonomy()
+    cat, sub = doc.get("category"), doc.get("subcategory")
+    legacy = taxonomy_doc().get("legacy", {})
+    if cat in legacy:
+        report.warning(file, "/category", "taxonomy.legacy", f"{cat} is a category from before the taxonomy: the library shows it under {legacy[cat]}")
+        return
+    if cat not in tax:
+        return  # the schema names the category set
+    if sub is None:
+        report.error(file, "/subcategory", "taxonomy.missing", f"a {cat} part names its sub-category, one of {sorted(tax[cat])}")
+    elif sub not in tax[cat]:
+        report.error(file, "/subcategory", "taxonomy.subcategory", f"{sub} is no sub-category of {cat}; one of {sorted(tax[cat])}")
+
+
 def check_component(report: Report, file: Path, doc: dict, index: Index) -> None:
+    check_taxonomy(report, file, doc)
     from catalog.indicator_evidence import check as check_indicator_evidence
     for message in check_indicator_evidence(doc, file.parent):
         report.error(file, "/qualification", "catalog.qualification", message)
@@ -1902,6 +1942,7 @@ CHECKS: dict[str, Callable[[Report, Path, dict, Index], Any]] = {
     "toolchain": check_toolchain,
     "registers": check_registers,
     "library": check_library,
+    "taxonomy": lambda report, path, doc, index: None,
     "board_reference": lambda report, path, doc, index: _check_reference_home(report, path, doc),
 }
 

@@ -331,3 +331,18 @@ void *esk_rp2040_uart_create(struct esk_mach *s, struct esk_rf_periph *p)
     esk_mach_rx_port(s, p->name, uart_room, uart_put, uart_bit_cycles, u);
     return u;
 }
+
+/* its DMA requests (the datasheet's 4.2.6, UARTDMACR): TX while the
+ * transmit FIFO has room, RX while the receive FIFO holds a character */
+int esk_rp2040_uart_dreq(struct esk_mach *s, int unit, int rx)
+{
+    static const char *const names[] = { "UART0", "UART1" };
+    struct uart *u;
+    struct esk_rf_reg *cr;
+    if (unit < 0 || unit > 1 || !(u = (struct uart *)esk_rp_model(s, names[unit], &esk_rp2040_uart_ops)) ||
+        !(cr = esk_rf_reg(u->p, "UARTDMACR")))
+        return 0;
+    if (rx)
+        return (cr->value & 1u) && u->nrx > 0;
+    return (cr->value & 2u) && u->ntx < depth(u);
+}

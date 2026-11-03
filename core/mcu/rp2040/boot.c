@@ -17,7 +17,9 @@
  * The ROM's vector table gives the bootrom's stack top (0x20041f00), its
  * header the bootrom's magic and version (B2's, 3); its function and data
  * tables, and the functions themselves, are rom.c's. Core 1 waits in its
- * bootrom until core 0 launches it; sio.c answers for that bootrom. */
+ * bootrom until core 0 launches it; sio.c answers for that bootrom. After
+ * the Rescue DP's reset the bootrom halts in its dead loop (a WFI loop in
+ * ROM) instead of booting. */
 #include <stdio.h>
 #include <string.h>
 
@@ -79,10 +81,29 @@ void esk_rp2040_boot(struct esk_mach *s)
     int i;
     if (!rom || !f || !m)
         return;
+    esk_rp2040_usb_leave(s);
     memcpy(rom->mem + (0 - rom->base), rom_image, sizeof rom_image);
     esk_rp2040_rom(rom->mem + (0 - rom->base), 0x4000u);
     esk_rp2040_rom_install(s);
     esk_bus_code_changed(&s->bus);
+    if (s->reset_cause == ESK_RESET_RESCUE) {
+        /* the Rescue DP's reset (datasheet 2.3.4.2, 2.12.6): CHIP_RESET
+         * says so (HAD_PSM_RESTART), and the bootrom, first thing, clears
+         * PSM_RESTART_FLAG and halts in its dead loop, before the flash or
+         * the USB boot, for the debugger to take over */
+        p = esk_rf_periph(s->rf, "VREG_AND_CHIP_RESET");
+        {
+            struct esk_rf_reg *r = p ? esk_rf_reg(p, "CHIP_RESET") : NULL;
+            if (r)
+                esk_rf_hw(r, esk_rf_mask(r, "HAD_PSM_RESTART"));
+        }
+        rom->mem[4] = (u8)ROM_DEAD;
+        rom->mem[5] = rom->mem[6] = rom->mem[7] = 0;
+        esk_bus_code_changed(&s->bus);
+        esk_rf_diag(s, ES_SEV_INFO, "mcu.rescue",
+                    "the RP2040 was reset by its Rescue DP: its bootrom halts in its dead loop for the debugger");
+        return;
+    }
     b2 = f->mem + (FLASH_BASE - f->base);
     sum = esk_rp2040_crc32(b2, 252);
     want = (u32)b2[252] | (u32)b2[253] << 8 | (u32)b2[254] << 16 | (u32)b2[255] << 24;
@@ -95,6 +116,7 @@ void esk_rp2040_boot(struct esk_mach *s)
                     "the RP2040's bootrom finds no boot2 in flash (the CRC-32 of its first 252 bytes is "
                     "0x%08lx, the word after them 0x%08lx): the part waits in its USB boot",
                     (unsigned long)sum, (unsigned long)want);
+        esk_rp2040_usb_boot(s);
         return;
     }
     memcpy(m->mem + (BOOT2_AT - m->base), b2, 256);
@@ -113,4 +135,20 @@ void esk_rp2040_boot(struct esk_mach *s)
         if (q)
             esk_rf_hw(q, q->value & ~esk_rf_mask(q, "IE"));
     }
+}
+
+/* BOOTSEL held as the bootrom looks (the flash's chip select low through
+ * R_BOOT): its USB boot, whatever flash holds */
+void esk_rp2040_enter_usb_boot(struct esk_mach *s)
+{
+    struct esk_region *rom = esk_bus_region(&s->bus, 0, 0x4000u);
+    if (!rom)
+        return;
+    rom->mem[4] = (u8)ROM_DEAD;
+    rom->mem[5] = rom->mem[6] = rom->mem[7] = 0;
+    esk_bus_code_changed(&s->bus);
+    s->cpu->ops->reset(s->cpu);
+    esk_rf_diag(s, ES_SEV_INFO, "mcu.usb_boot",
+                "BOOTSEL is held as the RP2040's bootrom starts: the part waits in its USB boot, a drive named RPI-RP2");
+    esk_rp2040_usb_boot(s);
 }

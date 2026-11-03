@@ -4,7 +4,8 @@
   "id": "emblink/g5le_1_dc5",
   "version": "1.0.0",
   "name": "G5LE-1 DC5",
-  "category": "mechanical",
+  "category": "switches_relays",
+  "subcategory": "relays",
   "description": "G5LE-1 SPDT relay with R/L coil, hysteretic pickup, 10 ms operate and 5 ms release delay; independent contact circuit.",
   "keywords": [
     "mechanical",
@@ -245,5 +246,25 @@
     "manufacturer": "Omron",
     "package": "PCB relay SPDT",
     "datasheet": "https://omronfs.omron.com/en_US/ecb/products/pdf/en-g5le.pdf"
+  },
+  "i18n": {
+    "fr": {
+      "source": "8e8ccff14fa3",
+      "description": "Relais inverseur G5LE-1 avec bobine R/L, enclenchement à hystérésis, délais de 10 ms à l'enclenchement et de 5 ms au relâchement ; circuit de contact indépendant.",
+      "fidelity": {
+        "electrical": {
+          "claims": "Relais inverseur G5LE-1 avec bobine R/L, enclenchement à hystérésis, délais de 10 ms à l'enclenchement et de 5 ms au relâchement ; circuit de contact indépendant.",
+          "omissions": [
+            "l'inductance de bobine est indicative, non mesurée",
+            "le rebond et les arcs des contacts",
+            "la saturation magnétique",
+            "l'élévation de température",
+            "le comportement d'isolement certifié",
+            "les cas extrêmes des paramètres du fabricant",
+            "les dommages thermiques et les limites destructives"
+          ]
+        }
+      }
+    }
   }
 }

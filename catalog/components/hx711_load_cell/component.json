@@ -4,7 +4,8 @@
   "id": "emblink/hx711_load_cell",
   "version": "1.0.0",
   "name": "HX711 load cell amplifier with load cell",
-  "category": "sensors",
+  "category": "transducers",
+  "subcategory": "force",
   "description": "The common HX711 24-bit ADC module with a bar strain-gauge load cell on channel A (5 kg, 1 mV/V): DOUT low when a conversion is ready (10 Hz with the module's RATE low), 24 bits clocked out MSB first by PD_SCK, 25 to 27 pulses selecting the next channel and gain, power-down by holding PD_SCK high, the settling time, the data sheet's noise. The load on the cell is an interactive input.",
   "keywords": [
     "HX711",
@@ -221,5 +222,46 @@
   },
   "tests": [
     "tests/*.json"
-  ]
+  ],
+  "i18n": {
+    "fr": {
+      "source": "88b5890d605b",
+      "description": "Le module ADC 24 bits HX711 courant avec une cellule de charge à jauges de contrainte en barre sur le canal A (5 kg, 1 mV/V) : DOUT bas quand une conversion est prête (10 Hz avec RATE bas sur le module), 24 bits sortis MSB en premier au rythme de PD_SCK, 25 à 27 impulsions choisissant le canal et le gain suivants, mise hors tension en maintenant PD_SCK haut, le temps d'établissement, le bruit de la fiche technique. La charge sur la cellule est une entrée interactive.",
+      "fidelity": {
+        "functional": {
+          "claims": "DOUT bas à chaque conversion à 10 ou 80 Hz ; 24 bits en complément à deux sortis MSB en premier sur PD_SCK, avec saturation, la 25e impulsion ramenant DOUT haut, 25/26/27 impulsions choisissant ensuite A/128, B/32, A/64 ; PD_SCK haut plus de 60 us met hors tension, de nouveau bas réinitialise ; 4 périodes de conversion d'établissement après la mise sous tension, une réinitialisation ou un changement de gain ; un pont ratiométrique (charge / capacité x sensibilité + équilibre du zéro) à une pleine échelle de +-0,5 AVDD / gain avec le bruit d'entrée de la fiche technique ; rien sous 2,6 V.",
+          "omissions": [
+            "le fluage, l'hystérésis, la non-linéarité et la dérive thermique de la cellule de charge",
+            "le décalage et la dérive de gain de l'ADC",
+            "la dispersion de l'oscillateur interne (le débit est exact)",
+            "un quartz externe",
+            "les bornes E+, E-, A+, A-, B+ et B- du module (la cellule fait partie du kit ; le canal B se lit ouvert)",
+            "le courant d'alimentation"
+          ]
+        },
+        "timed": {
+          "claims": "DOUT bas à chaque conversion à 10 ou 80 Hz ; 24 bits en complément à deux sortis MSB en premier sur PD_SCK, avec saturation, la 25e impulsion ramenant DOUT haut, 25/26/27 impulsions choisissant ensuite A/128, B/32, A/64 ; PD_SCK haut plus de 60 us met hors tension, de nouveau bas réinitialise ; 4 périodes de conversion d'établissement après la mise sous tension, une réinitialisation ou un changement de gain ; un pont ratiométrique (charge / capacité x sensibilité + équilibre du zéro) à une pleine échelle de +-0,5 AVDD / gain avec le bruit d'entrée de la fiche technique ; rien sous 2,6 V. DOUT change 0,1 us après le front montant de PD_SCK.",
+          "omissions": [
+            "le fluage, l'hystérésis, la non-linéarité et la dérive thermique de la cellule de charge",
+            "le décalage et la dérive de gain de l'ADC",
+            "la dispersion de l'oscillateur interne (le débit est exact)",
+            "un quartz externe",
+            "les bornes E+, E-, A+, A-, B+ et B- du module (la cellule fait partie du kit ; le canal B se lit ouvert)",
+            "le courant d'alimentation"
+          ]
+        },
+        "electrical": {
+          "claims": "DT et SCK se relient à leurs réseaux ; la tension de VCC fixe AVDD (4,3 V, moins sans marge) et conditionne la puce ; le comportement est celui du modèle Lua.",
+          "omissions": [
+            "le fluage, l'hystérésis, la non-linéarité et la dérive thermique de la cellule de charge",
+            "le décalage et la dérive de gain de l'ADC",
+            "la dispersion de l'oscillateur interne (le débit est exact)",
+            "un quartz externe",
+            "les bornes E+, E-, A+, A-, B+ et B- du module (la cellule fait partie du kit ; le canal B se lit ouvert)",
+            "le courant d'alimentation"
+          ]
+        }
+      }
+    }
+  }
 }

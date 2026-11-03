@@ -1,0 +1,73 @@
+{
+ "schema_version": 1,
+ "kind": "project",
+ "name": "esp-idf-i2s_std",
+ "description": "ESP-IDF's i2s_basic/i2s_std on the ESP32-C3-DevKitM-1 in its default duplex mode: BCLK on IO2, WS on IO3, data out and in on IO4 (looped back inside the pad).",
+ "policy": "electrical",
+ "boards": [
+  {
+   "id": "B1",
+   "board": "emblink/esp32c3_devkitm1",
+   "layout": {
+    "x": 360,
+    "y": 120
+   },
+   "firmware": {
+    "image": "flash.bin",
+    "format": "bin"
+   }
+  }
+ ],
+ "components": [
+  {
+   "id": "USB",
+   "component": "emblink/vsource",
+   "params": {
+    "kind": "dc",
+    "dc": 5
+   },
+   "layout": {
+    "x": 120,
+    "y": 160
+   }
+  },
+  {
+   "id": "GND1",
+   "component": "emblink/gnd",
+   "layout": {
+    "x": 120,
+    "y": 320
+   }
+  }
+ ],
+ "nets": {
+  "USB5V": [
+   "USB.+",
+   "B1.VBUS"
+  ],
+  "GND": [
+   "USB.-",
+   "GND1.GND",
+   "B1.GND"
+  ]
+ },
+ "probes": [
+  {
+   "id": "console",
+   "target": "serial:B1",
+   "kind": "serial"
+  },
+  {
+   "id": "bclk",
+   "target": "net:B1.GPIO2",
+   "kind": "digital",
+   "capacity": 2000000
+  },
+  {
+   "id": "ws",
+   "target": "net:B1.GPIO3",
+   "kind": "digital",
+   "capacity": 200000
+  }
+ ]
+}

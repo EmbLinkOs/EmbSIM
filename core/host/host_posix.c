@@ -179,6 +179,8 @@ char *esk_host_temp_dir(esk_alloc *a)
     return esk_strdup(a, t && *t ? t : "/tmp");
 }
 
+unsigned long esk_host_pid(void) { return (unsigned long)getpid(); }
+
 /* ---- time ---------------------------------------------------------------- */
 
 uint64_t esk_host_monotonic_ms(void)

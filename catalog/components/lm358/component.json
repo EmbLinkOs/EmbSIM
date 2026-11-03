@@ -4,7 +4,8 @@
   "id": "emblink/lm358",
   "version": "1.0.0",
   "name": "LM358 dual op-amp",
-  "category": "analog",
+  "category": "operational_amplifiers",
+  "subcategory": "dual",
   "description": "Dual single-supply operational amplifier (LM358) in its 8-pin package; the output swings from ground to about VCC - 1.5 V.",
   "keywords": [
     "op-amp",
@@ -222,5 +223,24 @@
   },
   "tests": [
     "tests/*.json"
-  ]
+  ],
+  "i18n": {
+    "fr": {
+      "source": "73326cff8e77",
+      "description": "Double amplificateur opérationnel à alimentation unique (LM358) dans son boîtier à 8 broches ; la sortie va de la masse à environ VCC - 1,5 V.",
+      "fidelity": {
+        "timed": {
+          "claims": "Comme en électrique."
+        },
+        "electrical": {
+          "claims": "Deux emblink/opamp : gain en boucle ouverte 100k, un pôle dominant pour un produit gain-bande de 0,7 MHz, vitesse de balayage de 0,3 V/us, sortie limitée à vout_low..vout_high.",
+          "omissions": [
+            "le décalage d'entrée et le courant de polarisation",
+            "la distorsion de croisement",
+            "la limite de courant de sortie"
+          ]
+        }
+      }
+    }
+  }
 }

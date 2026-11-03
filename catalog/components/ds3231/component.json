@@ -4,7 +4,8 @@
   "id": "emblink/ds3231",
   "version": "1.0.0",
   "name": "DS3231 precision real-time clock",
-  "category": "misc",
+  "category": "microprocessor_ics",
+  "subcategory": "rtc",
   "description": "Maxim DS3231 I2C real-time clock with its temperature-compensated crystal: time and date in BCD with 12/24-hour modes and the century, two alarms driving INT#, a square-wave and a 32 kHz output, the die temperature, the aging offset, and the oscillator-stop flag set at power-up.",
   "keywords": [
     "rtc",
@@ -254,5 +255,43 @@
   },
   "tests": [
     "tests/*.json"
-  ]
+  ],
+  "i18n": {
+    "fr": {
+      "source": "1830aeb16e9f",
+      "description": "Horloge temps réel I2C Maxim DS3231 avec son quartz compensé en température : heure et date en BCD avec modes 12/24 heures et le siècle, deux alarmes pilotant INT#, une sortie signal carré et une sortie 32 kHz, la température de la puce, le décalage de vieillissement, et le drapeau d'arrêt de l'oscillateur positionné à la mise sous tension.",
+      "fidelity": {
+        "functional": {
+          "claims": "I2C en 0x68 avec tampons utilisateur synchronisés à chaque START ; heure et date en BCD avec modes 12/24 heures, le bit de siècle et un jour de la semaine utilisateur ; la chaîne de décompte remise à zéro par une écriture des secondes ; la cadence décalée de drift_ppm et du décalage de vieillissement ; les deux alarmes avec toutes les combinaisons de masques positionnant A1F/A2F et tirant INT# avec INTCN ; les sorties signal carré et 32 kHz (drain ouvert) quand elles sont câblées ; la température à la mise sous tension, toutes les 64 s ou sur CONV (BSY, 125 ms), par pas de 0,25 C ; mise sous tension au 2000-01-01 (ou au départ qu'une pile a gardé) avec OSF et EN32kHz positionnés et RST bas 250 ms ; aucune réponse sous 2,3 V. Concorde bit à bit avec les ACK, les lectures d'heure et de température d'une vraie puce (les captures de sigrok).",
+          "omissions": [
+            "le basculement sur pile (VBAT) et le maintien de l'heure sur pile (EOSC, BBSQW et OSF à la coupure n'ont aucun effet sur VCC)",
+            "l'entrée du bouton RST et son anti-rebond",
+            "la fréquence du TCXO en fonction de la température (la dérive est un paramètre)",
+            "la phase du signal carré à 1 Hz par rapport aux secondes",
+            "le courant d'alimentation"
+          ]
+        },
+        "timed": {
+          "claims": "Comme en fonctionnel.",
+          "omissions": [
+            "le basculement sur pile (VBAT) et le maintien de l'heure sur pile (EOSC, BBSQW et OSF à la coupure n'ont aucun effet sur VCC)",
+            "l'entrée du bouton RST et son anti-rebond",
+            "la fréquence du TCXO en fonction de la température (la dérive est un paramètre)",
+            "la phase du signal carré à 1 Hz par rapport aux secondes",
+            "le courant d'alimentation"
+          ]
+        },
+        "electrical": {
+          "claims": "Les broches se relient aux réseaux analogiques avec les modèles de broche par défaut de la famille ; la tension de VCC conditionne l'interface ; le comportement est celui du modèle Lua.",
+          "omissions": [
+            "le basculement sur pile (VBAT) et le maintien de l'heure sur pile (EOSC, BBSQW et OSF à la coupure n'ont aucun effet sur VCC)",
+            "l'entrée du bouton RST et son anti-rebond",
+            "la fréquence du TCXO en fonction de la température (la dérive est un paramètre)",
+            "la phase du signal carré à 1 Hz par rapport aux secondes",
+            "le courant d'alimentation"
+          ]
+        }
+      }
+    }
+  }
 }

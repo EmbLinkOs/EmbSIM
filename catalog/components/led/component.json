@@ -4,7 +4,8 @@
   "id": "emblink/led",
   "version": "1.0.0",
   "name": "LED",
-  "category": "indicators",
+  "category": "optoelectronics",
+  "subcategory": "leds",
   "description": "Light-emitting diode; colour selects the forward characteristic. Reports current and luminance.",
   "keywords": [
     "led",
@@ -59,6 +60,69 @@
       "doc": "Series resistance",
       "min": 0,
       "advanced": true
+    },
+    "tj_max": {
+      "type": "number",
+      "unit": "degC",
+      "default": 125,
+      "min": 50,
+      "max": 250,
+      "advanced": true,
+      "doc": "Absolute maximum junction temperature: past it the LED burns out (open)"
+    },
+    "if_max": {
+      "type": "number",
+      "unit": "A",
+      "default": "30m",
+      "min": "1m",
+      "max": "2",
+      "advanced": true,
+      "doc": "Absolute maximum DC forward current: above it a warning"
+    },
+    "vr_max": {
+      "type": "number",
+      "unit": "V",
+      "default": 5,
+      "min": 0.5,
+      "max": 100,
+      "advanced": true,
+      "doc": "Absolute maximum reverse voltage: above it a warning"
+    },
+    "rth_ja": {
+      "type": "number",
+      "unit": "K/W",
+      "default": 560,
+      "min": 1,
+      "max": 10000,
+      "advanced": true,
+      "doc": "Thermal resistance, junction to ambient"
+    },
+    "rth_js": {
+      "type": "number",
+      "unit": "K/W",
+      "default": 390,
+      "min": 1,
+      "max": 10000,
+      "advanced": true,
+      "doc": "Thermal resistance, junction to solder point (the leads)"
+    },
+    "cth_j": {
+      "type": "number",
+      "unit": "J/K",
+      "default": 3e-05,
+      "min": 1e-09,
+      "max": 10,
+      "advanced": true,
+      "doc": "Heat capacity of the die and what is near it (not published: an estimate from the die's size)"
+    },
+    "cth_s": {
+      "type": "number",
+      "unit": "J/K",
+      "default": 0.36,
+      "min": 1e-06,
+      "max": 100,
+      "advanced": true,
+      "doc": "Heat capacity of the package (not published: an estimate from 0.3 g of epoxy)"
     }
   },
   "outputs": [
@@ -78,13 +142,24 @@
     {
       "name": "lit",
       "type": "boolean",
-      "doc": "True with forward current above 1 \u00b5A in electrical policy; functional policy requires A=1 and K=0."
+      "doc": "True with forward current above 1 µA in electrical policy; functional policy requires A=1 and K=0."
     },
     {
       "name": "emission_integral",
       "type": "number",
       "unit": "s",
       "doc": "Accepted-time integral of illustrative normalized emission; differences divided by elapsed simulation time give interval exposure. No calibrated optical units."
+    },
+    {
+      "name": "tj",
+      "type": "number",
+      "unit": "degC",
+      "doc": "The junction's temperature"
+    },
+    {
+      "name": "damaged",
+      "type": "boolean",
+      "doc": "Burnt out (open) past its absolute maximum junction temperature"
     }
   ],
   "model": {
@@ -172,7 +247,7 @@
   },
   "fidelity": {
     "functional": {
-      "claims": "Lit when the anode net is 1 and the cathode net is 0 (SPEC-003 \u00a75 indicator).",
+      "claims": "Lit when the anode net is 1 and the cathode net is 0 (SPEC-003 §5 indicator).",
       "omissions": [
         "current",
         "brightness"
@@ -183,12 +258,16 @@
       "omissions": []
     },
     "electrical": {
-      "claims": "Diode with per-colour vf/is/n defaults and series rs; observe reports current and a luminance saturating at if_nom (SPEC-004 \u00a77 led).",
+      "claims": "Diode with per-colour vf/is/n defaults and series rs; observe reports current and a luminance saturating at if_nom (SPEC-004 §7 led). Its limits from Kingbright's WP7113ID absolute maximum ratings: above 30 mA DC or 5 V reverse a warning; its junction heated by its own power through the datasheet's thermal resistances (560 K/W to ambient, 390 K/W to the leads, two thermal nodes, the room the world's temperature), burning out (open) when it passes 125 C, until replaced.",
       "omissions": [
-        "temperature",
         "ageing",
         "reverse breakdown",
-        "capacitance"
+        "capacitance",
+        "the forward voltage's temperature coefficient",
+        "the heat capacities (not published: estimates from the die's size and the package's epoxy)",
+        "damage is taken at the absolute maximum junction temperature; a real LED may survive a margin above it, or fail short",
+        "light degradation from overdriving short of burning out",
+        "the 160 mA peak rating as a separate limit (its pulses are heat the thermal model sees)"
       ],
       "range": {
         "current_a": [
@@ -211,10 +290,62 @@
     "sources": [
       {
         "title": "Kingbright 5 mm LED datasheets (WP7113ID, WP7113GD, WP7113QBC/D, WP7113YD, WP7113PWC)"
+      },
+      {
+        "title": "Kingbright WP7113ID datasheet, absolute maximum ratings at 25 C: power dissipation 75 mW, reverse voltage 5 V, junction temperature 125 C, DC forward current 30 mA, peak forward current 160 mA (1/10 duty, 0.1 ms), thermal resistance junction/ambient 560 C/W, junction/solder point 390 C/W",
+        "url": "https://www.kingbrightusa.com/images/catalog/SPEC/WP7113ID.pdf",
+        "date": "2026-11-02"
       }
     ]
   },
   "tests": [
     "tests/*.json"
-  ]
+  ],
+  "inputs": [
+    {
+      "name": "temperature",
+      "type": "number",
+      "unit": "degC",
+      "default": 25,
+      "world": "temperature",
+      "doc": "The room's temperature (the world's while not set)"
+    },
+    {
+      "name": "replace",
+      "type": "boolean",
+      "default": false,
+      "doc": "True: a burnt-out LED is replaced with a new one"
+    }
+  ],
+  "i18n": {
+    "fr": {
+      "source": "d673396ec1a0",
+      "description": "Diode électroluminescente ; la couleur choisit la caractéristique directe. Rapporte le courant et la luminance.",
+      "fidelity": {
+        "functional": {
+          "claims": "Allumée quand le réseau d'anode vaut 1 et le réseau de cathode 0 (SPEC-003 §5 indicator).",
+          "omissions": [
+            "le courant",
+            "la luminosité"
+          ]
+        },
+        "timed": {
+          "claims": "Comme en fonctionnel sur les réseaux numériques ; comme en électrique sur les réseaux analogiques."
+        },
+        "electrical": {
+          "claims": "Diode avec valeurs par défaut vf/is/n par couleur et rs en série ; l'observation rapporte le courant et une luminance saturant à if_nom (SPEC-004 §7 led). Ses limites tirées des valeurs maximales absolues du WP7113ID de Kingbright : au-delà de 30 mA en continu ou de 5 V en inverse, un avertissement ; sa jonction chauffée par sa propre puissance à travers les résistances thermiques de la fiche technique (560 K/W vers l'ambiante, 390 K/W vers les pattes, deux nœuds thermiques, la pièce à la température du monde), grillant (circuit ouvert) quand elle dépasse 125 C, jusqu'à son remplacement.",
+          "omissions": [
+            "le vieillissement",
+            "le claquage inverse",
+            "la capacité",
+            "le coefficient de température de la tension directe",
+            "les capacités thermiques (non publiées : estimations tirées de la taille de la puce et de l'époxy du boîtier)",
+            "les dommages sont pris à la température de jonction maximale absolue ; une vraie LED peut survivre un peu au-dessus, ou défaillir en court-circuit",
+            "la baisse de lumière due à une surcharge sans aller jusqu'à griller",
+            "le courant crête nominal de 160 mA comme limite distincte (ses impulsions sont de la chaleur que voit le modèle thermique)"
+          ]
+        }
+      }
+    }
+  }
 }

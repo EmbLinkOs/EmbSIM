@@ -4,7 +4,8 @@
   "id": "emblink/schmitt_inverter",
   "version": "1.0.0",
   "name": "Schmitt-trigger inverter",
-  "category": "logic",
+  "category": "simulator_primitives",
+  "subcategory": "gates",
   "description": "Inverter with hysteresis on its input (one gate of a 74HC14): slow or noisy edges give one clean output transition.",
   "keywords": [
     "logic",
@@ -135,5 +136,32 @@
   },
   "tests": [
     "tests/*.json"
-  ]
+  ],
+  "i18n": {
+    "fr": {
+      "source": "47b633200dd4",
+      "description": "Inverseur avec hystérésis sur son entrée (une porte d'un 74HC14) : des fronts lents ou bruités donnent une seule transition propre en sortie.",
+      "fidelity": {
+        "functional": {
+          "claims": "Y = non A, délai nul.",
+          "omissions": [
+            "le délai"
+          ]
+        },
+        "timed": {
+          "claims": "Délai de propagation inertiel tpd.",
+          "omissions": [
+            "des délais distincts en montée et en descente"
+          ]
+        },
+        "electrical": {
+          "claims": "La liaison à comparateur d'entrée bascule aux seuils de la famille avec l'hystérésis du modèle de broche (SPEC-004 §8).",
+          "omissions": [
+            "la dispersion des seuils selon l'alimentation et la température",
+            "le courant d'alimentation"
+          ]
+        }
+      }
+    }
+  }
 }

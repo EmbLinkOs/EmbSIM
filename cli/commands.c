@@ -19,6 +19,7 @@
 #include "sdk.h"
 #include "export.h"
 #include "plan.h"
+#include "ide.h"
 #include "util/num.h"
 #include "util/str.h"
 
@@ -46,15 +47,25 @@ static void usage_to(FILE *out)
           "      [--coverage FILE [--coverage-format text|lcov|json]]\n"
           "      [--profile FILE [--profile-format text|collapsed|collapsed-insns|json]]\n"
           "      [--stack FILE [--stack-format text|json]] [--faults FILE [--faults-format text|json]]\n"
+          "      [--measure [NAME=]FROM..TO]... [--measure-out FILE|-]   cycles and simulated time between\n"
+          "      boundaries (a function or 0xADDR starting, exc:N taken, pend:N pending; .json for JSON)\n"
+          "      [--trace FILE [--trace-start BOUNDARY] [--trace-limit N] [--trace-accesses all|peripherals|none]]\n"
+          "      each instruction, exception, pending and return, and each load and store (address, value, the\n"
+          "      register it names), with its cycle and simulated time (.vcd: a value change dump)\n"
           "      [--board ID]\n"
           "  replay RECORDING [--allow-drift] [--json]   run a recording again and compare what it observed\n"
           "  record to-scenario RECORDING [-o FILE] [--assert probes,serial|none]\n"
           "  validate PATH...            validate projects (descriptions: tools/validate.py)\n"
           "  serve PROJECT [--port N] [--host H] [--ui DIR] [--open] [--allow-origin ORIGIN]...\n"
           "        [--serial B1]...      a board's serial port on the host (a pseudo-terminal)\n"
+          "        [--stlink [PORT]]     the board's ST-LINK as stlink-server shares it (TCP, 7184)\n"
+          "        [--usbip [PORT]]      the bench's free USB devices over USB/IP (TCP, 3240): usbip attach\n"
+          "        [--run]               run at real time from the start, no client needed\n"
           "  sidecar [PROJECT]           speak the session protocol on stdin/stdout\n"
           "  gdb PROJECT [--board B] [--port N] [--host H]   a GDB server for a board's MCU\n"
           "  build PROJECT [--board B] [--toolchain T]   build a board's firmware\n"
+          "  ide PROJECT [--embsim CMD] [--force]   VS Code launch configurations for the boards: through\n"
+          "      a board's own probe (OpenOCD) and EmbSIM's GDB server, in .vscode next to the project\n"
           "  export svg PROJECT [-o FILE] [--theme light|dark]   the schematic sheet as SVG\n"
           "  export svg PROJECT --component ID [--at T] [--scenario FILE] [--scale N] [-o FILE]\n"
           "      what a display shows at T (a graphic display's pixels, a character module's lines)\n"
@@ -407,6 +418,63 @@ static int an_format(const char *name, unsigned which)
     return -1;
 }
 
+/* the measurements into `path` ("-": stderr; .json: JSON): simulated time
+ * and cycles from the analysis, the host's wall time apart from them */
+static int write_measure(es_session *s, const char *board, const char *path)
+{
+    size_t n = strlen(path);
+    int json = n > 5 && !strcmp(path + n - 5, ".json"), ok = 1;
+    double sim_s = (double)s->eng.sched.now / (double)ES_PS_PER_S;
+    esk_strbuf b;
+    char why[160];
+    esk_strbuf_init(&b, s->a);
+    if (json) {
+        esk_json *o = esk_json_new_object(s->a), *host = esk_json_new_object(s->a);
+        esk_json_object_set(s->a, o, "simulated", esk_session_analysis_json(s, board, ESK_AN_MEASURE, 1));
+        esk_json_object_set(s->a, host, "wall_s", esk_json_new_number(s->a, s->wall_time_s));
+        esk_json_object_set(s->a, host, "simulated_s", esk_json_new_number(s->a, sim_s));
+        esk_json_object_set(s->a, o, "host", host);
+        (void)esk_json_write(&b, o, 1);
+        (void)esk_strbuf_putc(&b, '\n');
+        esk_json_free(s->a, o);
+    } else if (esk_session_analysis_text(s, board, ESK_AN_MEASURE, ESK_AN_TEXT, &b, why, sizeof why) != ES_OK) {
+        fprintf(stderr, "embsim: --measure: %s\n", why);
+        ok = 0;
+    } else {
+        esk_strbuf_printf(&b, "host (not part of the measurements): %.3f s of wall time for %.6f s simulated\n",
+                          s->wall_time_s, sim_s);
+    }
+    if (ok && b.oom)
+        ok = 0;
+    if (ok && !strcmp(path, "-"))
+        fwrite(b.data, 1, b.len, stderr);
+    else if (ok && esk_host_write_file(path, b.data, b.len) != ES_OK) {
+        fprintf(stderr, "embsim: cannot write %s\n", path);
+        ok = 0;
+    }
+    esk_strbuf_free(&b);
+    return ok;
+}
+
+/* the trace into `path` (.vcd: a value change dump; else text) */
+static int write_trace(es_session *s, const char *board, const char *path)
+{
+    size_t n = strlen(path);
+    int vcd = n > 4 && !strcmp(path + n - 4, ".vcd"), ok = 1;
+    esk_strbuf b;
+    char why[160];
+    esk_strbuf_init(&b, s->a);
+    if (esk_session_trace_write(s, board, vcd, &b, why, sizeof why) != ES_OK || b.oom) {
+        fprintf(stderr, "embsim: --trace: %s\n", b.oom ? "out of memory" : why);
+        ok = 0;
+    } else if (esk_host_write_file(path, b.data, b.len) != ES_OK) {
+        fprintf(stderr, "embsim: cannot write %s\n", path);
+        ok = 0;
+    }
+    esk_strbuf_free(&b);
+    return ok;
+}
+
 /* the coverage, profile, stack or fault report into `path` ("-": stderr) */
 static int write_analysis(es_session *s, const char *board, unsigned which, int fmt, const char *path)
 {
@@ -708,7 +776,11 @@ static int cmd_run(int argc, char **argv, const char *argv0)
     const char *coverage = NULL, *profile = NULL, *stack = NULL, *faults = NULL, *board = NULL, *target = NULL, *image = NULL, *until_text = NULL;
     int cov_fmt = ESK_AN_TEXT, prof_fmt = ESK_AN_TEXT, stack_fmt = ESK_AN_TEXT, fault_fmt = ESK_AN_TEXT, console = 0;
     int allow_no_image = 0, build = 0;
-    const char *dump = NULL, *circuit = NULL, *rtos = NULL;
+    const char *dump = NULL, *circuit = NULL, *rtos = NULL, *measure_out = NULL;
+    const char *measures[16], *trace = NULL, *trace_start = NULL;
+    unsigned long long trace_limit = 0;
+    int trace_access = ESK_AN_ACCESS_ALL;
+    int nmeasures = 0;
     const char *probes[32];
     int nprobes = 0, i, rc = 0;
     es_time_t until = 50 * ES_PS_PER_MS;
@@ -740,6 +812,24 @@ static int cmd_run(int argc, char **argv, const char *argv0)
         else if (!strcmp(a, "--dump-regs") && more) dump = argv[++i];
         else if (!strcmp(a, "--circuit-profile") && more) circuit = argv[++i];
         else if (!strcmp(a, "--rtos") && more) rtos = argv[++i];
+        else if (!strcmp(a, "--measure") && more) {
+            if (nmeasures == 16) { fprintf(stderr, "embsim: at most 16 --measure\n"); return 2; }
+            measures[nmeasures++] = argv[++i];
+        }
+        else if (!strcmp(a, "--measure-out") && more) measure_out = argv[++i];
+        else if (!strcmp(a, "--trace") && more) trace = argv[++i];
+        else if (!strcmp(a, "--trace-start") && more) trace_start = argv[++i];
+        else if (!strcmp(a, "--trace-limit") && more) trace_limit = strtoull(argv[++i], NULL, 10);
+        else if (!strcmp(a, "--trace-accesses") && more) {
+            const char *w = argv[++i];
+            trace_access = !strcmp(w, "none") ? ESK_AN_ACCESS_NONE
+                         : !strcmp(w, "peripherals") ? ESK_AN_ACCESS_PERIPHERALS
+                         : !strcmp(w, "all") ? ESK_AN_ACCESS_ALL : -1;
+            if (trace_access < 0) {
+                fprintf(stderr, "embsim: --trace-accesses takes all, peripherals or none\n");
+                return 2;
+            }
+        }
         else if ((!strcmp(a, "--coverage-format") || !strcmp(a, "--profile-format") || !strcmp(a, "--stack-format") ||
                   !strcmp(a, "--faults-format")) && more) {
             unsigned which = a[2] == 'c' ? ESK_AN_COVERAGE : a[2] == 's' ? ESK_AN_STACK : a[2] == 'f' ? ESK_AN_FAULT : ESK_AN_PROFILE;
@@ -798,12 +888,18 @@ static int cmd_run(int argc, char **argv, const char *argv0)
         if (esk_session_probe_add(s, NULL, probes[i], NULL, 0, NULL) != ES_OK)
             fprintf(stderr, "embsim: warning: probe %s not created\n", probes[i]);
     }
-    if (coverage || profile || stack || faults) {
+    if (coverage || profile || stack || faults || nmeasures || trace) {
         char why[160];
         unsigned what = (coverage ? ESK_AN_COVERAGE : 0u) | (profile ? ESK_AN_PROFILE : 0u) | (stack ? ESK_AN_STACK : 0u) |
-                        (faults ? ESK_AN_FAULT : 0u);
+                        (faults ? ESK_AN_FAULT : 0u) | (nmeasures || trace ? ESK_AN_MEASURE : 0u);
+        for (i = 0; i < nmeasures; i++)
+            (void)esk_session_measure(s, measures[i]);
+        if (trace) {
+            (void)esk_session_trace(s, trace_start, (uint64_t)trace_limit);
+            esk_session_trace_accesses(s, trace_access);
+        }
         if (esk_session_analyze(s, board, what, why, sizeof why) != ES_OK) {
-            fprintf(stderr, "embsim: %s: %s\n", coverage ? "--coverage" : profile ? "--profile" : stack ? "--stack" : "--faults", why);
+            fprintf(stderr, "embsim: %s: %s\n", coverage ? "--coverage" : profile ? "--profile" : stack ? "--stack" : faults ? "--faults" : nmeasures ? "--measure" : "--trace", why);
             es_session_destroy(s);
             return 2;
         }
@@ -900,6 +996,10 @@ static int cmd_run(int argc, char **argv, const char *argv0)
     if (stack && !write_analysis(s, board, ESK_AN_STACK, stack_fmt, stack) && !rc)
         rc = 2;
     if (faults && !write_analysis(s, board, ESK_AN_FAULT, fault_fmt, faults) && !rc)
+        rc = 2;
+    if (nmeasures && !write_measure(s, board, measure_out ? measure_out : "-") && !rc)
+        rc = 2;
+    if (trace && !write_trace(s, board, trace) && !rc)
         rc = 2;
     if (opt_json)
         print_json(report, s->a);
@@ -1143,7 +1243,7 @@ static int cmd_serve(int argc, char **argv, const char *argv0, int sidecar)
 {
     const char *project = NULL, *host = "127.0.0.1", *ui = NULL, *policy = NULL, *library = NULL;
     const char *origins[8], *serials[4];
-    int port = 8765, open = 0, i, n_origins = 0, n_serials = 0;
+    int port = 8765, open = 0, i, n_origins = 0, n_serials = 0, run = 0, stlink = -1, usbip = -1;
     es_session *s;
     es_status st;
     for (i = 0; i < argc; i++) {
@@ -1154,6 +1254,16 @@ static int cmd_serve(int argc, char **argv, const char *argv0, int sidecar)
             if (n_serials == (int)ES_COUNTOF(serials)) { fprintf(stderr, "embsim: at most 4 --serial\n"); return 2; }
             serials[n_serials++] = argv[++i];
         }
+        else if (!strcmp(a, "--stlink")) {
+            stlink = 7184;
+            if (more && argv[i + 1][0] >= '0' && argv[i + 1][0] <= '9')
+                stlink = atoi(argv[++i]);
+        }
+        else if (!strcmp(a, "--usbip")) {
+            usbip = 3240;
+            if (more && argv[i + 1][0] >= '0' && argv[i + 1][0] <= '9')
+                usbip = atoi(argv[++i]);
+        }
         else if (!strcmp(a, "--allow-origin") && more) {
             if (n_origins == (int)ES_COUNTOF(origins)) { fprintf(stderr, "embsim: at most 8 --allow-origin\n"); return 2; }
             origins[n_origins++] = argv[++i];
@@ -1163,6 +1273,7 @@ static int cmd_serve(int argc, char **argv, const char *argv0, int sidecar)
         else if (!strcmp(a, "--policy") && more) policy = argv[++i];
         else if (!strcmp(a, "--library") && more) library = argv[++i];
         else if (!strcmp(a, "--open")) open = 1;
+        else if (!strcmp(a, "--run")) run = 1;
         else if (a[0] == '-') { fprintf(stderr, EMBSIM_ID ": unknown option %s (embsim --help)\n", a); return 2; }
         else project = a;
     }
@@ -1189,6 +1300,39 @@ static int cmd_serve(int argc, char **argv, const char *argv0, int sidecar)
         o = esk_session_port_json(s, hp);
         fprintf(stderr, "embsim: %s's serial port is %s\n", serials[i], esk_json_get_str(o, "path", "?"));
         esk_json_free(s->a, o);
+    }
+    if (usbip >= 0) {
+        /* the bench's USB devices on the computer's USB stack: usbip attach -r HOST -b 1-N */
+        int bound = 0;
+        if (esk_session_usbip_serve(s, host, usbip, &bound) != ES_OK) {
+            fprintf(stderr, "embsim: --usbip: cannot listen on %s:%d\n", host, usbip);
+            es_session_destroy(s);
+            return 2;
+        }
+        fprintf(stderr, "embsim: USB/IP on %s:%d (usbip list -r %s; usbip attach -r %s -b 1-N)\n", host, bound, host,
+                host);
+    }
+    if (stlink >= 0) {
+        /* the probes as stlink-server shares them: OpenOCD's
+         * `hla_stlink_backend tcp PORT`, STM32CubeIDE */
+        int bound = 0;
+        if (esk_session_stlink_serve(s, host, stlink, &bound) != ES_OK) {
+            fprintf(stderr, "embsim: --stlink: cannot listen on %s:%d\n", host, stlink);
+            es_session_destroy(s);
+            return 2;
+        }
+        fprintf(stderr, "embsim: stlink-server on %s:%d (OpenOCD: -f interface/stlink.cfg -c \"hla_stlink_backend tcp %d\")\n",
+                host, bound, bound);
+    }
+    if (run && s->loaded) {
+        /* running at real time from the start, with nothing attached: the
+         * board on its host port as an IDE or a terminal finds it */
+        s->speed = 1.0;
+        s->run_until = ES_TIME_MAX;
+        s->running = 1;
+        s->last_host_ms = esk_host_monotonic_ms();
+        s->pace_carry_ps = 0;
+        fprintf(stderr, "embsim: running at real time\n");
     }
     esk_protocol_set_idle(serve_idle, s);
     if (sidecar) {
@@ -1225,6 +1369,33 @@ static void gdb_listening(void *ctx, int port)
     ES_UNUSED(ctx);
     printf("embsim: GDB server on 127.0.0.1:%d (target extended-remote :%d)\n", port, port);
     fflush(stdout);
+}
+
+static int cmd_ide(int argc, char **argv, const char *argv0)
+{
+    const char *project = NULL, *embsim = "embsim", *library = NULL;
+    int force = 0, i, rc;
+    es_session *s;
+    for (i = 0; i < argc; i++) {
+        const char *a = argv[i];
+        int more = i + 1 < argc;
+        if (!strcmp(a, "--embsim") && more) embsim = argv[++i];
+        else if (!strcmp(a, "--library") && more) library = argv[++i];
+        else if (!strcmp(a, "--force")) force = 1;
+        else if (a[0] == '-') { fprintf(stderr, EMBSIM_ID ": unknown option %s (embsim --help)\n", a); return 2; }
+        else project = a;
+    }
+    if (!project) { usage(); return 2; }
+    s = open_session(NULL, argv0, library);
+    if (!s) return 2;
+    if (es_session_load_file(s, project) != ES_OK) {
+        fprintf(stderr, "embsim: cannot load %s\n", project);
+        es_session_destroy(s);
+        return 2;
+    }
+    rc = embsim_ide(s, project, embsim, force);
+    es_session_destroy(s);
+    return rc;
 }
 
 static int cmd_gdb(int argc, char **argv, const char *argv0)
@@ -1467,8 +1638,12 @@ static void print_component_summary(const esk_json *d)
     char a[64], b[64], c[64];
     size_t i, k;
     printf("%s  %s  %s\n", esk_json_get_str(d, "id", ""), esk_json_get_str(d, "version", ""), esk_json_get_str(d, "name", ""));
-    if (esk_json_get_str(d, "category", NULL))
-        printf("category: %s\n", esk_json_get_str(d, "category", ""));
+    if (esk_json_get_str(d, "category", NULL)) {
+        if (esk_json_get_str(d, "subcategory", NULL))
+            printf("category: %s / %s\n", esk_json_get_str(d, "category", ""), esk_json_get_str(d, "subcategory", ""));
+        else
+            printf("category: %s\n", esk_json_get_str(d, "category", ""));
+    }
     if (esk_json_get_str(d, "description", NULL))
         printf("%s\n", esk_json_get_str(d, "description", ""));
     if (esk_json_len(pins)) {
@@ -1556,7 +1731,7 @@ static int cmd_catalog(int argc, char **argv, const char *argv0)
                 const esk_json *it = esk_json_at(items, k);
                 const esk_json *tiers = esk_json_get(it, "fidelity_tiers");
                 size_t t;
-                printf("%-32s %-10s %-24s", esk_json_get_str(it, "id", ""), esk_json_get_str(it, "category", ""), esk_json_get_str(it, "name", ""));
+                printf("%-32s %-22s %-24s", esk_json_get_str(it, "id", ""), esk_json_get_str(it, "category", ""), esk_json_get_str(it, "name", ""));
                 for (t = 0; t < esk_json_len(tiers); t++)
                     printf(" %s", esk_json_str(esk_json_at(tiers, t)));
                 printf("\n");
@@ -1800,6 +1975,7 @@ int embsim_cli_main(int argc, char **argv)
     if (!strcmp(cmd, "sidecar")) return cmd_serve(argc - 2, argv + 2, argv[0], 1);
     if (!strcmp(cmd, "gdb")) return cmd_gdb(argc - 2, argv + 2, argv[0]);
     if (!strcmp(cmd, "build")) return cmd_build(argc - 2, argv + 2, argv[0]);
+    if (!strcmp(cmd, "ide")) return cmd_ide(argc - 2, argv + 2, argv[0]);
     if (!strcmp(cmd, "export")) return cmd_export(argc - 2, argv + 2, argv[0]);
     if (!strcmp(cmd, "plan")) return cmd_plan(argc - 2, argv + 2, argv[0]);
     if (!strcmp(cmd, "toolchains")) return cmd_toolchains(argv[0]);

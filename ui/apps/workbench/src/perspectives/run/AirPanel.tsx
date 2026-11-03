@@ -18,6 +18,7 @@ import { platform } from '../../platform/platform';
 import { useAir } from '../../stores/air';
 import { useProject } from '../../stores/project';
 import { useSession } from '../../stores/session';
+import { t as tr } from '../../i18n';
 
 const WIFI_SCANNER = 'emblink/wifi_scanner';
 const BLE_SCANNER = 'emblink/ble_scanner';
@@ -74,7 +75,7 @@ function CaptureView({ id }: { id: string }) {
       const where = await p.saveBinaryFile(`${id}-${kind}.pcap`, captureToPcap(frames, kind), 'application/vnd.tcpdump.pcap');
       if (where) toast({ kind: 'success', title: `Saved ${where}`, description: `${frames.length} frames, for Wireshark` });
     } catch (e) {
-      toast({ kind: 'error', title: 'Saving the capture failed', description: errorMessage(e) });
+      toast({ kind: 'error', title: tr('air.saveFailed'), description: errorMessage(e) });
     }
   };
 
@@ -85,10 +86,10 @@ function CaptureView({ id }: { id: string }) {
           {frames.length} frames{capture?.missed ? `, ${capture.missed} missed` : ''}
         </span>
         <Button size="sm" variant="ghost" icon={<Eraser />} onClick={() => clear(id)} disabled={!frames.length}>
-          Clear
+          {tr('common.clear')}
         </Button>
         <Button size="sm" variant="ghost" icon={<Download />} onClick={() => void save()} disabled={!frames.length}>
-          Save .pcap
+          {tr('air.savePcap')}
         </Button>
       </div>
       <div
@@ -103,21 +104,21 @@ function CaptureView({ id }: { id: string }) {
           <thead>
             <tr>
               <th scope="col">No.</th>
-              <th scope="col">Time (s)</th>
+              <th scope="col">{tr('air.timeS')}</th>
               <th scope="col">Ch</th>
               <th scope="col">RSSI</th>
-              <th scope="col">Protocol</th>
-              <th scope="col">Source</th>
-              <th scope="col">Destination</th>
-              <th scope="col">Length</th>
-              <th scope="col">Info</th>
+              <th scope="col">{tr('air.protocol')}</th>
+              <th scope="col">{tr('air.source')}</th>
+              <th scope="col">{tr('air.destination')}</th>
+              <th scope="col">{tr('air.length')}</th>
+              <th scope="col">{tr('air.info')}</th>
             </tr>
           </thead>
           <tbody>
             {rows.length === 0 && (
               <tr>
                 <td colSpan={9} className="es-muted">
-                  Nothing heard yet on its channel
+                  {tr('air.nothingHeard')}
                 </td>
               </tr>
             )}
@@ -173,33 +174,33 @@ export function AirPanel() {
   const adders = editable && project && (
     <div className="wb-air__add">
       {!wifi.length && (
-        <Button size="sm" variant="ghost" icon={<Wifi />} onClick={() => add(WIFI_SCANNER, 'PHONE', 'Wi-Fi analyzer')}>
-          Wi-Fi analyzer
+        <Button size="sm" variant="ghost" icon={<Wifi />} onClick={() => add(WIFI_SCANNER, 'PHONE', tr('air.wifiAnalyzer'))}>
+          {tr('air.wifiAnalyzer')}
         </Button>
       )}
       {!ble.length && (
-        <Button size="sm" variant="ghost" icon={<Bluetooth />} onClick={() => add(BLE_SCANNER, 'SCAN', 'BLE scanner')}>
-          BLE scanner
+        <Button size="sm" variant="ghost" icon={<Bluetooth />} onClick={() => add(BLE_SCANNER, 'SCAN', tr('air.bleScanner'))}>
+          {tr('air.bleScanner')}
         </Button>
       )}
       <Button size="sm" variant="ghost" icon={<Radio />} onClick={() => add(SNIFFER, 'SNIFF', 'sniffer')}>
-        Sniffer
+        {tr('air.sniffer')}
       </Button>
     </div>
   );
 
-  if (!project) return <EmptyState icon={<Radio />} title="No project">Open a project to see the air around it.</EmptyState>;
+  if (!project) return <EmptyState icon={<Radio />} title={tr('world.noProject')}>{tr('air.openProject')}</EmptyState>;
   if (!wifi.length && !ble.length && !sniffers.length)
     return (
-      <EmptyState icon={<Radio />} title="Nothing on the bench listens to the air">
-        A phone or a sniffer hears what the boards send: add a Wi-Fi analyzer (a phone's Wi-Fi list), a Bluetooth LE scanner or a radio sniffer
+      <EmptyState icon={<Radio />} title={tr('air.nothingListens')}>
+        {tr('air.howTo')}
         for Wireshark. Each hears the air where it stands on the bench.
         {adders}
       </EmptyState>
     );
 
   return (
-    <div className="wb-air" aria-label="What the receivers hear">
+    <div className="wb-air" aria-label={tr('air.region')}>
       <section className="wb-air__lists">
         {wifi.map((c) => {
           const nets = parseWifiList(String(outputs[`${c.id}.list`] ?? ''));
@@ -210,13 +211,13 @@ export function AirPanel() {
                 <Wifi aria-hidden="true" /> Wi-Fi, as {c.id} sees it <span className="wb-air__meta">{ch ? `scanning channel ${ch}` : scans(Number(outputs[`${c.id}.scans`] ?? 0))}</span>
               </h3>
               {nets.length === 0 ? (
-                <p className="wb-air__hint">No network found yet</p>
+                <p className="wb-air__hint">{tr('air.noNetwork')}</p>
               ) : (
                 <ul className="wb-air__rows">
                   {nets.map((n) => (
                     <li key={n.bssid}>
                       <Bars rssi={n.rssi} />
-                      <span className="wb-air__name">{n.hidden ? <em>hidden network</em> : n.ssid}</span>
+                      <span className="wb-air__name">{n.hidden ? <em>{tr('air.hidden')}</em> : n.ssid}</span>
                       <span className="wb-air__meta">
                         {n.security} · ch {n.channel} · {n.rssi} dBm
                       </span>
@@ -236,13 +237,13 @@ export function AirPanel() {
                 <Bluetooth aria-hidden="true" /> Bluetooth LE, as {c.id} sees it
               </h3>
               {devs.length === 0 ? (
-                <p className="wb-air__hint">No advertiser heard yet</p>
+                <p className="wb-air__hint">{tr('air.noAdvertiser')}</p>
               ) : (
                 <ul className="wb-air__rows">
                   {devs.map((d) => (
                     <li key={d.address}>
                       <Bars rssi={d.rssi} />
-                      <span className="wb-air__name">{d.name || (d.beacon ? 'iBeacon' : <em>no name</em>)}</span>
+                      <span className="wb-air__name">{d.name || (d.beacon ? 'iBeacon' : <em>{tr('air.noName')}</em>)}</span>
                       <span className="wb-air__meta">
                         {d.connectable ? 'connectable' : 'not connectable'} · {d.pdu} · {d.rssi} dBm
                       </span>
@@ -268,7 +269,7 @@ export function AirPanel() {
           <h3>
             <Radio aria-hidden="true" /> Capture
             {sniffers.length > 1 ? (
-              <Select size="sm" label="Sniffer" value={current} onValueChange={setSniffer} options={sniffers.map((s) => ({ value: s.id, label: s.id }))} />
+              <Select size="sm" label={tr('air.sniffer')} value={current} onValueChange={setSniffer} options={sniffers.map((s) => ({ value: s.id, label: s.id }))} />
             ) : (
               <span className="wb-air__meta"> {current}</span>
             )}

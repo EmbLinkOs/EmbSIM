@@ -4,7 +4,8 @@
   "id": "emblink/ws2812b_strip",
   "version": "1.0.0",
   "name": "WS2812B LED strip or ring",
-  "category": "displays",
+  "category": "optoelectronics",
+  "subcategory": "addressable_leds",
   "description": "A strip or ring of WS2812B LEDs (NeoPixels) chained DOUT to DIN: `count` LEDs take 24 bits each, in order from DIN, and pass the rest on at the end's DOUT; a 50 us low latches the frame.",
   "keywords": [
     "led strip",
@@ -172,5 +173,43 @@
   },
   "tests": [
     "tests/*.json"
-  ]
+  ],
+  "i18n": {
+    "fr": {
+      "source": "0b2f68ff37f7",
+      "description": "Un ruban ou un anneau de LED WS2812B (NeoPixels) chaînées de DOUT à DIN : `count` LED prennent 24 bits chacune, dans l'ordre depuis DIN, et transmettent le reste sur le DOUT final ; un état bas de 50 us verrouille la trame.",
+      "fidelity": {
+        "functional": {
+          "claims": "NRZ à 800 kbit/s sur DIN, distingué à 0,6 us (entre le 0 le plus long et le 1 le plus court de la fiche technique) ; chacune des count LED garde les 24 premiers bits après une réinitialisation (GRB, MSB en premier) et transmet le reste sur DOUT remis en forme en états hauts de 0,4 / 0,8 us ; un état bas de t_reset verrouille les couleurs ; éteintes à la mise sous tension ; éteintes et sourdes sous 3,5 V.",
+          "omissions": [
+            "la lumière elle-même (couleurs rapportées comme niveaux MLI sur 8 bits, sans intensité par canal)",
+            "le scintillement de la MLI à 400 Hz",
+            "le courant d'alimentation (jusqu'à 60 mA par LED en blanc maximal) et la chute de tension le long d'un ruban",
+            "la dépendance du seuil d'entrée à VDD au-delà des niveaux du modèle de broche",
+            "le délai de 0,2 us de la remise en forme"
+          ]
+        },
+        "timed": {
+          "claims": "Comme en fonctionnel.",
+          "omissions": [
+            "la lumière elle-même (couleurs rapportées comme niveaux MLI sur 8 bits, sans intensité par canal)",
+            "le scintillement de la MLI à 400 Hz",
+            "le courant d'alimentation (jusqu'à 60 mA par LED en blanc maximal) et la chute de tension le long d'un ruban",
+            "la dépendance du seuil d'entrée à VDD au-delà des niveaux du modèle de broche",
+            "le délai de 0,2 us de la remise en forme"
+          ]
+        },
+        "electrical": {
+          "claims": "DIN et DOUT se relient aux réseaux analogiques avec les modèles de broche par défaut de la famille ; la tension de VDD conditionne les LED ; le comportement est celui du modèle Lua.",
+          "omissions": [
+            "la lumière elle-même (couleurs rapportées comme niveaux MLI sur 8 bits, sans intensité par canal)",
+            "le scintillement de la MLI à 400 Hz",
+            "le courant d'alimentation (jusqu'à 60 mA par LED en blanc maximal) et la chute de tension le long d'un ruban",
+            "la dépendance du seuil d'entrée à VDD au-delà des niveaux du modèle de broche",
+            "le délai de 0,2 us de la remise en forme"
+          ]
+        }
+      }
+    }
+  }
 }

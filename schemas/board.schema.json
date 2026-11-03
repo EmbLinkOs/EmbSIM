@@ -23,7 +23,8 @@
         "ref": {"$ref": "common.schema.json#/$defs/catalog_id"},
         "version": {"$ref": "common.schema.json#/$defs/version_range"},
         "package": {"type": "string", "pattern": "^[a-z][a-z0-9_-]*$"},
-        "instance": {"$ref": "common.schema.json#/$defs/instance_id"}
+        "instance": {"$ref": "common.schema.json#/$defs/instance_id"},
+        "fuses": {"$ref": "common.schema.json#/$defs/fuses"}
       }
     },
     "oscillators": {
@@ -120,6 +121,17 @@
           "additionalProperties": false,
           "properties": {
             "part": {"type": "string"},
+            "usb": {
+              "type": "object",
+              "description": "The bridge's USB identity, as a computer enumerates it (the IDE identifies the board by it)",
+              "required": ["vid", "pid"],
+              "additionalProperties": false,
+              "properties": {
+                "vid": {"type": "string", "pattern": "^0x[0-9a-fA-F]{4}$"},
+                "pid": {"type": "string", "pattern": "^0x[0-9a-fA-F]{4}$"},
+                "product": {"type": "string"}
+              }
+            },
             "dtr_reset": {
               "type": "object",
               "required": ["component", "ms"],
@@ -131,6 +143,18 @@
             }
           }
         }
+      }
+    },
+    "debug": {
+      "type": "object",
+      "description": "The board's own debug probe (SPEC-006 §3): the component that is it, its name, the OpenOCD files that drive it and its target, and the OpenOCD command that reaches it through the session (docs/engineering/debug-probes.md)",
+      "required": ["probe", "openocd"],
+      "additionalProperties": false,
+      "properties": {
+        "probe": { "type": "string", "description": "The board component that is the probe (the NUCLEO's U2)" },
+        "name": { "type": "string", "description": "The probe as tools and people call it (ST-LINK/V2-1)" },
+        "openocd": { "type": "array", "items": { "type": "string" }, "minItems": 1, "description": "OpenOCD's configuration files for the probe and the target, in order" },
+        "openocd_command": { "type": "string", "description": "The OpenOCD command that reaches the probe through the session (hla_stlink_backend tcp 7184)" }
       }
     },
     "bench": {
@@ -210,6 +234,7 @@
       }
     },
     "fidelity": {"$ref": "common.schema.json#/$defs/fidelity"},
+    "i18n": {"$ref": "common.schema.json#/$defs/i18n"},
     "provenance": {"$ref": "common.schema.json#/$defs/provenance"},
     "tests": {"type": "array", "items": {"type": "string"}}
   }
