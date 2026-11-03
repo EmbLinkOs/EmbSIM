@@ -33,9 +33,12 @@ PDF's text. The fixtures then hold the model to the same table's limits.
 | `schottky_1n581x` | Vishay 1N5817, 1N5818, 1N5819 | 88525 | VF at 1.0 A and 3.1 A under each part's maxima; IR at VRRM under 1 mA |
 | `zeners_bzx55` | Vishay BZX55C2V4 to C75 and B2V4 to B75 (74), 500 mW, DO-35 | 85604 | VZ at IZT within the table's minimum and maximum; IR at VR; VF at 200 mA |
 | `zeners_1n47xx` | Vishay 1N4728A to 1N4761A (34), 1.3 W, DO-41 | 85816 | VZ at IZT within 5 %; IR at VR; VF at 200 mA |
+| `zeners_1n52xx` | Vishay 1N5221 to 1N5267 in their B (5 %) and C (2 %) tolerances (94), DO-35 | 85588 | VZ at IZT within the suffix's tolerance; IR at VR; VF at 200 mA |
+| `zeners_bzx79` | onsemi BZX79C2V4 to BZX79C18 (21), DO-35 | BZX79C2V4/D | VZ at IZT within the table's minimum and maximum; IR at VR; VF at 200 mA |
 | `switching_1n914` | onsemi 1N914, 1N914A, 1N914B, 1N916, 1N916A, 1N916B, 1N4148, 1N4448, DO-35 | 1N914/D | each grade's VF window or maximum at its test currents; IR at 20 V and 75 V; breakdown at the 100 V minimum |
 | `bjt_bc546` | onsemi BC546B, BC547A, BC547B, BC547C, BC548B, BC548C (NPN), TO-92 | BC546/D | IC within the hFE group's limits at 2 mA and VBE(on) inside 0.55 to 0.7 V; VCE(sat) at 10 mA; ICES |
 | `bjt_bc556` | onsemi BC556B, BC557A, BC557B, BC557C, BC558B (PNP), TO-92 | BC556B/D | the same, with the PNP's limits |
+| `leds_kingbright` | Kingbright 5 mm WP7113 and 3 mm WP710A10 LEDs in their colours and lenses (23), one datasheet each | each part's | VF at the datasheet's test current under its maximum; IR at 5 V |
 | `regulators_mc7800` | onsemi MC7805 to MC7824 in the B, C and AC grades (21), TO-220 | MC7800/D | VO within the 25 C limits at the table's Vin and 500 mA, and at 1.0 A; the 2.0 V dropout; quiescent current under its maximum |
 | `resistors_ccf55` | Vishay CCF55, 1 %, 100 ppm/K: every E96 value from 10 ohm to 3.01 Mohm (527) | 31015 | the nominal resistance (a divider read to 0.1 %) |
 | `resistors_ccf07` | Vishay CCF07, E24 from 10 ohm to 1 Mohm at 2 % and 5 %, and 1.1 to 2 Mohm at 5 % (249) | 31013 | the same |

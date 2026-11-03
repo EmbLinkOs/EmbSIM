@@ -1,0 +1,174 @@
+{
+  "schema_version": 1,
+  "kind": "component",
+  "id": "emblink/bzx79c13",
+  "version": "1.0.0",
+  "name": "BZX79C13",
+  "category": "diodes",
+  "subcategory": "zener",
+  "description": "onsemi BZX79C13, a 500 mW small-signal zener in DO-35: 13 V nominal by its type designation (12.4 to 14.1 V) at its test current IZT of 5 mA. The breakdown is placed so the voltage at IZT is the nominal one; the reverse current at 8 V stays under the datasheet's 0.1 uA and the forward voltage at 200 mA under its 1.2 V.",
+  "keywords": [
+    "onsemi",
+    "BZX79C13",
+    "BZX79",
+    "DO-35",
+    "zener",
+    "voltage reference",
+    "regulator",
+    "13 V"
+  ],
+  "pins": [
+    {
+      "name": "A",
+      "number": 2,
+      "model": {
+        "kind": "passive"
+      },
+      "doc": "Anode"
+    },
+    {
+      "name": "K",
+      "number": 1,
+      "model": {
+        "kind": "passive"
+      },
+      "doc": "Cathode"
+    }
+  ],
+  "params": {
+    "vz": {
+      "type": "number",
+      "unit": "V",
+      "default": 13,
+      "doc": "Zener voltage at the test current izt",
+      "min": 1,
+      "max": 200
+    },
+    "is": {
+      "type": "number",
+      "unit": "A",
+      "default": "1e-14",
+      "doc": "Forward saturation current",
+      "min": "1e-20",
+      "max": "1m",
+      "advanced": true
+    },
+    "n": {
+      "type": "number",
+      "unit": "",
+      "default": 1,
+      "doc": "Forward emission coefficient",
+      "min": 0.5,
+      "max": 5,
+      "advanced": true
+    },
+    "rs": {
+      "type": "number",
+      "unit": "ohm",
+      "default": 0.5,
+      "doc": "Forward series resistance",
+      "min": 0,
+      "advanced": true
+    },
+    "izt": {
+      "type": "number",
+      "unit": "A",
+      "default": 0.005,
+      "doc": "Test current at which the voltage is vz (IZT1)",
+      "min": "1u",
+      "max": "0.2",
+      "advanced": true
+    }
+  },
+  "model": {
+    "primitive": "zener"
+  },
+  "symbol": {
+    "svg": "symbol.svg",
+    "width": 60,
+    "height": 20,
+    "pins": {
+      "A": {
+        "x": 0,
+        "y": 10,
+        "side": "left"
+      },
+      "K": {
+        "x": 60,
+        "y": 10,
+        "side": "right"
+      }
+    }
+  },
+  "fidelity": {
+    "functional": null,
+    "timed": null,
+    "electrical": {
+      "claims": "Zener junction placed so the voltage at IZT is the nominal VZ, inside the datasheet's minimum and maximum; leakage under the table's IR at VR; forward voltage under 1.2 V at 200 mA. DC and low-frequency fixtures from the datasheet's table.",
+      "omissions": [
+        "the knee's softness below IZT (ZZK at IZT2): the model's knee is a sharp exponential",
+        "dynamic resistance: one 0.5 ohm series resistance serves both directions, so the slope above IZT is under the table's ZZ maximum rather than at it",
+        "the temperature coefficient (TKVZ)",
+        "capacitance (11 pF at 0 V)",
+        "power dissipation (500 mW) and damage",
+        "device-to-device spread within the tolerance",
+        "noise",
+        "no manufacturer model qualification"
+      ],
+      "validation": [
+        "tests/*.json"
+      ]
+    }
+  },
+  "provenance": {
+    "author": "EmbSIM",
+    "license": "Apache-2.0",
+    "sources": [
+      {
+        "title": "onsemi BZX79C2V4 to BZX79C18 datasheet (BZX79C2V4/D)",
+        "url": "https://www.onsemi.com/pdf/datasheet/bzx79c2v4-d.pdf",
+        "rev": "5, December 2023",
+        "date": "2026-11-03",
+        "hash": "sha256:41ae4e97f7123974638725a172a612737642a02fb6007065ce4e7ab78e314edd",
+        "notes": "Pages 1 and 2: PD 500 mW; per device VZ minimum and maximum at IZ, ZZ maximum, IR at VR (the text extraction prints the micro sign as m), the temperature coefficient and the capacitance at 0 V and 1 MHz; VF 1.2 V max at 200 mA; axial lead DO-35. generated from catalog/families/zeners_bzx79/family.json by tools/catalog/families.py; edit the family, not this file"
+      },
+      {
+        "title": "KiCad family/package reference, revision 4e17d759",
+        "url": "https://github.com/KiCad/kicad-symbols/blob/4e17d7595f9691d45d97aea8ad64572652fb5bed/Diode.lib"
+      }
+    ]
+  },
+  "tests": [
+    "tests/*.json"
+  ],
+  "part": {
+    "manufacturer": "onsemi",
+    "mpn": "BZX79C13",
+    "package": "DO-35",
+    "datasheet": "https://www.onsemi.com/pdf/datasheet/bzx79c2v4-d.pdf"
+  },
+  "artwork": {
+    "svg": "artwork.svg"
+  },
+  "i18n": {
+    "fr": {
+      "source": "e9f7a1df81d3",
+      "description": "onsemi BZX79C13, une zener petits signaux de 500 mW en DO-35 : 13 V nominal selon sa désignation (12.4 à 14.1 V) à son courant de test IZT de 5 mA. Le claquage est placé pour que la tension à IZT soit la nominale ; le courant inverse à 8 V reste sous les 0.1 uA de la fiche technique et la tension directe à 200 mA sous ses 1,2 V.",
+      "fidelity": {
+        "electrical": {
+          "claims": "Jonction zener placée pour que la tension à IZT soit la VZ nominale, entre le minimum et le maximum de la fiche technique ; fuite sous l'IR du tableau à VR ; tension directe sous 1,2 V à 200 mA. Cas de test en continu et basse fréquence tirés du tableau de la fiche technique.",
+          "omissions": [
+            "la douceur du coude sous IZT (ZZK à IZT2) : le coude du modèle est une exponentielle franche",
+            "la résistance dynamique : une seule résistance série de 0,5 ohm sert dans les deux sens, la pente au-dessus d'IZT est donc sous le maximum ZZ du tableau plutôt qu'à sa valeur",
+            "le coefficient de température (TKVZ)",
+            "la capacité (11 pF à 0 V)",
+            "la puissance dissipée (500 mW) et les dommages",
+            "la dispersion d'un exemplaire à l'autre dans la tolérance",
+            "le bruit",
+            "aucune qualification par un modèle du fabricant"
+          ]
+        }
+      }
+    }
+  }
+}

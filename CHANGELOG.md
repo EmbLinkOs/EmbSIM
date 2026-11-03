@@ -48,6 +48,11 @@ versions follow semantic versioning. There is no release yet.
   radial leaded MLCCs, every ordering code of its C0G and X7R tables (10 pF
   to 1 uF, 50 to 500 V), with the datasheet's tolerance, size and lead
   spacing.
+- 115 more zeners (Vishay's 1N5221 to 1N5267 in the B and C tolerances,
+  onsemi's BZX79C2V4 to C18) and 23 Kingbright LEDs (the 5 mm WP7113 and
+  3 mm WP710A10 lines in their colours and lenses), each LED at its
+  datasheet's typical forward voltage at its test current, damaged past its
+  ratings (ADR-034), its colour its dominant wavelength's.
 - The capacitor primitive's `esr` (SPEC-004 §7) is applied: it was read
   and ignored, so a capacitor had no series resistance whatever its
   description said. The capacitance now sits behind an internal node, the

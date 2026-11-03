@@ -1,0 +1,253 @@
+{
+  "schema_version": 1,
+  "kind": "component",
+  "id": "emblink/wp710a10yd",
+  "version": "1.0.0",
+  "name": "WP710A10YD",
+  "category": "optoelectronics",
+  "subcategory": "leds",
+  "description": "Kingbright WP710A10YD, a 3 mm Yellow LED (GaAsP/GaP chip, yellow diffused lens): 590 nm peak, 588 nm dominant, 1.95 V typical and 2.4 V at most at 10 mA, 30 mA DC and 5 V reverse at most. The model drops the typical forward voltage at the datasheet's test current and is damaged past its ratings (ADR-034).",
+  "keywords": [
+    "Kingbright",
+    "WP710A10YD",
+    "LED",
+    "yellow",
+    "3 mm",
+    "through hole",
+    "indicator",
+    "588 nm"
+  ],
+  "pins": [
+    {
+      "name": "A",
+      "number": 1,
+      "model": {
+        "kind": "passive"
+      },
+      "doc": "Anode, longer lead. Number 1 is a catalog convention; source identifies polarity without numbering."
+    },
+    {
+      "name": "K",
+      "number": 2,
+      "model": {
+        "kind": "passive"
+      },
+      "doc": "Cathode, shorter lead, marked in source drawing. Catalog number 2."
+    }
+  ],
+  "params": {},
+  "outputs": [
+    {
+      "name": "current",
+      "type": "number",
+      "unit": "A",
+      "doc": "Forward current"
+    },
+    {
+      "name": "luminance",
+      "type": "number",
+      "min": 0,
+      "max": 1,
+      "doc": "Normalised brightness, 1 at if_nom"
+    },
+    {
+      "name": "lit",
+      "type": "boolean",
+      "doc": "True with forward current above 1 µA in electrical policy; functional policy requires A=1 and K=0."
+    },
+    {
+      "name": "emission_integral",
+      "type": "number",
+      "unit": "s",
+      "doc": "Accepted-time integral of illustrative normalized emission; differences divided by elapsed simulation time give interval exposure. No calibrated optical units."
+    }
+  ],
+  "model": {
+    "primitive": "led",
+    "params": {
+      "vf": 1.95,
+      "n": 2,
+      "rs": 0,
+      "if_nom": 0.01,
+      "color": "yellow",
+      "if_max": 0.03,
+      "vr_max": 5,
+      "tj_max": 110
+    }
+  },
+  "functional": {
+    "primitive": "indicator",
+    "params": {}
+  },
+  "symbol": {
+    "svg": "symbol.svg",
+    "width": 60,
+    "height": 20,
+    "pins": {
+      "A": {
+        "x": 0,
+        "y": 10,
+        "side": "left"
+      },
+      "K": {
+        "x": 60,
+        "y": 10,
+        "side": "right"
+      }
+    },
+    "states": [
+      {
+        "output": "luminance",
+        "selector": "#emitter",
+        "attr": "opacity",
+        "scale": {
+          "from": [
+            0,
+            1
+          ],
+          "to": [
+            0,
+            1
+          ]
+        }
+      },
+      {
+        "output": "luminance",
+        "selector": "#emission-halo",
+        "attr": "opacity",
+        "scale": {
+          "from": [
+            0,
+            1
+          ],
+          "to": [
+            0,
+            0.28
+          ]
+        }
+      }
+    ]
+  },
+  "artwork": {
+    "svg": "artwork.svg",
+    "width_mm": 5,
+    "height_mm": 8.6,
+    "hotspots": [],
+    "states": [
+      {
+        "output": "luminance",
+        "selector": "#glow",
+        "attr": "opacity",
+        "scale": {
+          "from": [
+            0,
+            1
+          ],
+          "to": [
+            0,
+            1
+          ]
+        }
+      }
+    ]
+  },
+  "fidelity": {
+    "functional": {
+      "claims": "Ideal binary indication with a known forward logic return path; no electrical qualification.",
+      "omissions": [
+        "current loading",
+        "manufacturer transfer curve",
+        "optical calibration"
+      ]
+    },
+    "timed": {
+      "claims": "Ideal binary indication with a known forward logic return path; no electrical qualification.",
+      "omissions": [
+        "current loading",
+        "manufacturer transfer curve",
+        "optical calibration"
+      ]
+    },
+    "electrical": {
+      "claims": "LED junction dropping the datasheet's typical forward voltage (1.95 V) at its test current (10 mA), under its 2.4 V maximum; the reverse current under its maximum at 5 V; light by the current, its colour the dominant wavelength's; damaged as ADR-034 says past the 30 mA DC current, the 5 V reverse voltage or the 110 C junction.",
+      "omissions": [
+        "the forward curve away from the test current: an exponential with n = 2 and no series resistance, not the datasheet's figure",
+        "luminous intensity, viewing angle and spectrum: the light shown is relative",
+        "the temperature coefficients of VF and the wavelength",
+        "the capacitance",
+        "device-to-device spread (VF ±0.1 V, intensity ±15 %)",
+        "the junction's thermal resistances: the WP7113ID's, as the ADR-034 model has no other datasheet's"
+      ],
+      "validation": [
+        "tests/*.json"
+      ]
+    }
+  },
+  "provenance": {
+    "author": "EmbSIM",
+    "license": "Apache-2.0",
+    "sources": [
+      {
+        "title": "Kingbright WP710A10YD datasheet (DSAL0564)",
+        "url": "https://www.kingbrightusa.com/images/catalog/SPEC/WP710A10YD.pdf",
+        "rev": "V.11B, 08/30/2023",
+        "date": "2026-11-03",
+        "hash": "sha256:b56cac901984bb8d5d59724ca31d1204cab4fc562a3119b2a404a53a09f9d0ef",
+        "notes": "Pages 1 and 2: the selection guide (colour, lens, luminous intensity), the electrical and optical characteristics at 25 C (peak and dominant wavelength, forward voltage at its test current, reverse current at 5 V), the absolute maximum ratings (power dissipation, reverse voltage, junction temperature, DC forward current). generated from catalog/families/leds_kingbright/family.json by tools/catalog/families.py; edit the family, not this file"
+      }
+    ]
+  },
+  "tests": [
+    "tests/*.json"
+  ],
+  "part": {
+    "manufacturer": "Kingbright",
+    "mpn": "WP710A10YD",
+    "package": "T-1 (3 mm)",
+    "datasheet": "https://www.kingbrightusa.com/images/catalog/SPEC/WP710A10YD.pdf"
+  },
+  "bench": {
+    "package": "led",
+    "size_mm": [
+      3.8,
+      3.8,
+      8.3
+    ],
+    "pins": {
+      "A": [
+        3.17,
+        1.9
+      ],
+      "K": [
+        0.63,
+        1.9
+      ]
+    },
+    "color": "#ffd400",
+    "led": {
+      "diameter_mm": 3,
+      "flange_mm": 3.8,
+      "body_height_mm": 5.3,
+      "standoff_mm": 3
+    }
+  },
+  "i18n": {
+    "fr": {
+      "source": "19a629f983cc",
+      "description": "Kingbright WP710A10YD, une DEL Yellow de 3 mm (puce GaAsP/GaP, lentille yellow diffused) : crête à 590 nm, dominante à 588 nm, 1,95 V typiques et 2,4 V au plus à 10 mA, 30 mA en continu et 5 V en inverse au plus. Le modèle chute la tension directe typique au courant de test de la fiche technique et s'endommage au-delà de ses valeurs limites (ADR-034).",
+      "fidelity": {
+        "electrical": {
+          "claims": "Jonction de DEL chutant la tension directe typique de la fiche technique (1,95 V) à son courant de test (10 mA), sous son maximum de 2,4 V ; le courant inverse sous son maximum à 5 V ; lumière selon le courant, de la couleur de la longueur d'onde dominante ; endommagée comme le dit l'ADR-034 au-delà des 30 mA en continu, des 5 V en inverse ou des 110 °C de jonction.",
+          "omissions": [
+            "la courbe directe loin du courant de test : une exponentielle avec n = 2 et sans résistance série, pas la figure de la fiche technique",
+            "l'intensité lumineuse, l'angle de vision et le spectre : la lumière affichée est relative",
+            "les coefficients de température de VF et de la longueur d'onde",
+            "la capacité",
+            "la dispersion d'un exemplaire à l'autre (VF ±0,1 V, intensité ±15 %)",
+            "les résistances thermiques de la jonction : celles de la WP7113ID, le modèle de l'ADR-034 n'en ayant pas d'autre fiche technique"
+          ]
+        }
+      }
+    }
+  }
+}
