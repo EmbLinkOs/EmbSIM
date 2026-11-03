@@ -94,6 +94,8 @@ versions follow semantic versioning. There is no release yet.
   The library gains Transistors > Darlington NPN and PNP. And onsemi's
   2N4401, 2N4403, P2N2222A, MPSA42, MPSA92 and BC327 (by gain group)
   small-signal transistors, held to hFE, VCE(sat) and VBE(sat) or VBE(on).
+  Seven more Kingbright LEDs (WP7113SGC, SYC, SURC/E, VBC/D, CGCK and the
+  WP710A10SEC/J3 and SYC/J3), 30 in all.
 - An analog island asked to advance a picosecond past its last step (the
   scheduler's minimum) solved a step already at h_min; a centre-tapped
   transformer with its tap open, whose nearly singular inductance matrix
