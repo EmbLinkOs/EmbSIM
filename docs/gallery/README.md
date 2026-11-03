@@ -5,6 +5,13 @@ evolves. Newer milestones come first. The milestone sets from M1 on are captured
 `ui/apps/workbench/scripts/screenshots.mjs` (the same views each time:
 `pnpm build`, then `node scripts/screenshots.mjs --out ../../../docs/gallery/<milestone>`).
 
+## Panels that move between perspectives (2026-11-03)
+
+Run's Diagnostics floated over the Design perspective (captured by
+`e2e/movable-panels.spec.ts`):
+
+![Diagnostics over Design](movable-panels/diagnostics-over-design.png)
+
 ## Compact density on the canvas and plots (2026-11-03)
 
 The Run perspective comfortable and compact: the oscilloscope's and the

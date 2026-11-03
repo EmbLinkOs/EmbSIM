@@ -19,6 +19,7 @@ import { VoltageComparison } from './VoltageComparison';
 import { AirPanel } from './AirPanel';
 import { ControlsPanel } from './ControlsPanel';
 import { MetersPanel } from './MetersPanel';
+import { Docked, FloatPanelButton } from '../movablePanels';
 import { useHostPort } from './useHostPort';
 import { SchematicDisplayOptions } from './SchematicDisplayOptions';
 import { useSchematicOutputs } from '../../stores/schematicDisplay';
@@ -213,14 +214,14 @@ export function RunPerspective() {
       flush: true,
       weight: 1,
       minSize: 140,
-      actions: bottomTab === 'meters' ? probesList : undefined,
+      actions: <>{bottomTab === 'meters' ? probesList : null}{bottomTab !== 'serial' ? <FloatPanelButton id={bottomTab} /> : null}</>,
       content: (
         <Tabs
           label={tr('run.details')}
           value={bottomTab}
           onValueChange={setBottomTab}
           items={[
-            { value: 'meters', label: tr('run.tab.meters'), content: <MetersPanel /> },
+            { value: 'meters', label: tr('run.tab.meters'), content: <Docked id="meters"><MetersPanel /></Docked> },
             { value: 'serial', label: tr('run.tab.serial'), content: (
               <SerialTerminal
                 target={serialTarget}
@@ -235,8 +236,8 @@ export function RunPerspective() {
                 onHostPort={hostPort.toggle}
               />
             ) },
-            { value: 'air', label: tr('run.tab.air'), content: <AirPanel /> },
-            { value: 'diagnostics', label: tr('run.tab.diagnostics'), content: <DiagnosticsPanel /> },
+            { value: 'air', label: tr('run.tab.air'), content: <Docked id="air"><AirPanel /></Docked> },
+            { value: 'diagnostics', label: tr('run.tab.diagnostics'), content: <Docked id="diagnostics"><DiagnosticsPanel /></Docked> },
           ]}
         />
       ),

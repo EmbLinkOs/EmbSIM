@@ -16,6 +16,7 @@ import { hex32, hexReg, useDebug } from '../../stores/debug';
 import { useProject } from '../../stores/project';
 import { useSession } from '../../stores/session';
 import { Placeholder } from '../Placeholder';
+import { Docked, FloatPanelButton } from '../movablePanels';
 import { demangle } from './demangle';
 import { t as tr } from '../../i18n';
 
@@ -66,15 +67,15 @@ export function DebugPerspective() {
   }
 
   const left: DockItem[] = [
-    { id: 'source', title: tr('debug.source'), weight: 2.2, content: <SourcePanel /> },
-    { id: 'disassembly', title: tr('debug.disassembly'), weight: 1.6, content: <DisassemblyPanel /> },
-    { id: 'console', title: tr('debug.console'), weight: 1, content: <ConsolePanel /> },
+    { id: 'source', title: tr('debug.source'), weight: 2.2, actions: <FloatPanelButton id="source" />, content: <Docked id="source"><SourcePanel /></Docked> },
+    { id: 'disassembly', title: tr('debug.disassembly'), weight: 1.6, actions: <FloatPanelButton id="disassembly" />, content: <Docked id="disassembly"><DisassemblyPanel /></Docked> },
+    { id: 'console', title: tr('debug.console'), weight: 1, actions: <FloatPanelButton id="console" />, content: <Docked id="console"><ConsolePanel /></Docked> },
   ];
   const right: DockItem[] = [
-    { id: 'registers', title: tr('debug.registers'), weight: 1.4, content: <RegistersPanel /> },
-    { id: 'breakpoints', title: tr('debug.breakpoints'), weight: 0.8, content: <BreakpointsPanel /> },
-    { id: 'memory', title: tr('debug.memory'), weight: 1.2, content: <MemoryPanel /> },
-    { id: 'peripherals', title: tr('debug.peripherals'), weight: 1.2, content: <PeripheralsPanel /> },
+    { id: 'registers', title: tr('debug.registers'), weight: 1.4, actions: <FloatPanelButton id="registers" />, content: <Docked id="registers"><RegistersPanel /></Docked> },
+    { id: 'breakpoints', title: tr('debug.breakpoints'), weight: 0.8, actions: <FloatPanelButton id="breakpoints" />, content: <Docked id="breakpoints"><BreakpointsPanel /></Docked> },
+    { id: 'memory', title: tr('debug.memory'), weight: 1.2, actions: <FloatPanelButton id="memory" />, content: <Docked id="memory"><MemoryPanel /></Docked> },
+    { id: 'peripherals', title: tr('debug.peripherals'), weight: 1.2, actions: <FloatPanelButton id="peripherals" />, content: <Docked id="peripherals"><PeripheralsPanel /></Docked> },
   ];
   const items: DockItem[] = [
     { id: 'left', title: tr('debug.code'), bare: true, weight: 2, minSize: 400, content: <DockLayout direction="column" items={left} storageKey={`embsim.layout.debug2.left.${name}`} /> },
@@ -140,7 +141,7 @@ function DebugToolbar() {
   );
 }
 
-function SourcePanel() {
+export function SourcePanel() {
   const source = useDebug((s) => s.source);
   const where = useDebug((s) => s.where);
   const lineBps = useDebug((s) => s.lineBreakpoints);
@@ -188,7 +189,7 @@ function SourcePanel() {
   );
 }
 
-function DisassemblyPanel() {
+export function DisassemblyPanel() {
   const insns = useDebug((s) => s.insns);
   const where = useDebug((s) => s.where);
   const breakpoints = useDebug((s) => s.breakpoints);
@@ -231,7 +232,7 @@ function DisassemblyPanel() {
   );
 }
 
-function RegistersPanel() {
+export function RegistersPanel() {
   const regs = useDebug((s) => s.regs);
   const previous = useDebug((s) => s.previous);
   const setRegister = useDebug((s) => s.setRegister);
@@ -282,7 +283,7 @@ function RegistersPanel() {
   );
 }
 
-function BreakpointsPanel() {
+export function BreakpointsPanel() {
   const breakpoints = useDebug((s) => s.breakpoints);
   const add = useDebug((s) => s.addBreakpoint);
   const remove = useDebug((s) => s.removeBreakpoint);
@@ -320,7 +321,7 @@ function BreakpointsPanel() {
   );
 }
 
-function MemoryPanel() {
+export function MemoryPanel() {
   const memory = useDebug((s) => s.memory);
   const address = useDebug((s) => s.memAddress);
   const load = useDebug((s) => s.loadMemory);
@@ -365,7 +366,7 @@ function MemoryPanel() {
   );
 }
 
-function PeripheralsPanel() {
+export function PeripheralsPanel() {
   const peripherals = useDebug((s) => s.peripherals);
   const load = useDebug((s) => s.loadPeripherals);
   const where = useDebug((s) => s.where);
@@ -406,7 +407,7 @@ function PeripheralsPanel() {
   );
 }
 
-function ConsolePanel() {
+export function ConsolePanel() {
   const boards = useDebugBoard();
   const board = useDebug((s) => s.board) ?? boards[0]?.id;
   const info = boards.find((b) => b.id === board);

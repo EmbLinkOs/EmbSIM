@@ -5,6 +5,16 @@ versions follow semantic versioning. There is no release yet.
 
 ## Unreleased
 
+### Panels that move between perspectives
+
+- Run's Meters, Air and Diagnostics, and the Debug perspective's Source,
+  Disassembly, Console, Registers, Breakpoints, Memory and Peripherals,
+  float over every perspective in a window of their own (the instrument
+  front panels' windows, moved, resized and kept across sessions), from
+  their header's button or the palette. Their home dock shows where they
+  went and docks them back. `e2e/movable-panels.spec.ts` floats Diagnostics
+  from Run, finds it over Design and after a reload, and docks it back.
+
 ### Compact density on the canvas and the plots
 
 - The plots drawn on canvases (the oscilloscope, the logic analyzer, the

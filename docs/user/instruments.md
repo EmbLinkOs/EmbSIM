@@ -53,6 +53,15 @@ perspective:
 
 Each window's place and size are kept for the next session.
 
+The workbench's own panels move the same way: Run's **Meters**, **Air** and
+**Diagnostics** and Debug's **Source**, **Disassembly**, **Console**,
+**Registers**, **Breakpoints**, **Memory** and **Peripherals**. The button
+in a panel's header (or **Float *panel* over every perspective** in the
+palette) puts it in a window that stays over every perspective, for
+instance the registers beside the schematic while you edit. Its place in its
+own perspective says where it went and has **Dock it here**; the window's
+own button and the palette dock it too.
+
 ## The logic analyzer
 
 Laid out like Saleae's Logic 2. Choose the sample rate, the capture's

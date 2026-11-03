@@ -173,10 +173,12 @@ reaches the plots drawn on canvases (the oscilloscope's, the logic
 analyzer's and the power profiler's rows, margins and labels, which also
 follow the text size as it changes) and the schematic canvas's screen-space
 chrome (tooltip, HUD, legend, navigator); the schematic's own drawing keeps
-its sheet size (`e2e/compact-density.spec.ts`).
+its sheet size (`e2e/compact-density.spec.ts`). Panels move between
+perspectives: Run's Meters, Air and Diagnostics and the Debug perspective's
+seven panels float over every perspective in the instrument windows, their
+home docks keeping a way back (`e2e/movable-panels.spec.ts`).
 
-Not yet: panels
-moving between perspectives; languages beyond English and French.
+Not yet: languages beyond English and French.
 
 ## Imperfections on by default: bounce and tolerances (2026-11-01)
 

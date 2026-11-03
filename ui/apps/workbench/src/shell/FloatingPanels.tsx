@@ -1,10 +1,11 @@
 // SPDX-License-Identifier: Apache-2.0
 // Copyright 2026 Junior Deogracias
 //
-// The instrument front panels floating over the workbench: each in a window
-// that stays put across perspectives, moved by its title bar (or the arrow
-// keys on it), resized from its corner (or Shift+arrows), raised by a click,
-// and docked back into the Run perspective.
+// The instrument front panels, and the workbench panels that can leave
+// their perspective (perspectives/movablePanels.tsx), floating over the
+// workbench: each in a window that stays put across perspectives, moved by
+// its title bar (or the arrow keys on it), resized from its corner (or
+// Shift+arrows), raised by a click, and docked back into its perspective.
 
 import { IconButton, type Command } from '@embsim/design';
 import { Gauge, PanelBottomClose, PictureInPicture2 } from 'lucide-react';
@@ -12,6 +13,7 @@ import { useEffect, useMemo, type KeyboardEvent, type PointerEvent, type ReactNo
 import { benchInstrumentOf, benchInstrumentParts, openFrontPanel, titleOf } from '../perspectives/run/benchInstruments';
 import { useRegisterCommands } from './commands';
 import { useFloating, type FloatingRect } from '../stores/floating';
+import { floatingKey, movablePanel, movablePanels, panelTitle } from '../perspectives/movablePanels';
 import { useProject } from '../stores/project';
 import { t as tr } from '../i18n';
 
@@ -42,18 +44,31 @@ export function FloatingPanels() {
         floating.includes(part)
           ? { id: `panel.dock.${part}`, group: tr('run.group.instruments'), label: tr('fp.dock', { name: titleOf(instrument, part) }), icon: <PanelBottomClose />, run: () => dock(part) }
           : { id: `panel.float.${part}`, group: tr('run.group.instruments'), label: tr('fp.float', { name: titleOf(instrument, part) }), icon: <PictureInPicture2 />, keywords: ['window'], run: () => float(part) },
-      ]),
+      ]).concat(
+        movablePanels().map((p) => {
+          const key = floatingKey(p.id);
+          const name = panelTitle(p);
+          return floating.includes(key)
+            ? { id: `panel.dock.${key}`, group: tr('mp.group'), label: tr('mp.dock', { name, where: tr(`perspective.${p.home}`) }), icon: <PanelBottomClose />, run: () => dock(key) }
+            : { id: `panel.float.${key}`, group: tr('mp.group'), label: tr('mp.float', { name }), icon: <PictureInPicture2 />, keywords: ['window', 'move', 'perspective'], run: () => float(key) };
+        }),
+      ),
     [project, floating, dock, float],
   );
   useRegisterCommands('floating-panels', commands);
   // a part removed from the project takes its window with it
   useEffect(() => {
     if (!components) return;
-    for (const part of floating) if (!components.some((c) => c.id === part && benchInstrumentOf(c.component))) dock(part);
+    for (const part of floating) if (!movablePanel(part) && !components.some((c) => c.id === part && benchInstrumentOf(c.component))) dock(part);
   }, [components, floating, dock]);
   return (
     <>
       {floating.map((part, z) => {
+        const panel = movablePanel(part);
+        if (panel) {
+          const name = panelTitle(panel);
+          return <FloatingWindow key={part} part={part} z={z} title={name} size={panel.size} content={panel.content()} dockLabel={tr('mp.dock', { name, where: tr(`perspective.${panel.home}`) })} />;
+        }
         const instrument = benchInstrumentOf(components?.find((c) => c.id === part)?.component);
         return instrument ? <FloatingWindow key={part} part={part} z={z} title={titleOf(instrument, part)} size={instrument.size} content={instrument.panel(part)} /> : null;
       })}
@@ -61,7 +76,7 @@ export function FloatingPanels() {
   );
 }
 
-function FloatingWindow({ part, z, title, size, content }: { part: string; z: number; title: string; size: { width: number; height: number }; content: ReactNode }) {
+function FloatingWindow({ part, z, title, size, content, dockLabel }: { part: string; z: number; title: string; size: { width: number; height: number }; content: ReactNode; dockLabel?: string }) {
   const stored = useFloating((s) => s.rects[part]);
   const { place, raise, dock } = useFloating.getState();
   const rect = clamp(stored ?? { x: 80 + z * 32, y: 80 + z * 32, ...size });
@@ -112,7 +127,7 @@ function FloatingWindow({ part, z, title, size, content }: { part: string; z: nu
         onKeyDown={keys}
       >
         <span className="wb-floating__title">{title}</span>
-        <IconButton size="sm" variant="ghost" label={`Dock ${title} in Run`} onClick={() => dock(part)}><PanelBottomClose /></IconButton>
+        <IconButton size="sm" variant="ghost" label={dockLabel ?? tr('fp.dock', { name: title })} onClick={() => dock(part)}><PanelBottomClose /></IconButton>
       </div>
       <div className="wb-floating__body">{content}</div>
       <div className="wb-floating__grip" aria-hidden="true" onPointerDown={drag('size')} />
