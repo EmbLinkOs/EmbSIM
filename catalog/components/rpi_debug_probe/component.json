@@ -56,7 +56,8 @@
         "kind": "digital_out",
         "family": "cmos_3v3"
       },
-      "doc": "The U port's TX (orange): the probe's UART output, to the target's RX (a Pico's GP1)"
+      "doc": "The U port's TX (orange): the probe's UART output, to the target's RX (a Pico's GP1)",
+      "required": false
     },
     {
       "name": "RX",
@@ -65,7 +66,8 @@
         "kind": "digital_in",
         "family": "cmos_3v3"
       },
-      "doc": "The U port's RX (yellow): the probe's UART input, from the target's TX (a Pico's GP0)"
+      "doc": "The U port's RX (yellow): the probe's UART input, from the target's TX (a Pico's GP0)",
+      "required": false
     },
     {
       "name": "GND_U",
@@ -93,7 +95,8 @@
         "kind": "digital_io",
         "family": "cmos_3v3"
       },
-      "doc": "Its micro-USB connector's D-"
+      "doc": "Its micro-USB connector's D-",
+      "required": false
     },
     {
       "name": "VBUS",

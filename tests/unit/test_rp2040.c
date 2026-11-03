@@ -948,6 +948,8 @@ static void test_swd(void)
     t.instance = w_instance;
     t.rescue = w_rescue;
     t.present = NULL;
+    t.ap = NULL;
+    t.locked = NULL;
     x.w = esk_swd_create(&f.a, cfg, 3, &t);
     CHECK(x.w != NULL);
 

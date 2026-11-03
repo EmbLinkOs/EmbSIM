@@ -29,12 +29,20 @@
  * electrical specification and not yet checked against it.
  * A write or erase changes the memory's generation, so a core's decoded
  * code there is decoded again.
+ * The debug port's CTRL-AP (APSEL 1, IDR 0x02880000): ERASEALL erases the
+ * flash and the UICR whatever CONFIG says, ERASEALLSTATUS is 1 until it is
+ * done, APPROTECTSTATUS reads UICR.APPROTECT's PALL as the last reset
+ * found it (0xFF: 1, unprotected; else 0, and the MEM-AP refuses access
+ * until a reset after the erase), RESET holds the part in a system reset
+ * (the runtime's). APPROTECT is the nRF52840's before build code F (the
+ * hardware APPROTECT of later builds, enabled by default and lifted by
+ * firmware writing APPROTECT.DISABLE, is not modelled).
  *
  * Not modelled: the times' spread (the maximum each time), the number of
  * writes a word takes between erases (nWRITE: more are undefined, here
  * each ANDs), a partially erased page's undefined contents (it holds what
  * it held until the partial erases add up), the access control lists (ACL:
- * no region is refused), APPROTECT, the instruction cache (ICACHECNF is
+ * no region is refused), the instruction cache (ICACHECNF is
  * kept, IHIT and IMISS stay 0), a reset during an operation leaving the
  * memory half written, the UICR across a power cycle of the session. An
  * address within a page erases that page (the specification asks for its
@@ -84,9 +92,14 @@ struct nvmc {
     /* the operation in progress: READY 0 until its time has passed */
     int busy, running;
     u64 left_ps, since;
+    /* the CTRL-AP: APPROTECT as the last reset found it in the UICR, and
+     * its ERASEALL task register */
+    int locked;
+    u32 ctrl_eraseall;
 };
 
 static struct uicr *uicr_of(struct esk_mach *s);
+static struct nvmc *nvmc_of(struct esk_mach *s);
 
 static u32 wen(const struct nvmc *f) { return (u32)f->config->value & 3u; }
 
@@ -186,9 +199,22 @@ static void erase_page(struct nvmc *f, u32 a)
     changed(f);
 }
 
+/* the whole flash and the UICR, to 0xFF */
+static void erase_all(struct nvmc *f)
+{
+    struct esk_region *m = flash_mem(f);
+    struct uicr *u = uicr_of(f->s);
+    if (m)
+        memset(m->mem, 0xff, m->size);
+    memset(f->partial_ms, 0, sizeof f->partial_ms);
+    if (u)
+        uicr_erase(u);
+    changed(f);
+    begin(f, ERASEALL_PS);
+}
+
 static void erase(struct nvmc *f, u32 off, u32 v)
 {
-    struct esk_region *m;
     struct uicr *u;
     if (wen(f) != WEN_EEN)
         return;
@@ -203,15 +229,7 @@ static void erase(struct nvmc *f, u32 off, u32 v)
     case O_ERASEALL:
         if (!(v & 1u))
             return;
-        m = flash_mem(f);
-        if (m)
-            memset(m->mem, 0xff, m->size);
-        memset(f->partial_ms, 0, sizeof f->partial_ms);
-        u = uicr_of(f->s);
-        if (u)
-            uicr_erase(u);
-        changed(f);
-        begin(f, ERASEALL_PS);
+        erase_all(f);
         return;
     case O_ERASEUICR:
         if (!(v & 1u))
@@ -292,9 +310,56 @@ static int nvmc_next(void *ctx, u32 *cycles)
 static void nvmc_reset(void *ctx)
 {
     struct nvmc *f = (struct nvmc *)ctx;
+    struct uicr *u = uicr_of(f->s);
     f->flash = NULL;
     f->busy = f->running = 0; /* a reset during an operation ends it */
     set_ready(f, 1);
+    /* APPROTECT's PALL (UICR 0x208): anything but 0xFF locks the debug
+     * port's MEM-AP from this reset on */
+    f->locked = u && (u->word[0x208u / 4u] & 0xFFu) != 0xFFu;
+}
+
+/* ---- the CTRL-AP (APSEL 1): ERASEALL and APPROTECTSTATUS, as OpenOCD's
+ * nrf52_recover drives them; its RESET is the runtime's (it holds the part) */
+
+static int ctrl_ap(struct esk_mach *s, u32 reg, int write, u32 *v)
+{
+    struct nvmc *f = nvmc_of(s);
+    if (!f)
+        return 0;
+    switch (reg) {
+    case 0x004: /* ERASEALL: 1 starts the erase, whatever CONFIG says */
+        if (!write) {
+            *v = f->ctrl_eraseall;
+        } else {
+            if ((*v & 1u) && !f->ctrl_eraseall)
+                erase_all(f);
+            f->ctrl_eraseall = *v & 1u;
+        }
+        return 1;
+    case 0x008: /* ERASEALLSTATUS: 1 while it erases */
+        if (!write)
+            *v = f->busy ? 1u : 0u;
+        return 1;
+    case 0x00C: /* APPROTECTSTATUS: 1 when not protected */
+        if (!write)
+            *v = f->locked ? 0u : 1u;
+        return 1;
+    case 0x0FC: /* IDR */
+        if (!write)
+            *v = 0x02880000u;
+        return 1;
+    default:
+        if (!write)
+            *v = 0;
+        return 1;
+    }
+}
+
+static int ap_locked(struct esk_mach *s)
+{
+    struct nvmc *f = nvmc_of(s);
+    return f && f->locked;
 }
 
 const struct esk_dev_ops esk_nrf_nvmc_ops = {
@@ -317,6 +382,8 @@ void *esk_nrf_nvmc_create(struct esk_mach *s, struct esk_rf_periph *p)
         return 0;
     s->bus.rom_write = rom_write;
     s->bus.rom_write_ctx = f;
+    s->dbg.ctrl_ap = ctrl_ap;
+    s->dbg.ap_locked = ap_locked;
     return f;
 }
 

@@ -18,6 +18,16 @@ versions follow semantic versioning. There is no release yet.
   wire has carried its bits at SWJ_Clock's rate. Its SWD packets are
   clocked bit by bit on the target's serial wire; its U port is a UART at
   the computer's line coding, bridged while DTR is set.
+- The nRF52840's own serial wire (`core.swd`): its SW-DP (DPIDR
+  0x2BA01477, SWD only), its AHB-AP, and the CTRL-AP at APSEL 1 as
+  OpenOCD's `nrf52_recover` drives it (IDR 0x02880000, RESET holding the
+  part in a system reset, ERASEALL erasing the flash and the UICR for
+  ERASEALL's time whatever the NVMC's CONFIG says, ERASEALLSTATUS,
+  APPROTECTSTATUS). UICR.APPROTECT, as a reset finds it, locks the AHB-AP
+  (DeviceEn 0, its accesses refused) until a reset after the erase. The
+  DK's SWD pins are board ports (`SWDIO`, `SWDCLK`), so a probe on them
+  debugs the nRF52840 (`test_debug_probe.py`: APPROTECT locking the part
+  and `nrf52_recover` lifting it, through the Debug Probe).
 - The Pico's SWD pads are board ports (`SWCLK`, `SWDIO`, `SWD_GND`);
   `examples/pico-debug-probe` wires a probe to a Pico as Raspberry Pi's
   guide does.

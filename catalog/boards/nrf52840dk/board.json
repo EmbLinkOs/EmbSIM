@@ -628,6 +628,18 @@
       "connector": "J_PWR",
       "pin": 4
     },
+    "SWDIO": {
+      "net": "SWDIO",
+      "connector": "J_SWD",
+      "pin": 1,
+      "doc": "The nRF52840's SWDIO, as P18 (Debug in) carries it to an external probe"
+    },
+    "SWDCLK": {
+      "net": "SWDCLK",
+      "connector": "J_SWD",
+      "pin": 2,
+      "doc": "The nRF52840's SWDCLK, as P18 (Debug in) carries it"
+    },
     "RESET": {
       "net": "GPIO18",
       "connector": "J_PWR",

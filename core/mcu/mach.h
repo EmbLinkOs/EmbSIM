@@ -477,6 +477,11 @@ struct esk_mach {
         /* the trace pin carries the serial wire output (an STM32's
          * DBGMCU_CR TRACE_IOEN in asynchronous TRACE_MODE) */
         int swo;
+        /* a debug access port of the part's own next to its MEM-AP (an
+         * nRF52's CTRL-AP): answers `reg` (1) or not (0); and the MEM-AP
+         * refusing access (an nRF52's APPROTECT): models set them */
+        int (*ctrl_ap)(struct esk_mach *m, u32 reg, int write, u32 *v);
+        int (*ap_locked)(struct esk_mach *m);
     } dbg;
     /* the ITM and TPIU (cortexm/itm.c), when the core has them */
     void *itm;

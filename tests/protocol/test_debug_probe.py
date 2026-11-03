@@ -22,7 +22,10 @@ sends them for `target/rp2040.cfg`:
   - QueueCommands held until the next packet, an unknown command, JTAG;
   - the UART: the line coding, DTR, a line sent on TX and its echo back;
   - the Rescue DP: the chip held and released, the bootrom halted in its
-    dead loop.
+    dead loop;
+  - on the nRF52840 DK's SWD pins: JTAG-to-SWD, its SW-DP and AHB-AP, the
+    CTRL-AP at APSEL 1, UICR.APPROTECT locking the AHB-AP after a reset,
+    and OpenOCD's nrf52_recover (ERASEALL, RESET) lifting it.
 
     test_debug_probe.py --embsim PATH
 """
@@ -123,6 +126,94 @@ def project(tmp: Path) -> Path:
     src = tmp / "probe.json"
     src.write_text(json.dumps(p), encoding="utf-8")
     return src
+
+JTAG_TO_SWD = bytes([0xff] * 7 + [0x9e, 0xe7] + [0xff] * 7 + [0x00])
+
+
+def nrf52(embsim: str, tmp: Path) -> None:
+    """The probe on the nRF52840 DK's SWD pins: its SW-DP, AHB-AP and CTRL-AP,
+    APPROTECT locking the AHB-AP and OpenOCD's nrf52_recover lifting it"""
+    ex = ROOT / "examples" / "nrf52840dk-blink"
+    p = json.loads((ex / "project.json").read_text(encoding="utf-8"))
+    p["boards"][0]["firmware"]["image"] = str(ex / "firmware" / "blink.elf")
+    p["components"] = [c for c in p["components"] if c["id"] != "VT1"]
+    p["components"].append({"id": "P1", "component": "emblink/rpi_debug_probe", "layout": {"x": 40, "y": 140}})
+    p.pop("probes", None)
+    p.pop("scenarios", None)
+    nets = {k: [m for m in v if not m.startswith("VT1.")] for k, v in p["nets"].items()}
+    nets = {k: v for k, v in nets.items() if len(v) > 1}
+    nets["GND"] += ["P1.GND", "P1.GND_U"]
+    nets.update({"SWDIO": ["P1.SD", "B1.SWDIO"], "SWDCLK": ["P1.SC", "B1.SWDCLK"],
+                 "PROBE_USB_DP": ["P1.USB_DP"], "PROBE_USB_DM": ["P1.USB_DM"]})
+    p["nets"] = nets
+    src = tmp / "nrf.json"
+    src.write_text(json.dumps(p), encoding="utf-8")
+    with StdioClient([embsim, "sidecar", str(src)]) as c:
+        r = c.call("usbip.serve", {"port": 0})
+        c.call("control.run", {"speed": 1})
+        time.sleep(0.3)
+        u = Usbip(r["port"])
+        dev = [x for x in u.devlist() if x["vid"] == 0x2E8A][0]
+        u.attach(dev["busid"])
+        u.control_out(bytes([0, 9, 1, 0, 0, 0, 0, 0]))
+        d = Dap(u)
+        d.cmd(bytes([0x02, 0x01]))
+        d.cmd(bytes([0x11]) + struct.pack("<I", 1000000))
+        d.cmd(bytes([0x04, 0, 64, 0, 0, 0]))
+        d.swj(JTAG_TO_SWD, 136)
+        idr = d.rd(DP_RD(0))
+        check(idr == 0x2BA01477, f"nRF52840: JTAG-to-SWD, DPIDR {idr:#010x}")
+        d.wr(DP_WR(0), 0x1E)
+        d.wr(DP_WR(0x8), 0)
+        d.wr(DP_WR(0x4), 0x50000000)
+        d.wr(DP_WR(0x8), 0xF0)
+        ahb = d.rd(AP_RD(0xC))
+        d.wr(DP_WR(0x8), 0x010000F0)
+        ctrl = d.rd(AP_RD(0xC))
+        d.wr(DP_WR(0x8), 0x01000000)
+        st0 = d.rd(AP_RD(0xC))
+        check(ahb == 0x24770011 and ctrl == 0x02880000 and st0 == 1,
+              f"the AHB-AP {ahb:#010x}, the CTRL-AP {ctrl:#010x} at APSEL 1, APPROTECTSTATUS {st0} (unprotected)")
+        d.wr(DP_WR(0x8), 0)
+        d.wr(AP_WR(0x0), 0x23000002)
+        part = d.mem_rd(0x10000100)
+        check(part == 0x52840, f"FICR.INFO.PART {part:#x} through the AHB-AP")
+        # APPROTECT programmed, then a reset by the CTRL-AP
+        d.mem_wr(0x4001E504, 1)
+        d.mem_wr(0x10001208, 0xFFFFFF00)
+        time.sleep(0.05)
+        d.mem_wr(0x4001E504, 0)
+        d.wr(DP_WR(0x8), 0x01000000)
+        d.wr(AP_WR(0x0), 1)
+        d.wr(AP_WR(0x0), 0)
+        st1 = d.rd(AP_RD(0xC))
+        d.wr(DP_WR(0x8), 0)
+        csw = d.rd(AP_RD(0x0))
+        d.wr(AP_WR(0x4), 0x10000100)
+        done, ack, _ = d.transfer([(AP_RD(0xC), None), (DP_RD(0xC), None)])
+        check(st1 == 0 and not csw & 0x40 and ack == 4,
+              f"APPROTECT after the reset: APPROTECTSTATUS {st1}, CSW {csw:#010x} (DeviceEn 0), the AHB-AP's read FAULTed")
+        # nrf52_recover: ERASEALL through the CTRL-AP
+        d.wr(DP_WR(0), 0x1E)
+        d.wr(DP_WR(0x8), 0x01000000)
+        d.wr(AP_WR(0x4), 0)
+        d.wr(AP_WR(0x4), 1)
+        busy, t0 = 1, time.time()
+        first = d.rd(AP_RD(0x8))
+        while busy and time.time() - t0 < 10:
+            time.sleep(0.05)
+            busy = d.rd(AP_RD(0x8))
+        d.wr(AP_WR(0x0), 1)
+        d.wr(AP_WR(0x0), 0)
+        d.wr(AP_WR(0x4), 0)
+        st2 = d.rd(AP_RD(0xC))
+        d.wr(DP_WR(0x8), 0)
+        d.wr(AP_WR(0x0), 0x23000002)
+        word0 = d.mem_rd(0x00000000)
+        prot = d.mem_rd(0x10001208)
+        check(first == 1 and not busy and st2 == 1 and word0 == 0xFFFFFFFF and prot == 0xFFFFFFFF,
+              f"nrf52_recover: ERASEALLSTATUS {first} then 0, APPROTECTSTATUS {st2}, flash {word0:#x}, "
+              f"UICR.APPROTECT {prot:#x}")
 
 
 def main() -> int:
@@ -297,6 +388,7 @@ def main() -> int:
             outs = c.call("observe.snapshot", {"include": ["outputs"]})["outputs"]["P1"]
             check(outs.get("commands", 0) > 40 and outs.get("uart_tx_bytes") == 6,
                   f"the probe: {outs.get('commands')} packets, {outs.get('uart_tx_bytes')} bytes sent")
+        nrf52(args.embsim, Path(tmp))
     print("debug probe: " + ("ok" if not failures else f"{failures} failure(s)"))
     return 1 if failures else 0
 

@@ -144,8 +144,19 @@ own serial wire (`core/mcu/swd.c`: the SW-DP state machine, the RP2040's
 three multi-drop ports with TARGETSEL, dormant and the Rescue DP), its UART
 bridged on CDC ACM; proven by `test_debug_probe.py` over USB/IP and by
 unmodified OpenOCD (`interface/cmsis-dap.cfg`, `target/rp2040.cfg`) on the
-kernel's vhci-hcd in CI (`usbip_kernel.sh`). The Blue Pill's ST-Link
-clone, the nRF52840 DK's J-Link OB and step 7 remain. USB/IP is in too: the session serves the bench's free USB
+kernel's vhci-hcd in CI (`usbip_kernel.sh`). The nRF52840's side of the
+wire is in too: its SW-DP, its AHB-AP and its CTRL-AP (ERASEALL, RESET,
+APPROTECTSTATUS) with UICR.APPROTECT locking the AHB-AP, so any probe on
+the DK's SWD pins debugs and recovers it. The DK's own J-Link OB waits on
+its sources: SEGGER publishes neither its USB protocol nor its
+descriptors. libjaylink and OpenOCD's jlink.c document the commands
+(GET_VERSION, GET_CAPS, SELECT_TIF, SWD_IO and the rest). But the OB's own
+values cannot be checked from this session: its firmware string, its
+capability words, its hardware version and its composite descriptors
+(1366:1015, high speed). They are on kb.segger.com and in Nordic's
+documentation (docs.nordicsemi.com, devzone.nordicsemi.com), outside its
+network allowlist. The engine's USB is full and low speed only, so the
+OB also needs high speed. The Blue Pill's ST-Link clone and step 7 remain. USB/IP is in too: the session serves the bench's free USB
 devices as usbip-host does (`usbipsrv.c`, `test_usbip.py`), so tools that
 open the probe's USB device reach it through `usbip attach`.
 

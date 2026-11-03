@@ -523,8 +523,11 @@ Not yet:
 - the ST-LINK's virtual COM port's data on USB;
 - SWO in Manchester (the V2-1 reads NRZ), and the F103's and nRF52840's
   trace pins (their ITM and TPIU are there, no pin carries TRACESWO);
-- the Blue Pill's ST-Link clone, the nRF52840 DK's J-Link OB, and the
-  PICkit (its host protocol is unpublished).
+- the Blue Pill's ST-Link clone, the nRF52840 DK's J-Link OB (its values
+  are SEGGER's and Nordic's, on sites this session cannot reach; the
+  nRF52840's own debug port, CTRL-AP and APPROTECT are in, for any probe
+  on the DK's SWD pins), and the PICkit (its host protocol is
+  unpublished).
 
 ## The RP2040's PIO and DMA (2026-11-02)
 

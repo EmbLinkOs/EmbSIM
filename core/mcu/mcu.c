@@ -162,7 +162,7 @@ typedef struct mcu_state {
     esk_swd_port_cfg swd_cfg[ESK_SWD_PORTS];
     char swd_inst[ESK_SWD_PORTS][48]; /* a register field giving a port's TINSTANCE */
     int swd_n, swd_given, swd_pin_resets;
-    int rescue_hold; /* a rescue DP holds the part in its reset */
+    int rescue_hold; /* a debug port holds the part in reset: 1 a rescue DP, 2 an AP's reset */
 } mcu_state;
 
 static mcu_state *state_of(const esk_comp *c) { return (mcu_state *)c->state; }
@@ -2036,17 +2036,18 @@ static int swd_instance(void *ctx, int port)
     return (int)v;
 }
 
-/* the part held in its rescue reset while a rescue DP's CDBGPWRUPREQ is
- * set (the RP2040's psm_restart), then started as after a power-on with
- * the rescue's flag for its bootrom */
-static void swd_rescue(void *ctx, int hold)
+/* the part held in reset by a debug port: a rescue DP's CDBGPWRUPREQ (the
+ * RP2040's psm_restart: started after as from a power-on, with the
+ * rescue's flag for its bootrom; `how` 1), or an access port's reset (an
+ * nRF52's CTRL-AP RESET: a system reset, the debug kept; `how` 2) */
+static void swd_hold(mcu_state *st, int hold, int how)
 {
-    mcu_state *st = (mcu_state *)ctx;
     esk_engine *e = st->c->e;
-    if (!st->attached || hold == st->rescue_hold)
+    int cause = how == 1 ? ESK_RESET_RESCUE : ESK_RESET_SOFTWARE;
+    if (!st->attached || (hold ? how : 0) == st->rescue_hold)
         return;
     catch_up(st, e->sched.now);
-    st->rescue_hold = hold;
+    st->rescue_hold = hold ? how : 0;
     if (hold) {
         st->held = 1;
         if (st->ev) {
@@ -2055,19 +2056,48 @@ static void swd_rescue(void *ctx, int hold)
         }
         if (st->m.pin_reset)
             st->m.pin_reset(&st->m, 0);
-        st->m.reset_cause = ESK_RESET_RESCUE;
+        st->m.reset_cause = cause;
         esk_mach_reset(&st->m);
-        esk_swd_reset(st->swd, 1);
+        if (how == 1)
+            esk_swd_reset(st->swd, 1);
         st->sup.tx_a = 0.0;
         supply_update(st, 1);
     } else if (level_of(st->nrst, 1)) {
         st->held = 0;
-        st->m.reset_cause = ESK_RESET_RESCUE;
+        st->m.reset_cause = cause;
         mcu_reset_now(st, 0);
         if (st->m.pin_reset)
             st->m.pin_reset(&st->m, 1);
         supply_update(st, 1);
     }
+}
+
+static void swd_rescue(void *ctx, int hold) { swd_hold((mcu_state *)ctx, hold, 1); }
+
+/* an access port of the part's own (an nRF52's CTRL-AP at APSEL 1): its
+ * RESET held here, the rest the part's model's */
+static int swd_ap(void *ctx, int port, uint32_t apsel, uint32_t reg, int write, uint32_t *v)
+{
+    mcu_state *st = (mcu_state *)ctx;
+    (void)port;
+    if (apsel != 1 || !st->m.dbg.ctrl_ap)
+        return 0;
+    catch_up(st, st->c->e->sched.now);
+    if (reg == 0x000) { /* RESET: the part held in a system reset while 1 */
+        if (write)
+            swd_hold(st, *v & 1u, 2);
+        else
+            *v = st->rescue_hold == 2;
+        return 1;
+    }
+    return st->m.dbg.ctrl_ap(&st->m, reg, write, v);
+}
+
+static int swd_locked(void *ctx, int port)
+{
+    mcu_state *st = (mcu_state *)ctx;
+    (void)port;
+    return st->m.dbg.ap_locked && st->m.dbg.ap_locked(&st->m);
 }
 
 static int swd_present(void *ctx, int port)
@@ -2077,7 +2107,7 @@ static int swd_present(void *ctx, int port)
         return 0;
     if (st->held && !st->rescue_hold && st->swd_pin_resets)
         return 0; /* the reset pin holds the debug ports in reset too */
-    if (st->rescue_hold && port >= 0 && port < st->swd_n && !st->swd_cfg[port].rescue)
+    if (st->rescue_hold == 1 && port >= 0 && port < st->swd_n && !st->swd_cfg[port].rescue)
         return 0; /* the cores' ports are in the reset the rescue holds */
     /* in Standby or Stop the debug port answers only when DBGMCU keeps it
      * powered (DBG_STANDBY, DBG_STOP) */
@@ -2113,6 +2143,8 @@ static esk_swd *swd_of(mcu_state *st)
     t.instance = swd_instance;
     t.rescue = swd_rescue;
     t.present = swd_present;
+    t.ap = swd_ap;
+    t.locked = swd_locked;
     st->swd = esk_swd_create(st->c->e->a, st->swd_cfg, st->swd_n, &t);
     return st->swd;
 }

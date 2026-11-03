@@ -37,6 +37,12 @@ typedef struct esk_swd_target {
     /* port `port` is powered and out of reset: else it does not drive SWDIO
      * and starts again from its power-on state */
     int (*present)(void *ctx, int port);
+    /* an access port other than the MEM-AP (APSEL `apsel`, an nRF52's
+     * CTRL-AP at 1): 1 when there is one and it took the access; NULL, none */
+    int (*ap)(void *ctx, int port, uint32_t apsel, uint32_t reg, int write, uint32_t *v);
+    /* the MEM-AP refuses accesses (CSW.DeviceEn reads 0: an nRF52's
+     * APPROTECT); NULL, never */
+    int (*locked)(void *ctx, int port);
 } esk_swd_target;
 
 typedef struct esk_swd esk_swd;

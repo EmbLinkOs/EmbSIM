@@ -36,7 +36,9 @@
  *     and IDR. Reads are posted, as the architecture has them: an AP read
  *     answers the previous AP read's data and leaves its own in RDBUFF. A
  *     bus error, or an AP access with the debug domain not powered up
- *     (CDBGPWRUPREQ), sets STICKYERR.
+ *     (CDBGPWRUPREQ), sets STICKYERR. A part may lock its MEM-AP (an
+ *     nRF52's APPROTECT: DeviceEn 0, its accesses refused) and have other
+ *     APs of its own (an nRF52's CTRL-AP at APSEL 1), the part's to answer.
  * Every access completes at once: no WAIT, no overrun detection's data
  * phase (ORUNDETECT is stored, not acted on), no pushed compare (TRNMODE)
  * or transaction counter (TRNCNT), MASKLANE stored. */
@@ -132,6 +134,20 @@ static int instance(const esk_swd *w, const swd_port *p)
 
 static int has_ap(const swd_port *p) { return p->cfg.core >= 0 && (p->select >> 24) == 0; }
 
+static int locked(const esk_swd *w, const swd_port *p)
+{
+    return w->t.locked && w->t.locked(w->t.ctx, (int)(p - w->p));
+}
+
+/* an access port other than the MEM-AP: 1 when the part has it */
+static int other_ap(esk_swd *w, swd_port *p, uint32_t reg, int write, uint32_t *v)
+{
+    uint32_t apsel = p->select >> 24;
+    if (!apsel || !w->t.ap)
+        return 0;
+    return w->t.ap(w->t.ctx, (int)(p - w->p), apsel, reg, write, v);
+}
+
 static int ap_mem(esk_swd *w, swd_port *p, uint32_t addr, int bytes, int write, uint32_t *v)
 {
     if (!w->t.mem || w->t.mem(w->t.ctx, p->cfg.core, addr, bytes, write, v)) {
@@ -176,11 +192,17 @@ static uint32_t ap_read(esk_swd *w, swd_port *p, uint32_t reg)
         p->ctrl |= CS_STICKYERR; /* the debug domain is not powered */
         return 0;
     }
+    if (other_ap(w, p, reg, 0, &v))
+        return v;
     if (!has_ap(p))
         return 0;
+    if (locked(w, p) && (reg == 0x0C || (reg >= 0x10 && reg <= 0x1C))) {
+        p->ctrl |= CS_STICKYERR; /* the MEM-AP refuses the access */
+        return 0;
+    }
     switch (reg) {
     case 0x00:
-        return p->csw | CSW_DEVICEEN;
+        return p->csw | (locked(w, p) ? 0u : CSW_DEVICEEN);
     case 0x04:
         return p->tar;
     case 0x0C:
@@ -206,8 +228,14 @@ static void ap_write(esk_swd *w, swd_port *p, uint32_t reg, uint32_t v)
         p->ctrl |= CS_STICKYERR;
         return;
     }
+    if (other_ap(w, p, reg, 1, &v))
+        return;
     if (!has_ap(p))
         return;
+    if (locked(w, p) && (reg == 0x0C || (reg >= 0x10 && reg <= 0x1C))) {
+        p->ctrl |= CS_STICKYERR;
+        return;
+    }
     switch (reg) {
     case 0x00:
         p->csw = v & CSW_WRITABLE;
