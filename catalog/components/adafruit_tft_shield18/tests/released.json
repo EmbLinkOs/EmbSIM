@@ -1,0 +1,62 @@
+{
+ "schema_version": 1,
+ "kind": "component_test",
+ "name": "released",
+ "description": "Nothing pressed: A3 at 3V3 through the 10 kOhm pull-up (ST's BSP reads JOY_NONE, and its examples find the shield).",
+ "policy": "electrical",
+ "until": "4ms",
+ "circuit": {
+  "components": [
+   {
+    "id": "V33",
+    "component": "emblink/vsource",
+    "params": {
+     "kind": "dc",
+     "dc": 3.3
+    }
+   },
+   {
+    "id": "V5",
+    "component": "emblink/vsource",
+    "params": {
+     "kind": "dc",
+     "dc": 5.0
+    }
+   },
+   {
+    "id": "DUT",
+    "component": "emblink/adafruit_tft_shield18"
+   },
+   {
+    "id": "G",
+    "component": "emblink/gnd"
+   }
+  ],
+  "nets": {
+   "P33": [
+    "V33.+",
+    "DUT.3V3"
+   ],
+   "P5": [
+    "V5.+",
+    "DUT.5V"
+   ],
+   "GND": [
+    "V33.-",
+    "V5.-",
+    "DUT.GND",
+    "G.GND"
+   ],
+   "A3": [
+    "DUT.A3"
+   ]
+  }
+ },
+ "expect": {
+  "net:A3": {
+   "at": "3ms",
+   "min_v": 3.25,
+   "max_v": 3.31
+  }
+ }
+}

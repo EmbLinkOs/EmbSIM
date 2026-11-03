@@ -1,0 +1,70 @@
+{
+ "schema_version": 1,
+ "kind": "component_test",
+ "name": "joy-up",
+ "description": "UP pressed: A3 inside the window ST's BSP reads as JOY_UP (ADC codes 2010 to 2090 at 3.3 V).",
+ "policy": "electrical",
+ "until": "4ms",
+ "circuit": {
+  "components": [
+   {
+    "id": "V33",
+    "component": "emblink/vsource",
+    "params": {
+     "kind": "dc",
+     "dc": 3.3
+    }
+   },
+   {
+    "id": "V5",
+    "component": "emblink/vsource",
+    "params": {
+     "kind": "dc",
+     "dc": 5.0
+    }
+   },
+   {
+    "id": "DUT",
+    "component": "emblink/adafruit_tft_shield18"
+   },
+   {
+    "id": "G",
+    "component": "emblink/gnd"
+   }
+  ],
+  "nets": {
+   "P33": [
+    "V33.+",
+    "DUT.3V3"
+   ],
+   "P5": [
+    "V5.+",
+    "DUT.5V"
+   ],
+   "GND": [
+    "V33.-",
+    "V5.-",
+    "DUT.GND",
+    "G.GND"
+   ],
+   "A3": [
+    "DUT.A3"
+   ]
+  }
+ },
+ "expect": {
+  "net:A3": {
+   "at": "3ms",
+   "min_v": 1.6197802197802198,
+   "max_v": 1.6842490842490843
+  }
+ },
+ "inputs": [
+  {
+   "at": "1ms",
+   "target": "DUT.UP",
+   "input": "pressed",
+   "value": true
+  }
+ ]
+}
