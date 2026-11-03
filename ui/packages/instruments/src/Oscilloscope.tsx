@@ -289,10 +289,10 @@ export function Oscilloscope({ traces, window: win, onWindowChange, cursors, onC
             <Measure label={uiText('scope.max', 'max')} value={fmt(measurements.stats.max, current.record.unit)} />
             <Measure label={uiText('scope.mean', 'mean')} value={fmt(measurements.weighted.mean, current.record.unit)} />
             <Measure label="RMS" value={fmt(measurements.weighted.rms, current.record.unit)} />
-            {current.record.kind === 'digital' && <Measure label="duty" value={Number.isFinite(measurements.weighted.dutyCycle) ? `${(100 * measurements.weighted.dutyCycle).toFixed(2)} %` : '—'} />}
-            <Measure label="coverage" value={`${(100 * measurements.weighted.coverage).toFixed(1)} %`} />
-            <Measure label="period" value={measurements.pf.period !== null ? formatTime(measurements.pf.period, { padZeros: false }) : '—'} />
-            <Measure label="freq" value={measurements.pf.frequencyHz !== null ? formatFrequency(measurements.pf.frequencyHz) : '—'} />
+            {current.record.kind === 'digital' && <Measure label={uiText('la.duty', 'duty')} value={Number.isFinite(measurements.weighted.dutyCycle) ? `${(100 * measurements.weighted.dutyCycle).toFixed(2)} %` : '—'} />}
+            <Measure label={uiText('la.coverage', 'coverage')} value={`${(100 * measurements.weighted.coverage).toFixed(1)} %`} />
+            <Measure label={uiText('la.period', 'period')} value={measurements.pf.period !== null ? formatTime(measurements.pf.period, { padZeros: false }) : '—'} />
+            <Measure label={uiText('la.freq', 'freq')} value={measurements.pf.frequencyHz !== null ? formatFrequency(measurements.pf.frequencyHz) : '—'} />
             {cursors.a !== null && <Measure label="A" value={`${formatTime(cursors.a, { padZeros: false })} · ${fmt(measurements.ca, current.record.unit)}`} />}
             {cursors.b !== null && <Measure label="B" value={`${formatTime(cursors.b, { padZeros: false })} · ${fmt(measurements.cb, current.record.unit)}`} />}
             {cursors.a !== null && cursors.b !== null && <Measure label="Δ" value={formatTime(cursors.b - cursors.a, { padZeros: false })} />}

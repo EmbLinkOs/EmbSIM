@@ -5,6 +5,13 @@ evolves. Newer milestones come first. The milestone sets from M1 on are captured
 `ui/apps/workbench/scripts/screenshots.mjs` (the same views each time:
 `pnpm build`, then `node scripts/screenshots.mjs --out ../../../docs/gallery/<milestone>`).
 
+## The workbench in Spanish (2026-11-03)
+
+| ![Ajustes](spanish/settings.png) | ![Diseño](spanish/design.png) |
+|---|---|
+
+![Ejecución](spanish/run.png)
+
 ## Panels that move between perspectives (2026-11-03)
 
 Run's Diagnostics floated over the Design perspective (captured by

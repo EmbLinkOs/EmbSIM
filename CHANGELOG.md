@@ -5,6 +5,18 @@ versions follow semantic versioning. There is no release yet.
 
 ## Unreleased
 
+### The workbench in Spanish
+
+- Español is the third interface language: all 1008 messages of the
+  workbench and its packages (`i18n/es.ts`), held to English's keys,
+  parameters and plural pairs by `i18n.test.ts`, numbers in `es-ES` and a
+  browser in Spanish choosing it on first start. The catalog's text and the
+  engine's diagnostics are English and French only: in Spanish they show in
+  English. `settings-language.spec.ts` walks the perspectives in Spanish
+  without overflow (`docs/gallery/spanish`).
+- The oscilloscope's coverage, period, frequency and duty labels were
+  English in every language; they take the logic analyzer's translations.
+
 ### Panels that move between perspectives
 
 - Run's Meters, Air and Diagnostics, and the Debug perspective's Source,

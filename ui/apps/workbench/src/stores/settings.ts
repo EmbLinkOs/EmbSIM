@@ -8,8 +8,14 @@ import { applyTheme, type ThemePreference } from '@embsim/design';
 import type { TimeUnit } from '@embsim/protocol';
 import { create } from 'zustand';
 
-export type Language = 'en' | 'fr';
-export const LANGUAGES: Language[] = ['en', 'fr'];
+export type Language = 'en' | 'fr' | 'es';
+export const LANGUAGES: Language[] = ['en', 'fr', 'es'];
+/** each language's locale for numbers, and whether it spaces a percent sign */
+export const LOCALES: Record<Language, { locale: string; spacedPercent: boolean }> = {
+  en: { locale: 'en-US', spacedPercent: false },
+  fr: { locale: 'fr-FR', spacedPercent: true },
+  es: { locale: 'es-ES', spacedPercent: true },
+};
 export type TextSize = 'small' | 'medium' | 'large';
 export type Density = 'comfortable' | 'compact';
 /** how the clock, the status bar and the Debug perspective show virtual time */
@@ -36,7 +42,7 @@ const LAYOUT_PREFIXES = ['embsim.layout.', 'embsim.floating', 'embsim.perspectiv
 function browserLanguage(): Language {
   try {
     const l = (navigator.languages?.[0] ?? navigator.language ?? 'en').toLowerCase();
-    return l.startsWith('fr') ? 'fr' : 'en';
+    return LANGUAGES.find((x) => x !== 'en' && l.startsWith(x)) ?? 'en';
   } catch {
     return 'en';
   }

@@ -28,9 +28,11 @@ reached, and offers **Reconnect**.
 
 **Settings** applies each change at once and keeps it between sessions:
 
-- **Interface language**: English or Français. Register, pin, net and part names,
-  units and protocol names stay as written; a message not yet translated appears
-  in English.
+- **Interface language**: English, Français or Español. Register, pin, net and
+  part names, units and protocol names stay as written; a message not yet
+  translated appears in English. The parts' descriptions and fidelity notes and
+  the engine's diagnostics are in English and French: in Spanish they appear in
+  English.
 - **Theme**, **text size** (small, medium, large) and **density** (comfortable,
   compact).
 - **Restore panel layout**: off, the next start opens the default layout.

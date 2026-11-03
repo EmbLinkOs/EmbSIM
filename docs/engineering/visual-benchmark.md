@@ -142,7 +142,7 @@ applied to the document at once:
 
 | Category | Setting | Effect |
 | --- | --- | --- |
-| General | Interface language | English or Français; at once |
+| General | Interface language | English, Français or Español; at once |
 | Appearance | Theme | System, light, dark |
 | | Text size | Small, medium, large (`data-text-size`) |
 | | Density | Comfortable, compact (`data-density`); the canvas plots read it and the text size through `plotMetrics` (rows 30/20 px, margins, labels) and redraw when they change; the schematic canvas's screen-space chrome tightens, its drawing keeps its sheet size |
@@ -182,8 +182,14 @@ that act are offered.
   way to icons rather than clip. `settings-language.spec.ts` checks every
   perspective in French at 1280 px for horizontal overflow, and the
   `after-fr` screenshots show 1600 px and 1280 px.
-- **More languages** are not offered: a language is added when it can be
-  delivered complete and reviewed, as English and French are.
+- **More languages.** Spanish (`es.ts`, 2026-11-03) is the third interface
+  language, complete for all 1008 messages and held to English's keys,
+  parameters and plural pairs by `i18n.test.ts`; numbers follow `es-ES`
+  and a percent sign is spaced, as in French. The catalog's text and the
+  engine's diagnostics exist in English and French only: in Spanish they
+  show in English. `settings-language.spec.ts` walks the perspectives in
+  Spanish at 1440 px for overflow. A language is added when it can be
+  delivered complete in this way.
 
 ## How it was verified
 

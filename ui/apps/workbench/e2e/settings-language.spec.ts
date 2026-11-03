@@ -77,3 +77,36 @@ test('the workbench in French: navigation, run, design and settings, then back t
   await expect(page.locator('html')).toHaveAttribute('lang', 'en');
   await expect(page.getByRole('heading', { name: 'Settings', level: 1 })).toBeVisible();
 });
+
+test('the workbench in Spanish: the perspectives, the transport and the status, without overflow', async ({ page }) => {
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await page.goto('/?mock=1');
+  await page.getByRole('button', { name: 'Settings', exact: true }).click();
+  await pick(page, 'Interface language', 'Español');
+  await expect(page.locator('html')).toHaveAttribute('lang', 'es');
+  await expect(page.getByRole('heading', { name: 'Ajustes', level: 1 })).toBeVisible();
+  await page.screenshot({ path: '../../../docs/gallery/spanish/settings.png' });
+  await page.getByRole('button', { name: 'Volver al banco' }).click();
+
+  await expect(page.getByRole('main', { name: 'Perspectiva Diseño', exact: true })).toBeVisible();
+  await expect(page.getByRole('region', { name: 'Biblioteca', exact: true })).toBeVisible();
+  await page.screenshot({ path: '../../../docs/gallery/spanish/design.png' });
+  await page.getByRole('radio', { name: 'Ejecución', exact: true }).click();
+  await expect(page.getByRole('main', { name: 'Perspectiva Ejecución', exact: true })).toBeVisible();
+  await page.getByRole('button', { name: 'Ejecutar', exact: true }).click();
+  await expect(page.getByTestId('sim-state')).toContainText('En marcha');
+  await page.getByRole('button', { name: 'Pausa', exact: true }).click();
+  await expect(page.getByTestId('sim-state')).toContainText('En pausa');
+  await expect(page.getByTestId('connection')).toContainText('Motor conectado');
+  await page.screenshot({ path: '../../../docs/gallery/spanish/run.png' });
+
+  for (const name of ['Diseño', 'Ejecución', 'Depuración', 'Verificación']) {
+    await page.getByRole('radio', { name, exact: true }).click();
+    await expect(page.getByRole('main', { name: `Perspectiva ${name}`, exact: true })).toBeVisible();
+    await expect.poll(() => page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(page.viewportSize()!.width);
+  }
+
+  await page.getByRole('button', { name: 'Ajustes', exact: true }).click();
+  await pick(page, 'Idioma de la interfaz', 'English');
+  await expect(page.locator('html')).toHaveAttribute('lang', 'en');
+});

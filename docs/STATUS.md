@@ -176,9 +176,12 @@ chrome (tooltip, HUD, legend, navigator); the schematic's own drawing keeps
 its sheet size (`e2e/compact-density.spec.ts`). Panels move between
 perspectives: Run's Meters, Air and Diagnostics and the Debug perspective's
 seven panels float over every perspective in the instrument windows, their
-home docks keeping a way back (`e2e/movable-panels.spec.ts`).
+home docks keeping a way back (`e2e/movable-panels.spec.ts`). Spanish is
+the third interface language (all 1008 messages; `i18n.test.ts`,
+`settings-language.spec.ts`); the catalog's text and the diagnostics are
+English and French only and show in English in Spanish.
 
-Not yet: languages beyond English and French.
+Not yet: the catalog's text and the diagnostics in Spanish.
 
 ## Imperfections on by default: bounce and tolerances (2026-11-01)
 

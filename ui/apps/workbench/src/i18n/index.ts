@@ -10,15 +10,16 @@
 // protocol and part names, code) are never translated: they are passed in as
 // parameters or left out of the catalogs.
 import { useCallback } from 'react';
-import { useSettings, type Language } from '../stores/settings';
+import { LOCALES, useSettings, type Language } from '../stores/settings';
 import { en, type MessageKey } from './en';
 import { fr } from './fr';
+import { es } from './es';
 
 export type { MessageKey } from './en';
 
-const CATALOGS: Record<Language, Partial<Record<MessageKey, string>>> = { en, fr };
+const CATALOGS: Record<Language, Partial<Record<MessageKey, string>>> = { en, fr, es };
 
-export const LANGUAGE_NAMES: Record<Language, string> = { en: 'English', fr: 'Français' };
+export const LANGUAGE_NAMES: Record<Language, string> = { en: 'English', fr: 'Français', es: 'Español' };
 
 export type Params = Record<string, string | number>;
 
@@ -41,7 +42,7 @@ export function translatePlural(lang: Language, key: string, count: number, para
 }
 
 export function formatNumber(lang: Language, n: number, options?: Intl.NumberFormatOptions): string {
-  return new Intl.NumberFormat(lang === 'fr' ? 'fr-FR' : 'en-US', options).format(n);
+  return new Intl.NumberFormat(LOCALES[lang].locale, options).format(n);
 }
 
 /** Outside React (actions, toasts raised from stores): the current language. */

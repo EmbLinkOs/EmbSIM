@@ -7,7 +7,7 @@ import { formatTime, pickUnit, type Time } from '@embsim/protocol';
 import { useEffect, useRef, useState } from 'react';
 import type { MessageKey } from '../i18n';
 import type { ConnectionStatus } from '../stores/session';
-import { useSettings, type RateFormat, type TimeUnitPreference } from '../stores/settings';
+import { LOCALES, useSettings, type RateFormat, type TimeUnitPreference } from '../stores/settings';
 import { useSession } from '../stores/session';
 
 export type SimState = 'running' | 'paused' | 'stopped' | 'loading' | 'failed' | 'disconnected';
@@ -64,10 +64,11 @@ export function useSimTimeFormat(): (t: Time) => string {
 
 /** The rate of simulated against host time: "0.94×" or "94 %". */
 export function formatRate(rate: number, format: RateFormat, lang: string): string {
-  const loc = lang === 'fr' ? 'fr-FR' : 'en-US';
+  const known = (LOCALES as Record<string, (typeof LOCALES)['en'] | undefined>)[lang] ?? LOCALES.en;
+  const loc = known.locale;
   if (format === 'percent') {
     const pct = new Intl.NumberFormat(loc, { maximumFractionDigits: rate * 100 >= 100 ? 0 : 1 }).format(rate * 100);
-    return lang === 'fr' ? `${pct} %` : `${pct}%`;
+    return known.spacedPercent ? `${pct} %` : `${pct}%`;
   }
   const digits = rate >= 100 ? 0 : rate >= 10 ? 1 : 2;
   return `${new Intl.NumberFormat(loc, { minimumFractionDigits: digits, maximumFractionDigits: digits }).format(rate)}×`;
