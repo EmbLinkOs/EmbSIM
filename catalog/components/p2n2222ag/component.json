@@ -1,0 +1,185 @@
+{
+  "schema_version": 1,
+  "kind": "component",
+  "id": "emblink/p2n2222ag",
+  "version": "1.0.0",
+  "name": "P2N2222AG",
+  "category": "transistors",
+  "subcategory": "bipolar_npn",
+  "description": "onsemi P2N2222AG, a NPN transistor in TO-92 (C1, B2, E3): VCEO 40 V, 0.6 A, 0.625 W at 25 C ambient; hFE at least 35 at 0.1 mA, 50 at 1 mA, 75 at 10 mA and 100 to 300 at 150 mA; VCE(sat) 0.3 V maximum and VBE(sat) 0.6 to 1.2 V at 150 mA. The model's gain is 173, the geometric middle of the 150 mA limits.",
+  "keywords": [
+    "onsemi",
+    "P2N2222AG",
+    "P2N2222A",
+    "NPN",
+    "BJT",
+    "transistor",
+    "small signal",
+    "TO-92"
+  ],
+  "pins": [
+    {
+      "name": "C",
+      "number": 1,
+      "model": {
+        "kind": "passive"
+      },
+      "doc": "Collector"
+    },
+    {
+      "name": "B",
+      "number": 2,
+      "model": {
+        "kind": "passive"
+      },
+      "doc": "Base"
+    },
+    {
+      "name": "E",
+      "number": 3,
+      "model": {
+        "kind": "passive"
+      },
+      "doc": "Emitter"
+    }
+  ],
+  "params": {
+    "is": {
+      "type": "number",
+      "unit": "A",
+      "default": 1e-14,
+      "doc": "Transport saturation current",
+      "min": "1e-20",
+      "max": "1m",
+      "advanced": true
+    },
+    "bf": {
+      "type": "number",
+      "unit": "",
+      "default": 173,
+      "doc": "Forward current gain",
+      "min": 1,
+      "max": 2000
+    },
+    "br": {
+      "type": "number",
+      "unit": "",
+      "default": 1,
+      "doc": "Reverse current gain",
+      "min": 0.01,
+      "max": 100,
+      "advanced": true
+    },
+    "rb": {
+      "type": "number",
+      "unit": "ohm",
+      "default": 0,
+      "doc": "Base resistance",
+      "min": 0,
+      "advanced": true
+    },
+    "rc": {
+      "type": "number",
+      "unit": "ohm",
+      "default": 0.5,
+      "doc": "Collector resistance",
+      "min": 0,
+      "advanced": true
+    },
+    "re": {
+      "type": "number",
+      "unit": "ohm",
+      "default": 0.2,
+      "doc": "Emitter resistance",
+      "min": 0,
+      "advanced": true
+    }
+  },
+  "model": {
+    "primitive": "bjt_npn"
+  },
+  "symbol": {
+    "svg": "symbol.svg",
+    "width": 40,
+    "height": 40,
+    "pins": {
+      "B": {
+        "x": 0,
+        "y": 20,
+        "side": "left"
+      },
+      "C": {
+        "x": 40,
+        "y": 0,
+        "side": "top"
+      },
+      "E": {
+        "x": 40,
+        "y": 40,
+        "side": "bottom"
+      }
+    }
+  },
+  "fidelity": {
+    "functional": null,
+    "timed": null,
+    "electrical": {
+      "claims": "Ebers-Moll transistor at a constant gain of 173 (the geometric middle of the datasheet's 100 to 300 at 150 mA), collector and emitter resistances for its saturation; fixtures for hFE at the datasheet's currents (read through a collector resistor), VCE(sat) and VBE(sat).",
+      "omissions": [
+        "the gain's variation with current: it stays 173",
+        "the Early effect: the collector current does not rise with VCE",
+        "capacitances and fT, so no switching times",
+        "temperature: VBE's -2 mV/C and the gain's rise",
+        "second breakdown, the safe operating area and damage past the ratings",
+        "device-to-device spread within the gain limits",
+        "no manufacturer model qualification"
+      ],
+      "validation": [
+        "tests/*.json"
+      ]
+    }
+  },
+  "provenance": {
+    "author": "EmbSIM",
+    "license": "Apache-2.0",
+    "sources": [
+      {
+        "title": "onsemi P2N2222A NPN amplifier transistor datasheet (P2N2222A/D)",
+        "url": "https://www.onsemi.com/download/data-sheet/pdf/p2n2222a-d.pdf",
+        "rev": "current at retrieval",
+        "date": "2026-11-03",
+        "hash": "sha256:e67cb25a25529a21b464d2422c676b1c6194efd1069c8162425f4fdeda443618",
+        "notes": "Maximum ratings (VCEO 40 V, IC 600 mA, PD 625 mW); hFE at 0.1, 1, 10, 150 and 500 mA (100 to 300 at 150 mA, 10 V); VCE(sat) 0.3 V and VBE(sat) 0.6 to 1.2 V at 150 mA, 15 mA; TO-92 case 29 style 17 (C1, B2, E3); the ordering information. generated from catalog/families/bjt_onsemi_p2n2222a/family.json by tools/catalog/families.py; edit the family, not this file"
+      }
+    ]
+  },
+  "part": {
+    "manufacturer": "onsemi",
+    "mpn": "P2N2222AG",
+    "package": "TO-92",
+    "datasheet": "https://www.onsemi.com/download/data-sheet/pdf/p2n2222a-d.pdf"
+  },
+  "tests": [
+    "tests/*.json"
+  ],
+  "i18n": {
+    "fr": {
+      "source": "7462adde8a87",
+      "description": "onsemi P2N2222AG, un transistor NPN en TO-92 (C1, B2, E3) : VCEO 40 V, 0,6 A, 0,625 W à 25 °C ambiant ; hFE d'au moins 35 à 0,1 mA, 50 à 1 mA, 75 à 10 mA et de 100 à 300 à 150 mA ; VCE(sat) de 0,3 V au maximum et VBE(sat) de 0,6 à 1,2 V à 150 mA. Le gain du modèle est 173, le milieu géométrique des limites à 150 mA.",
+      "fidelity": {
+        "electrical": {
+          "claims": "Transistor d'Ebers-Moll à un gain constant de 173 (le milieu géométrique des limites de la fiche technique's 100 to 300 at 150 mA), résistances de collecteur et d'émetteur pour sa saturation ; cas de test pour hFE aux courants de la fiche technique (lu à travers une résistance de collecteur), VCE(sat) et VBE(sat).",
+          "omissions": [
+            "la variation du gain avec le courant : il reste 173",
+            "l'effet Early : le courant de collecteur ne croît pas avec VCE",
+            "les capacités et fT, donc pas de temps de commutation",
+            "la température : les -2 mV/°C de VBE et la hausse du gain",
+            "le second claquage, l'aire de sécurité et les dommages au-delà des valeurs nominales",
+            "la dispersion d'un exemplaire à l'autre dans les limites de gain",
+            "aucune qualification par un modèle du fabricant"
+          ]
+        }
+      }
+    }
+  }
+}

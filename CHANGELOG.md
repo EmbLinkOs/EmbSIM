@@ -91,7 +91,9 @@ versions follow semantic versioning. There is no release yet.
   datasheet's currents, VCE(sat) and VBE(on); and the TIP120 to TIP127
   Darlingtons (6) as the datasheet's circuit, two transistors with the
   8 kohm and 120 ohm base-emitter shunts and the collector-emitter diode.
-  The library gains Transistors > Darlington NPN and PNP.
+  The library gains Transistors > Darlington NPN and PNP. And onsemi's
+  2N4401, 2N4403, P2N2222A, MPSA42, MPSA92 and BC327 (by gain group)
+  small-signal transistors, held to hFE, VCE(sat) and VBE(sat) or VBE(on).
 - An analog island asked to advance a picosecond past its last step (the
   scheduler's minimum) solved a step already at h_min; a centre-tapped
   transformer with its tap open, whose nearly singular inductance matrix

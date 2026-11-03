@@ -1,0 +1,185 @@
+{
+  "schema_version": 1,
+  "kind": "component",
+  "id": "emblink/mpsa42g",
+  "version": "1.0.0",
+  "name": "MPSA42G",
+  "category": "transistors",
+  "subcategory": "bipolar_npn",
+  "description": "onsemi MPSA42G, a NPN transistor in TO-92 (E1, B2, C3): VCEO 300 V, 0.5 A, 0.625 W at 25 C ambient; 300 V; hFE at least 25 at 1 mA, 40 at 10 mA and 40 at 30 mA; VCE(sat) 0.5 V and VBE(sat) 0.9 V maximum at 20 mA. The model's gain is 80 (the datasheet gives minima only).",
+  "keywords": [
+    "onsemi",
+    "MPSA42G",
+    "MPSA42",
+    "NPN",
+    "BJT",
+    "transistor",
+    "small signal",
+    "TO-92"
+  ],
+  "pins": [
+    {
+      "name": "E",
+      "number": 1,
+      "model": {
+        "kind": "passive"
+      },
+      "doc": "Emitter"
+    },
+    {
+      "name": "B",
+      "number": 2,
+      "model": {
+        "kind": "passive"
+      },
+      "doc": "Base"
+    },
+    {
+      "name": "C",
+      "number": 3,
+      "model": {
+        "kind": "passive"
+      },
+      "doc": "Collector"
+    }
+  ],
+  "params": {
+    "is": {
+      "type": "number",
+      "unit": "A",
+      "default": 1e-14,
+      "doc": "Transport saturation current",
+      "min": "1e-20",
+      "max": "1m",
+      "advanced": true
+    },
+    "bf": {
+      "type": "number",
+      "unit": "",
+      "default": 80,
+      "doc": "Forward current gain",
+      "min": 1,
+      "max": 2000
+    },
+    "br": {
+      "type": "number",
+      "unit": "",
+      "default": 1,
+      "doc": "Reverse current gain",
+      "min": 0.01,
+      "max": 100,
+      "advanced": true
+    },
+    "rb": {
+      "type": "number",
+      "unit": "ohm",
+      "default": 0,
+      "doc": "Base resistance",
+      "min": 0,
+      "advanced": true
+    },
+    "rc": {
+      "type": "number",
+      "unit": "ohm",
+      "default": 5.0,
+      "doc": "Collector resistance",
+      "min": 0,
+      "advanced": true
+    },
+    "re": {
+      "type": "number",
+      "unit": "ohm",
+      "default": 0.5,
+      "doc": "Emitter resistance",
+      "min": 0,
+      "advanced": true
+    }
+  },
+  "model": {
+    "primitive": "bjt_npn"
+  },
+  "symbol": {
+    "svg": "symbol.svg",
+    "width": 40,
+    "height": 40,
+    "pins": {
+      "B": {
+        "x": 0,
+        "y": 20,
+        "side": "left"
+      },
+      "C": {
+        "x": 40,
+        "y": 0,
+        "side": "top"
+      },
+      "E": {
+        "x": 40,
+        "y": 40,
+        "side": "bottom"
+      }
+    }
+  },
+  "fidelity": {
+    "functional": null,
+    "timed": null,
+    "electrical": {
+      "claims": "Ebers-Moll transistor at a constant gain of 80 (above every minimum the datasheet gives; it gives no maximum), collector and emitter resistances for its saturation; fixtures for hFE at the datasheet's currents (read through a collector resistor), VCE(sat) and VBE(sat).",
+      "omissions": [
+        "the gain's variation with current: it stays 80",
+        "the Early effect: the collector current does not rise with VCE",
+        "capacitances and fT, so no switching times",
+        "temperature: VBE's -2 mV/C and the gain's rise",
+        "second breakdown, the safe operating area and damage past the ratings",
+        "device-to-device spread within the gain limits",
+        "no manufacturer model qualification"
+      ],
+      "validation": [
+        "tests/*.json"
+      ]
+    }
+  },
+  "provenance": {
+    "author": "EmbSIM",
+    "license": "Apache-2.0",
+    "sources": [
+      {
+        "title": "onsemi MPSA42 high-voltage NPN transistor datasheet (MPSA42/D)",
+        "url": "https://www.onsemi.com/download/data-sheet/pdf/mpsa42-d.pdf",
+        "rev": "current at retrieval",
+        "date": "2026-11-03",
+        "hash": "sha256:83c386f606d306060d0fd7399a83de1416961cebb17881d6d9efddfd94e35df2",
+        "notes": "Maximum ratings (VCEO 300 V, IC 500 mA, PD 625 mW); hFE at 1, 10 and 30 mA; VCE(sat) 0.5 V and VBE(sat) 0.9 V at 20 mA, 2 mA; TO-92 E1 B2 C3; the ordering information. generated from catalog/families/bjt_onsemi_mpsa42/family.json by tools/catalog/families.py; edit the family, not this file"
+      }
+    ]
+  },
+  "part": {
+    "manufacturer": "onsemi",
+    "mpn": "MPSA42G",
+    "package": "TO-92",
+    "datasheet": "https://www.onsemi.com/download/data-sheet/pdf/mpsa42-d.pdf"
+  },
+  "tests": [
+    "tests/*.json"
+  ],
+  "i18n": {
+    "fr": {
+      "source": "43e8593760d2",
+      "description": "onsemi MPSA42G, un transistor NPN en TO-92 (E1, B2, C3) : VCEO 300 V, 0,5 A, 0,625 W à 25 °C ambiant ; 300 V ; hFE d'au moins 25 à 1 mA, 40 à 10 mA et 40 à 30 mA ; VCE(sat) de 0,5 V et VBE(sat) de 0,9 V au maximum à 20 mA. Le gain du modèle est 80 (la fiche technique ne donne que des minima).",
+      "fidelity": {
+        "electrical": {
+          "claims": "Transistor d'Ebers-Moll à un gain constant de 80 (above every minimum the datasheet gives; it gives no maximum), résistances de collecteur et d'émetteur pour sa saturation ; cas de test pour hFE aux courants de la fiche technique (lu à travers une résistance de collecteur), VCE(sat) et VBE(sat).",
+          "omissions": [
+            "la variation du gain avec le courant : il reste 80",
+            "l'effet Early : le courant de collecteur ne croît pas avec VCE",
+            "les capacités et fT, donc pas de temps de commutation",
+            "la température : les -2 mV/°C de VBE et la hausse du gain",
+            "le second claquage, l'aire de sécurité et les dommages au-delà des valeurs nominales",
+            "la dispersion d'un exemplaire à l'autre dans les limites de gain",
+            "aucune qualification par un modèle du fabricant"
+          ]
+        }
+      }
+    }
+  }
+}
