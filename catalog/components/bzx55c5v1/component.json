@@ -6,15 +6,16 @@
   "name": "BZX55C5V1",
   "category": "diodes",
   "subcategory": "zener",
-  "description": "BZX55C5V1 (DO-35). Parameterized zener approximation for low-frequency circuit development; not a vendor SPICE model.",
+  "description": "Vishay BZX55C5V1, a 500 mW small-signal zener in DO-35: 5.1 V nominal (4.8 to 5.4 V) at its test current IZT of 5 mA, the BZX55 series' 5 % grade. The breakdown is placed so the voltage at IZT is the nominal one; the reverse current at 1 V stays under the datasheet's 0.1 uA and the forward voltage at 200 mA under its 1.5 V.",
   "keywords": [
     "Vishay",
     "BZX55C5V1",
+    "BZX55",
     "DO-35",
     "zener",
-    "diode",
+    "voltage reference",
     "regulator",
-    "clamp"
+    "5.1 V"
   ],
   "pins": [
     {
@@ -39,17 +40,9 @@
       "type": "number",
       "unit": "V",
       "default": 5.1,
-      "doc": "Breakdown (Zener) voltage",
+      "doc": "Zener voltage at the test current izt",
       "min": 1,
       "max": 200
-    },
-    "rz": {
-      "type": "number",
-      "unit": "ohm",
-      "default": 35,
-      "doc": "Dynamic resistance in breakdown",
-      "min": 0.01,
-      "max": 1000
     },
     "is": {
       "type": "number",
@@ -75,6 +68,15 @@
       "default": 0.5,
       "doc": "Forward series resistance",
       "min": 0,
+      "advanced": true
+    },
+    "izt": {
+      "type": "number",
+      "unit": "A",
+      "default": 0.005,
+      "doc": "Test current at which the voltage is vz (IZT1)",
+      "min": "1u",
+      "max": "0.2",
       "advanced": true
     }
   },
@@ -102,18 +104,16 @@
     "functional": null,
     "timed": null,
     "electrical": {
-      "claims": "Parameterized zener approximation; DC/low-frequency fixture coverage only.",
+      "claims": "Zener junction placed so the voltage at IZT is the nominal VZ, inside the datasheet's minimum and maximum; leakage under the table's IR at VR; forward voltage under 1.5 V at 200 mA. DC and low-frequency fixtures from the datasheet's table.",
       "omissions": [
-        "temperature coefficient of vz",
-        "knee softness",
+        "the knee's softness below IZT (ZZK at IZT2): the model's knee is a sharp exponential",
+        "dynamic resistance: one 0.5 ohm series resistance serves both directions, so the slope above IZT is under the table's ZZ maximum rather than at it",
+        "the temperature coefficient (TKVZ) and the 150 C leakage",
         "capacitance",
-        "manufacturer min/max tolerances",
-        "thermal or destructive behavior",
-        "device-to-device spread",
-        "unverified high-frequency behavior",
-        "no manufacturer model qualification",
-        "junction capacitances",
-        "charge storage and reverse recovery"
+        "power dissipation (500 mW) and damage",
+        "device-to-device spread within the grade",
+        "noise",
+        "no manufacturer model qualification"
       ],
       "validation": [
         "tests/*.json"
@@ -125,12 +125,12 @@
     "license": "Apache-2.0",
     "sources": [
       {
-        "title": "Vishay 85604 manufacturer datasheet",
+        "title": "Vishay BZX55 series datasheet (document 85604)",
         "url": "https://www.vishay.com/docs/85604/bzx55.pdf",
         "rev": "2.0, 7 November 2024",
-        "date": "2026-10-16",
+        "date": "2026-11-03",
         "hash": "sha256:f32a337b23a25f8ce84cdeec8a532ddeed894b7982848d1ed78be29fb7f34902",
-        "notes": "Retrieved and reviewed 2026-10-16. PDF pages 1, 2, 5. DO-35, cathode band. C5V1 nominal 5.1 V, 4.8 to 5.4 V at 5 mA. A2/K1 numbering is an ECAD convention, not a manufacturer lead number. Package/source review only; electrical model is not manufacturer-qualified."
+        "notes": "Pages 1 to 3: the electrical characteristics table (VZ minimum, nominal and maximum at IZT1, IR at VR, ZZ and ZZK) for the C (5 %) and B (2 %) grades; VF 1.5 V max at 200 mA; Ptot 500 mW. DO-35, the band at the cathode; A2/K1 numbering is an ECAD convention. generated from catalog/families/zeners_bzx55/family.json by tools/catalog/families.py; edit the family, not this file"
       },
       {
         "title": "KiCad family/package reference, revision 4e17d759",
@@ -152,22 +152,20 @@
   },
   "i18n": {
     "fr": {
-      "source": "20e498ab7f02",
-      "description": "BZX55C5V1 (DO-35). Approximation paramétrée par une zener pour la conception de circuits basse fréquence ; pas un modèle SPICE du fabricant.",
+      "source": "fc4f03d5abff",
+      "description": "Vishay BZX55C5V1, une zener petits signaux de 500 mW en DO-35 : 5.1 V nominal (4.8 à 5.4 V) à son courant de test IZT de 5 mA, la classe 5 % de la série BZX55. Le claquage est placé pour que la tension à IZT soit la nominale ; le courant inverse à 1 V reste sous les 0.1 uA de la fiche technique et la tension directe à 200 mA sous ses 1,5 V.",
       "fidelity": {
         "electrical": {
-          "claims": "Approximation paramétrée par une zener ; couverture par des cas de test en continu et basse fréquence uniquement.",
+          "claims": "Jonction zener placée pour que la tension à IZT soit la VZ nominale, entre le minimum et le maximum de la fiche technique ; fuite sous l'IR du tableau à VR ; tension directe sous 1,5 V à 200 mA. Cas de test en continu et basse fréquence tirés du tableau de la fiche technique.",
           "omissions": [
-            "le coefficient de température de vz",
-            "la douceur du coude",
+            "la douceur du coude sous IZT (ZZK à IZT2) : le coude du modèle est une exponentielle franche",
+            "la résistance dynamique : une seule résistance série de 0,5 ohm sert dans les deux sens, la pente au-dessus d'IZT est donc sous le maximum ZZ du tableau plutôt qu'à sa valeur",
+            "le coefficient de température (TKVZ) et la fuite à 150 °C",
             "la capacité",
-            "les tolérances min/max du fabricant",
-            "le comportement thermique ou destructif",
-            "la dispersion d'un exemplaire à l'autre",
-            "le comportement à haute fréquence, non vérifié",
-            "aucune qualification par un modèle du fabricant",
-            "les capacités de jonction",
-            "le stockage de charge et la recouvrement inverse"
+            "la puissance dissipée (500 mW) et les dommages",
+            "la dispersion d'un exemplaire à l'autre dans la classe",
+            "le bruit",
+            "aucune qualification par un modèle du fabricant"
           ]
         }
       }

@@ -1,0 +1,508 @@
+{
+  "schema_version": 1,
+  "kind": "family",
+  "name": "onsemi BC556, BC557 and BC558 PNP transistors",
+  "datasheets": {
+    "onsemi-bc556": {
+      "title": "onsemi BC556B, BC557A, B, C, BC558B datasheet (BC556B/D)",
+      "url": "https://www.onsemi.com/pdf/datasheet/bc556b-d.pdf",
+      "rev": "3, March 2007",
+      "date": "2026-11-03",
+      "hash": "sha256:66f3d052c66a603e3c1188452e193d0391041b61e0dac8295e260123e5ad92f4",
+      "notes": "Pages 1 and 2: VCEO and VCBO per type, IC 100 mA, PD 625 mW, ICES, hFE per series at -2 mA, VCE(sat), VBE(on) -0.55, -0.62, -0.7 V at -2 mA. TO-92 case 29 style 17: C1, B2, E3."
+    }
+  },
+  "evidence": [
+    "BC556B, BC557A, B, C, BC558B",
+    "Amplifier Transistors PNP Silicon",
+    "\\(IC = −2\\.0 mAdc, VCE = −5\\.0 Vdc\\) −0\\.55 −0\\.62 −0\\.7",
+    "\\(IC = −10 mAdc, IB = −0\\.5 mAdc\\) − −0\\.075 −0\\.3"
+  ],
+  "template": {
+    "schema_version": 1,
+    "kind": "component",
+    "id": "emblink/${short}",
+    "version": "1.0.0",
+    "name": "${mpn}",
+    "category": "transistors",
+    "subcategory": "bipolar_pnp",
+    "description": "onsemi ${mpn}, a PNP general-purpose amplifier transistor in TO-92 (C1, B2, E3): VCEO ${vceo} V, 100 mA, 625 mW, hFE group ${group}: ${hfe_min} to ${hfe_max} at 2 mA and 5 V. The model's gain is the group's typical ${hfe_typ} and its VBE(on) ${vbe_typ} V at 2 mA, inside the datasheet's 0.55 to 0.7 V.",
+    "keywords": [
+      "onsemi",
+      "${mpn}",
+      "TO-92",
+      "PNP",
+      "BJT",
+      "transistor",
+      "small signal",
+      "amplifier",
+      "switch",
+      "${series}"
+    ],
+    "pins": [
+      {
+        "name": "C",
+        "number": 1,
+        "model": {
+          "kind": "passive"
+        },
+        "doc": "Collector"
+      },
+      {
+        "name": "B",
+        "number": 2,
+        "model": {
+          "kind": "passive"
+        },
+        "doc": "Base"
+      },
+      {
+        "name": "E",
+        "number": 3,
+        "model": {
+          "kind": "passive"
+        },
+        "doc": "Emitter"
+      }
+    ],
+    "params": {
+      "is": {
+        "type": "number",
+        "unit": "A",
+        "default": "${is_a}",
+        "doc": "Transport saturation current",
+        "min": "1e-20",
+        "max": "1m",
+        "advanced": true
+      },
+      "bf": {
+        "type": "number",
+        "unit": "",
+        "default": "${hfe_typ}",
+        "doc": "Forward current gain",
+        "min": 1,
+        "max": 2000
+      },
+      "br": {
+        "type": "number",
+        "unit": "",
+        "default": 4,
+        "doc": "Reverse current gain",
+        "min": 0.01,
+        "max": 100,
+        "advanced": true
+      },
+      "rb": {
+        "type": "number",
+        "unit": "ohm",
+        "default": 0,
+        "doc": "Base resistance",
+        "min": 0,
+        "advanced": true
+      },
+      "rc": {
+        "type": "number",
+        "unit": "ohm",
+        "default": 0,
+        "doc": "Collector resistance",
+        "min": 0,
+        "advanced": true
+      },
+      "re": {
+        "type": "number",
+        "unit": "ohm",
+        "default": 0,
+        "doc": "Emitter resistance",
+        "min": 0,
+        "advanced": true
+      }
+    },
+    "model": {
+      "primitive": "bjt_pnp"
+    },
+    "symbol": {
+      "svg": "symbol.svg",
+      "width": 40,
+      "height": 40,
+      "pins": {
+        "B": {
+          "x": 0,
+          "y": 20,
+          "side": "left"
+        },
+        "C": {
+          "x": 40,
+          "y": 0,
+          "side": "top"
+        },
+        "E": {
+          "x": 40,
+          "y": 40,
+          "side": "bottom"
+        }
+      }
+    },
+    "fidelity": {
+      "functional": null,
+      "timed": null,
+      "electrical": {
+        "claims": "Ebers-Moll transistor whose forward gain is the hFE group's typical value and whose VBE(on) at 2 mA falls inside the datasheet's limits; saturation under the datasheet's VCE(sat) maximum at 10 mA; leakage under its ICES maximum. DC and low-frequency fixtures from the datasheet's table.",
+        "omissions": [
+          "the Early effect (output conductance): the datasheet gives none, so the collector current does not rise with VCE",
+          "the fall of hFE at high current (180 typical at 100 mA for the B series)",
+          "breakdown (VCEO ${vceo} V, VCBO, VEBO 5 V) and damage past the 100 mA and 625 mW ratings",
+          "capacitances (Cobo, Cibo) and fT, so no switching times or bandwidth",
+          "temperature dependence",
+          "device-to-device spread within the hFE group",
+          "noise",
+          "no manufacturer model qualification"
+        ],
+        "validation": [
+          "tests/*.json"
+        ]
+      }
+    },
+    "provenance": {
+      "author": "EmbSIM",
+      "license": "Apache-2.0",
+      "sources": [
+        {
+          "title": "KiCad family/package reference, revision 4e17d759",
+          "url": "https://github.com/KiCad/kicad-symbols/blob/4e17d7595f9691d45d97aea8ad64572652fb5bed/Transistor_BJT.lib"
+        }
+      ]
+    },
+    "part": {
+      "manufacturer": "onsemi",
+      "mpn": "${mpn}",
+      "package": "TO-92",
+      "datasheet": "${datasheet_url}"
+    },
+    "artwork": {
+      "svg": "artwork.svg"
+    },
+    "tests": [
+      "tests/*.json"
+    ],
+    "i18n": {
+      "fr": {
+        "description": "onsemi ${mpn}, un transistor amplificateur PNP d'usage général en TO-92 (C1, B2, E3) : VCEO ${vceo} V, 100 mA, 625 mW, groupe de gain ${group} : ${hfe_min} à ${hfe_max} à 2 mA et 5 V. Le gain du modèle est la valeur typique du groupe, ${hfe_typ}, et sa VBE(on) ${vbe_typ_fr} V à 2 mA, entre les 0,55 et 0,7 V de la fiche technique.",
+        "fidelity": {
+          "electrical": {
+            "claims": "Transistor d'Ebers-Moll dont le gain direct est la valeur typique du groupe de hFE et dont la VBE(on) à 2 mA tombe dans les limites de la fiche technique ; saturation sous le maximum de VCE(sat) de la fiche technique à 10 mA ; fuite sous son maximum d'ICES. Cas de test en continu et basse fréquence tirés du tableau de la fiche technique.",
+            "omissions": [
+              "l'effet Early (la conductance de sortie) : la fiche technique n'en donne pas, le courant de collecteur ne croît donc pas avec VCE",
+              "la baisse de hFE à fort courant (180 typique à 100 mA pour le groupe B)",
+              "le claquage (VCEO ${vceo} V, VCBO, VEBO 5 V) et les dommages au-delà des 100 mA et 625 mW nominaux",
+              "les capacités (Cobo, Cibo) et fT, donc ni temps de commutation ni bande passante",
+              "la dépendance à la température",
+              "la dispersion d'un exemplaire à l'autre dans le groupe de hFE",
+              "le bruit",
+              "aucune qualification par un modèle du fabricant"
+            ]
+          }
+        }
+      }
+    }
+  },
+  "tests": {
+    "hfe": {
+      "schema_version": 1,
+      "kind": "component_test",
+      "name": "hfe",
+      "description": "IC = -2 mA at VCE = -5 V: the collector current within the hFE group's minimum and maximum",
+      "policy": "electrical",
+      "until": "100us",
+      "circuit": {
+        "components": [
+          {
+            "id": "VE",
+            "component": "emblink/vsource",
+            "params": {
+              "dc": 5
+            }
+          },
+          {
+            "id": "IB",
+            "component": "emblink/isource",
+            "params": {
+              "dc": "${ib}"
+            }
+          },
+          {
+            "id": "DUT",
+            "component": "emblink/${short}"
+          },
+          {
+            "id": "G",
+            "component": "emblink/gnd"
+          }
+        ],
+        "nets": {
+          "EMIT": [
+            "VE.+",
+            "DUT.E"
+          ],
+          "BASE": [
+            "IB.+",
+            "DUT.B"
+          ],
+          "GND": [
+            "VE.-",
+            "IB.-",
+            "DUT.C",
+            "G.GND"
+          ]
+        }
+      },
+      "expect": {
+        "device:DUT.ic": {
+          "at": "50us",
+          "min": "${ic_min_neg}",
+          "max": "${ic_max_neg}"
+        },
+        "net:BASE": {
+          "at": "50us",
+          "min_v": 4.3,
+          "max_v": 4.45
+        }
+      }
+    },
+    "vce_sat": {
+      "schema_version": 1,
+      "kind": "component_test",
+      "name": "vce_sat",
+      "description": "IC = -10 mA, IB = -0.5 mA: VCE(sat) under the datasheet's ${vcesat_max} V in magnitude",
+      "policy": "electrical",
+      "until": "100us",
+      "circuit": {
+        "components": [
+          {
+            "id": "VE",
+            "component": "emblink/vsource",
+            "params": {
+              "dc": 5
+            }
+          },
+          {
+            "id": "IC",
+            "component": "emblink/isource",
+            "params": {
+              "dc": 0.01
+            }
+          },
+          {
+            "id": "IB",
+            "component": "emblink/isource",
+            "params": {
+              "dc": 0.0005
+            }
+          },
+          {
+            "id": "DUT",
+            "component": "emblink/${short}"
+          },
+          {
+            "id": "G",
+            "component": "emblink/gnd"
+          }
+        ],
+        "nets": {
+          "EMIT": [
+            "VE.+",
+            "DUT.E"
+          ],
+          "COLL": [
+            "IC.+",
+            "DUT.C"
+          ],
+          "BASE": [
+            "IB.+",
+            "DUT.B"
+          ],
+          "GND": [
+            "VE.-",
+            "IC.-",
+            "IB.-",
+            "G.GND"
+          ]
+        }
+      },
+      "expect": {
+        "net:COLL": {
+          "at": "50us",
+          "min_v": "${vc_sat_min}",
+          "max_v": 5
+        }
+      }
+    },
+    "ices": {
+      "schema_version": 1,
+      "kind": "component_test",
+      "name": "ices",
+      "description": "VCE = -${vces} V with VBE = 0: the collector current under the datasheet's 100 nA ICES",
+      "policy": "electrical",
+      "until": "100us",
+      "circuit": {
+        "components": [
+          {
+            "id": "VE",
+            "component": "emblink/vsource",
+            "params": {
+              "dc": "${vces}"
+            }
+          },
+          {
+            "id": "DUT",
+            "component": "emblink/${short}"
+          },
+          {
+            "id": "G",
+            "component": "emblink/gnd"
+          }
+        ],
+        "nets": {
+          "EMIT": [
+            "VE.+",
+            "DUT.E",
+            "DUT.B"
+          ],
+          "GND": [
+            "VE.-",
+            "DUT.C",
+            "G.GND"
+          ]
+        }
+      },
+      "expect": {
+        "device:DUT.ic": {
+          "at": "50us",
+          "min": -1e-07,
+          "max": 1e-07
+        }
+      }
+    }
+  },
+  "rows": [
+    {
+      "mpn": "BC556B",
+      "short": "bc556b",
+      "series": "BC556",
+      "group": "B",
+      "vceo": 65,
+      "vces": 40,
+      "hfe_min": 180,
+      "hfe_typ": 290,
+      "hfe_max": 460,
+      "is_a": 7.68e-14,
+      "vbe_typ": 0.62,
+      "vbe_typ_fr": "0,62",
+      "ib": 6.89655e-06,
+      "ic_min_neg": -0.00317241,
+      "ic_max_neg": -0.00124138,
+      "vcesat_max": 0.3,
+      "vc_sat_min": 4.7,
+      "datasheet": "onsemi-bc556",
+      "evidence": [
+        "B Series Devices 180 290 460",
+        "\\(VCES = −#{vces} V\\) BC556 − −2\\.0 −100"
+      ]
+    },
+    {
+      "mpn": "BC557A",
+      "short": "bc557a",
+      "series": "BC557",
+      "group": "A",
+      "vceo": 45,
+      "vces": 20,
+      "hfe_min": 120,
+      "hfe_typ": 170,
+      "hfe_max": 220,
+      "is_a": 7.68e-14,
+      "vbe_typ": 0.62,
+      "vbe_typ_fr": "0,62",
+      "ib": 1.17647e-05,
+      "ic_min_neg": -0.00258824,
+      "ic_max_neg": -0.00141176,
+      "vcesat_max": 0.3,
+      "vc_sat_min": 4.7,
+      "datasheet": "onsemi-bc556",
+      "evidence": [
+        "A Series Device 120 170 220",
+        "\\(VCES = −#{vces} V\\) BC557 − −2\\.0 −100"
+      ]
+    },
+    {
+      "mpn": "BC557B",
+      "short": "bc557b",
+      "series": "BC557",
+      "group": "B",
+      "vceo": 45,
+      "vces": 20,
+      "hfe_min": 180,
+      "hfe_typ": 290,
+      "hfe_max": 460,
+      "is_a": 7.68e-14,
+      "vbe_typ": 0.62,
+      "vbe_typ_fr": "0,62",
+      "ib": 6.89655e-06,
+      "ic_min_neg": -0.00317241,
+      "ic_max_neg": -0.00124138,
+      "vcesat_max": 0.3,
+      "vc_sat_min": 4.7,
+      "datasheet": "onsemi-bc556",
+      "evidence": [
+        "B Series Devices 180 290 460",
+        "\\(VCES = −#{vces} V\\) BC557 − −2\\.0 −100"
+      ]
+    },
+    {
+      "mpn": "BC557C",
+      "short": "bc557c",
+      "series": "BC557",
+      "group": "C",
+      "vceo": 45,
+      "vces": 20,
+      "hfe_min": 420,
+      "hfe_typ": 500,
+      "hfe_max": 800,
+      "is_a": 7.68e-14,
+      "vbe_typ": 0.62,
+      "vbe_typ_fr": "0,62",
+      "ib": 4e-06,
+      "ic_min_neg": -0.0032,
+      "ic_max_neg": -0.00168,
+      "vcesat_max": 0.3,
+      "vc_sat_min": 4.7,
+      "datasheet": "onsemi-bc556",
+      "evidence": [
+        "C Series Devices 420 500 800",
+        "\\(VCES = −#{vces} V\\) BC557 − −2\\.0 −100"
+      ]
+    },
+    {
+      "mpn": "BC558B",
+      "short": "bc558b",
+      "series": "BC558",
+      "group": "B",
+      "vceo": 30,
+      "vces": 20,
+      "hfe_min": 180,
+      "hfe_typ": 290,
+      "hfe_max": 460,
+      "is_a": 7.68e-14,
+      "vbe_typ": 0.62,
+      "vbe_typ_fr": "0,62",
+      "ib": 6.89655e-06,
+      "ic_min_neg": -0.00317241,
+      "ic_max_neg": -0.00124138,
+      "vcesat_max": 0.3,
+      "vc_sat_min": 4.7,
+      "datasheet": "onsemi-bc556",
+      "evidence": [
+        "B Series Devices 180 290 460",
+        "\\(VCES = −#{vces} V\\) BC557 − −2\\.0 −100 BC558 − −2\\.0 −100"
+      ]
+    }
+  ]
+}

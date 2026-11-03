@@ -1,0 +1,45 @@
+{
+  "schema_version": 1,
+  "kind": "component_test",
+  "name": "forward_5ma",
+  "description": "The B grade's 5 mA window",
+  "policy": "electrical",
+  "until": "100us",
+  "circuit": {
+    "components": [
+      {
+        "id": "I1",
+        "component": "emblink/isource",
+        "params": {
+          "dc": "5m"
+        }
+      },
+      {
+        "id": "DUT",
+        "component": "emblink/diode_1n916b"
+      },
+      {
+        "id": "G",
+        "component": "emblink/gnd"
+      }
+    ],
+    "nets": {
+      "VD": [
+        "I1.-",
+        "DUT.A"
+      ],
+      "GND": [
+        "I1.+",
+        "DUT.K",
+        "G.GND"
+      ]
+    }
+  },
+  "expect": {
+    "net:VD": {
+      "at": "50us",
+      "min_v": 0.63,
+      "max_v": 0.73
+    }
+  }
+}

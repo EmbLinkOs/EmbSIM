@@ -1,0 +1,88 @@
+{
+  "schema_version": 1,
+  "kind": "component_test",
+  "name": "headroom",
+  "description": "Channel 2 as a comparator driven high on 5 V: its output 1.5 V below the positive rail, the datasheet's typical swing",
+  "policy": "electrical",
+  "until": "40us",
+  "settings": {
+    "imperfections": "ideal"
+  },
+  "circuit": {
+    "components": [
+      {
+        "id": "VI",
+        "component": "emblink/vsource",
+        "params": {
+          "kind": "dc",
+          "dc": 2.6
+        }
+      },
+      {
+        "id": "VR",
+        "component": "emblink/vsource",
+        "params": {
+          "kind": "dc",
+          "dc": 2.4
+        }
+      },
+      {
+        "id": "VS",
+        "component": "emblink/vsource",
+        "params": {
+          "kind": "dc",
+          "dc": 5
+        }
+      },
+      {
+        "id": "DUT",
+        "component": "emblink/lm2902kavqdr"
+      },
+      {
+        "id": "G",
+        "component": "emblink/gnd"
+      },
+      {
+        "id": "RL",
+        "component": "emblink/resistor",
+        "params": {
+          "resistance": "10k",
+          "tolerance": 0
+        }
+      }
+    ],
+    "nets": {
+      "IN": [
+        "VI.+",
+        "DUT.2IN+"
+      ],
+      "REF": [
+        "VR.+",
+        "DUT.2IN-"
+      ],
+      "VCC": [
+        "VS.+",
+        "DUT.VCC+"
+      ],
+      "GND": [
+        "VI.-",
+        "VR.-",
+        "VS.-",
+        "DUT.VCC-",
+        "G.GND",
+        "RL.2"
+      ],
+      "OUT": [
+        "DUT.2OUT",
+        "RL.1"
+      ]
+    }
+  },
+  "expect": {
+    "net:OUT": {
+      "at": "30us",
+      "min_v": 3.4,
+      "max_v": 3.6
+    }
+  }
+}

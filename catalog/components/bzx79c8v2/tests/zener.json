@@ -1,0 +1,45 @@
+{
+  "schema_version": 1,
+  "kind": "component_test",
+  "name": "zener",
+  "description": "IZT in reverse: the voltage within the datasheet's minimum and maximum",
+  "policy": "electrical",
+  "until": "100us",
+  "circuit": {
+    "components": [
+      {
+        "id": "I1",
+        "component": "emblink/isource",
+        "params": {
+          "dc": 0.005
+        }
+      },
+      {
+        "id": "DUT",
+        "component": "emblink/bzx79c8v2"
+      },
+      {
+        "id": "G",
+        "component": "emblink/gnd"
+      }
+    ],
+    "nets": {
+      "VZ": [
+        "I1.-",
+        "DUT.K"
+      ],
+      "GND": [
+        "I1.+",
+        "DUT.A",
+        "G.GND"
+      ]
+    }
+  },
+  "expect": {
+    "net:VZ": {
+      "at": "50us",
+      "min_v": 7.7,
+      "max_v": 8.7
+    }
+  }
+}

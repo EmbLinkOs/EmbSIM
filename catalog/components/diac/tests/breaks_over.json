@@ -1,0 +1,61 @@
+{
+  "schema_version": 1,
+  "kind": "component_test",
+  "name": "breaks_over",
+  "description": "40 V through 1 kohm, past the 32 V breakover: it fires and folds back to about 26 V at 14 mA",
+  "policy": "electrical",
+  "until": "200us",
+  "settings": {
+    "imperfections": "ideal"
+  },
+  "circuit": {
+    "components": [
+      {
+        "id": "V1",
+        "component": "emblink/vsource",
+        "params": {
+          "kind": "dc",
+          "dc": 40
+        }
+      },
+      {
+        "id": "R1",
+        "component": "emblink/resistor",
+        "params": {
+          "resistance": "1k",
+          "tolerance": 0
+        }
+      },
+      {
+        "id": "DUT",
+        "component": "emblink/diac"
+      },
+      {
+        "id": "G0",
+        "component": "emblink/gnd"
+      }
+    ],
+    "nets": {
+      "VCC": [
+        "V1.+",
+        "R1.1"
+      ],
+      "X": [
+        "R1.2",
+        "DUT.A1"
+      ],
+      "GND": [
+        "V1.-",
+        "DUT.A2",
+        "G0.GND"
+      ]
+    }
+  },
+  "expect": {
+    "net:X": {
+      "at": "100us",
+      "min_v": 24,
+      "max_v": 28
+    }
+  }
+}

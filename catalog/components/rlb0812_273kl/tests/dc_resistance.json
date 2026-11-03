@@ -1,0 +1,65 @@
+{
+  "schema_version": 1,
+  "kind": "component_test",
+  "name": "dc_resistance",
+  "description": "The rated 0.022 A ramped through the inductor over 100 us, a 1000 times larger resistor across it to damp the winding's resonance: the drop is the 102 ohm maximum DC resistance times the current",
+  "policy": "electrical",
+  "until": "220us",
+  "settings": {
+    "imperfections": "ideal"
+  },
+  "circuit": {
+    "components": [
+      {
+        "id": "I1",
+        "component": "emblink/isource",
+        "params": {
+          "kind": "pulse",
+          "v1": 0,
+          "v2": 0.022,
+          "td": "1u",
+          "tr": "100u",
+          "tf": "1u",
+          "pw": "1",
+          "per": "2"
+        }
+      },
+      {
+        "id": "RP",
+        "component": "emblink/resistor",
+        "params": {
+          "resistance": 102000.0,
+          "tolerance": 0
+        }
+      },
+      {
+        "id": "DUT",
+        "component": "emblink/rlb0812_273kl"
+      },
+      {
+        "id": "G",
+        "component": "emblink/gnd"
+      }
+    ],
+    "nets": {
+      "A": [
+        "I1.-",
+        "DUT.1",
+        "RP.1"
+      ],
+      "GND": [
+        "I1.+",
+        "DUT.2",
+        "RP.2",
+        "G.GND"
+      ]
+    }
+  },
+  "expect": {
+    "net:A": {
+      "at": "200us",
+      "min_v": 2.219,
+      "max_v": 2.264
+    }
+  }
+}

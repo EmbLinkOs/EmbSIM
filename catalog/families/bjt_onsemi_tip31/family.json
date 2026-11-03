@@ -1,0 +1,536 @@
+{
+  "schema_version": 1,
+  "kind": "family",
+  "name": "onsemi TIP31A, B and C NPN power transistors",
+  "datasheets": {
+    "onsemi-tip31": {
+      "title": "onsemi TIP31G, TIP31AG, TIP31BG, TIP31CG, TIP32G, TIP32AG, TIP32BG, TIP32CG datasheet (TIP31A/D)",
+      "url": "https://www.onsemi.com/download/data-sheet/pdf/tip31a-d.pdf",
+      "rev": "current at retrieval",
+      "date": "2026-11-03",
+      "hash": "sha256:c630da0302cb6a47287f933f0887abbe92c7f6890f007879083e124c90d1e1fc",
+      "notes": "Maximum ratings (VCEO by type, IC 3 A, PD 40 W); hFE 25 minimum at 1 A and 10 to 50 at 3 A; VCE(sat) 1.2 V at 3 A, 375 mA; VBE(on) 1.8 V at 3 A, 4 V; TO-220 B1 C2 E3; the ordering information."
+    }
+  },
+  "evidence": [
+    "\\(IC = 1\\.0 Adc, VCE = 4\\.0 Vdc\\) 25 − \\(IC = 3\\.0 Adc, VCE = 4\\.0 Vdc\\) 10 50",
+    "\\(IC = 3\\.0 Adc, IB = 375 mAdc\\) − 1\\.2",
+    "\\(IC = 3\\.0 Adc, VCE = 4\\.0 Vdc\\) − 1\\.8",
+    "Collector Current − Continuous 3\\.0 Adc",
+    "Total Power Dissipation @ TC = 25°C 40 W"
+  ],
+  "template": {
+    "schema_version": 1,
+    "kind": "component",
+    "id": "emblink/${short}",
+    "version": "1.0.0",
+    "name": "${mpn}",
+    "category": "transistors",
+    "subcategory": "bipolar_npn",
+    "description": "onsemi ${mpn}, a NPN power transistor in TO-220 (B1, C2, E3, tab C): VCEO ${vceo} V, 3 A, 40 W at 25 C case; hFE at least 25 at 1 A and 10 to 50 at 3 A, VCE(sat) 1.2 V maximum at 3 A, VBE(on) 1.8 V maximum. The model's gain is 30, inside both.",
+    "keywords": [
+      "onsemi",
+      "${mpn}",
+      "${series}",
+      "NPN",
+      "BJT",
+      "transistor",
+      "power transistor",
+      "TO-220"
+    ],
+    "pins": [
+      {
+        "name": "B",
+        "number": 1,
+        "model": {
+          "kind": "passive"
+        },
+        "doc": "Base"
+      },
+      {
+        "name": "C",
+        "number": 2,
+        "model": {
+          "kind": "passive"
+        },
+        "doc": "Collector (and the tab)"
+      },
+      {
+        "name": "E",
+        "number": 3,
+        "model": {
+          "kind": "passive"
+        },
+        "doc": "Emitter"
+      }
+    ],
+    "params": {
+      "is": {
+        "type": "number",
+        "unit": "A",
+        "default": 2e-14,
+        "doc": "Transport saturation current",
+        "min": "1e-20",
+        "max": "1m",
+        "advanced": true
+      },
+      "bf": {
+        "type": "number",
+        "unit": "",
+        "default": 30,
+        "doc": "Forward current gain",
+        "min": 1,
+        "max": 2000
+      },
+      "br": {
+        "type": "number",
+        "unit": "",
+        "default": 1,
+        "doc": "Reverse current gain",
+        "min": 0.01,
+        "max": 100,
+        "advanced": true
+      },
+      "rb": {
+        "type": "number",
+        "unit": "ohm",
+        "default": 0,
+        "doc": "Base resistance",
+        "min": 0,
+        "advanced": true
+      },
+      "rc": {
+        "type": "number",
+        "unit": "ohm",
+        "default": 0.1,
+        "doc": "Collector resistance",
+        "min": 0,
+        "advanced": true
+      },
+      "re": {
+        "type": "number",
+        "unit": "ohm",
+        "default": 0.03,
+        "doc": "Emitter resistance",
+        "min": 0,
+        "advanced": true
+      }
+    },
+    "model": {
+      "primitive": "bjt_npn"
+    },
+    "symbol": {
+      "svg": "symbol.svg",
+      "width": 40,
+      "height": 40,
+      "pins": {
+        "B": {
+          "x": 0,
+          "y": 20,
+          "side": "left"
+        },
+        "C": {
+          "x": 40,
+          "y": 0,
+          "side": "top"
+        },
+        "E": {
+          "x": 40,
+          "y": 40,
+          "side": "bottom"
+        }
+      }
+    },
+    "fidelity": {
+      "functional": null,
+      "timed": null,
+      "electrical": {
+        "claims": "Ebers-Moll transistor at a constant gain of 30 (the datasheet's hFE is at least 25 at 1 A and 10 to 50 at 3 A), collector and emitter resistances for its high-current VCE(sat) and VBE(on); fixtures for the gain at 1 A and 3 A, VCE(sat) and VBE(on) at 3 A.",
+        "omissions": [
+          "the gain's fall with current (25 at 1 A, down to 10 at 3 A in the limits): it stays 30",
+          "the Early effect: the collector current does not rise with VCE",
+          "capacitances and fT, so no switching times",
+          "temperature: VBE's -2 mV/C and the gain's rise",
+          "second breakdown, the safe operating area and damage past the ratings",
+          "device-to-device spread within the gain limits",
+          "no manufacturer model qualification"
+        ],
+        "validation": [
+          "tests/*.json"
+        ]
+      }
+    },
+    "provenance": {
+      "author": "EmbSIM",
+      "license": "Apache-2.0",
+      "sources": []
+    },
+    "part": {
+      "manufacturer": "onsemi",
+      "mpn": "${mpn}",
+      "package": "TO-220",
+      "datasheet": "${datasheet_url}"
+    },
+    "tests": [
+      "tests/*.json"
+    ],
+    "i18n": {
+      "fr": {
+        "description": "onsemi ${mpn}, un transistor de puissance NPN en TO-220 (B1, C2, E3, languette C) : VCEO ${vceo} V, 3 A, 40 W à 25 °C de boîtier ; hFE d'au moins 25 à 1 A et de 10 à 50 à 3 A, VCE(sat) de 1,2 V au maximum à 3 A, VBE(on) de 1,8 V au maximum. Le gain du modèle est 30, dans les deux.",
+        "fidelity": {
+          "electrical": {
+            "claims": "Transistor d'Ebers-Moll à un gain constant de 30 (le hFE de la fiche technique est d'au moins 25 à 1 A et de 10 à 50 à 3 A), résistances de collecteur et d'émetteur pour son VCE(sat) et son VBE(on) à fort courant ; cas de test pour le gain à 1 A et 3 A, VCE(sat) et VBE(on) à 3 A.",
+            "omissions": [
+              "la baisse du gain avec le courant (25 à 1 A, jusqu'à 10 à 3 A dans les limites) : il reste 30",
+              "l'effet Early : le courant de collecteur ne croît pas avec VCE",
+              "les capacités et fT, donc pas de temps de commutation",
+              "la température : les -2 mV/°C de VBE et la hausse du gain",
+              "le second claquage, l'aire de sécurité et les dommages au-delà des valeurs nominales",
+              "la dispersion d'un exemplaire à l'autre dans les limites de gain",
+              "aucune qualification par un modèle du fabricant"
+            ]
+          }
+        }
+      }
+    }
+  },
+  "tests": {
+    "hfe_1": {
+      "schema_version": 1,
+      "kind": "component_test",
+      "name": "hfe_1",
+      "description": "IC near 1 A at VCE = 4 V (the base fed 0.0333333 A, the collector from 8 V through 4 ohm): the gain at least 25, the datasheet's hFE there",
+      "policy": "electrical",
+      "until": "200us",
+      "settings": {
+        "imperfections": "ideal"
+      },
+      "circuit": {
+        "components": [
+          {
+            "id": "VC",
+            "component": "emblink/vsource",
+            "params": {
+              "kind": "dc",
+              "dc": 8.0
+            }
+          },
+          {
+            "id": "RC",
+            "component": "emblink/resistor",
+            "params": {
+              "resistance": 4.0,
+              "tolerance": 0
+            }
+          },
+          {
+            "id": "IB",
+            "component": "emblink/isource",
+            "params": {
+              "kind": "pulse",
+              "v1": 0,
+              "v2": 0.03333333333333333,
+              "td": "1u",
+              "tr": "50u",
+              "tf": "1u",
+              "pw": "1",
+              "per": "2"
+            }
+          },
+          {
+            "id": "DUT",
+            "component": "emblink/${short}"
+          },
+          {
+            "id": "G",
+            "component": "emblink/gnd"
+          }
+        ],
+        "nets": {
+          "VCC": [
+            "VC.+",
+            "RC.1"
+          ],
+          "COLL": [
+            "RC.2",
+            "DUT.C"
+          ],
+          "BASE": [
+            "IB.-",
+            "DUT.B"
+          ],
+          "GND": [
+            "VC.-",
+            "IB.+",
+            "DUT.E",
+            "G.GND"
+          ]
+        }
+      },
+      "expect": {
+        "net:COLL": {
+          "at": "150us",
+          "min_v": 0.0,
+          "max_v": 4.6667
+        }
+      }
+    },
+    "hfe_2": {
+      "schema_version": 1,
+      "kind": "component_test",
+      "name": "hfe_2",
+      "description": "IC near 3 A at VCE = 4 V (the base fed 0.1 A, the collector from 8 V through 1.33333 ohm): the gain 10 to 50, the datasheet's hFE there",
+      "policy": "electrical",
+      "until": "200us",
+      "settings": {
+        "imperfections": "ideal"
+      },
+      "circuit": {
+        "components": [
+          {
+            "id": "VC",
+            "component": "emblink/vsource",
+            "params": {
+              "kind": "dc",
+              "dc": 8.0
+            }
+          },
+          {
+            "id": "RC",
+            "component": "emblink/resistor",
+            "params": {
+              "resistance": 1.333333,
+              "tolerance": 0
+            }
+          },
+          {
+            "id": "IB",
+            "component": "emblink/isource",
+            "params": {
+              "kind": "pulse",
+              "v1": 0,
+              "v2": 0.1,
+              "td": "1u",
+              "tr": "50u",
+              "tf": "1u",
+              "pw": "1",
+              "per": "2"
+            }
+          },
+          {
+            "id": "DUT",
+            "component": "emblink/${short}"
+          },
+          {
+            "id": "G",
+            "component": "emblink/gnd"
+          }
+        ],
+        "nets": {
+          "VCC": [
+            "VC.+",
+            "RC.1"
+          ],
+          "COLL": [
+            "RC.2",
+            "DUT.C"
+          ],
+          "BASE": [
+            "IB.-",
+            "DUT.B"
+          ],
+          "GND": [
+            "VC.-",
+            "IB.+",
+            "DUT.E",
+            "G.GND"
+          ]
+        }
+      },
+      "expect": {
+        "net:COLL": {
+          "at": "150us",
+          "min_v": 1.3333,
+          "max_v": 6.6667
+        }
+      }
+    },
+    "vce_sat": {
+      "schema_version": 1,
+      "kind": "component_test",
+      "name": "vce_sat",
+      "description": "IC = 3 A with IB = 0.375 A: VCE(sat) at most the datasheet's 1.2 V",
+      "policy": "electrical",
+      "until": "200us",
+      "settings": {
+        "imperfections": "ideal"
+      },
+      "circuit": {
+        "components": [
+          {
+            "id": "IC",
+            "component": "emblink/isource",
+            "params": {
+              "kind": "pulse",
+              "v1": 0,
+              "v2": 3.0,
+              "td": "1u",
+              "tr": "50u",
+              "tf": "1u",
+              "pw": "1",
+              "per": "2"
+            }
+          },
+          {
+            "id": "IB",
+            "component": "emblink/isource",
+            "params": {
+              "kind": "pulse",
+              "v1": 0,
+              "v2": 0.375,
+              "td": "1u",
+              "tr": "50u",
+              "tf": "1u",
+              "pw": "1",
+              "per": "2"
+            }
+          },
+          {
+            "id": "DUT",
+            "component": "emblink/${short}"
+          },
+          {
+            "id": "G",
+            "component": "emblink/gnd"
+          }
+        ],
+        "nets": {
+          "COLL": [
+            "IC.-",
+            "DUT.C"
+          ],
+          "BASE": [
+            "IB.-",
+            "DUT.B"
+          ],
+          "GND": [
+            "IC.+",
+            "IB.+",
+            "DUT.E",
+            "G.GND"
+          ]
+        }
+      },
+      "expect": {
+        "net:COLL": {
+          "at": "150us",
+          "min_v": 0,
+          "max_v": 1.2
+        }
+      }
+    },
+    "vbe_on": {
+      "schema_version": 1,
+      "kind": "component_test",
+      "name": "vbe_on",
+      "description": "IC near 3 A at VCE = 4 V (the base fed 0.1 A): VBE(on) at most the datasheet's 1.8 V",
+      "policy": "electrical",
+      "until": "200us",
+      "settings": {
+        "imperfections": "ideal"
+      },
+      "circuit": {
+        "components": [
+          {
+            "id": "VC",
+            "component": "emblink/vsource",
+            "params": {
+              "kind": "dc",
+              "dc": 4.0
+            }
+          },
+          {
+            "id": "IB",
+            "component": "emblink/isource",
+            "params": {
+              "kind": "pulse",
+              "v1": 0,
+              "v2": 0.1,
+              "td": "1u",
+              "tr": "50u",
+              "tf": "1u",
+              "pw": "1",
+              "per": "2"
+            }
+          },
+          {
+            "id": "DUT",
+            "component": "emblink/${short}"
+          },
+          {
+            "id": "G",
+            "component": "emblink/gnd"
+          }
+        ],
+        "nets": {
+          "COLL": [
+            "VC.+",
+            "DUT.C"
+          ],
+          "BASE": [
+            "IB.-",
+            "DUT.B"
+          ],
+          "GND": [
+            "VC.-",
+            "IB.+",
+            "DUT.E",
+            "G.GND"
+          ]
+        }
+      },
+      "expect": {
+        "net:BASE": {
+          "at": "150us",
+          "min_v": 0.5,
+          "max_v": 1.8
+        }
+      }
+    }
+  },
+  "rows": [
+    {
+      "mpn": "TIP31AG",
+      "short": "tip31ag",
+      "series": "TIP31A",
+      "vceo": 60,
+      "evidence": [
+        "TIP31AG TO−220 50 Units / Rail",
+        "TIP31AG, TIP32AG 60 −"
+      ],
+      "datasheet": "onsemi-tip31"
+    },
+    {
+      "mpn": "TIP31BG",
+      "short": "tip31bg",
+      "series": "TIP31B",
+      "vceo": 80,
+      "evidence": [
+        "TIP31BG TO−220 50 Units / Rail",
+        "TIP31BG, TIP32BG 80 −"
+      ],
+      "datasheet": "onsemi-tip31"
+    },
+    {
+      "mpn": "TIP31CG",
+      "short": "tip31cg",
+      "series": "TIP31C",
+      "vceo": 100,
+      "evidence": [
+        "TIP31CG TO−220 50 Units / Rail",
+        "TIP31CG, TIP32CG 100 −"
+      ],
+      "datasheet": "onsemi-tip31"
+    }
+  ]
+}

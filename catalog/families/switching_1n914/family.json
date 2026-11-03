@@ -1,0 +1,636 @@
+{
+  "schema_version": 1,
+  "kind": "family",
+  "name": "onsemi 1N914, 1N916, 1N4148 and 1N4448 switching diodes",
+  "datasheets": {
+    "onsemi-1n914": {
+      "title": "onsemi 1N91x, 1N4x48, FDLL914, FDLL4x48 datasheet (1N914/D)",
+      "url": "https://www.onsemi.com/pdf/datasheet/1n914-d.pdf",
+      "rev": "6, September 2024",
+      "date": "2026-11-03",
+      "hash": "sha256:af77f97304678948faca40198e6936a53433ce75fd81325cedeb805ae7cff4a8",
+      "notes": "Pages 1 and 2: the parts and their DO-35 package, VRRM 100 V, VR at 100 uA and 5 uA, VF per grade, IR at 20 V and 75 V, CT per grade, trr. The text extraction prints the micro sign as m. A2/K1 numbering is an ECAD convention."
+    }
+  },
+  "evidence": [
+    "Small Signal Diode 1N91x, 1N4x48",
+    "${mpn}\\S* [\\dA-Z]+ DO−204AH \\(DO−35\\)",
+    "Maximum Repetitive Reverse Voltage VRRM 100 V",
+    "VR Breakdown Voltage IR = 100 mA 100 V IR = 5\\.0 mA 75 V",
+    "IR Reverse Leakage VR = 20 V 0\\.025 mA",
+    "VR = 75 V 5\\.0 mA"
+  ],
+  "template": {
+    "schema_version": 1,
+    "kind": "component",
+    "id": "emblink/${short}",
+    "version": "1.0.0",
+    "name": "${mpn}",
+    "category": "diodes",
+    "subcategory": "switching",
+    "description": "onsemi ${mpn}, a small-signal fast switching diode in DO-35 (100 V VRRM, 200 mA average). ${grade} One fit serves the family (3.1 nA, n = 1.8, 0.5 ohm): 0.67 V at 5 mA, 0.70 V at 10 mA, 0.86 V at 100 mA; breakdown at the datasheet's minimum, 100 V at 100 uA.",
+    "keywords": [
+      "onsemi",
+      "${mpn}",
+      "DO-35",
+      "diode",
+      "switching",
+      "signal",
+      "1N914",
+      "1N4148",
+      "fast"
+    ],
+    "pins": [
+      {
+        "name": "A",
+        "number": 2,
+        "model": {
+          "kind": "passive"
+        },
+        "doc": "Anode"
+      },
+      {
+        "name": "K",
+        "number": 1,
+        "model": {
+          "kind": "passive"
+        },
+        "doc": "Cathode"
+      }
+    ],
+    "params": {
+      "is": {
+        "type": "number",
+        "unit": "A",
+        "default": "3.1n",
+        "doc": "Saturation current",
+        "min": "1e-20",
+        "max": "1m",
+        "advanced": true
+      },
+      "n": {
+        "type": "number",
+        "unit": "",
+        "default": 1.8,
+        "doc": "Emission coefficient",
+        "min": 0.5,
+        "max": 5,
+        "advanced": true
+      },
+      "rs": {
+        "type": "number",
+        "unit": "ohm",
+        "default": 0.5,
+        "doc": "Series resistance",
+        "min": 0,
+        "advanced": true
+      },
+      "bv": {
+        "type": "number",
+        "unit": "V",
+        "default": 100,
+        "doc": "Reverse breakdown voltage",
+        "min": 0.1,
+        "max": 10000,
+        "advanced": true
+      },
+      "ibv": {
+        "type": "number",
+        "unit": "A",
+        "default": "100u",
+        "doc": "Current at which the reverse voltage is bv",
+        "min": "1n",
+        "max": "0.1",
+        "advanced": true
+      }
+    },
+    "model": {
+      "primitive": "diode"
+    },
+    "symbol": {
+      "svg": "symbol.svg",
+      "width": 60,
+      "height": 20,
+      "pins": {
+        "A": {
+          "x": 0,
+          "y": 10,
+          "side": "left"
+        },
+        "K": {
+          "x": 60,
+          "y": 10,
+          "side": "right"
+        }
+      }
+    },
+    "fidelity": {
+      "functional": null,
+      "timed": null,
+      "electrical": {
+        "claims": "Shockley junction with series resistance inside the datasheet's forward limits for the grade, leakage under 25 nA at 20 V and 5 uA at 75 V, breakdown at the 100 V minimum; DC and low-frequency fixtures from the datasheet's table.",
+        "omissions": [
+          "the ${ct} pF capacitance",
+          "reverse recovery (4 ns trr)",
+          "temperature dependence (the 150 C leakage)",
+          "breakdown above its 100 V minimum: real parts break down higher",
+          "surge ratings and damage",
+          "device-to-device spread",
+          "no manufacturer model qualification"
+        ],
+        "validation": [
+          "tests/*.json"
+        ]
+      }
+    },
+    "provenance": {
+      "author": "EmbSIM",
+      "license": "Apache-2.0",
+      "sources": [
+        {
+          "title": "KiCad family/package reference, revision 4e17d759",
+          "url": "https://github.com/KiCad/kicad-symbols/blob/4e17d7595f9691d45d97aea8ad64572652fb5bed/Diode.lib"
+        }
+      ]
+    },
+    "tests": [
+      "tests/*.json"
+    ],
+    "part": {
+      "manufacturer": "onsemi",
+      "mpn": "${mpn}",
+      "package": "DO-35",
+      "datasheet": "${datasheet_url}"
+    },
+    "artwork": {
+      "svg": "artwork.svg"
+    },
+    "i18n": {
+      "fr": {
+        "description": "onsemi ${mpn}, une diode de commutation rapide petits signaux en DO-35 (100 V de VRRM, 200 mA en moyenne). ${grade_fr} Un même ajustement sert à la famille (3,1 nA, n = 1,8, 0,5 ohm) : 0,67 V à 5 mA, 0,70 V à 10 mA, 0,86 V à 100 mA ; claquage au minimum de la fiche technique, 100 V à 100 uA.",
+        "fidelity": {
+          "electrical": {
+            "claims": "Jonction de Shockley avec résistance série dans les limites directes de la fiche technique pour la classe, fuite sous 25 nA à 20 V et 5 uA à 75 V, claquage au minimum de 100 V ; cas de test en continu et basse fréquence tirés du tableau de la fiche technique.",
+            "omissions": [
+              "la capacité de ${ct} pF",
+              "le recouvrement inverse (trr de 4 ns)",
+              "la dépendance à la température (la fuite à 150 °C)",
+              "le claquage au-delà de son minimum de 100 V : les composants réels claquent plus haut",
+              "les surintensités nominales et les dommages",
+              "la dispersion d'un exemplaire à l'autre",
+              "aucune qualification par un modèle du fabricant"
+            ]
+          }
+        }
+      }
+    }
+  },
+  "tests": {
+    "forward": {
+      "schema_version": 1,
+      "kind": "component_test",
+      "name": "forward",
+      "description": "The grade's forward limit: at most 1.0 V at its test current",
+      "policy": "electrical",
+      "until": "100us",
+      "circuit": {
+        "components": [
+          {
+            "id": "I1",
+            "component": "emblink/isource",
+            "params": {
+              "dc": "${if_a}"
+            }
+          },
+          {
+            "id": "DUT",
+            "component": "emblink/${short}"
+          },
+          {
+            "id": "G",
+            "component": "emblink/gnd"
+          }
+        ],
+        "nets": {
+          "VD": [
+            "I1.-",
+            "DUT.A"
+          ],
+          "GND": [
+            "I1.+",
+            "DUT.K",
+            "G.GND"
+          ]
+        }
+      },
+      "expect": {
+        "net:VD": {
+          "at": "50us",
+          "min_v": 0.5,
+          "max_v": 1.0
+        }
+      }
+    },
+    "forward_5ma": {
+      "schema_version": 1,
+      "kind": "component_test",
+      "name": "forward_5ma",
+      "description": "The B grade's 5 mA window",
+      "policy": "electrical",
+      "until": "100us",
+      "circuit": {
+        "components": [
+          {
+            "id": "I1",
+            "component": "emblink/isource",
+            "params": {
+              "dc": "5m"
+            }
+          },
+          {
+            "id": "DUT",
+            "component": "emblink/${short}"
+          },
+          {
+            "id": "G",
+            "component": "emblink/gnd"
+          }
+        ],
+        "nets": {
+          "VD": [
+            "I1.-",
+            "DUT.A"
+          ],
+          "GND": [
+            "I1.+",
+            "DUT.K",
+            "G.GND"
+          ]
+        }
+      },
+      "expect": {
+        "net:VD": {
+          "at": "50us",
+          "min_v": "${vf5_min}",
+          "max_v": "${vf5_max}"
+        }
+      }
+    },
+    "forward_100ma": {
+      "schema_version": 1,
+      "kind": "component_test",
+      "name": "forward_100ma",
+      "description": "100 mA: at most 1.0 V",
+      "policy": "electrical",
+      "until": "100us",
+      "circuit": {
+        "components": [
+          {
+            "id": "I1",
+            "component": "emblink/isource",
+            "params": {
+              "dc": "0.1"
+            }
+          },
+          {
+            "id": "DUT",
+            "component": "emblink/${short}"
+          },
+          {
+            "id": "G",
+            "component": "emblink/gnd"
+          }
+        ],
+        "nets": {
+          "VD": [
+            "I1.-",
+            "DUT.A"
+          ],
+          "GND": [
+            "I1.+",
+            "DUT.K",
+            "G.GND"
+          ]
+        }
+      },
+      "expect": {
+        "net:VD": {
+          "at": "50us",
+          "min_v": 0.6,
+          "max_v": 1.0
+        }
+      }
+    },
+    "leakage_20v": {
+      "schema_version": 1,
+      "kind": "component_test",
+      "name": "leakage_20v",
+      "description": "20 V through 1 Mohm: under 25 nA, so under 25 mV across the resistor",
+      "policy": "electrical",
+      "until": "100us",
+      "circuit": {
+        "components": [
+          {
+            "id": "V1",
+            "component": "emblink/vsource",
+            "params": {
+              "dc": 20
+            }
+          },
+          {
+            "id": "R1",
+            "component": "emblink/resistor",
+            "params": {
+              "resistance": "1meg"
+            }
+          },
+          {
+            "id": "DUT",
+            "component": "emblink/${short}"
+          },
+          {
+            "id": "G",
+            "component": "emblink/gnd"
+          }
+        ],
+        "nets": {
+          "VIN": [
+            "V1.+",
+            "R1.1"
+          ],
+          "VK": [
+            "R1.2",
+            "DUT.K"
+          ],
+          "GND": [
+            "V1.-",
+            "DUT.A",
+            "G.GND"
+          ]
+        }
+      },
+      "expect": {
+        "net:VK": {
+          "at": "50us",
+          "min_v": 19.975,
+          "max_v": 20
+        }
+      }
+    },
+    "leakage_75v": {
+      "schema_version": 1,
+      "kind": "component_test",
+      "name": "leakage_75v",
+      "description": "75 V through 10 kohm: under 5 uA, so under 50 mV across the resistor",
+      "policy": "electrical",
+      "until": "100us",
+      "circuit": {
+        "components": [
+          {
+            "id": "V1",
+            "component": "emblink/vsource",
+            "params": {
+              "dc": 75
+            }
+          },
+          {
+            "id": "R1",
+            "component": "emblink/resistor",
+            "params": {
+              "resistance": "10k"
+            }
+          },
+          {
+            "id": "DUT",
+            "component": "emblink/${short}"
+          },
+          {
+            "id": "G",
+            "component": "emblink/gnd"
+          }
+        ],
+        "nets": {
+          "VIN": [
+            "V1.+",
+            "R1.1"
+          ],
+          "VK": [
+            "R1.2",
+            "DUT.K"
+          ],
+          "GND": [
+            "V1.-",
+            "DUT.A",
+            "G.GND"
+          ]
+        }
+      },
+      "expect": {
+        "net:VK": {
+          "at": "50us",
+          "min_v": 74.95,
+          "max_v": 75
+        }
+      }
+    },
+    "breakdown": {
+      "schema_version": 1,
+      "kind": "component_test",
+      "name": "breakdown",
+      "description": "100 uA in reverse: at least the 100 V minimum (the model sits at it)",
+      "policy": "electrical",
+      "until": "100us",
+      "circuit": {
+        "components": [
+          {
+            "id": "I1",
+            "component": "emblink/isource",
+            "params": {
+              "dc": "-100u"
+            }
+          },
+          {
+            "id": "DUT",
+            "component": "emblink/${short}"
+          },
+          {
+            "id": "G",
+            "component": "emblink/gnd"
+          }
+        ],
+        "nets": {
+          "VD": [
+            "I1.-",
+            "DUT.A"
+          ],
+          "GND": [
+            "I1.+",
+            "DUT.K",
+            "G.GND"
+          ]
+        }
+      },
+      "expect": {
+        "net:VD": {
+          "at": "50us",
+          "min_v": -101,
+          "max_v": -99.5
+        }
+      }
+    }
+  },
+  "rows": [
+    {
+      "mpn": "1N914",
+      "short": "diode_1n914",
+      "grade": "Its forward voltage is at most 1.0 V at 10 mA.",
+      "grade_fr": "Sa tension directe est d'au plus 1,0 V à 10 mA.",
+      "if_a": "10m",
+      "ct": 4,
+      "datasheet": "onsemi-1n914",
+      "evidence": [
+        "914 / 916 / 4148 IF = 10 mA 1\\.0 V",
+        "914/914A/914B/4148 VR = 0, f = 1\\.0 MHz 4\\.0 pF"
+      ],
+      "skip_tests": [
+        "forward_5ma",
+        "forward_100ma"
+      ],
+      "vf5_min": 0,
+      "vf5_max": 0
+    },
+    {
+      "mpn": "1N914A",
+      "short": "diode_1n914a",
+      "grade": "Its forward voltage is at most 1.0 V at 20 mA.",
+      "grade_fr": "Sa tension directe est d'au plus 1,0 V à 20 mA.",
+      "if_a": "20m",
+      "ct": 4,
+      "datasheet": "onsemi-1n914",
+      "evidence": [
+        "914A / 916A IF = 20 mA 1\\.0 V",
+        "914/914A/914B/4148 VR = 0, f = 1\\.0 MHz 4\\.0 pF"
+      ],
+      "skip_tests": [
+        "forward_5ma",
+        "forward_100ma"
+      ],
+      "vf5_min": 0,
+      "vf5_max": 0
+    },
+    {
+      "mpn": "1N914B",
+      "short": "diode_1n914b",
+      "grade": "Its forward voltage is 0.62 to 0.72 V at 5 mA and at most 1.0 V at 100 mA.",
+      "grade_fr": "Sa tension directe est de 0,62 à 0,72 V à 5 mA et d'au plus 1,0 V à 100 mA.",
+      "if_a": "100m",
+      "ct": 4,
+      "datasheet": "onsemi-1n914",
+      "evidence": [
+        "914B / 4448 IF = 5\\.0 mA 0\\.62 0\\.72 V",
+        "914B / 4448 IF = 100 mA 1\\.0 V",
+        "914/914A/914B/4148 VR = 0"
+      ],
+      "skip_tests": [
+        "forward"
+      ],
+      "vf5_min": 0.62,
+      "vf5_max": 0.72
+    },
+    {
+      "mpn": "1N916",
+      "short": "diode_1n916",
+      "grade": "Its forward voltage is at most 1.0 V at 10 mA.",
+      "grade_fr": "Sa tension directe est d'au plus 1,0 V à 10 mA.",
+      "if_a": "10m",
+      "ct": 2,
+      "datasheet": "onsemi-1n914",
+      "evidence": [
+        "914 / 916 / 4148 IF = 10 mA 1\\.0 V",
+        "916/916A/916B/4448 VR = 0, f = 1\\.0 MHz 2\\.0 pF"
+      ],
+      "skip_tests": [
+        "forward_5ma",
+        "forward_100ma"
+      ],
+      "vf5_min": 0,
+      "vf5_max": 0
+    },
+    {
+      "mpn": "1N916A",
+      "short": "diode_1n916a",
+      "grade": "Its forward voltage is at most 1.0 V at 20 mA.",
+      "grade_fr": "Sa tension directe est d'au plus 1,0 V à 20 mA.",
+      "if_a": "20m",
+      "ct": 2,
+      "datasheet": "onsemi-1n914",
+      "evidence": [
+        "914A / 916A IF = 20 mA 1\\.0 V",
+        "916/916A/916B/4448 VR = 0"
+      ],
+      "skip_tests": [
+        "forward_5ma",
+        "forward_100ma"
+      ],
+      "vf5_min": 0,
+      "vf5_max": 0
+    },
+    {
+      "mpn": "1N916B",
+      "short": "diode_1n916b",
+      "grade": "Its forward voltage is 0.63 to 0.73 V at 5 mA and at most 1.0 V at 20 mA.",
+      "grade_fr": "Sa tension directe est de 0,63 à 0,73 V à 5 mA et d'au plus 1,0 V à 20 mA.",
+      "if_a": "20m",
+      "ct": 2,
+      "datasheet": "onsemi-1n914",
+      "evidence": [
+        "916B IF = 5\\.0 mA 0\\.63 0\\.73 V",
+        "916B IF = 20 mA 1\\.0 V",
+        "916/916A/916B/4448 VR = 0"
+      ],
+      "skip_tests": [
+        "forward_100ma"
+      ],
+      "vf5_min": 0.63,
+      "vf5_max": 0.73
+    },
+    {
+      "mpn": "1N4148",
+      "short": "diode_1n4148_onsemi",
+      "grade": "Its forward voltage is at most 1.0 V at 10 mA.",
+      "grade_fr": "Sa tension directe est d'au plus 1,0 V à 10 mA.",
+      "if_a": "10m",
+      "ct": 4,
+      "datasheet": "onsemi-1n914",
+      "evidence": [
+        "914 / 916 / 4148 IF = 10 mA 1\\.0 V",
+        "914/914A/914B/4148 VR = 0"
+      ],
+      "skip_tests": [
+        "forward_5ma",
+        "forward_100ma"
+      ],
+      "vf5_min": 0,
+      "vf5_max": 0
+    },
+    {
+      "mpn": "1N4448",
+      "short": "diode_1n4448",
+      "grade": "Its forward voltage is 0.62 to 0.72 V at 5 mA and at most 1.0 V at 100 mA.",
+      "grade_fr": "Sa tension directe est de 0,62 à 0,72 V à 5 mA et d'au plus 1,0 V à 100 mA.",
+      "if_a": "100m",
+      "ct": 2,
+      "datasheet": "onsemi-1n914",
+      "evidence": [
+        "914B / 4448 IF = 5\\.0 mA 0\\.62 0\\.72 V",
+        "914B / 4448 IF = 100 mA 1\\.0 V",
+        "916/916A/916B/4448 VR = 0"
+      ],
+      "skip_tests": [
+        "forward"
+      ],
+      "vf5_min": 0.62,
+      "vf5_max": 0.72
+    }
+  ]
+}

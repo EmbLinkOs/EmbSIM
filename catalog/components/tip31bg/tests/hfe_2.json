@@ -1,0 +1,80 @@
+{
+  "schema_version": 1,
+  "kind": "component_test",
+  "name": "hfe_2",
+  "description": "IC near 3 A at VCE = 4 V (the base fed 0.1 A, the collector from 8 V through 1.33333 ohm): the gain 10 to 50, the datasheet's hFE there",
+  "policy": "electrical",
+  "until": "200us",
+  "settings": {
+    "imperfections": "ideal"
+  },
+  "circuit": {
+    "components": [
+      {
+        "id": "VC",
+        "component": "emblink/vsource",
+        "params": {
+          "kind": "dc",
+          "dc": 8.0
+        }
+      },
+      {
+        "id": "RC",
+        "component": "emblink/resistor",
+        "params": {
+          "resistance": 1.333333,
+          "tolerance": 0
+        }
+      },
+      {
+        "id": "IB",
+        "component": "emblink/isource",
+        "params": {
+          "kind": "pulse",
+          "v1": 0,
+          "v2": 0.1,
+          "td": "1u",
+          "tr": "50u",
+          "tf": "1u",
+          "pw": "1",
+          "per": "2"
+        }
+      },
+      {
+        "id": "DUT",
+        "component": "emblink/tip31bg"
+      },
+      {
+        "id": "G",
+        "component": "emblink/gnd"
+      }
+    ],
+    "nets": {
+      "VCC": [
+        "VC.+",
+        "RC.1"
+      ],
+      "COLL": [
+        "RC.2",
+        "DUT.C"
+      ],
+      "BASE": [
+        "IB.-",
+        "DUT.B"
+      ],
+      "GND": [
+        "VC.-",
+        "IB.+",
+        "DUT.E",
+        "G.GND"
+      ]
+    }
+  },
+  "expect": {
+    "net:COLL": {
+      "at": "150us",
+      "min_v": 1.3333,
+      "max_v": 6.6667
+    }
+  }
+}

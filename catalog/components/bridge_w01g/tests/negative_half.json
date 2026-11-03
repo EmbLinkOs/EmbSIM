@@ -1,0 +1,62 @@
+{
+  "schema_version": 1,
+  "kind": "component_test",
+  "name": "negative_half",
+  "description": "The same with the AC leads swapped: the other two junctions conduct and + is still the positive output",
+  "policy": "electrical",
+  "until": "100us",
+  "settings": {
+    "imperfections": "ideal"
+  },
+  "circuit": {
+    "components": [
+      {
+        "id": "V1",
+        "component": "emblink/vsource",
+        "params": {
+          "dc": 12
+        }
+      },
+      {
+        "id": "DUT",
+        "component": "emblink/bridge_w01g"
+      },
+      {
+        "id": "RL",
+        "component": "emblink/resistor",
+        "params": {
+          "resistance": 10,
+          "tolerance": 0
+        }
+      },
+      {
+        "id": "G",
+        "component": "emblink/gnd"
+      }
+    ],
+    "nets": {
+      "VIN": [
+        "V1.+",
+        "DUT.AC2"
+      ],
+      "VDC": [
+        "DUT.+",
+        "RL.1"
+      ],
+      "GND": [
+        "V1.-",
+        "DUT.AC1",
+        "G.GND",
+        "RL.2",
+        "DUT.-"
+      ]
+    }
+  },
+  "expect": {
+    "net:VDC": {
+      "at": "50us",
+      "min_v": 11.0,
+      "max_v": 12
+    }
+  }
+}

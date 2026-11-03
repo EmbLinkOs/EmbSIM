@@ -1,0 +1,48 @@
+{
+  "schema_version": 1,
+  "kind": "component_test",
+  "name": "forward",
+  "description": "The datasheet's test current, 10 mA: the typical 1.9 V, under the 2.3 V maximum",
+  "policy": "electrical",
+  "until": "100us",
+  "settings": {
+    "imperfections": "ideal"
+  },
+  "circuit": {
+    "components": [
+      {
+        "id": "I1",
+        "component": "emblink/isource",
+        "params": {
+          "dc": 0.01
+        }
+      },
+      {
+        "id": "DUT",
+        "component": "emblink/wp7113it"
+      },
+      {
+        "id": "G",
+        "component": "emblink/gnd"
+      }
+    ],
+    "nets": {
+      "VD": [
+        "I1.-",
+        "DUT.A"
+      ],
+      "GND": [
+        "I1.+",
+        "DUT.K",
+        "G.GND"
+      ]
+    }
+  },
+  "expect": {
+    "net:VD": {
+      "at": "50us",
+      "min_v": 1.75,
+      "max_v": 2.3
+    }
+  }
+}

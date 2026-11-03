@@ -1,0 +1,90 @@
+{
+  "schema_version": 1,
+  "kind": "component_test",
+  "name": "on_voltage",
+  "description": "Triggered, 1.2 A into the anode (the datasheet's VTM point): the on-state voltage under its 1.7 V maximum",
+  "policy": "electrical",
+  "until": "200us",
+  "settings": {
+    "imperfections": "ideal"
+  },
+  "circuit": {
+    "components": [
+      {
+        "id": "IA",
+        "component": "emblink/isource",
+        "params": {
+          "kind": "pulse",
+          "v1": 0,
+          "v2": 1.2,
+          "td": "20u",
+          "tr": "50u",
+          "tf": "1u",
+          "pw": "1",
+          "per": "2"
+        }
+      },
+      {
+        "id": "RP",
+        "component": "emblink/resistor",
+        "params": {
+          "resistance": "1k",
+          "tolerance": 0
+        }
+      },
+      {
+        "id": "VS",
+        "component": "emblink/vsource",
+        "params": {
+          "kind": "dc",
+          "dc": 7
+        }
+      },
+      {
+        "id": "IG",
+        "component": "emblink/isource",
+        "params": {
+          "kind": "dc",
+          "dc": 0.001
+        }
+      },
+      {
+        "id": "DUT",
+        "component": "emblink/scr_2n5060g"
+      },
+      {
+        "id": "G0",
+        "component": "emblink/gnd"
+      }
+    ],
+    "nets": {
+      "PRE": [
+        "VS.+",
+        "RP.1"
+      ],
+      "AN": [
+        "RP.2",
+        "IA.-",
+        "DUT.A"
+      ],
+      "GATE": [
+        "IG.-",
+        "DUT.G"
+      ],
+      "GND": [
+        "VS.-",
+        "IA.+",
+        "IG.+",
+        "DUT.K",
+        "G0.GND"
+      ]
+    }
+  },
+  "expect": {
+    "net:AN": {
+      "at": "150us",
+      "min_v": 0.8,
+      "max_v": 1.7
+    }
+  }
+}

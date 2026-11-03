@@ -1,0 +1,74 @@
+{
+  "schema_version": 1,
+  "kind": "component_test",
+  "name": "vce_sat",
+  "description": "IC = 0.15 A with IB = 0.015 A: VCE(sat) at most the datasheet's 0.3 V",
+  "policy": "electrical",
+  "until": "200us",
+  "settings": {
+    "imperfections": "ideal"
+  },
+  "circuit": {
+    "components": [
+      {
+        "id": "IC",
+        "component": "emblink/isource",
+        "params": {
+          "kind": "pulse",
+          "v1": 0,
+          "v2": 0.15,
+          "td": "1u",
+          "tr": "50u",
+          "tf": "1u",
+          "pw": "1",
+          "per": "2"
+        }
+      },
+      {
+        "id": "IB",
+        "component": "emblink/isource",
+        "params": {
+          "kind": "pulse",
+          "v1": 0,
+          "v2": 0.015,
+          "td": "1u",
+          "tr": "50u",
+          "tf": "1u",
+          "pw": "1",
+          "per": "2"
+        }
+      },
+      {
+        "id": "DUT",
+        "component": "emblink/p2n2222ag"
+      },
+      {
+        "id": "G",
+        "component": "emblink/gnd"
+      }
+    ],
+    "nets": {
+      "COLL": [
+        "IC.-",
+        "DUT.C"
+      ],
+      "BASE": [
+        "IB.-",
+        "DUT.B"
+      ],
+      "GND": [
+        "IC.+",
+        "IB.+",
+        "DUT.E",
+        "G.GND"
+      ]
+    }
+  },
+  "expect": {
+    "net:COLL": {
+      "at": "150us",
+      "min_v": 0,
+      "max_v": 0.3
+    }
+  }
+}

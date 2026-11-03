@@ -1,0 +1,67 @@
+{
+  "schema_version": 1,
+  "kind": "component_test",
+  "name": "time_constant",
+  "description": "A 1 V step into the inductor through 10 ohm: the current rises with the time constant L / R, the resistor's voltage 63 % of its final value one time constant later",
+  "policy": "electrical",
+  "until": "29.042us",
+  "settings": {
+    "imperfections": "ideal"
+  },
+  "circuit": {
+    "components": [
+      {
+        "id": "VS",
+        "component": "emblink/vsource",
+        "params": {
+          "kind": "pulse",
+          "v1": 0,
+          "v2": 1,
+          "td": "0",
+          "tr": "1n",
+          "tf": "1n",
+          "pw": "1",
+          "per": "2"
+        }
+      },
+      {
+        "id": "RS",
+        "component": "emblink/resistor",
+        "params": {
+          "resistance": 10.0,
+          "tolerance": 0
+        }
+      },
+      {
+        "id": "DUT",
+        "component": "emblink/rlb0912_101kl"
+      },
+      {
+        "id": "G",
+        "component": "emblink/gnd"
+      }
+    ],
+    "nets": {
+      "IN": [
+        "VS.+",
+        "DUT.1"
+      ],
+      "MID": [
+        "DUT.2",
+        "RS.1"
+      ],
+      "GND": [
+        "VS.-",
+        "RS.2",
+        "G.GND"
+      ]
+    }
+  },
+  "expect": {
+    "net:MID": {
+      "at": "9.6805us",
+      "min_v": 0.5935,
+      "max_v": 0.6302
+    }
+  }
+}

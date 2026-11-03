@@ -1,0 +1,80 @@
+{
+  "schema_version": 1,
+  "kind": "component_test",
+  "name": "rds_on",
+  "description": "The datasheet's RDS(on) condition: 10 V on the gate through 10 ohm and 6 A into the drain (ramped up over 20 us); the drain voltage at most 6 A times 0.55 ohm",
+  "policy": "electrical",
+  "until": "100us",
+  "settings": {
+    "imperfections": "ideal"
+  },
+  "circuit": {
+    "components": [
+      {
+        "id": "VG",
+        "component": "emblink/vsource",
+        "params": {
+          "kind": "dc",
+          "dc": 10
+        }
+      },
+      {
+        "id": "RG",
+        "component": "emblink/resistor",
+        "params": {
+          "resistance": "10",
+          "tolerance": 0
+        }
+      },
+      {
+        "id": "I1",
+        "component": "emblink/isource",
+        "params": {
+          "kind": "pulse",
+          "v1": 0,
+          "v2": 6.0,
+          "td": "1u",
+          "tr": "20u",
+          "tf": "1u",
+          "pw": "1",
+          "per": "2"
+        }
+      },
+      {
+        "id": "DUT",
+        "component": "emblink/irf740"
+      },
+      {
+        "id": "G",
+        "component": "emblink/gnd"
+      }
+    ],
+    "nets": {
+      "DRV": [
+        "VG.+",
+        "RG.1"
+      ],
+      "GATE": [
+        "RG.2",
+        "DUT.G"
+      ],
+      "DRAIN": [
+        "I1.-",
+        "DUT.D"
+      ],
+      "GND": [
+        "I1.+",
+        "VG.-",
+        "DUT.S",
+        "G.GND"
+      ]
+    }
+  },
+  "expect": {
+    "net:DRAIN": {
+      "at": "50us",
+      "min_v": 2.805,
+      "max_v": 3.333
+    }
+  }
+}

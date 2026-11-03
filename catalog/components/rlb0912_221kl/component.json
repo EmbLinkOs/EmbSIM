@@ -1,0 +1,151 @@
+{
+  "schema_version": 1,
+  "kind": "component",
+  "id": "emblink/rlb0912_221kl",
+  "version": "1.0.0",
+  "name": "RLB0912-221KL",
+  "category": "inductors",
+  "subcategory": "fixed",
+  "description": "Bourns RLB0912-221KL, a 220 uH +/-10 % radial lead inductor of the RLB0912 series (ferrite drum core, 8.7 mm by 10 mm, 5 mm lead spacing): DC resistance 0.72 ohm maximum, rated current 0.8 A, 0.8 A saturation current (10 % inductance drop), self-resonance above 4.5 MHz, Q 30. The model: the inductance with its maximum DC resistance and a parallel capacitance setting resonance at the minimum SRF.",
+  "keywords": [
+    "Bourns",
+    "RLB0912-221KL",
+    "RLB0912",
+    "RLB",
+    "inductor",
+    "choke",
+    "radial",
+    "220 uH",
+    "power inductor",
+    "through-hole"
+  ],
+  "pins": [
+    {
+      "name": "1",
+      "number": 1,
+      "model": {
+        "kind": "passive"
+      }
+    },
+    {
+      "name": "2",
+      "number": 2,
+      "model": {
+        "kind": "passive"
+      }
+    }
+  ],
+  "params": {},
+  "model": {
+    "composite": {
+      "components": [
+        {
+          "id": "L1",
+          "component": "emblink/inductor",
+          "params": {
+            "inductance": 0.00022,
+            "tolerance": 0,
+            "dcr": 0.72
+          }
+        },
+        {
+          "id": "CP",
+          "component": "emblink/capacitor",
+          "params": {
+            "capacitance": 5.686e-12,
+            "tolerance": 0
+          }
+        }
+      ],
+      "nets": {
+        "1": [
+          "L1.1",
+          "CP.1"
+        ],
+        "2": [
+          "L1.2",
+          "CP.2"
+        ]
+      },
+      "ports": {
+        "1": "L1.1",
+        "2": "L1.2"
+      }
+    }
+  },
+  "symbol": {
+    "svg": "symbol.svg",
+    "width": 60,
+    "height": 20,
+    "pins": {
+      "1": {
+        "x": 0,
+        "y": 10,
+        "side": "left"
+      },
+      "2": {
+        "x": 60,
+        "y": 10,
+        "side": "right"
+      }
+    }
+  },
+  "fidelity": {
+    "functional": null,
+    "timed": null,
+    "electrical": {
+      "claims": "The nominal inductance with the datasheet's maximum DC resistance in series and a parallel capacitance placing self-resonance at the minimum SRF; fixtures for the DC drop at the rated current and the L/R time constant.",
+      "omissions": [
+        "saturation: the inductance does not fall with current, 0.8 A saturation current (10 % inductance drop)",
+        "core losses and the Q's frequency dependence (Q 30 at the test frequency)",
+        "the inductance tolerance (+/-10 %): every part is nominal",
+        "heating at the rated current (the rating is a 20 to 40 C rise) and the DC resistance's copper tempco",
+        "the winding's distributed capacitance beyond one lumped capacitor; the SRF is a minimum, real parts resonate above it"
+      ],
+      "validation": [
+        "tests/*.json"
+      ]
+    }
+  },
+  "provenance": {
+    "author": "EmbSIM",
+    "license": "Apache-2.0",
+    "sources": [
+      {
+        "title": "Bourns RLB Series Radial Lead Inductors datasheet",
+        "url": "https://www.bourns.com/docs/Product-Datasheets/RLB.pdf",
+        "rev": "current at retrieval",
+        "date": "2026-11-03",
+        "hash": "sha256:0706af005490cf366aeeb83157579d2f8dbec936670158216c1a1653ef36e28a",
+        "notes": "The product dimensions per series (diameter, height, lead spacing); the electrical specification tables of RLB0608, RLB0812, RLB1014, RLB0712, RLB0912, RLB0914 and RLB1314: inductance and tolerance, Q, test frequency, SRF minimum, RDC maximum, rated current (and Irms, Isat where given). generated from catalog/families/inductors_bourns_rlb/family.json by tools/catalog/families.py; edit the family, not this file"
+      }
+    ]
+  },
+  "part": {
+    "manufacturer": "Bourns",
+    "mpn": "RLB0912-221KL",
+    "package": "Radial 8.7 x 10 mm, P 5 mm",
+    "datasheet": "https://www.bourns.com/docs/Product-Datasheets/RLB.pdf"
+  },
+  "tests": [
+    "tests/*.json"
+  ],
+  "i18n": {
+    "fr": {
+      "source": "85d95a755765",
+      "description": "Bourns RLB0912-221KL, une inductance radiale de 220 uH +/-10 % de la série RLB0912 (noyau ferrite à tambour, 8,7 mm sur 10,0 mm, pas de 5,0 mm) : résistance continue de 0,72 ohm au maximum, courant nominal de 0,8 A, courant de saturation de 0,8 A (baisse d'inductance de 10 %), auto-résonance au-delà de 4,5 MHz, Q de 30. Le modèle : l'inductance avec sa résistance continue maximale et une capacité parallèle plaçant la résonance au SRF minimal.",
+      "fidelity": {
+        "electrical": {
+          "claims": "L'inductance nominale avec la résistance continue maximale de la fiche technique en série et une capacité parallèle plaçant l'auto-résonance au SRF minimal ; cas de test pour la chute continue au courant nominal et la constante de temps L/R.",
+          "omissions": [
+            "la saturation : l'inductance ne baisse pas avec le courant, courant de saturation de 0,8 A (baisse d'inductance de 10 %)",
+            "les pertes du noyau et la dépendance du Q à la fréquence (Q de 30 à la fréquence de test)",
+            "la tolérance d'inductance (+/-10 %) : chaque exemplaire est nominal",
+            "l'échauffement au courant nominal (le courant nominal correspond à une élévation de 20 à 40 °C) et le coefficient de température du cuivre",
+            "la capacité répartie du bobinage au-delà d'un condensateur unique ; le SRF est un minimum, les composants réels résonnent au-dessus"
+          ]
+        }
+      }
+    }
+  }
+}

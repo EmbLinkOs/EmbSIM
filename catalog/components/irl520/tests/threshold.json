@@ -1,0 +1,50 @@
+{
+  "schema_version": 1,
+  "kind": "component_test",
+  "name": "threshold",
+  "description": "Gate tied to drain with 250 uA flowing, the datasheet's VGS(th) condition: the gate settles at 1.517 V, inside 1 to 2 V",
+  "policy": "electrical",
+  "until": "100us",
+  "settings": {
+    "imperfections": "ideal"
+  },
+  "circuit": {
+    "components": [
+      {
+        "id": "I1",
+        "component": "emblink/isource",
+        "params": {
+          "kind": "dc",
+          "dc": 0.00025
+        }
+      },
+      {
+        "id": "DUT",
+        "component": "emblink/irl520"
+      },
+      {
+        "id": "G",
+        "component": "emblink/gnd"
+      }
+    ],
+    "nets": {
+      "DRAIN": [
+        "I1.-",
+        "DUT.D",
+        "DUT.G"
+      ],
+      "GND": [
+        "I1.+",
+        "DUT.S",
+        "G.GND"
+      ]
+    }
+  },
+  "expect": {
+    "net:DRAIN": {
+      "at": "80us",
+      "min_v": 1.0,
+      "max_v": 2.0
+    }
+  }
+}

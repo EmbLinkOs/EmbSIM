@@ -1,0 +1,185 @@
+{
+  "schema_version": 1,
+  "kind": "component",
+  "id": "emblink/bjt_2n4403g",
+  "version": "1.0.0",
+  "name": "2N4403G",
+  "category": "transistors",
+  "subcategory": "bipolar_pnp",
+  "description": "onsemi 2N4403G, a PNP transistor in TO-92 (E1, B2, C3): VCEO 40 V, 0.6 A, 0.625 W at 25 C ambient; hFE at least 30 at 0.1 mA, 60 at 1 mA, 100 at 10 mA and 100 to 300 at 150 mA; VCE(sat) 0.4 V maximum and VBE(sat) 0.75 to 0.95 V at 150 mA. The model's gain is 173, the geometric middle of the 150 mA limits.",
+  "keywords": [
+    "onsemi",
+    "2N4403G",
+    "2N4403",
+    "PNP",
+    "BJT",
+    "transistor",
+    "small signal",
+    "TO-92"
+  ],
+  "pins": [
+    {
+      "name": "E",
+      "number": 1,
+      "model": {
+        "kind": "passive"
+      },
+      "doc": "Emitter"
+    },
+    {
+      "name": "B",
+      "number": 2,
+      "model": {
+        "kind": "passive"
+      },
+      "doc": "Base"
+    },
+    {
+      "name": "C",
+      "number": 3,
+      "model": {
+        "kind": "passive"
+      },
+      "doc": "Collector"
+    }
+  ],
+  "params": {
+    "is": {
+      "type": "number",
+      "unit": "A",
+      "default": 1e-14,
+      "doc": "Transport saturation current",
+      "min": "1e-20",
+      "max": "1m",
+      "advanced": true
+    },
+    "bf": {
+      "type": "number",
+      "unit": "",
+      "default": 173,
+      "doc": "Forward current gain",
+      "min": 1,
+      "max": 2000
+    },
+    "br": {
+      "type": "number",
+      "unit": "",
+      "default": 1,
+      "doc": "Reverse current gain",
+      "min": 0.01,
+      "max": 100,
+      "advanced": true
+    },
+    "rb": {
+      "type": "number",
+      "unit": "ohm",
+      "default": 0,
+      "doc": "Base resistance",
+      "min": 0,
+      "advanced": true
+    },
+    "rc": {
+      "type": "number",
+      "unit": "ohm",
+      "default": 1.0,
+      "doc": "Collector resistance",
+      "min": 0,
+      "advanced": true
+    },
+    "re": {
+      "type": "number",
+      "unit": "ohm",
+      "default": 0.2,
+      "doc": "Emitter resistance",
+      "min": 0,
+      "advanced": true
+    }
+  },
+  "model": {
+    "primitive": "bjt_pnp"
+  },
+  "symbol": {
+    "svg": "symbol.svg",
+    "width": 40,
+    "height": 40,
+    "pins": {
+      "B": {
+        "x": 0,
+        "y": 20,
+        "side": "left"
+      },
+      "C": {
+        "x": 40,
+        "y": 0,
+        "side": "top"
+      },
+      "E": {
+        "x": 40,
+        "y": 40,
+        "side": "bottom"
+      }
+    }
+  },
+  "fidelity": {
+    "functional": null,
+    "timed": null,
+    "electrical": {
+      "claims": "Ebers-Moll transistor at a constant gain of 173 (the geometric middle of the datasheet's 100 to 300 at 150 mA), collector and emitter resistances for its saturation; fixtures for hFE at the datasheet's currents (read through a collector resistor), VCE(sat) and VBE(sat).",
+      "omissions": [
+        "the gain's variation with current: it stays 173",
+        "the Early effect: the collector current does not rise with VCE",
+        "capacitances and fT, so no switching times",
+        "temperature: VBE's -2 mV/C and the gain's rise",
+        "second breakdown, the safe operating area and damage past the ratings",
+        "device-to-device spread within the gain limits",
+        "no manufacturer model qualification"
+      ],
+      "validation": [
+        "tests/*.json"
+      ]
+    }
+  },
+  "provenance": {
+    "author": "EmbSIM",
+    "license": "Apache-2.0",
+    "sources": [
+      {
+        "title": "onsemi 2N4403 PNP switching transistor datasheet (2N4403/D)",
+        "url": "https://www.onsemi.com/download/data-sheet/pdf/2n4403-d.pdf",
+        "rev": "current at retrieval",
+        "date": "2026-11-03",
+        "hash": "sha256:7d9794a0262b53f26f36cfd97a681384b358901c61fb5ac5956e785fe61b6bf9",
+        "notes": "Maximum ratings (VCEO 40 V, IC 600 mA, PD 625 mW); hFE at 0.1, 1, 10, 150 and 500 mA; VCE(sat) 0.4 V and VBE(sat) 0.75 to 0.95 V at 150 mA, 15 mA; TO-92 case 29 style 1 (E1, B2, C3); the ordering information. generated from catalog/families/bjt_onsemi_2n4403/family.json by tools/catalog/families.py; edit the family, not this file"
+      }
+    ]
+  },
+  "part": {
+    "manufacturer": "onsemi",
+    "mpn": "2N4403G",
+    "package": "TO-92",
+    "datasheet": "https://www.onsemi.com/download/data-sheet/pdf/2n4403-d.pdf"
+  },
+  "tests": [
+    "tests/*.json"
+  ],
+  "i18n": {
+    "fr": {
+      "source": "d7ced280f336",
+      "description": "onsemi 2N4403G, un transistor PNP en TO-92 (E1, B2, C3) : VCEO 40 V, 0,6 A, 0,625 W à 25 °C ambiant ; hFE d'au moins 30 à 0,1 mA, 60 à 1 mA, 100 à 10 mA et de 100 à 300 à 150 mA ; VCE(sat) de 0,4 V au maximum et VBE(sat) de 0,75 à 0,95 V à 150 mA. Le gain du modèle est 173, le milieu géométrique des limites à 150 mA.",
+      "fidelity": {
+        "electrical": {
+          "claims": "Transistor d'Ebers-Moll à un gain constant de 173 (le milieu géométrique des limites de la fiche technique's 100 to 300 at 150 mA), résistances de collecteur et d'émetteur pour sa saturation ; cas de test pour hFE aux courants de la fiche technique (lu à travers une résistance de collecteur), VCE(sat) et VBE(sat).",
+          "omissions": [
+            "la variation du gain avec le courant : il reste 173",
+            "l'effet Early : le courant de collecteur ne croît pas avec VCE",
+            "les capacités et fT, donc pas de temps de commutation",
+            "la température : les -2 mV/°C de VBE et la hausse du gain",
+            "le second claquage, l'aire de sécurité et les dommages au-delà des valeurs nominales",
+            "la dispersion d'un exemplaire à l'autre dans les limites de gain",
+            "aucune qualification par un modèle du fabricant"
+          ]
+        }
+      }
+    }
+  }
+}

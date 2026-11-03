@@ -2,6 +2,7 @@
   "schema_version": 1,
   "kind": "component_test",
   "name": "reverse",
+  "description": "VRRM across it through 100 kohm: under the datasheet's 5.0 uA (IR at 25 C), so under 0.5 V across the resistor",
   "policy": "electrical",
   "until": "100us",
   "circuit": {
@@ -10,14 +11,14 @@
         "id": "V1",
         "component": "emblink/vsource",
         "params": {
-          "dc": 3.3
+          "dc": 1000
         }
       },
       {
         "id": "R1",
         "component": "emblink/resistor",
         "params": {
-          "resistance": "1k"
+          "resistance": "100k"
         }
       },
       {
@@ -34,7 +35,7 @@
         "V1.+",
         "R1.1"
       ],
-      "VD": [
+      "VK": [
         "R1.2",
         "DUT.K"
       ],
@@ -46,10 +47,10 @@
     }
   },
   "expect": {
-    "net:VD": {
+    "net:VK": {
       "at": "50us",
-      "min_v": 3.25,
-      "max_v": 3.31
+      "min_v": 999.5,
+      "max_v": 1000
     }
   }
 }

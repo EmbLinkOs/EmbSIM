@@ -13,10 +13,141 @@ versions follow semantic versioning. There is no release yet.
   Series, Analog ICs, Data Converters, Memory ICs, Microprocessor ICs,
   Optoelectronics, Transducers, Switches & Relays, Connectors, ...) and
   their sub-categories, named in English, French and Spanish in
-  `catalog/taxonomy.json` (SPEC-005 §2). All 205 components are filed
+  `catalog/taxonomy.json` (SPEC-005 §2). All the components are filed
   under it; the validator rejects a category or sub-category it does not
   list and warns on the names used before (`passives`, `logic`, ...),
   which still load.
+- Part families (SPEC-005 §2): one datasheet table, one row per real part
+  number, expanded into catalog entries by `tools/catalog/families.py`,
+  whose `verify` finds every row's values in the datasheet's text and whose
+  `check` (ctest `catalog_families`) keeps the entries in step. The first
+  first eight families hold 146 parts (142 new; the 1N4007, BZX55C5V1,
+  BC547B and BC557B now generated): Vishay's 1N4001 to 1N4007 and 1N5400 to
+  1N5408 rectifiers, 1N5817 to 1N5819 Schottky rectifiers (fitted under
+  both of each part's VF maxima), the 74 BZX55 zeners of the C and B grades
+  and the 34 1N4728A to 1N4761A zeners; onsemi's 1N914, 1N916, 1N4148 and
+  1N4448 switching diodes by grade; onsemi's BC546 to BC548 NPN and BC556
+  to BC558 PNP transistors by hFE group. Each part has fixtures holding it
+  to its datasheet's limits (VF, IR, VZ; hFE, VBE(on), VCE(sat), ICES).
+  BC547B and BC557B now take their group's typical gain (290) and no
+  longer have an Early voltage the datasheet does not give. The bench draws an axial part by its
+  package (DO-35, DO-41, DO-201AD).
+- More families: onsemi's MC7805 to MC7824 regulators in the B, C and AC
+  grades (21), and 776 Vishay metal film resistors, the CCF55's every E96
+  value from 10 ohm to 3.01 Mohm at 1 % and the CCF07's E24 values at 2 %
+  and 5 %, each under the part number its datasheet's coding gives
+  (CCF5510K0FKE36), its tolerance drawn from the project's seed and its
+  temperature coefficient the datasheet's. The bench draws a resistor's
+  colour code from its value and tolerance (five bands at 1 %), TO-92 and
+  TO-220 bodies by package; `run_fixtures.py` runs fixtures in parallel.
+- 323 Nichicon aluminium electrolytic capacitors, every part number of the
+  UVR (85 C) and UHE (105 C, low impedance) catalogs' tables, each with its
+  catalog's capacitance, voltage, case, ripple and an ESR from its tan δ
+  (UVR) or 100 kHz impedance (UHE), held to the RC time constant and the
+  ESR step; the bench draws each can at its size. And 385 Vishay K series
+  radial leaded MLCCs, every ordering code of its C0G and X7R tables (10 pF
+  to 1 uF, 50 to 500 V), with the datasheet's tolerance, size and lead
+  spacing.
+- 115 more zeners (Vishay's 1N5221 to 1N5267 in the B and C tolerances,
+  onsemi's BZX79C2V4 to C18) and 23 Kingbright LEDs (the 5 mm WP7113 and
+  3 mm WP710A10 lines in their colours and lenses), each LED at its
+  datasheet's typical forward voltage at its test current, damaged past its
+  ratings (ADR-034), its colour its dominant wavelength's. And Vishay's
+  W005G to W10G bridge rectifiers, four junctions in a composite with their
+  own bridge symbol.
+- Transformers: a `transformer` primitive (SPEC-004 §7), two coupled
+  windings with their copper resistances, and `transformer_ct` with a
+  centre-tapped secondary (`test_analog`'s ratio, centre-tap and DC tests);
+  13 Triad Magnetics F series power transformers built on them at their
+  datasheets' no-load ratio and regulation. And 11 Vishay phototransistor
+  optocouplers by CTR rank (SFH617A-1 to -4, CNY17-1 to -4, 4N35 to 4N37)
+  on a generic `emblink/optocoupler`.
+- Op-amps and power MOSFETs as families. Texas Instruments' LM358, LM258
+  and LM2904 (classic and B versions), TL072 (C, AC, BC, I and H) and
+  NE5532 and SA5532 dual op-amps, every orderable package (40), each at its
+  datasheet's open-loop gain, gain-bandwidth, slew rate and output swing,
+  held to a follower, the swing, the slew and the bandwidth; the LM358P is
+  now generated, its pins named as the datasheet names them (OUT1, IN1-,
+  ...). Vishay Siliconix's IRF510 to IRF840, IRFZ14 to IRFZ48 and IRL510
+  to IRL540 N-channel and IRF9510 to IRF9640 and IRF9Z14 to IRF9Z34
+  P-channel power MOSFETs (43), from each part's own datasheet: a level-1
+  channel at the middle of VGS(th), its gain meeting RDS(on)'s maximum and
+  gfs's minimum, a drain resistance, the body diode at its VSD maximum and
+  Cgs, Cgd and Cds from Ciss, Crss and Coss; fixtures for off, RDS(on),
+  VGS(th) at 250 uA, the body diode and the input time constant.
+- Texas Instruments' LM324, LM224 and LM2902 quad op-amps (23 orderables,
+  classic and B versions) on a four-amplifier composite with its own symbol,
+  held to a follower, the swing, the slew rate and the bandwidth on its four
+  channels. And 203 Bourns RLB radial lead inductors (RLB0608 to RLB1314,
+  1 uH to 100 mH), each the inductance with its maximum DC resistance and a
+  parallel capacitance at its minimum self-resonant frequency, held to the
+  drop at its rated current and its L/R time constant; the library files
+  them under new Inductors sub-categories (fixed, power) and the bench
+  draws them as sleeved drum cores at their datasheet size.
+- Junction physics SPEC-004 listed and the engine ignored: a diode's charge
+  (depletion `cj0`, `vj`, `m`, `fc` and diffusion `tt`, so its capacitance
+  and its reverse recovery; the island restarts with backward Euler where
+  the stored charge empties, as trapezoidal integration would ring), a
+  bipolar transistor's (`cje`, `cjc`, `tf`, `tr`: switching delays and a
+  saturated switch's storage time) and its breakdown (`bvcbo`, `bvebo`), and
+  a zener's breakdown on its own path (`rbv`, `nbv`: its dynamic resistance
+  and soft knee apart from the forward `rs`). `test_analog`: the depletion
+  time constant, the recovery current and storage time, the zener's slope,
+  the BJT's storage time and both breakdowns.
+- Thyristors: `triac` and `diac` primitives (SPEC-004), latched switches
+  whose state changes on accepted steps: off they leak, past `vbo` they
+  break over, a triac also fires when its gate current reaches its
+  quadrant's trigger current (I to IV); on they conduct with a smooth knee
+  until the current falls under `ih`. A Thyristors category (SCRs, triacs,
+  diacs) in the taxonomy; generic `emblink/triac` and `emblink/diac`
+  (a 32 V trigger diac); onsemi's 2N5060G, 2N5061G, 2N5062G and 2N5064G
+  sensitive-gate SCRs as the thyristor's two-transistor equivalent on the
+  bipolar transistor's new breakdown, and MAC97A4G, MAC97A6G and MAC97A8G
+  triacs, from 2N5060/D and MAC97/D, each held to blocking at VDRM, its
+  trigger current (every quadrant for the triacs), the non-trigger gate
+  voltage, latching, dropping out under the holding current and the
+  on-state voltage. The bipolar transistors, diodes and zeners declare the
+  new junction parameters (`bvcbo`, `bvebo`, `cje`, `cjc`, `tf`, `tr`;
+  `cj0`, `vj`, `m`, `fc`, `tt`; `rbv`, `nbv`).
+- Negative regulators: the `regulator` primitive takes `polarity` -1, every
+  voltage and current mirrored (IN and OUT below GND; `test_analog`'s
+  `test_regulator_negative`), and onsemi's MC7905 to MC7918 in the B, C and
+  AC grades (10, every TO-220 orderable) are built on it from MC7900/D's
+  tables: VO at the table's VI and 500 mA and at 1.0 A, the 1.3 V dropout,
+  the input bias current, GND 1 / IN 2 / OUT 3.
+- Power transistors: onsemi's TIP31A/B/C and TIP32A/B/C, BD135/137/139 and
+  BD136/138/140 by gain group, 2N3055 and MJ2955 (17), each at a constant
+  gain inside its datasheet's hFE limits with the collector and emitter
+  resistances of its high-current VCE(sat) and VBE(on), held to hFE at the
+  datasheet's currents, VCE(sat) and VBE(on); and the TIP120 to TIP127
+  Darlingtons (6) as the datasheet's circuit, two transistors with the
+  8 kohm and 120 ohm base-emitter shunts and the collector-emitter diode.
+  The library gains Transistors > Darlington NPN and PNP. And onsemi's
+  2N4401, 2N4403, P2N2222A, MPSA42, MPSA92 and BC327 (by gain group)
+  small-signal transistors, held to hFE, VCE(sat) and VBE(sat) or VBE(on).
+  Seven more Kingbright LEDs (WP7113SGC, SYC, SURC/E, VBC/D, CGCK and the
+  WP710A10SEC/J3 and SYC/J3), 30 in all.
+- An analog island asked to advance a picosecond past its last step (the
+  scheduler's minimum) solved a step already at h_min; a centre-tapped
+  transformer with its tap open, whose nearly singular inductance matrix
+  leaves the floating tap's voltage to round-off, could fail to converge
+  there and end the run (`analog.timestep_too_small` on macOS and Windows
+  for the F-40X and F-45X). When the rest of a call is a gap of 16 ps or
+  less and Newton cannot settle in it, the accepted solution now holds to
+  its end; every other step is solved as before. The Triad families gain
+  low-line and high-line fixtures (the mains 10 % low and high), which
+  caught it on Linux too. `catalog_fixture_assertions` runs in four shards
+  (`run_fixtures.py --shard K/N`) so no test nears CTest's timeout as the
+  catalog grows.
+- An analog part with only some of its pins wired lost the open ones'
+  places: an optocoupler failed to load and a transformer's free centre tap
+  was grounded. Both now keep their terminals and leave the open ones
+  floating, as a real part's do.
+- The capacitor primitive's `esr` (SPEC-004 §7) is applied: it was read
+  and ignored, so a capacitor had no series resistance whatever its
+  description said. The capacitance now sits behind an internal node, the
+  ESR between it and the first pin, `ic` across the capacitance itself
+  (`test_analog`'s `test_cap_esr`).
 - The library's browser is the category tree: a category opens its
   sub-categories with their counts, search matches category and
   sub-category names, and `embsim catalog show` prints both.

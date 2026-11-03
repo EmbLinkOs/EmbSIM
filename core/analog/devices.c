@@ -43,7 +43,10 @@ const char *const *esk_adev_pin_names(const esk_adev_ops *ops, int *n)
                              *const spdt[] = { "COM", "NC", "NO" }, *const one[] = { "1" },
                              *const ppk[] = { "VIN", "VOUT", "GND" },
                              *const scope[] = { "CH1", "CH2", "CH3", "CH4", "GND" },
-                             *const dmm[] = { "COM", "V", "MA", "A" };
+                             *const dmm[] = { "COM", "V", "MA", "A" },
+                             *const xfmr[] = { "P1", "P2", "S1", "S2" },
+                             *const xfmr_ct[] = { "P1", "P2", "S1", "CT", "S2" },
+                             *const triac[] = { "MT2", "MT1", "G" }, *const diac[] = { "A1", "A2" };
     static const struct { const char *name; const char *const *pins; int n; } table[] = {
         { "environment_resistor", env, 2 }, { "ptc_fuse", two, 2 }, { "photodiode", dio, 2 }, { "optocoupler", opto, 4 },
         { "relay_contacts", relay, 5 }, { "spdt_contact", spdt, 3 },
@@ -52,7 +55,8 @@ const char *const *esk_adev_pin_names(const esk_adev_ops *ops, int *n)
         { "led", dio, 2 }, { "rgb_led", rgb, 4 }, { "zener", dio, 2 }, { "bjt_npn", bjt, 3 }, { "bjt_pnp", bjt, 3 },
         { "nmos", mos, 3 }, { "pmos", mos, 3 }, { "opamp", amp, 5 }, { "regulator", reg, 3 }, { "pull", one, 1 },
         { "usb_meter", reg, 3 }, { "instrument_input", src, 2 }, { "power_profiler", ppk, 3 }, { "oscilloscope", scope, 5 },
-        { "multimeter", dmm, 4 },
+        { "multimeter", dmm, 4 }, { "transformer", xfmr, 4 }, { "transformer_ct", xfmr_ct, 5 },
+        { "triac", triac, 3 }, { "diac", diac, 2 },
     };
     size_t i;
     for (i = 0; ops && i < sizeof table / sizeof table[0]; i++)
@@ -72,7 +76,9 @@ int esk_adev_preserves_open_pins(const esk_adev_ops *ops)
                    !strcmp(ops->name, "instrument_input") || !strcmp(ops->name, "vsource") ||
                    !strcmp(ops->name, "power_profiler") || /* VIN is open in source meter mode */
                    !strcmp(ops->name, "oscilloscope") ||   /* a channel with no probe on it */
-                   !strcmp(ops->name, "multimeter"));     /* a jack with no lead in it */
+                   !strcmp(ops->name, "multimeter") ||    /* a jack with no lead in it */
+                   !strcmp(ops->name, "transformer") || !strcmp(ops->name, "transformer_ct") || /* a lead left free (an unused centre tap) */
+                   !strcmp(ops->name, "optocoupler"));    /* an LED or a phototransistor not yet wired */
 }
 
 static double pd(const esk_adev *d, const char *name, double def)
@@ -293,18 +299,34 @@ static es_status cap_setup(esk_adev *d)
         s->c = 1e-6;
     }
     s->esr = pd(d, "esr", 0.0);
+    if (s->esr < 0.0) {
+        param_error(d, "esr", "must be >= 0");
+        s->esr = 0.0;
+    }
     s->has_ic = has_param(d, "ic");
     s->ic = pd(d, "ic", 0.0);
-    d->nbranch = s->has_ic ? 1 : 0; /* an ideal source holds `ic` at the operating point */
+    /* an ideal source holds `ic` at the operating point; with an ESR the
+     * capacitance sits behind an internal node (C') the ESR joins to the
+     * first pin, as a real capacitor's dielectric behind its plates and leads */
+    d->nbranch = (s->has_ic ? 1 : 0) + (s->esr > 0.0 ? 1 : 0);
     return ES_OK;
+}
+
+/* the capacitance's own node: C' behind the ESR, or the first pin */
+static int cap_node(const esk_adev *d, const cap_state *s)
+{
+    return s->esr > 0.0 ? d->branch[s->has_ic ? 1 : 0] : d->node[0];
 }
 
 static void cap_load_dc(esk_adev *d, esk_amatrix *m)
 {
     cap_state *s = (cap_state *)d->state;
-    double v = esk_am_v(m, d->node[0], d->node[1]);
+    int a = cap_node(d, s);
+    double v = esk_am_v(m, a, d->node[1]);
     if (s->has_ic)
-        stamp_vsrc(m, d->node[0], d->node[1], d->branch[0], s->ic * esk_am_source_scale(m), 0.0);
+        stamp_vsrc(m, a, d->node[1], d->branch[0], s->ic * esk_am_source_scale(m), 0.0);
+    if (s->esr > 0.0)
+        esk_am_stamp_g(m, d->node[0], a, 1.0 / s->esr);
     s->q_trial = s->c * v;
     s->i_trial = 0.0;
     s->trial_first = 1;
@@ -314,10 +336,13 @@ static void cap_load_dc(esk_adev *d, esk_amatrix *m)
 static void cap_load_tr(esk_adev *d, esk_amatrix *m, const esk_integ *in)
 {
     cap_state *s = (cap_state *)d->state;
-    double v = esk_am_v(m, d->node[0], d->node[1]);
+    int a = cap_node(d, s);
+    double v = esk_am_v(m, a, d->node[1]);
     double q = s->c * v, geq, ieq;
     esk_integ_companion(in, q, s->q_prev, s->i_prev, s->c, &geq, &ieq);
-    stamp_nl(m, d->node[0], d->node[1], geq, ieq, v);
+    stamp_nl(m, a, d->node[1], geq, ieq, v);
+    if (s->esr > 0.0)
+        esk_am_stamp_g(m, d->node[0], a, 1.0 / s->esr);
     if (s->has_ic) {
         /* the initial-condition branch carries no current after the operating point */
         esk_am_stamp_j(m, d->branch[0], d->branch[0], 1.0);
@@ -525,6 +550,168 @@ static double ind_lte(esk_adev *d, const esk_integ *in)
 static const esk_adev_ops inductor_ops = {"inductor",  sizeof(ind_state), ind_setup, ind_load_dc,
                                           ind_load_tr, ind_accept,        NULL,      NULL,
                                           ind_lte,     observe_basic,     NULL};
+
+/* ---- transformers: coupled inductors ------------------------------------- */
+
+/* Windings w = 0..nw-1, each a branch current (into its first, dotted pin),
+ * their fluxes phi_w = sum_v M_wv i_v with M_ww = L_w and M_wv =
+ * k sqrt(L_w L_v), each with its copper resistance in series. At DC every
+ * winding is its resistance. `transformer`: primary P1-P2 (lp, rp) and
+ * secondary S1-S2 (ls, rs). `transformer_ct`: the secondary centre-tapped,
+ * S1-CT and CT-S2 each half its turns, so a quarter of ls and half of rs. */
+#define XFMR_MAXW 3
+typedef struct xfmr_state {
+    int nw;
+    double l[XFMR_MAXW], r[XFMR_MAXW], m[XFMR_MAXW][XFMR_MAXW];
+    double phi_prev[XFMR_MAXW], v_prev[XFMR_MAXW], v_prev2[XFMR_MAXW];
+    double phi_trial[XFMR_MAXW], v_trial[XFMR_MAXW];
+    int nhist, trial_first, trial_negligible;
+} xfmr_state;
+
+static es_status xfmr_setup_n(esk_adev *d, int ct)
+{
+    xfmr_state *s = (xfmr_state *)d->state;
+    double k = pd(d, "k", 0.99), lp = pd(d, "lp", 1.0), ls = pd(d, "ls", 0.01);
+    double rp = pd(d, "rp", 0.0), rs = pd(d, "rs", 0.0);
+    int w, v;
+    if (!(lp > 0.0) || !(ls > 0.0)) {
+        param_error(d, "lp/ls", "must be > 0");
+        lp = 1.0;
+        ls = 0.01;
+    }
+    /* k = 1 makes the inductance matrix singular: an ideal transformer has
+     * no magnetising current to define it */
+    if (!(k >= 0.0 && k < 1.0)) {
+        param_error(d, "k", "must be >= 0 and < 1");
+        k = 0.99;
+    }
+    if (rp < 0.0 || rs < 0.0) {
+        param_error(d, "rp/rs", "must be >= 0");
+        rp = rs = 0.0;
+    }
+    s->nw = ct ? 3 : 2;
+    s->l[0] = lp;
+    s->r[0] = rp;
+    for (w = 1; w < s->nw; w++) {
+        s->l[w] = ct ? ls / 4.0 : ls;
+        s->r[w] = ct ? rs / 2.0 : rs;
+    }
+    for (w = 0; w < s->nw; w++)
+        for (v = 0; v < s->nw; v++)
+            s->m[w][v] = w == v ? s->l[w] : k * sqrt(s->l[w] * s->l[v]);
+    d->nbranch = s->nw;
+    return ES_OK;
+}
+
+static es_status xfmr_setup(esk_adev *d) { return xfmr_setup_n(d, 0); }
+static es_status xfmr_ct_setup(esk_adev *d) { return xfmr_setup_n(d, 1); }
+
+/* winding w's pins: P1-P2, then S1-S2, or S1-CT and CT-S2 */
+static void xfmr_pins(const esk_adev *d, const xfmr_state *s, int w, int *a, int *b)
+{
+    if (w == 0) {
+        *a = d->node[0];
+        *b = d->node[1];
+    } else if (s->nw == 2) {
+        *a = d->node[2];
+        *b = d->node[3];
+    } else {
+        *a = d->node[w == 1 ? 2 : 3];
+        *b = d->node[w == 1 ? 3 : 4];
+    }
+}
+
+static void xfmr_load(esk_adev *d, esk_amatrix *m, const esk_integ *in)
+{
+    xfmr_state *s = (xfmr_state *)d->state;
+    double i[XFMR_MAXW];
+    int w, v;
+    for (w = 0; w < s->nw; w++)
+        i[w] = esk_am_x(m, d->branch[w]);
+    for (w = 0; w < s->nw; w++) {
+        int a, b, br = d->branch[w];
+        double phi = 0.0, alpha = 0.0, vl = 0.0;
+        for (v = 0; v < s->nw; v++)
+            phi += s->m[w][v] * i[v];
+        if (in) /* with c = 1 the companion's conductance is the integration's d/dt factor */
+            esk_integ_companion(in, phi, s->phi_prev[w], s->v_prev[w], 1.0, &alpha, &vl);
+        xfmr_pins(d, s, w, &a, &b);
+        esk_am_stamp_j(m, a, br, 1.0);
+        esk_am_stamp_j(m, b, br, -1.0);
+        esk_am_stamp_f(m, a, i[w]);
+        esk_am_stamp_f(m, b, -i[w]);
+        esk_am_stamp_j(m, br, a, 1.0);
+        esk_am_stamp_j(m, br, b, -1.0);
+        for (v = 0; v < s->nw; v++)
+            esk_am_stamp_j(m, br, d->branch[v], -(alpha * s->m[w][v] + (v == w ? s->r[w] : 0.0)));
+        esk_am_stamp_f(m, br, esk_am_v(m, a, b) - vl - s->r[w] * i[w]);
+        s->phi_trial[w] = phi;
+        s->v_trial[w] = vl;
+    }
+    s->trial_first = in ? esk_integ_first_order(in) : 1;
+    s->trial_negligible = in ? esk_integ_negligible(in) : 0;
+}
+
+static void xfmr_load_dc(esk_adev *d, esk_amatrix *m) { xfmr_load(d, m, NULL); }
+static void xfmr_load_tr(esk_adev *d, esk_amatrix *m, const esk_integ *in) { xfmr_load(d, m, in); }
+
+static void xfmr_accept(esk_adev *d, es_time_t t)
+{
+    xfmr_state *s = (xfmr_state *)d->state;
+    int w, k;
+    ES_UNUSED(t);
+    if (s->trial_first) {
+        s->nhist = 1;
+        for (w = 0; w < s->nw; w++)
+            s->v_prev2[w] = s->v_prev[w];
+    } else if (!(s->trial_negligible && s->nhist >= 1)) {
+        if (s->nhist < 2)
+            s->nhist++;
+        for (w = 0; w < s->nw; w++)
+            s->v_prev2[w] = s->v_prev[w];
+    }
+    for (w = 0; w < s->nw; w++) {
+        s->v_prev[w] = s->v_trial[w];
+        s->phi_prev[w] = s->phi_trial[w];
+    }
+    for (k = 0; k < d->nnodes; k++)
+        d->i_last[k] = 0.0;
+    for (w = 0; w < s->nw; w++) {
+        double iw = acc_x(d, d->branch[w]);
+        int pa = w == 0 ? 0 : s->nw == 2 ? 2 : (w == 1 ? 2 : 3), pb = w == 0 ? 1 : s->nw == 2 ? 3 : (w == 1 ? 3 : 4);
+        d->i_last[pa] += iw;
+        d->i_last[pb] -= iw;
+    }
+}
+
+static double xfmr_lte(esk_adev *d, const esk_integ *in)
+{
+    const xfmr_state *s = (const xfmr_state *)d->state;
+    double e = 0.0;
+    int w;
+    for (w = 0; w < s->nw; w++) {
+        double ew = reactive_lte(in, s->v_trial[w], s->v_prev[w], s->v_prev2[w], s->nhist) / (s->l[w] * IND_LTE_SCALE_A);
+        e = ew > e ? ew : e;
+    }
+    return e;
+}
+
+static void xfmr_observe(esk_adev *d, esk_json *o)
+{
+    const xfmr_state *s = (const xfmr_state *)d->state;
+    observe_basic(d, o);
+    esk_json_set_number(d->isl->a, o, "vp", acc_v(d, 0) - acc_v(d, 1));
+    esk_json_set_number(d->isl->a, o, "vs", acc_v(d, 2) - acc_v(d, s->nw == 2 ? 3 : 4));
+    esk_json_set_number(d->isl->a, o, "ip", acc_x(d, d->branch[0]));
+    esk_json_set_number(d->isl->a, o, "is", acc_x(d, d->branch[1]));
+}
+
+static const esk_adev_ops transformer_ops = {"transformer", sizeof(xfmr_state), xfmr_setup, xfmr_load_dc,
+                                             xfmr_load_tr,  xfmr_accept,        NULL,       NULL,
+                                             xfmr_lte,      xfmr_observe,       NULL};
+static const esk_adev_ops transformer_ct_ops = {"transformer_ct", sizeof(xfmr_state), xfmr_ct_setup, xfmr_load_dc,
+                                                xfmr_load_tr,     xfmr_accept,        NULL,          NULL,
+                                                xfmr_lte,         xfmr_observe,       NULL};
 
 /* ---- independent sources --------------------------------------------------------- */
 
@@ -1063,6 +1250,17 @@ typedef struct diode_state {
     int has_bv;
     double vd_old, vr_old; /* limiting history */
     double id_trial, vd_trial;
+    /* the junction's charge (SPICE's): depletion cj0, vj, m beyond fc vj
+     * linearised, and diffusion tt id, which gives the reverse recovery */
+    int has_q;
+    double cj0, vj, mj, fc, tt;
+    double q_prev, iq_prev, iq_prev2, q_trial, iq_trial, c_trial, c_acc;
+    int nhist, trial_first, trial_negligible;
+    /* a separate breakdown path (a zener's): through its own resistance rbv
+     * from an internal node Z, with its own emission coefficient nbv (the
+     * knee's softness), while forward conduction keeps rs */
+    int sep_bv, ia, iz;
+    double rbv, nbvt, bvj, vb_old, ib_trial;
     double emission_s, emission_level;
     es_time_t emission_at;
     /* an LED's limits (ADR-034): its junction heated by its own power */
@@ -1119,6 +1317,49 @@ static void diode_common_setup(esk_adev *d, diode_state *s, double is_def, doubl
             s->bv = 0.0;
     }
     d->nbranch = s->rs > 0.0 ? 1 : 0; /* the internal anode node A' */
+    s->ia = s->rs > 0.0 ? 0 : -1;
+    s->cj0 = pd(d, "cj0", 0.0);
+    s->vj = pd(d, "vj", 1.0);
+    s->mj = pd(d, "m", 0.5);
+    s->fc = pd(d, "fc", 0.5);
+    s->tt = pd(d, "tt", 0.0);
+    if (s->cj0 < 0.0 || s->tt < 0.0 || !(s->vj > 0.0) || !(s->mj > 0.0 && s->mj < 1.0) || !(s->fc >= 0.0 && s->fc < 1.0)) {
+        param_error(d, "cj0/vj/m/fc/tt", "cj0, tt >= 0; vj > 0; 0 < m < 1; 0 <= fc < 1");
+        s->cj0 = s->tt = 0.0;
+        s->vj = 1.0;
+        s->mj = 0.5;
+        s->fc = 0.5;
+    }
+    s->has_q = s->cj0 > 0.0 || s->tt > 0.0;
+    s->q_prev = s->iq_prev = s->iq_prev2 = s->q_trial = s->iq_trial = s->c_trial = s->c_acc = 0.0;
+    s->nhist = 0;
+    s->sep_bv = 0;
+    s->iz = -1;
+    s->ib_trial = 0.0;
+}
+
+/* a zener's breakdown on its own path when rbv or nbv is given: the knee
+ * at bv for ibv (izt), its slope nbv Vt / I + rbv, the datasheet's ZZK and ZZT */
+static void breakdown_path_setup(esk_adev *d, diode_state *s, double bv_at_ibv, double ibv)
+{
+    double nbv = pd(d, "nbv", 0.0);
+    s->rbv = pd(d, "rbv", 0.0);
+    if (nbv == 0.0)
+        nbv = 1.0; /* rbv alone: the junction's own knee */
+    if (!(nbv > 0.0) || s->rbv < 0.0) {
+        param_error(d, "nbv/rbv", "nbv > 0, rbv >= 0");
+        nbv = 1.0;
+        s->rbv = 0.0;
+    }
+    s->nbvt = nbv * VT_27C;
+    s->bvj = bv_at_ibv - s->rbv * ibv - (ibv > 0.0 ? s->nbvt * log(ibv / s->is + 1.0) : 0.0);
+    if (s->bvj < 0.0)
+        s->bvj = 0.0;
+    s->sep_bv = 1;
+    s->has_bv = 0; /* the forward junction no longer breaks down itself */
+    s->vb_old = 0.0;
+    if (s->rbv > 0.0)
+        s->iz = d->nbranch++;
 }
 
 static es_status diode_setup(esk_adev *d)
@@ -1183,18 +1424,26 @@ static es_status zener_setup(esk_adev *d)
         if (s->bv < 0.0)
             s->bv = 0.0;
     }
+    if (pd(d, "rbv", 0.0) > 0.0 || pd(d, "nbv", 0.0) > 0.0) {
+        /* breakdown on its own path: vz is the voltage at izt across it */
+        breakdown_path_setup(d, s, vz, pd(d, "izt", 5e-3));
+        return ES_OK;
+    }
     /* rz as the series resistance when given and rs is not */
     if (!has_param(d, "rs") && has_param(d, "rz")) {
         s->rs = pd(d, "rz", 0.0);
         d->nbranch = s->rs > 0.0 ? 1 : 0;
+        s->ia = s->rs > 0.0 ? 0 : -1;
     }
     return ES_OK;
 }
 
+static double junction_charge(const struct diode_state *s, double vd, double id, double gd, double *c);
+
 /* the junction between nodes a and k (a = A' when rs > 0) */
 static void junction_stamp(esk_adev *d, esk_amatrix *m, diode_state *s)
 {
-    int a = s->rs > 0.0 ? d->branch[0] : d->node[0], k = d->node[1];
+    int a = s->ia >= 0 ? d->branch[s->ia] : d->node[0], k = d->node[1];
     double vd = esk_am_v(m, a, k), vlim, id, gd;
     if (s->kind == JN_LED && s->damaged) {
         /* burnt out: the die or its bond wire open */
@@ -1230,11 +1479,95 @@ static void junction_stamp(esk_adev *d, esk_amatrix *m, diode_state *s)
         esk_am_stamp_g(m, d->node[0], a, 1.0 / s->rs);
     s->id_trial = id + gd * (vd - vlim);
     s->vd_trial = vd;
+    if (s->sep_bv) {
+        /* the breakdown path: current from K to Z, vr = v(K) - v(Z) */
+        int z = s->iz >= 0 ? d->branch[s->iz] : d->node[0];
+        double vr = esk_am_v(m, k, z), x = vr - s->bvj, xl = pnjlim(x, s->vb_old, s->nbvt, vcrit_of(s->is, s->nbvt)), ib, gb;
+        s->vb_old = xl;
+        if (fabs(xl - x) > 1e-12)
+            esk_am_noncon(m);
+        pn_eval(xl, s->is, s->nbvt, &ib, &gb);
+        ib += s->is; /* no current at vr = 0 (the exponential's -is cancelled) */
+        gb += 1e-12;
+        stamp_nl(m, k, z, gb, ib, xl + s->bvj);
+        if (s->iz >= 0)
+            esk_am_stamp_g(m, d->node[0], z, 1.0 / s->rbv);
+        s->ib_trial = ib + gb * (x - xl);
+    }
+}
+
+/* the junction's charge at vd and its capacitance (SPICE's diode) */
+static double junction_charge(const struct diode_state *s, double vd, double id, double gd, double *c)
+{
+    double q = 0.0, cap = 0.0;
+    if (s->cj0 > 0.0) {
+        double fcv = s->fc * s->vj;
+        if (vd < fcv) {
+            double arg = 1.0 - vd / s->vj;
+            q = s->cj0 * s->vj / (1.0 - s->mj) * (1.0 - pow(arg, 1.0 - s->mj));
+            cap = s->cj0 * pow(arg, -s->mj);
+        } else {
+            double f1 = s->vj / (1.0 - s->mj) * (1.0 - pow(1.0 - s->fc, 1.0 - s->mj));
+            double f2 = pow(1.0 - s->fc, 1.0 + s->mj), f3 = 1.0 - s->fc * (1.0 + s->mj);
+            q = s->cj0 * (f1 + (1.0 / f2) * (f3 * (vd - fcv) + s->mj / (2.0 * s->vj) * (vd * vd - fcv * fcv)));
+            cap = s->cj0 / f2 * (f3 + s->mj * vd / s->vj);
+        }
+    }
+    q += s->tt * id;
+    cap += s->tt * gd;
+    *c = cap > 1e-18 ? cap : 1e-18;
+    return q;
+}
+
+static void diode_load_tr(esk_adev *d, esk_amatrix *m, const esk_integ *in)
+{
+    diode_state *s = (diode_state *)d->state;
+    int a, k;
+    double vd, id, gd, q, c, geq, ieq;
+    junction_stamp(d, m, s);
+    if (!s->has_q || (s->kind == JN_LED && s->damaged))
+        return;
+    a = s->ia >= 0 ? d->branch[s->ia] : d->node[0];
+    k = d->node[1];
+    vd = esk_am_v(m, a, k);
+    /* the diffusion charge follows the forward current (its conductance at vd) */
+    pn_eval(s->vd_old, s->is, s->nvt, &id, &gd); /* at the junction's limited voltage */
+    q = junction_charge(s, vd, id, gd, &c);
+    esk_integ_companion(in, q, s->q_prev, s->iq_prev, c, &geq, &ieq);
+    stamp_nl(m, a, k, geq, ieq, vd);
+    s->q_trial = q;
+    s->iq_trial = ieq;
+    s->c_trial = c;
+    s->trial_first = esk_integ_first_order(in);
+    s->trial_negligible = esk_integ_negligible(in);
+}
+
+static double diode_lte(esk_adev *d, const esk_integ *in)
+{
+    const diode_state *s = (const diode_state *)d->state;
+    if (!s->has_q)
+        return 0.0;
+    /* the error as a voltage, its capacitance floored at the depletion
+     * capacitance (or 1 pF): as a stored charge empties (the end of reverse
+     * recovery) the diffusion capacitance falls by decades, and dividing by
+     * it would ask for steps far below anything the charge's error needs */
+    return reactive_lte(in, s->iq_trial, s->iq_prev, s->iq_prev2, s->nhist) / fmax(s->c_trial, fmax(s->cj0, 1e-12));
 }
 
 static void diode_load(esk_adev *d, esk_amatrix *m)
 {
-    junction_stamp(d, m, (diode_state *)d->state);
+    diode_state *s = (diode_state *)d->state;
+    junction_stamp(d, m, s);
+    if (s->has_q) {
+        /* the operating point's charge: the history the first step starts from */
+        int a = s->ia >= 0 ? d->branch[s->ia] : d->node[0];
+        double id, gd;
+        pn_eval(s->vd_old, s->is, s->nvt, &id, &gd);
+        s->q_trial = junction_charge(s, esk_am_v(m, a, d->node[1]), id, gd, &s->c_trial);
+        s->iq_trial = 0.0;
+        s->trial_first = 1;
+        s->trial_negligible = 0;
+    }
 }
 
 /* the LED's junction carried from t_last to t at the power held since; it
@@ -1332,7 +1665,26 @@ static void diode_accept(esk_adev *d, es_time_t t)
         emission_accept(s, t);
         led_accept(d, s, t);
     }
-    set_pin_currents2(d, s->id_trial);
+    if (s->has_q) {
+        if (s->trial_first) {
+            s->nhist = 1;
+            s->iq_prev2 = s->iq_prev;
+        } else if (!(s->trial_negligible && s->nhist >= 1)) {
+            if (s->nhist < 2)
+                s->nhist++;
+            s->iq_prev2 = s->iq_prev;
+        }
+        s->iq_prev = s->iq_trial;
+        s->q_prev = s->q_trial;
+        /* the stored charge just emptied (the end of reverse recovery): its
+         * capacitance fell by decades in one step, where the trapezoidal
+         * rule would carry the recovery current on as a ringing; the island
+         * restarts with a backward-Euler step instead, as at a breakpoint */
+        if (s->tt > 0.0 && s->c_acc > 0.0 && s->c_trial < 0.02 * s->c_acc)
+            esk_island_touch(d->isl, t);
+        s->c_acc = s->c_trial;
+    }
+    set_pin_currents2(d, s->id_trial - s->ib_trial + (s->has_q ? s->iq_trial : 0.0));
 }
 
 static void diode_observe(esk_adev *d, esk_json *o)
@@ -1364,14 +1716,14 @@ static void diode_observe(esk_adev *d, esk_json *o)
 }
 
 static const esk_adev_ops diode_ops = {"diode", sizeof(diode_state), diode_setup, diode_load,
-                                       NULL,    diode_accept,        NULL,        NULL,
-                                       NULL,    diode_observe,       NULL};
+                                       diode_load_tr, diode_accept, NULL, NULL,
+                                       diode_lte, diode_observe, NULL};
 static const esk_adev_ops led_ops = {"led", sizeof(diode_state), led_setup, diode_load,
-                                     NULL,  diode_accept,        NULL,      NULL,
-                                     NULL,  diode_observe,       NULL};
+                                       diode_load_tr, diode_accept, NULL, NULL,
+                                       diode_lte, diode_observe, NULL};
 static const esk_adev_ops zener_ops = {"zener", sizeof(diode_state), zener_setup, diode_load,
-                                       NULL,    diode_accept,        NULL,        NULL,
-                                       NULL,    diode_observe,       NULL};
+                                       diode_load_tr, diode_accept, NULL, NULL,
+                                       diode_lte, diode_observe, NULL};
 
 /* Three independent LED junctions sharing a cathode or anode. Each die
  * stamps the same Shockley/series-resistance equations as the discrete LED. */
@@ -1411,6 +1763,7 @@ static es_status rgb_setup(esk_adev *d)
         diode_common_setup(&die, &s->die[i], nominal / expm1(vf / (n * VT_27C)), n);
         s->die[i].nvt = n * VT_27C;
         s->die[i].rs = rs;
+        s->die[i].ia = rs > 0.0 ? 0 : -1; /* the die's own A' (its branch[0] at load) */
         s->die[i].vcrit = vcrit_of(s->die[i].is, s->die[i].nvt);
         s->branch_slot[i] = rs > 0.0 ? d->nbranch++ : -1;
     }
@@ -1488,6 +1841,17 @@ typedef struct bjt_state {
     int ib_idx, ic_idx, ie_idx; /* internal nodes (or the pins) */
     double vbe_old, vbc_old;
     double ic_trial, ib_trial, vbe_trial, vbc_trial;
+    /* the junctions' charges: depletion (cje vje mje, cjc vjc mjc) and
+     * diffusion (tf If, tr Ir); j = 0 base-emitter, 1 base-collector */
+    int has_q;
+    double cj[2], vj[2], mj[2], fc, tt[2];
+    double q_prev[2], iq_prev[2], iq_prev2[2], q_trial[2], iq_trial[2], c_trial[2], c_acc[2];
+    int nhist, trial_first, trial_negligible;
+    double if_trial, ir_trial, gif_trial, gir_trial;
+    /* breakdown of the collector-base and emitter-base junctions (bvcbo,
+     * bvebo: V(BR)CBO and V(BR)EBO at 1 mA and 10 uA as datasheets give them) */
+    int has_bvc, has_bve;
+    double bvc, bve, vbk_old[2], ibk_trial[2];
 } bjt_state;
 
 static es_status bjt_setup_common(esk_adev *d, double pol)
@@ -1517,6 +1881,40 @@ static es_status bjt_setup_common(esk_adev *d, double pol)
     }
     s->vcrit_f = vcrit_of(s->is, s->nf_vt);
     s->vcrit_r = vcrit_of(s->is, s->nr_vt);
+    s->cj[0] = pd(d, "cje", 0.0);
+    s->vj[0] = pd(d, "vje", 0.75);
+    s->mj[0] = pd(d, "mje", 0.33);
+    s->cj[1] = pd(d, "cjc", 0.0);
+    s->vj[1] = pd(d, "vjc", 0.75);
+    s->mj[1] = pd(d, "mjc", 0.33);
+    s->fc = pd(d, "fc", 0.5);
+    s->tt[0] = pd(d, "tf", 0.0);
+    s->tt[1] = pd(d, "tr", 0.0);
+    {
+        int j;
+        for (j = 0; j < 2; j++) {
+            if (s->cj[j] < 0.0 || s->tt[j] < 0.0 || !(s->vj[j] > 0.0) || !(s->mj[j] > 0.0 && s->mj[j] < 1.0)) {
+                param_error(d, j ? "cjc/vjc/mjc/tr" : "cje/vje/mje/tf", "c, t >= 0; v > 0; 0 < m < 1");
+                s->cj[j] = s->tt[j] = 0.0;
+                s->vj[j] = 0.75;
+                s->mj[j] = 0.33;
+            }
+            s->q_prev[j] = s->iq_prev[j] = s->iq_prev2[j] = s->q_trial[j] = s->iq_trial[j] = s->c_trial[j] = s->c_acc[j] = 0.0;
+            s->vbk_old[j] = s->ibk_trial[j] = 0.0;
+        }
+    }
+    if (!(s->fc >= 0.0 && s->fc < 1.0))
+        s->fc = 0.5;
+    s->has_q = s->cj[0] > 0.0 || s->cj[1] > 0.0 || s->tt[0] > 0.0 || s->tt[1] > 0.0;
+    s->nhist = 0;
+    s->has_bvc = pd(d, "bvcbo", 0.0) > 0.0;
+    s->has_bve = pd(d, "bvebo", 0.0) > 0.0;
+    s->bvc = pd(d, "bvcbo", 0.0);
+    s->bve = pd(d, "bvebo", 0.0);
+    if ((s->has_bvc && !(s->bvc > 0.0)) || (s->has_bve && !(s->bve > 0.0))) {
+        param_error(d, "bvcbo/bvebo", "must be > 0");
+        s->has_bvc = s->has_bve = 0;
+    }
     s->ic_idx = s->rc > 0.0 ? next++ : -1;
     s->ib_idx = s->rb > 0.0 ? next++ : -1;
     s->ie_idx = s->re > 0.0 ? next++ : -1;
@@ -1595,15 +1993,164 @@ static void bjt_load(esk_adev *d, esk_amatrix *m)
     s->ib_trial = Ib;
     s->vbe_trial = vbe;
     s->vbc_trial = vbc;
+    s->if_trial = If;
+    s->ir_trial = Ir;
+    s->gif_trial = gif;
+    s->gir_trial = gir;
+    {
+        /* breakdown: the reverse-biased junction conducts beyond its BV (at
+         * 1 mA for the collector, 10 uA for the emitter, the datasheets'
+         * conditions), carried from the collector or emitter into the base */
+        int j;
+        for (j = 0; j < 2; j++) {
+            int on = j ? s->has_bvc : s->has_bve, n2 = j ? c : e;
+            double bv = j ? s->bvc : s->bve, ibv = j ? 1e-3 : 1e-5, vr, x, xl, ik, gk, bvj;
+            if (!on)
+                continue;
+            bvj = bv - VT_27C * log(ibv / s->is + 1.0);
+            vr = -(j ? vbc : vbe); /* reverse voltage across the junction */
+            x = vr - bvj;
+            xl = pnjlim(x, s->vbk_old[j], VT_27C, vcrit_of(s->is, VT_27C));
+            s->vbk_old[j] = xl;
+            if (fabs(xl - x) > 1e-12)
+                esk_am_noncon(m);
+            pn_eval(xl, s->is, VT_27C, &ik, &gk);
+            ik += s->is;
+            gk += 1e-12;
+            /* in device polarity the current flows n2 -> b; in node terms times p */
+            stamp_nl(m, n2, b, gk, p * ik, p * (xl + bvj));
+            s->ibk_trial[j] = ik + gk * (x - xl);
+        }
+    }
+}
+
+/* a depletion charge and capacitance (SPICE's, linear beyond fc vj) */
+static double depletion_q(double cj0, double vj, double mj, double fc, double v, double *c)
+{
+    double fcv = fc * vj;
+    if (cj0 <= 0.0) {
+        *c = 0.0;
+        return 0.0;
+    }
+    if (v < fcv) {
+        double arg = 1.0 - v / vj;
+        *c = cj0 * pow(arg, -mj);
+        return cj0 * vj / (1.0 - mj) * (1.0 - pow(arg, 1.0 - mj));
+    } else {
+        double f1 = vj / (1.0 - mj) * (1.0 - pow(1.0 - fc, 1.0 - mj));
+        double f2 = pow(1.0 - fc, 1.0 + mj), f3 = 1.0 - fc * (1.0 + mj);
+        *c = cj0 / f2 * (f3 + mj * v / vj);
+        return cj0 * (f1 + (1.0 / f2) * (f3 * (v - fcv) + mj / (2.0 * vj) * (v * v - fcv * fcv)));
+    }
+}
+
+static void bjt_charges(bjt_state *s, double vbe, double vbc, double q[2], double c[2])
+{
+    int j;
+    for (j = 0; j < 2; j++) {
+        q[j] = depletion_q(s->cj[j], s->vj[j], s->mj[j], s->fc, j ? vbc : vbe, &c[j]);
+        q[j] += s->tt[j] * (j ? s->ir_trial : s->if_trial);
+        c[j] += s->tt[j] * (j ? s->gir_trial : s->gif_trial);
+        if (c[j] < 1e-18)
+            c[j] = 1e-18;
+    }
+}
+
+static void bjt_load_dc(esk_adev *d, esk_amatrix *m)
+{
+    bjt_state *s = (bjt_state *)d->state;
+    bjt_load(d, m);
+    if (s->has_q) {
+        double q[2], c[2];
+        int j;
+        bjt_charges(s, s->vbe_old, s->vbc_old, q, c);
+        for (j = 0; j < 2; j++) {
+            s->q_trial[j] = q[j];
+            s->iq_trial[j] = 0.0;
+            s->c_trial[j] = c[j];
+        }
+        s->trial_first = 1;
+        s->trial_negligible = 0;
+    }
+}
+
+static void bjt_load_tr(esk_adev *d, esk_amatrix *m, const esk_integ *in)
+{
+    bjt_state *s = (bjt_state *)d->state;
+    int c = s->ic_idx >= 0 ? d->branch[s->ic_idx] : d->node[0];
+    int b = s->ib_idx >= 0 ? d->branch[s->ib_idx] : d->node[1];
+    int e = s->ie_idx >= 0 ? d->branch[s->ie_idx] : d->node[2];
+    double p = s->pol, vbe, vbc, q[2], cap[2];
+    int j;
+    bjt_load(d, m);
+    if (!s->has_q)
+        return;
+    vbe = p * esk_am_v(m, b, e);
+    vbc = p * esk_am_v(m, b, c);
+    bjt_charges(s, vbe, vbc, q, cap);
+    for (j = 0; j < 2; j++) {
+        double geq, ieq;
+        esk_integ_companion(in, q[j], s->q_prev[j], s->iq_prev[j], cap[j], &geq, &ieq);
+        /* the charge's current flows into the base; in node terms times p */
+        stamp_nl(m, b, j ? c : e, geq, p * ieq, p * (j ? vbc : vbe));
+        s->q_trial[j] = q[j];
+        s->iq_trial[j] = ieq;
+        s->c_trial[j] = cap[j];
+    }
+    s->trial_first = esk_integ_first_order(in);
+    s->trial_negligible = esk_integ_negligible(in);
+}
+
+static double bjt_lte(esk_adev *d, const esk_integ *in)
+{
+    const bjt_state *s = (const bjt_state *)d->state;
+    double e = 0.0;
+    int j;
+    if (!s->has_q)
+        return 0.0;
+    for (j = 0; j < 2; j++) {
+        double ej = reactive_lte(in, s->iq_trial[j], s->iq_prev[j], s->iq_prev2[j], s->nhist) / fmax(s->c_trial[j], fmax(s->cj[j], 1e-12));
+        e = ej > e ? ej : e;
+    }
+    return e;
 }
 
 static void bjt_accept(esk_adev *d, es_time_t t)
 {
-    const bjt_state *s = (const bjt_state *)d->state;
-    ES_UNUSED(t);
-    d->i_last[0] = s->ic_trial;
-    d->i_last[1] = s->ib_trial;
-    d->i_last[2] = -(s->ic_trial + s->ib_trial);
+    bjt_state *s = (bjt_state *)d->state;
+    double p = s->pol;
+    /* the terminal currents with the breakdown and charge currents (into the base) */
+    /* breakdown flows from the collector or emitter into the base, a charge
+     * current from the base out of them */
+    double ic = s->ic_trial + p * s->ibk_trial[1] - (s->has_q ? p * s->iq_trial[1] : 0.0);
+    double ie = -(s->ic_trial + s->ib_trial) + p * s->ibk_trial[0] - (s->has_q ? p * s->iq_trial[0] : 0.0);
+    if (s->has_q) {
+        int j, ringing = 0;
+        if (s->trial_first) {
+            s->nhist = 1;
+            for (j = 0; j < 2; j++)
+                s->iq_prev2[j] = s->iq_prev[j];
+        } else if (!(s->trial_negligible && s->nhist >= 1)) {
+            if (s->nhist < 2)
+                s->nhist++;
+            for (j = 0; j < 2; j++)
+                s->iq_prev2[j] = s->iq_prev[j];
+        }
+        for (j = 0; j < 2; j++) {
+            /* a stored charge emptied in one step (a transistor switching
+             * off): restart with backward Euler, as the diode does */
+            if (s->tt[j] > 0.0 && s->c_acc[j] > 0.0 && s->c_trial[j] < 0.02 * s->c_acc[j])
+                ringing = 1;
+            s->c_acc[j] = s->c_trial[j];
+            s->iq_prev[j] = s->iq_trial[j];
+            s->q_prev[j] = s->q_trial[j];
+        }
+        if (ringing)
+            esk_island_touch(d->isl, t);
+    }
+    d->i_last[0] = ic;
+    d->i_last[2] = ie;
+    d->i_last[1] = -(ic + ie);
 }
 
 static void bjt_observe(esk_adev *d, esk_json *o)
@@ -1626,12 +2173,12 @@ static void bjt_observe(esk_adev *d, esk_json *o)
     esk_json_set_string(a, o, "region", region);
 }
 
-static const esk_adev_ops bjt_npn_ops = {"bjt_npn", sizeof(bjt_state), npn_setup, bjt_load,
-                                         NULL,      bjt_accept,        NULL,      NULL,
-                                         NULL,      bjt_observe,       NULL};
-static const esk_adev_ops bjt_pnp_ops = {"bjt_pnp", sizeof(bjt_state), pnp_setup, bjt_load,
-                                         NULL,      bjt_accept,        NULL,      NULL,
-                                         NULL,      bjt_observe,       NULL};
+static const esk_adev_ops bjt_npn_ops = {"bjt_npn", sizeof(bjt_state), npn_setup, bjt_load_dc,
+                                         bjt_load_tr, bjt_accept, NULL, NULL,
+                                         bjt_lte, bjt_observe, NULL};
+static const esk_adev_ops bjt_pnp_ops = {"bjt_pnp", sizeof(bjt_state), pnp_setup, bjt_load_dc,
+                                         bjt_load_tr, bjt_accept, NULL, NULL,
+                                         bjt_lte, bjt_observe, NULL};
 
 /* ---- MOSFETs (level 1, Shichman-Hodges, body tied to source) ---------------------- */
 
@@ -2075,6 +2622,7 @@ static const esk_adev_ops opamp_ops = {"opamp",       sizeof(opamp_state), opamp
 /* ---- behavioural regulator (LDO) ----------------------------------------------------- */
 
 typedef struct reg_state {
+    double pol; /* +1 a positive regulator (78xx), -1 a negative one (79xx): IN and OUT below GND */
     double vout, dropout, imax, iq, rlim;
     double vo_trial, iin_trial;
     /* thermal limiting (ADR-034), when the part gives its thermal resistances */
@@ -2093,6 +2641,7 @@ typedef struct reg_state {
 static es_status reg_setup(esk_adev *d)
 {
     reg_state *s = (reg_state *)d->state;
+    s->pol = pd(d, "polarity", 1.0) < 0.0 ? -1.0 : 1.0;
     s->vout = pd(d, "vout", 3.3);
     s->dropout = pd(d, "dropout", 0.3);
     s->imax = pd(d, "imax", 1.0);
@@ -2137,9 +2686,12 @@ static void reg_load(esk_adev *d, esk_amatrix *m)
     reg_state *s = (reg_state *)d->state;
     int nin = d->node[0], nout = d->node[1], ng = d->node[2], b = d->branch[0];
     double scale = esk_am_source_scale(m);
-    double vin = esk_am_v(m, nin, ng), ib = esk_am_x(m, b);
+    /* a negative regulator is the positive one mirrored: its voltages and
+     * currents taken with the polarity's sign (vin, vo, iout as magnitudes) */
+    double p = s->pol;
+    double vin = p * esk_am_v(m, nin, ng), ib = esk_am_x(m, b);
     double avail = vin - s->dropout, vo, dvo_dvin;
-    double iout = -ib, excess = iout - (s->thermal ? s->ilim : s->imax), rl = 0.0;
+    double iout = -p * ib, excess = iout - (s->thermal ? s->ilim : s->imax), rl = 0.0;
     if (avail < 0.0) {
         vo = 0.0;
         dvo_dvin = 0.0;
@@ -2153,7 +2705,7 @@ static void reg_load(esk_adev *d, esk_amatrix *m)
     if (excess > 0.0) {
         vo -= excess * s->rlim; /* a soft current limit */
         rl = s->rlim;
-    } else if (iout < 0.0 || (iout <= 0.0 && esk_am_v(m, nout, ng) >= vo)) {
+    } else if (iout < 0.0 || (iout <= 0.0 && p * esk_am_v(m, nout, ng) >= vo)) {
         /* the pass element cannot sink: a reverse current only flows through a
          * large leakage resistance, so a pulled-up output rises above vo. The
          * output above vo with no current yet (the first iteration against a
@@ -2162,7 +2714,8 @@ static void reg_load(esk_adev *d, esk_amatrix *m)
         vo -= iout * REG_RREV;
         rl = REG_RREV;
     }
-    /* output branch: v_out - v_gnd - vo(vin) + rl * (iout - i_knee) = 0 */
+    /* output branch: v_out - v_gnd - p vo(vin) + rl * (iout - i_knee) = 0 (the
+     * row taken times p, so its Jacobian is the same for either polarity) */
     esk_am_stamp_j(m, nout, b, 1.0);
     esk_am_stamp_j(m, ng, b, -1.0);
     esk_am_stamp_f(m, nout, ib);
@@ -2171,7 +2724,7 @@ static void reg_load(esk_adev *d, esk_amatrix *m)
     esk_am_stamp_j(m, b, ng, -1.0 + dvo_dvin);
     esk_am_stamp_j(m, b, nin, -dvo_dvin);
     esk_am_stamp_j(m, b, b, -rl);
-    esk_am_stamp_f(m, b, esk_am_v(m, nout, ng) - vo);
+    esk_am_stamp_f(m, b, esk_am_v(m, nout, ng) - p * vo);
     /* the sourced load current is drawn from IN (never pushed into it) */
     if (iout > 0.0) {
         esk_am_stamp_j(m, nin, b, -1.0);
@@ -2182,11 +2735,11 @@ static void reg_load(esk_adev *d, esk_amatrix *m)
     /* the quiescent current IN -> GND ramps in over the first volt of vin so an
      * unpowered input (held by gmin only) draws nothing */
     if (vin >= 1.0)
-        stamp_src_i(m, nin, ng, s->iq);
+        stamp_src_i(m, nin, ng, p * s->iq);
     else if (vin > 0.0)
         esk_am_stamp_g(m, nin, ng, s->iq * esk_am_source_scale(m));
     s->vo_trial = vo;
-    s->iin_trial = (iout > 0.0 ? iout : 0.0) + (vin >= 1.0 ? s->iq : vin > 0.0 ? s->iq * vin : 0.0);
+    s->iin_trial = p * ((iout > 0.0 ? iout : 0.0) + (vin >= 1.0 ? s->iq : vin > 0.0 ? s->iq * vin : 0.0));
 }
 
 /* the junction carried to t at the power held; the current limit it allows */
@@ -2246,7 +2799,7 @@ static void reg_accept(esk_adev *d, es_time_t t)
     d->i_last[1] = ib;
     d->i_last[2] = -(s->iin_trial + ib);
     if (s->thermal) {
-        double vin = acc_v(d, 0) - acc_v(d, 2), vo = acc_v(d, 1) - acc_v(d, 2), iout = -ib;
+        double vin = s->pol * (acc_v(d, 0) - acc_v(d, 2)), vo = s->pol * (acc_v(d, 1) - acc_v(d, 2)), iout = -s->pol * ib;
         s->p_last = (iout > 0.0 ? (vin - vo) * iout : 0.0) + (vin > 0.0 ? vin * s->iq : 0.0);
         s->drop = vin - vo;
         s->vin_last = vin;
@@ -2327,12 +2880,176 @@ static const esk_adev_ops pull_ops = {"pull", sizeof(pull_state), pull_setup, pu
                                       NULL,   pull_accept,        NULL,       NULL,
                                       NULL,   observe_basic,      NULL};
 
+/* ---- thyristors: the triac and the diac ---------------------------------------------- *
+ * A latched switch, its state changed only on accepted steps (the island
+ * restarting there, as at a breakpoint). Off it leaks (roff); a diac turns
+ * on when |v| passes vbo, a triac when |v| passes vbo or its gate current
+ * passes the trigger current of the quadrant it is in (igt1 MT2+ G+, igt2
+ * MT2+ G-, igt3 MT2- G-, igt4 MT2- G+). On, it conducts in the direction it
+ * turned on in: a smooth knee at v0 and the on-resistance ron, nvt wide
+ * (the datasheet's VTM at ITM), until its current falls below ih. A triac's
+ * gate is a pn junction to MT1 either way (vgt at igt) with rg in series. */
+
+enum { THY_TRIAC, THY_DIAC };
+
+typedef struct thy_state {
+    int kind;
+    double vbo, ih, v0, ron, goff, nvt;
+    double igt[4], gis, gnvt, rg;
+    int dir;              /* 0 off, +1 conducting MT2 -> MT1 (A1 -> A2), -1 the other way */
+    double i_trial, v_trial, ig_trial, vg_trial;
+    double vlim_old, vg_old;
+} thy_state;
+
+static es_status thy_setup_kind(esk_adev *d, int kind)
+{
+    thy_state *s = (thy_state *)d->state;
+    double vtm = pd(d, "vtm", kind == THY_DIAC ? 25.0 : 1.6), itm = pd(d, "itm", kind == THY_DIAC ? 0.01 : 1.0);
+    s->kind = kind;
+    s->vbo = pd(d, "vbo", kind == THY_DIAC ? 32.0 : 600.0);
+    s->ih = pd(d, "ih", kind == THY_DIAC ? 1e-4 : 5e-3);
+    s->v0 = pd(d, "v0", kind == THY_DIAC ? vtm : 0.9);
+    s->nvt = pd(d, "n", 2.0) * VT_27C;
+    s->ron = pd(d, "ron", itm > 0.0 && vtm > s->v0 ? (vtm - s->v0) / itm : 0.1);
+    s->goff = 1.0 / pd(d, "roff", 1e9);
+    s->rg = pd(d, "rg", 10.0);
+    s->igt[0] = pd(d, "igt1", pd(d, "igt", 5e-3));
+    s->igt[1] = pd(d, "igt2", s->igt[0]);
+    s->igt[2] = pd(d, "igt3", s->igt[0]);
+    s->igt[3] = pd(d, "igt4", s->igt[0] * 1.5);
+    {
+        /* the gate junction: vgt at igt1, n = 1 */
+        double vgt = pd(d, "vgt", 0.8);
+        s->gnvt = VT_27C;
+        s->gis = s->igt[0] / (exp(vgt / s->gnvt) - 1.0);
+    }
+    if (!(s->vbo > 0.0) || !(s->ih > 0.0) || !(s->ron > 0.0) || !(s->goff > 0.0) || !(s->nvt > 0.0) || s->rg < 0.0) {
+        param_error(d, "vbo/ih/ron/roff/n/rg", "vbo, ih, ron, roff, n > 0; rg >= 0");
+        s->vbo = 600.0;
+        s->ih = 5e-3;
+        s->ron = 0.1;
+        s->goff = 1e-9;
+        s->nvt = 2.0 * VT_27C;
+        s->rg = 10.0;
+    }
+    s->dir = 0;
+    s->vlim_old = s->vg_old = 0.0;
+    s->i_trial = s->v_trial = s->ig_trial = s->vg_trial = 0.0;
+    d->nbranch = kind == THY_TRIAC && s->rg > 0.0 ? 1 : 0; /* the gate junction behind rg */
+    return ES_OK;
+}
+
+static es_status triac_setup(esk_adev *d) { return thy_setup_kind(d, THY_TRIAC); }
+static es_status diac_setup(esk_adev *d) { return thy_setup_kind(d, THY_DIAC); }
+
+/* the on-state current in the conducting direction: (nvt / ron) softplus((x - v0) / nvt) */
+static void thy_on(const thy_state *s, double x, double *i, double *g)
+{
+    double u = (x - s->v0) / s->nvt;
+    if (u > 40.0) {
+        *i = (x - s->v0) / s->ron;
+        *g = 1.0 / s->ron;
+    } else {
+        double e = exp(u);
+        *i = s->nvt / s->ron * log1p(e);
+        *g = e / (1.0 + e) / s->ron;
+    }
+}
+
+static void thy_load(esk_adev *d, esk_amatrix *m)
+{
+    thy_state *s = (thy_state *)d->state;
+    int a = d->node[0], k = d->node[1];
+    double v = esk_am_v(m, a, k), i = s->goff * v, g = s->goff;
+    if (s->dir) {
+        double x = s->dir * v, xl = x, io, go;
+        /* limit a step of the knee's exponential as a junction's */
+        if (x > s->v0 + 40.0 * s->nvt && fabs(x - s->vlim_old) > 2.0 * s->ron + 0.5)
+            xl = s->vlim_old + (x > s->vlim_old ? 0.5 : -0.5);
+        s->vlim_old = xl;
+        if (fabs(xl - x) > 1e-12)
+            esk_am_noncon(m);
+        thy_on(s, xl, &io, &go);
+        io += go * (x - xl);
+        i += s->dir * io;
+        g += go;
+    }
+    stamp_nl(m, a, k, g, i, v);
+    s->i_trial = i;
+    s->v_trial = v;
+    if (s->kind == THY_TRIAC) {
+        /* the gate: junctions to MT1 both ways, behind rg */
+        int gn = d->node[2], gj = s->rg > 0.0 ? d->branch[0] : gn;
+        double vg = esk_am_v(m, gj, k), vgl = pnjlim(fabs(vg), s->vg_old, s->gnvt, vcrit_of(s->gis, s->gnvt)), ig, gg;
+        s->vg_old = vgl;
+        if (fabs(vgl - fabs(vg)) > 1e-12)
+            esk_am_noncon(m);
+        pn_eval(vgl, s->gis, s->gnvt, &ig, &gg);
+        gg += 1e-12;
+        if (vg < 0.0)
+            ig = -ig;
+        stamp_nl(m, gj, k, gg, ig, vg < 0.0 ? -vgl : vgl);
+        if (s->rg > 0.0)
+            esk_am_stamp_g(m, gn, gj, 1.0 / s->rg);
+        s->ig_trial = ig + gg * (vg - (vg < 0.0 ? -vgl : vgl));
+        s->vg_trial = vg;
+    }
+}
+
+static void thy_accept(esk_adev *d, es_time_t t)
+{
+    thy_state *s = (thy_state *)d->state;
+    double v = s->v_trial, i = s->i_trial;
+    int dir = s->dir;
+    if (dir && dir * i < s->ih)
+        dir = 0; /* below its holding current: it turns off */
+    if (!dir) {
+        if (fabs(v) >= s->vbo)
+            dir = v > 0.0 ? 1 : -1; /* breakover */
+        else if (s->kind == THY_TRIAC && fabs(v) > s->v0) {
+            double ig = s->ig_trial;
+            int q = v > 0.0 ? (ig >= 0.0 ? 0 : 1) : (ig < 0.0 ? 2 : 3);
+            if (fabs(ig) >= s->igt[q])
+                dir = v > 0.0 ? 1 : -1;
+        }
+    }
+    if (dir != s->dir) {
+        s->dir = dir;
+        s->vlim_old = dir * v;
+        esk_island_touch(d->isl, t);
+    }
+    if (s->kind == THY_TRIAC) {
+        d->i_last[0] = i;
+        d->i_last[1] = -(i + s->ig_trial);
+        d->i_last[2] = s->ig_trial;
+    } else
+        set_pin_currents2(d, i);
+}
+
+static void thy_observe(esk_adev *d, esk_json *o)
+{
+    const thy_state *s = (const thy_state *)d->state;
+    observe_basic(d, o);
+    esk_json_set_number(d->isl->a, o, "v", s->v_trial);
+    esk_json_set_number(d->isl->a, o, "current", s->i_trial);
+    esk_json_set_bool(d->isl->a, o, "on", s->dir != 0);
+    if (s->kind == THY_TRIAC)
+        esk_json_set_number(d->isl->a, o, "ig", s->ig_trial);
+}
+
+static const esk_adev_ops triac_ops = {"triac", sizeof(thy_state), triac_setup, thy_load,
+                                       NULL,    thy_accept,        NULL,        NULL,
+                                       NULL,    thy_observe,       NULL};
+static const esk_adev_ops diac_ops = {"diac", sizeof(thy_state), diac_setup, thy_load,
+                                      NULL,   thy_accept,        NULL,       NULL,
+                                      NULL,   thy_observe,       NULL};
+
 /* ---- registry ------------------------------------------------------------------------------- */
 
 static const esk_adev_ops *const device_table[] = {
-    &resistor_ops,      &capacitor_ops, &inductor_ops, &vsource_ops,   &isource_ops, &switch_ops,
+    &resistor_ops,      &capacitor_ops, &inductor_ops, &transformer_ops, &transformer_ct_ops, &vsource_ops,   &isource_ops, &switch_ops,
     &potentiometer_ops, &diode_ops,     &led_ops, &rgb_ops,      &zener_ops,     &bjt_npn_ops, &bjt_pnp_ops,
-    &nmos_ops,          &pmos_ops,      &opamp_ops,    &regulator_ops, &pull_ops,
+    &nmos_ops,          &pmos_ops,      &opamp_ops,    &regulator_ops, &pull_ops,      &triac_ops,     &diac_ops,
     &esk_comparator_ops, &esk_temperature_ops, &esk_timer555_ops,
     &esk_environmental_ops, &esk_photodiode_ops, &esk_optocoupler_ops, &esk_relay_contacts_ops, &esk_spdt_ops, &esk_button4_ops,
     &esk_ptc_fuse_ops, &esk_usb_meter_ops, &instrument_ops, &esk_power_profiler_ops, &esk_oscilloscope_ops,

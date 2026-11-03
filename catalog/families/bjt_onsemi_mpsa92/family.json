@@ -1,0 +1,598 @@
+{
+  "schema_version": 1,
+  "kind": "family",
+  "name": "onsemi MPSA92 high-voltage PNP transistor",
+  "datasheets": {
+    "onsemi-mpsa92": {
+      "title": "onsemi MPSA92 high-voltage PNP transistor datasheet (MPSA92/D)",
+      "url": "https://www.onsemi.com/download/data-sheet/pdf/mpsa92-d.pdf",
+      "rev": "current at retrieval",
+      "date": "2026-11-03",
+      "hash": "sha256:95e4cabbe6fb5f09b07a3345cdd0e8b885e7082cdf7400cdde410e40d2691f25",
+      "notes": "Maximum ratings (VCEO 300 V, IC 500 mA, PD 625 mW); hFE at 1, 10 and 30 mA; VCE(sat) 0.5 V and VBE(sat) 0.9 V at 20 mA, 2 mA; TO-92 E1 B2 C3; the ordering information."
+    }
+  },
+  "evidence": [
+    "\\(IC = −1\\.0 mAdc, VCE = −10 Vdc\\) All Types 25 − \\(IC = −10 mAdc, VCE = −10 Vdc\\) All Types 40",
+    "\\(IC = −20 mAdc, IB = −2\\.0 mAdc\\) MPSA92 − −0\\.5",
+    "VBE\\(sat\\) − −0\\.9 Vdc",
+    "Collector Current − Continuous IC −500 mAdc"
+  ],
+  "template": {
+    "schema_version": 1,
+    "kind": "component",
+    "id": "emblink/${short}",
+    "version": "1.0.0",
+    "name": "${mpn}",
+    "category": "transistors",
+    "subcategory": "bipolar_pnp",
+    "description": "onsemi ${mpn}, a PNP transistor in TO-92 (E1, B2, C3): VCEO ${vceo} V, 0.5 A, 0.625 W at 25 C ambient; 300 V; hFE at least 25 at 1 mA, 40 at 10 mA and 25 at 30 mA; VCE(sat) 0.5 V and VBE(sat) 0.9 V maximum at 20 mA. The model's gain is 80 (the datasheet gives minima only).",
+    "keywords": [
+      "onsemi",
+      "${mpn}",
+      "${series}",
+      "PNP",
+      "BJT",
+      "transistor",
+      "small signal",
+      "TO-92"
+    ],
+    "pins": [
+      {
+        "name": "E",
+        "number": 1,
+        "model": {
+          "kind": "passive"
+        },
+        "doc": "Emitter"
+      },
+      {
+        "name": "B",
+        "number": 2,
+        "model": {
+          "kind": "passive"
+        },
+        "doc": "Base"
+      },
+      {
+        "name": "C",
+        "number": 3,
+        "model": {
+          "kind": "passive"
+        },
+        "doc": "Collector"
+      }
+    ],
+    "params": {
+      "is": {
+        "type": "number",
+        "unit": "A",
+        "default": 1e-14,
+        "doc": "Transport saturation current",
+        "min": "1e-20",
+        "max": "1m",
+        "advanced": true
+      },
+      "bf": {
+        "type": "number",
+        "unit": "",
+        "default": 80,
+        "doc": "Forward current gain",
+        "min": 1,
+        "max": 2000
+      },
+      "br": {
+        "type": "number",
+        "unit": "",
+        "default": 1,
+        "doc": "Reverse current gain",
+        "min": 0.01,
+        "max": 100,
+        "advanced": true
+      },
+      "rb": {
+        "type": "number",
+        "unit": "ohm",
+        "default": 0,
+        "doc": "Base resistance",
+        "min": 0,
+        "advanced": true
+      },
+      "rc": {
+        "type": "number",
+        "unit": "ohm",
+        "default": 5.0,
+        "doc": "Collector resistance",
+        "min": 0,
+        "advanced": true
+      },
+      "re": {
+        "type": "number",
+        "unit": "ohm",
+        "default": 0.5,
+        "doc": "Emitter resistance",
+        "min": 0,
+        "advanced": true
+      }
+    },
+    "model": {
+      "primitive": "bjt_pnp"
+    },
+    "symbol": {
+      "svg": "symbol.svg",
+      "width": 40,
+      "height": 40,
+      "pins": {
+        "B": {
+          "x": 0,
+          "y": 20,
+          "side": "left"
+        },
+        "C": {
+          "x": 40,
+          "y": 0,
+          "side": "top"
+        },
+        "E": {
+          "x": 40,
+          "y": 40,
+          "side": "bottom"
+        }
+      }
+    },
+    "fidelity": {
+      "functional": null,
+      "timed": null,
+      "electrical": {
+        "claims": "Ebers-Moll transistor at a constant gain of 80 (above every minimum the datasheet gives; it gives no maximum), collector and emitter resistances for its saturation; fixtures for hFE at the datasheet's currents (read through a collector resistor), VCE(sat) and VBE(sat).",
+        "omissions": [
+          "the gain's variation with current: it stays 80",
+          "the Early effect: the collector current does not rise with VCE",
+          "capacitances and fT, so no switching times",
+          "temperature: VBE's -2 mV/C and the gain's rise",
+          "second breakdown, the safe operating area and damage past the ratings",
+          "device-to-device spread within the gain limits",
+          "no manufacturer model qualification"
+        ],
+        "validation": [
+          "tests/*.json"
+        ]
+      }
+    },
+    "provenance": {
+      "author": "EmbSIM",
+      "license": "Apache-2.0",
+      "sources": []
+    },
+    "part": {
+      "manufacturer": "onsemi",
+      "mpn": "${mpn}",
+      "package": "TO-92",
+      "datasheet": "${datasheet_url}"
+    },
+    "tests": [
+      "tests/*.json"
+    ],
+    "i18n": {
+      "fr": {
+        "description": "onsemi ${mpn}, un transistor PNP en TO-92 (E1, B2, C3) : VCEO ${vceo} V, 0,5 A, 0,625 W à 25 °C ambiant ; 300 V ; hFE d'au moins 25 à 1 mA, 40 à 10 mA et 25 à 30 mA ; VCE(sat) de 0,5 V et VBE(sat) de 0,9 V au maximum à 20 mA. Le gain du modèle est 80 (la fiche technique ne donne que des minima).",
+        "fidelity": {
+          "electrical": {
+            "claims": "Transistor d'Ebers-Moll à un gain constant de 80 (above every minimum the datasheet gives; it gives no maximum), résistances de collecteur et d'émetteur pour sa saturation ; cas de test pour hFE aux courants de la fiche technique (lu à travers une résistance de collecteur), VCE(sat) et VBE(sat).",
+            "omissions": [
+              "la variation du gain avec le courant : il reste 80",
+              "l'effet Early : le courant de collecteur ne croît pas avec VCE",
+              "les capacités et fT, donc pas de temps de commutation",
+              "la température : les -2 mV/°C de VBE et la hausse du gain",
+              "le second claquage, l'aire de sécurité et les dommages au-delà des valeurs nominales",
+              "la dispersion d'un exemplaire à l'autre dans les limites de gain",
+              "aucune qualification par un modèle du fabricant"
+            ]
+          }
+        }
+      }
+    }
+  },
+  "tests": {
+    "hfe_1": {
+      "schema_version": 1,
+      "kind": "component_test",
+      "name": "hfe_1",
+      "description": "IC near 0.001 A at VCE = 10 V (the base fed 1.25e-05 A, the collector from 20 V through 10000 ohm): the gain at least 25, the datasheet's hFE there",
+      "policy": "electrical",
+      "until": "200us",
+      "settings": {
+        "imperfections": "ideal"
+      },
+      "circuit": {
+        "components": [
+          {
+            "id": "VC",
+            "component": "emblink/vsource",
+            "params": {
+              "kind": "dc",
+              "dc": -20.0
+            }
+          },
+          {
+            "id": "RC",
+            "component": "emblink/resistor",
+            "params": {
+              "resistance": 10000.0,
+              "tolerance": 0
+            }
+          },
+          {
+            "id": "IB",
+            "component": "emblink/isource",
+            "params": {
+              "kind": "pulse",
+              "v1": 0,
+              "v2": -1.25e-05,
+              "td": "1u",
+              "tr": "50u",
+              "tf": "1u",
+              "pw": "1",
+              "per": "2"
+            }
+          },
+          {
+            "id": "DUT",
+            "component": "emblink/${short}"
+          },
+          {
+            "id": "G",
+            "component": "emblink/gnd"
+          }
+        ],
+        "nets": {
+          "VCC": [
+            "VC.+",
+            "RC.1"
+          ],
+          "COLL": [
+            "RC.2",
+            "DUT.C"
+          ],
+          "BASE": [
+            "IB.-",
+            "DUT.B"
+          ],
+          "GND": [
+            "VC.-",
+            "IB.+",
+            "DUT.E",
+            "G.GND"
+          ]
+        }
+      },
+      "expect": {
+        "net:COLL": {
+          "at": "150us",
+          "min_v": -16.875,
+          "max_v": -0.0
+        }
+      }
+    },
+    "hfe_2": {
+      "schema_version": 1,
+      "kind": "component_test",
+      "name": "hfe_2",
+      "description": "IC near 0.01 A at VCE = 10 V (the base fed 0.000125 A, the collector from 20 V through 1000 ohm): the gain at least 40, the datasheet's hFE there",
+      "policy": "electrical",
+      "until": "200us",
+      "settings": {
+        "imperfections": "ideal"
+      },
+      "circuit": {
+        "components": [
+          {
+            "id": "VC",
+            "component": "emblink/vsource",
+            "params": {
+              "kind": "dc",
+              "dc": -20.0
+            }
+          },
+          {
+            "id": "RC",
+            "component": "emblink/resistor",
+            "params": {
+              "resistance": 1000.0,
+              "tolerance": 0
+            }
+          },
+          {
+            "id": "IB",
+            "component": "emblink/isource",
+            "params": {
+              "kind": "pulse",
+              "v1": 0,
+              "v2": -0.000125,
+              "td": "1u",
+              "tr": "50u",
+              "tf": "1u",
+              "pw": "1",
+              "per": "2"
+            }
+          },
+          {
+            "id": "DUT",
+            "component": "emblink/${short}"
+          },
+          {
+            "id": "G",
+            "component": "emblink/gnd"
+          }
+        ],
+        "nets": {
+          "VCC": [
+            "VC.+",
+            "RC.1"
+          ],
+          "COLL": [
+            "RC.2",
+            "DUT.C"
+          ],
+          "BASE": [
+            "IB.-",
+            "DUT.B"
+          ],
+          "GND": [
+            "VC.-",
+            "IB.+",
+            "DUT.E",
+            "G.GND"
+          ]
+        }
+      },
+      "expect": {
+        "net:COLL": {
+          "at": "150us",
+          "min_v": -15.0,
+          "max_v": -0.0
+        }
+      }
+    },
+    "hfe_3": {
+      "schema_version": 1,
+      "kind": "component_test",
+      "name": "hfe_3",
+      "description": "IC near 0.03 A at VCE = 10 V (the base fed 0.000375 A, the collector from 20 V through 333.333 ohm): the gain at least 25, the datasheet's hFE there",
+      "policy": "electrical",
+      "until": "200us",
+      "settings": {
+        "imperfections": "ideal"
+      },
+      "circuit": {
+        "components": [
+          {
+            "id": "VC",
+            "component": "emblink/vsource",
+            "params": {
+              "kind": "dc",
+              "dc": -20.0
+            }
+          },
+          {
+            "id": "RC",
+            "component": "emblink/resistor",
+            "params": {
+              "resistance": 333.333333,
+              "tolerance": 0
+            }
+          },
+          {
+            "id": "IB",
+            "component": "emblink/isource",
+            "params": {
+              "kind": "pulse",
+              "v1": 0,
+              "v2": -0.000375,
+              "td": "1u",
+              "tr": "50u",
+              "tf": "1u",
+              "pw": "1",
+              "per": "2"
+            }
+          },
+          {
+            "id": "DUT",
+            "component": "emblink/${short}"
+          },
+          {
+            "id": "G",
+            "component": "emblink/gnd"
+          }
+        ],
+        "nets": {
+          "VCC": [
+            "VC.+",
+            "RC.1"
+          ],
+          "COLL": [
+            "RC.2",
+            "DUT.C"
+          ],
+          "BASE": [
+            "IB.-",
+            "DUT.B"
+          ],
+          "GND": [
+            "VC.-",
+            "IB.+",
+            "DUT.E",
+            "G.GND"
+          ]
+        }
+      },
+      "expect": {
+        "net:COLL": {
+          "at": "150us",
+          "min_v": -16.875,
+          "max_v": -0.0
+        }
+      }
+    },
+    "vce_sat": {
+      "schema_version": 1,
+      "kind": "component_test",
+      "name": "vce_sat",
+      "description": "IC = 0.02 A with IB = 0.002 A: VCE(sat) at most the datasheet's 0.5 V",
+      "policy": "electrical",
+      "until": "200us",
+      "settings": {
+        "imperfections": "ideal"
+      },
+      "circuit": {
+        "components": [
+          {
+            "id": "IC",
+            "component": "emblink/isource",
+            "params": {
+              "kind": "pulse",
+              "v1": 0,
+              "v2": -0.02,
+              "td": "1u",
+              "tr": "50u",
+              "tf": "1u",
+              "pw": "1",
+              "per": "2"
+            }
+          },
+          {
+            "id": "IB",
+            "component": "emblink/isource",
+            "params": {
+              "kind": "pulse",
+              "v1": 0,
+              "v2": -0.002,
+              "td": "1u",
+              "tr": "50u",
+              "tf": "1u",
+              "pw": "1",
+              "per": "2"
+            }
+          },
+          {
+            "id": "DUT",
+            "component": "emblink/${short}"
+          },
+          {
+            "id": "G",
+            "component": "emblink/gnd"
+          }
+        ],
+        "nets": {
+          "COLL": [
+            "IC.-",
+            "DUT.C"
+          ],
+          "BASE": [
+            "IB.-",
+            "DUT.B"
+          ],
+          "GND": [
+            "IC.+",
+            "IB.+",
+            "DUT.E",
+            "G.GND"
+          ]
+        }
+      },
+      "expect": {
+        "net:COLL": {
+          "at": "150us",
+          "min_v": -0.5,
+          "max_v": 0
+        }
+      }
+    },
+    "vbe_sat": {
+      "schema_version": 1,
+      "kind": "component_test",
+      "name": "vbe_sat",
+      "description": "IC = 0.02 A with IB = 0.002 A: VBE(sat) within the datasheet's 0.5 to 0.9 V",
+      "policy": "electrical",
+      "until": "200us",
+      "settings": {
+        "imperfections": "ideal"
+      },
+      "circuit": {
+        "components": [
+          {
+            "id": "IC",
+            "component": "emblink/isource",
+            "params": {
+              "kind": "pulse",
+              "v1": 0,
+              "v2": -0.02,
+              "td": "1u",
+              "tr": "50u",
+              "tf": "1u",
+              "pw": "1",
+              "per": "2"
+            }
+          },
+          {
+            "id": "IB",
+            "component": "emblink/isource",
+            "params": {
+              "kind": "pulse",
+              "v1": 0,
+              "v2": -0.002,
+              "td": "1u",
+              "tr": "50u",
+              "tf": "1u",
+              "pw": "1",
+              "per": "2"
+            }
+          },
+          {
+            "id": "DUT",
+            "component": "emblink/${short}"
+          },
+          {
+            "id": "G",
+            "component": "emblink/gnd"
+          }
+        ],
+        "nets": {
+          "COLL": [
+            "IC.-",
+            "DUT.C"
+          ],
+          "BASE": [
+            "IB.-",
+            "DUT.B"
+          ],
+          "GND": [
+            "IC.+",
+            "IB.+",
+            "DUT.E",
+            "G.GND"
+          ]
+        }
+      },
+      "expect": {
+        "net:BASE": {
+          "at": "150us",
+          "min_v": -0.9,
+          "max_v": -0.5
+        }
+      }
+    }
+  },
+  "rows": [
+    {
+      "mpn": "MPSA92G",
+      "short": "mpsa92g",
+      "series": "MPSA92",
+      "vceo": 300,
+      "evidence": [
+        "MPSA92G TO−92 5000 Units / Box"
+      ],
+      "datasheet": "onsemi-mpsa92"
+    }
+  ]
+}

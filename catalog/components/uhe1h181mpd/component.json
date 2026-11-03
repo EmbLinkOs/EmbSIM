@@ -1,0 +1,177 @@
+{
+  "schema_version": 1,
+  "kind": "component",
+  "id": "emblink/uhe1h181mpd",
+  "version": "1.0.0",
+  "name": "UHE1H181MPD",
+  "category": "capacitors",
+  "subcategory": "electrolytic",
+  "description": "Nichicon UHE1H181MPD, a UHE radial aluminium electrolytic capacitor: 180 uF ±20 %, 50 V, -40 to +105 C, low impedance, 8 x 20 mm (lead spacing 3.5 mm). Its ESR, 0.091 ohm, the catalog's maximum impedance at 100 kHz and 20 C, where an electrolytic is its ESR (from its 0.091 ohm); rated ripple 910 mA rms, leakage at most 90 uA. Endurance 1000 to 5000 hours at 105 C by size.",
+  "keywords": [
+    "Nichicon",
+    "UHE1H181MPD",
+    "UHE",
+    "capacitor",
+    "electrolytic",
+    "aluminium",
+    "radial",
+    "180 uF",
+    "50 V",
+    "polarised"
+  ],
+  "pins": [
+    {
+      "name": "+",
+      "number": 1,
+      "model": {
+        "kind": "passive"
+      },
+      "aliases": [
+        "1"
+      ],
+      "doc": "Positive (longer lead)"
+    },
+    {
+      "name": "-",
+      "number": 2,
+      "model": {
+        "kind": "passive"
+      },
+      "aliases": [
+        "2"
+      ],
+      "doc": "Negative (stripe)"
+    }
+  ],
+  "params": {
+    "capacitance": {
+      "type": "number",
+      "unit": "F",
+      "default": "180u",
+      "min": "100n",
+      "max": "1",
+      "doc": "Capacitance",
+      "spread": "tolerance"
+    },
+    "tolerance": {
+      "type": "number",
+      "unit": "%",
+      "default": 20,
+      "min": 0,
+      "max": 50,
+      "doc": "Tolerance: each part's capacitance lies within this band of the nominal, drawn from the project's seed (ADR-034). 20 % is IEC 60062's code M, the usual grade of aluminium electrolytic capacitors; 0 for an exact part."
+    },
+    "esr": {
+      "type": "number",
+      "unit": "ohm",
+      "default": 0.091,
+      "min": 0,
+      "max": 1000,
+      "doc": "Equivalent series resistance: the catalog's maximum impedance at 100 kHz and 20 C, where an electrolytic is its ESR (from its 0.091 ohm)"
+    },
+    "rated_v": {
+      "type": "number",
+      "unit": "V",
+      "default": 50,
+      "min": 2,
+      "max": 500,
+      "doc": "Rated voltage (informative)",
+      "advanced": true
+    },
+    "ic": {
+      "type": "number",
+      "unit": "V",
+      "default": 0,
+      "doc": "Initial voltage",
+      "advanced": true
+    }
+  },
+  "model": {
+    "primitive": "capacitor",
+    "bind": {
+      "c": "capacitance",
+      "esr": "esr",
+      "ic": "ic"
+    }
+  },
+  "fidelity": {
+    "functional": null,
+    "timed": {
+      "claims": "As electrical.",
+      "omissions": []
+    },
+    "electrical": {
+      "claims": "Capacitance at the nominal value, drawn within the series' ±20 % from the project's seed (ADR-034; nominal under \"ideal\" imperfections), in series with the ESR the catalog's maximum impedance at 100 kHz and 20 C, where an electrolytic is its ESR (from its 0.091 ohm); DC and transient fixtures (the RC time constant and the ESR step) from the catalog's table.",
+      "omissions": [
+        "leakage current (at most 90 uA after its specified time): the dielectric does not discharge on its own",
+        "ESR's frequency and temperature dependence, and the inductance",
+        "polarity: reverse bias and over-voltage are not diagnosed and do no damage",
+        "the ripple current's self-heating and the endurance and shelf-life drifts",
+        "the impedance at -10 C",
+        "the distribution inside the tolerance band (uniform: the catalog guarantees the band only)"
+      ],
+      "validation": [
+        "tests/*.json"
+      ]
+    }
+  },
+  "provenance": {
+    "author": "EmbSIM",
+    "license": "Apache-2.0",
+    "sources": [
+      {
+        "title": "Nichicon UHE series catalog",
+        "url": "https://www.nichicon.co.jp/english/series_items/catalog_pdf/e-uhe.pdf",
+        "rev": "current at retrieval",
+        "date": "2026-11-03",
+        "hash": "sha256:fcc5554836adbf921499f2969fb661b03a22e0ee37874d7db5bd5f9ccd499267",
+        "notes": "-40 to +105 C, 6.3 to 100 V, ±20 % at 120 Hz; the dimensions table, one row per part number: rated voltage and capacitance, case size, tan δ, leakage current, maximum impedance at 100 kHz (20 C and -10 C), rated ripple at 105 C and 100 kHz. Lead spacing by diameter from the radial lead drawing. generated from catalog/families/capacitors_uhe/family.json by tools/catalog/families.py; edit the family, not this file"
+      }
+    ]
+  },
+  "symbol": {
+    "svg": "symbol.svg",
+    "width": 60,
+    "height": 40,
+    "pins": {
+      "+": {
+        "x": 0,
+        "y": 20,
+        "side": "left"
+      },
+      "-": {
+        "x": 60,
+        "y": 20,
+        "side": "right"
+      }
+    }
+  },
+  "tests": [
+    "tests/*.json"
+  ],
+  "part": {
+    "manufacturer": "Nichicon",
+    "mpn": "UHE1H181MPD",
+    "package": "Radial 8 x 20 mm, P 3.5 mm",
+    "datasheet": "https://www.nichicon.co.jp/english/series_items/catalog_pdf/e-uhe.pdf"
+  },
+  "i18n": {
+    "fr": {
+      "source": "cb1771d573f5",
+      "description": "Nichicon UHE1H181MPD, un condensateur électrolytique aluminium radial UHE : 180 uF ±20 %, 50 V, -40 à +105 °C, low impedance, 8 x 20 mm (écartement des fils 3,5 mm). Sa résistance série équivalente, 0,091 ohm, l'impédance maximale du catalogue à 100 kHz et 20 °C, où un électrolytique se réduit à sa RSE (d'après ses 0.091 ohm) ; courant d'ondulation nominal 910 mA eff., fuite d'au plus 90 uA. Endurance de 1000 à 5000 heures à 105 °C selon la taille.",
+      "fidelity": {
+        "electrical": {
+          "claims": "Capacité à la valeur nominale, tirée dans les ±20 % de la série à partir de la graine du projet (ADR-034 ; nominale avec les imperfections « ideal »), en série avec la résistance série équivalente l'impédance maximale du catalogue à 100 kHz et 20 °C, où un électrolytique se réduit à sa RSE (d'après ses 0.091 ohm) ; cas de test en continu et en transitoire (la constante de temps RC et le saut dû à la RSE) tirés du tableau du catalogue.",
+          "omissions": [
+            "le courant de fuite (au plus 90 uA après son temps spécifié) : le diélectrique ne se décharge pas de lui-même",
+            "la dépendance de la RSE à la fréquence et à la température, et l'inductance",
+            "la polarité : l'inversion de tension et la surtension ne sont ni signalées ni destructrices",
+            "l'échauffement par le courant d'ondulation et les dérives d'endurance et de stockage",
+            "l'impédance à -10 °C",
+            "la répartition dans la bande de tolérance (uniforme : le catalogue ne garantit que la bande)"
+          ]
+        }
+      }
+    }
+  }
+}

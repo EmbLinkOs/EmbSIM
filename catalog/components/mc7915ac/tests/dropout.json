@@ -1,0 +1,58 @@
+{
+  "schema_version": 1,
+  "kind": "component_test",
+  "name": "dropout",
+  "description": "0.8 V of headroom at 1.0 A, under the typical 1.3 V dropout: the output follows the input 1.3 V above it",
+  "policy": "electrical",
+  "until": "100us",
+  "circuit": {
+    "components": [
+      {
+        "id": "V1",
+        "component": "emblink/vsource",
+        "params": {
+          "dc": -15.8
+        }
+      },
+      {
+        "id": "DUT",
+        "component": "emblink/mc7915ac"
+      },
+      {
+        "id": "RL",
+        "component": "emblink/resistor",
+        "params": {
+          "resistance": 15.0,
+          "tolerance": 0
+        }
+      },
+      {
+        "id": "G",
+        "component": "emblink/gnd"
+      }
+    ],
+    "nets": {
+      "VIN": [
+        "V1.+",
+        "DUT.IN"
+      ],
+      "VOUT": [
+        "DUT.OUT",
+        "RL.1"
+      ],
+      "GND": [
+        "V1.-",
+        "DUT.GND",
+        "RL.2",
+        "G.GND"
+      ]
+    }
+  },
+  "expect": {
+    "net:VOUT": {
+      "at": "50us",
+      "min_v": -14.65,
+      "max_v": -14.35
+    }
+  }
+}

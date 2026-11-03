@@ -1,0 +1,196 @@
+{
+  "schema_version": 1,
+  "kind": "component",
+  "id": "emblink/bc558b",
+  "version": "1.0.0",
+  "name": "BC558B",
+  "category": "transistors",
+  "subcategory": "bipolar_pnp",
+  "description": "onsemi BC558B, a PNP general-purpose amplifier transistor in TO-92 (C1, B2, E3): VCEO 30 V, 100 mA, 625 mW, hFE group B: 180 to 460 at 2 mA and 5 V. The model's gain is the group's typical 290 and its VBE(on) 0.62 V at 2 mA, inside the datasheet's 0.55 to 0.7 V.",
+  "keywords": [
+    "onsemi",
+    "BC558B",
+    "TO-92",
+    "PNP",
+    "BJT",
+    "transistor",
+    "small signal",
+    "amplifier",
+    "switch",
+    "BC558"
+  ],
+  "pins": [
+    {
+      "name": "C",
+      "number": 1,
+      "model": {
+        "kind": "passive"
+      },
+      "doc": "Collector"
+    },
+    {
+      "name": "B",
+      "number": 2,
+      "model": {
+        "kind": "passive"
+      },
+      "doc": "Base"
+    },
+    {
+      "name": "E",
+      "number": 3,
+      "model": {
+        "kind": "passive"
+      },
+      "doc": "Emitter"
+    }
+  ],
+  "params": {
+    "is": {
+      "type": "number",
+      "unit": "A",
+      "default": 7.68e-14,
+      "doc": "Transport saturation current",
+      "min": "1e-20",
+      "max": "1m",
+      "advanced": true
+    },
+    "bf": {
+      "type": "number",
+      "unit": "",
+      "default": 290,
+      "doc": "Forward current gain",
+      "min": 1,
+      "max": 2000
+    },
+    "br": {
+      "type": "number",
+      "unit": "",
+      "default": 4,
+      "doc": "Reverse current gain",
+      "min": 0.01,
+      "max": 100,
+      "advanced": true
+    },
+    "rb": {
+      "type": "number",
+      "unit": "ohm",
+      "default": 0,
+      "doc": "Base resistance",
+      "min": 0,
+      "advanced": true
+    },
+    "rc": {
+      "type": "number",
+      "unit": "ohm",
+      "default": 0,
+      "doc": "Collector resistance",
+      "min": 0,
+      "advanced": true
+    },
+    "re": {
+      "type": "number",
+      "unit": "ohm",
+      "default": 0,
+      "doc": "Emitter resistance",
+      "min": 0,
+      "advanced": true
+    }
+  },
+  "model": {
+    "primitive": "bjt_pnp"
+  },
+  "symbol": {
+    "svg": "symbol.svg",
+    "width": 40,
+    "height": 40,
+    "pins": {
+      "B": {
+        "x": 0,
+        "y": 20,
+        "side": "left"
+      },
+      "C": {
+        "x": 40,
+        "y": 0,
+        "side": "top"
+      },
+      "E": {
+        "x": 40,
+        "y": 40,
+        "side": "bottom"
+      }
+    }
+  },
+  "fidelity": {
+    "functional": null,
+    "timed": null,
+    "electrical": {
+      "claims": "Ebers-Moll transistor whose forward gain is the hFE group's typical value and whose VBE(on) at 2 mA falls inside the datasheet's limits; saturation under the datasheet's VCE(sat) maximum at 10 mA; leakage under its ICES maximum. DC and low-frequency fixtures from the datasheet's table.",
+      "omissions": [
+        "the Early effect (output conductance): the datasheet gives none, so the collector current does not rise with VCE",
+        "the fall of hFE at high current (180 typical at 100 mA for the B series)",
+        "breakdown (VCEO 30 V, VCBO, VEBO 5 V) and damage past the 100 mA and 625 mW ratings",
+        "capacitances (Cobo, Cibo) and fT, so no switching times or bandwidth",
+        "temperature dependence",
+        "device-to-device spread within the hFE group",
+        "noise",
+        "no manufacturer model qualification"
+      ],
+      "validation": [
+        "tests/*.json"
+      ]
+    }
+  },
+  "provenance": {
+    "author": "EmbSIM",
+    "license": "Apache-2.0",
+    "sources": [
+      {
+        "title": "onsemi BC556B, BC557A, B, C, BC558B datasheet (BC556B/D)",
+        "url": "https://www.onsemi.com/pdf/datasheet/bc556b-d.pdf",
+        "rev": "3, March 2007",
+        "date": "2026-11-03",
+        "hash": "sha256:66f3d052c66a603e3c1188452e193d0391041b61e0dac8295e260123e5ad92f4",
+        "notes": "Pages 1 and 2: VCEO and VCBO per type, IC 100 mA, PD 625 mW, ICES, hFE per series at -2 mA, VCE(sat), VBE(on) -0.55, -0.62, -0.7 V at -2 mA. TO-92 case 29 style 17: C1, B2, E3. generated from catalog/families/bjt_bc556/family.json by tools/catalog/families.py; edit the family, not this file"
+      },
+      {
+        "title": "KiCad family/package reference, revision 4e17d759",
+        "url": "https://github.com/KiCad/kicad-symbols/blob/4e17d7595f9691d45d97aea8ad64572652fb5bed/Transistor_BJT.lib"
+      }
+    ]
+  },
+  "part": {
+    "manufacturer": "onsemi",
+    "mpn": "BC558B",
+    "package": "TO-92",
+    "datasheet": "https://www.onsemi.com/pdf/datasheet/bc556b-d.pdf"
+  },
+  "artwork": {
+    "svg": "artwork.svg"
+  },
+  "tests": [
+    "tests/*.json"
+  ],
+  "i18n": {
+    "fr": {
+      "source": "b2b8433d4dbd",
+      "description": "onsemi BC558B, un transistor amplificateur PNP d'usage général en TO-92 (C1, B2, E3) : VCEO 30 V, 100 mA, 625 mW, groupe de gain B : 180 à 460 à 2 mA et 5 V. Le gain du modèle est la valeur typique du groupe, 290, et sa VBE(on) 0,62 V à 2 mA, entre les 0,55 et 0,7 V de la fiche technique.",
+      "fidelity": {
+        "electrical": {
+          "claims": "Transistor d'Ebers-Moll dont le gain direct est la valeur typique du groupe de hFE et dont la VBE(on) à 2 mA tombe dans les limites de la fiche technique ; saturation sous le maximum de VCE(sat) de la fiche technique à 10 mA ; fuite sous son maximum d'ICES. Cas de test en continu et basse fréquence tirés du tableau de la fiche technique.",
+          "omissions": [
+            "l'effet Early (la conductance de sortie) : la fiche technique n'en donne pas, le courant de collecteur ne croît donc pas avec VCE",
+            "la baisse de hFE à fort courant (180 typique à 100 mA pour le groupe B)",
+            "le claquage (VCEO 30 V, VCBO, VEBO 5 V) et les dommages au-delà des 100 mA et 625 mW nominaux",
+            "les capacités (Cobo, Cibo) et fT, donc ni temps de commutation ni bande passante",
+            "la dépendance à la température",
+            "la dispersion d'un exemplaire à l'autre dans le groupe de hFE",
+            "le bruit",
+            "aucune qualification par un modèle du fabricant"
+          ]
+        }
+      }
+    }
+  }
+}

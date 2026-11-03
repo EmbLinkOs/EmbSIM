@@ -1,0 +1,263 @@
+{
+  "schema_version": 1,
+  "kind": "component",
+  "id": "emblink/tl072bcp",
+  "version": "1.0.0",
+  "name": "TL072BCP",
+  "category": "operational_amplifiers",
+  "subcategory": "dual",
+  "description": "Texas Instruments TL072BCP, the TL072B low-noise JFET-input dual operational amplifier in PDIP-8 (0 to 70 C, up to 36 V across the supplies): 200 V/mV open-loop gain, 5.25 MHz gain-bandwidth, 20 V/us slew rate, 3 mV maximum offset, the classic version: on +/-15 V its output swings +/-13.5 V into 10 kohm, 1.5 V from each rail. Both channels on the industry-standard dual pinout.",
+  "keywords": [
+    "Texas Instruments",
+    "TI",
+    "TL072BCP",
+    "TL072B",
+    "TL072",
+    "op-amp",
+    "operational amplifier",
+    "dual",
+    "JFET input",
+    "audio",
+    "PDIP-8"
+  ],
+  "pins": [
+    {
+      "name": "1OUT",
+      "number": 1,
+      "model": {
+        "kind": "analog"
+      }
+    },
+    {
+      "name": "1IN-",
+      "number": 2,
+      "model": {
+        "kind": "analog"
+      }
+    },
+    {
+      "name": "1IN+",
+      "number": 3,
+      "model": {
+        "kind": "analog"
+      }
+    },
+    {
+      "name": "VCC-",
+      "number": 4,
+      "model": {
+        "kind": "analog"
+      },
+      "doc": "Negative supply"
+    },
+    {
+      "name": "2IN+",
+      "number": 5,
+      "model": {
+        "kind": "analog"
+      }
+    },
+    {
+      "name": "2IN-",
+      "number": 6,
+      "model": {
+        "kind": "analog"
+      }
+    },
+    {
+      "name": "2OUT",
+      "number": 7,
+      "model": {
+        "kind": "analog"
+      }
+    },
+    {
+      "name": "VCC+",
+      "number": 8,
+      "model": {
+        "kind": "analog"
+      },
+      "doc": "Positive supply"
+    }
+  ],
+  "params": {},
+  "model": {
+    "composite": {
+      "components": [
+        {
+          "id": "A1",
+          "component": "emblink/opamp",
+          "params": {
+            "gain": "200k",
+            "gbw": "5.25meg",
+            "rout": 30,
+            "headroom_high": 1.5,
+            "headroom_low": 1.5,
+            "slew": 20
+          }
+        },
+        {
+          "id": "A2",
+          "component": "emblink/opamp",
+          "params": {
+            "gain": "200k",
+            "gbw": "5.25meg",
+            "rout": 30,
+            "headroom_high": 1.5,
+            "headroom_low": 1.5,
+            "slew": 20
+          }
+        }
+      ],
+      "nets": {
+        "VCC+": [
+          "A1.V+",
+          "A2.V+"
+        ],
+        "VCC-": [
+          "A1.V-",
+          "A2.V-"
+        ]
+      },
+      "ports": {
+        "1OUT": "A1.OUT",
+        "1IN-": "A1.-",
+        "1IN+": "A1.+",
+        "2OUT": "A2.OUT",
+        "2IN-": "A2.-",
+        "2IN+": "A2.+",
+        "VCC+": "A1.V+",
+        "VCC-": "A1.V-"
+      }
+    }
+  },
+  "functional": {
+    "composite": {
+      "components": [],
+      "nets": {},
+      "ports": {}
+    }
+  },
+  "symbol": {
+    "svg": "symbol.svg",
+    "width": 100,
+    "height": 120,
+    "pins": {
+      "1IN+": {
+        "x": 0,
+        "y": 20,
+        "side": "left"
+      },
+      "1IN-": {
+        "x": 0,
+        "y": 40,
+        "side": "left"
+      },
+      "1OUT": {
+        "x": 100,
+        "y": 30,
+        "side": "right"
+      },
+      "2IN+": {
+        "x": 0,
+        "y": 80,
+        "side": "left"
+      },
+      "2IN-": {
+        "x": 0,
+        "y": 100,
+        "side": "left"
+      },
+      "2OUT": {
+        "x": 100,
+        "y": 90,
+        "side": "right"
+      },
+      "VCC+": {
+        "x": 50,
+        "y": 0,
+        "side": "top"
+      },
+      "VCC-": {
+        "x": 50,
+        "y": 120,
+        "side": "bottom"
+      }
+    }
+  },
+  "fidelity": {
+    "functional": {
+      "claims": "Pins only: the functional policy has no analog voltages.",
+      "omissions": [
+        "amplification"
+      ],
+      "validation": [
+        "tests/*.json"
+      ]
+    },
+    "timed": {
+      "claims": "As electrical.",
+      "omissions": []
+    },
+    "electrical": {
+      "claims": "Two op-amps (SPEC-004 opamp) at the datasheet's typical open-loop gain, a single pole at its gain-bandwidth, its slew rate, and its output swing from each rail; fixtures on +/-15 V for a follower, the positive and negative swing, the slew rate and the bandwidth from those values.",
+      "omissions": [
+        "input offset voltage, bias and offset currents (picoamperes, doubling every 10 C), and their drift",
+        "the common-mode input range: the classic TL072 inverts its output when an input comes within about 2 V of the negative rail (phase reversal); not modelled nor diagnosed",
+        "further poles, the phase margin and the capacitive-load stability",
+        "the output short-circuit current (about 26 mA) and the swing's dependence on the load",
+        "noise (37 nV/rtHz)",
+        "supply current (1.4 mA per channel)",
+        "temperature dependence",
+        "device-to-device spread"
+      ],
+      "validation": [
+        "tests/*.json"
+      ]
+    }
+  },
+  "provenance": {
+    "author": "EmbSIM",
+    "license": "Apache-2.0",
+    "sources": [
+      {
+        "title": "Texas Instruments TL07xx low-noise FET-input operational amplifiers datasheet (SLOS080W)",
+        "url": "https://www.ti.com/lit/ds/symlink/tl072.pdf",
+        "rev": "W, July 2025",
+        "date": "2026-11-03",
+        "hash": "sha256:30a70a806642920df994222bc8e7d9b16b4e4cdbf228996dd21ee4bb2cdc863f",
+        "notes": "The TL07xH electrical characteristics (AOL 125 dB, GBW 5.25 MHz, SR 20 V/us, output headroom 115 and 105 mV at 10 kohm); the TL07xC/AC/BC/I DC and AC tables on +/-15 V (VOS 10/6/3/6 mV max, VOM +/-13.5 V at 10 kohm, AOL 200 V/mV, GBW 5.25 MHz or 3 MHz in PS and NS packages, SR 20 V/us); the packaging information's orderable part numbers. generated from catalog/families/opamps_ti_tl072/family.json by tools/catalog/families.py; edit the family, not this file"
+      }
+    ]
+  },
+  "tests": [
+    "tests/*.json"
+  ],
+  "part": {
+    "manufacturer": "Texas Instruments",
+    "mpn": "TL072BCP",
+    "package": "PDIP-8",
+    "datasheet": "https://www.ti.com/lit/ds/symlink/tl072.pdf"
+  },
+  "i18n": {
+    "fr": {
+      "source": "d1c40a7663eb",
+      "description": "Texas Instruments TL072BCP, l'amplificateur opérationnel double TL072B à entrées JFET et faible bruit en PDIP-8 (0 à 70 °C, jusqu'à 36 V entre les alimentations) : gain en boucle ouverte de 200 V/mV, produit gain-bande de 5,25 MHz, vitesse de balayage de 20 V/us, décalage maximal de 3 mV, la version classique : sur +/-15 V sa sortie atteint +/-13,5 V sur 10 kohm, à 1,5 V de chaque rail. Les deux canaux sur le brochage double standard.",
+      "fidelity": {
+        "electrical": {
+          "claims": "Deux amplificateurs opérationnels (opamp de SPEC-004) au gain en boucle ouverte typique de la fiche technique, un pôle unique à son produit gain-bande, sa vitesse de balayage et l'excursion de sa sortie depuis chaque rail ; cas de test sur +/-15 V pour un suiveur, les excursions positive et négative, la vitesse de balayage et la bande passante tirés de ces valeurs.",
+          "omissions": [
+            "la tension de décalage d'entrée, les courants de polarisation et de décalage (des picoampères, doublant tous les 10 °C), et leur dérive",
+            "la plage d'entrée en mode commun : le TL072 classique inverse sa sortie quand une entrée approche à environ 2 V du rail négatif (inversion de phase) ; ni modélisée ni signalée",
+            "les pôles suivants, la marge de phase et la stabilité sur charge capacitive",
+            "le courant de court-circuit de sortie (environ 26 mA) et la dépendance de l'excursion à la charge",
+            "le bruit (37 nV/rtHz)",
+            "le courant d'alimentation (1,4 mA par canal)",
+            "la dépendance à la température",
+            "la dispersion d'un exemplaire à l'autre"
+          ]
+        }
+      }
+    }
+  }
+}

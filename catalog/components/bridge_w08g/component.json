@@ -1,0 +1,236 @@
+{
+  "schema_version": 1,
+  "kind": "component",
+  "id": "emblink/bridge_w08g",
+  "version": "1.0.0",
+  "name": "W08G",
+  "category": "diodes",
+  "subcategory": "bridge_rectifiers",
+  "description": "Vishay W08G, a 1.5 A glass passivated single-phase bridge rectifier in the round WOG case blocking 800 V (VRRM): four junctions, each at most 1.0 V at 1.0 A (a fit: 10 nA, n = 1.8, 50 mohm, 0.91 V), the reverse current at VDC under 5.0 uA. AC in on the two ~ leads, DC out on + and −.",
+  "keywords": [
+    "Vishay",
+    "W08G",
+    "W0xG",
+    "bridge",
+    "rectifier",
+    "full wave",
+    "WOG",
+    "1.5 A",
+    "800 V"
+  ],
+  "pins": [
+    {
+      "name": "AC1",
+      "number": 2,
+      "model": {
+        "kind": "passive"
+      },
+      "doc": "AC input (~); 1 to 4 numbering is KiCad's bridge convention, the case has no manufacturer numbers"
+    },
+    {
+      "name": "+",
+      "number": 1,
+      "model": {
+        "kind": "passive"
+      },
+      "doc": "DC positive (+)"
+    },
+    {
+      "name": "AC2",
+      "number": 4,
+      "model": {
+        "kind": "passive"
+      },
+      "doc": "AC input (~)"
+    },
+    {
+      "name": "-",
+      "number": 3,
+      "model": {
+        "kind": "passive"
+      },
+      "doc": "DC negative (−)"
+    }
+  ],
+  "params": {
+    "is": {
+      "type": "number",
+      "unit": "A",
+      "default": "10n",
+      "doc": "Each junction's saturation current",
+      "min": "1e-20",
+      "max": "1m",
+      "advanced": true
+    },
+    "n": {
+      "type": "number",
+      "unit": "",
+      "default": 1.8,
+      "doc": "Each junction's emission coefficient",
+      "min": 0.5,
+      "max": 5,
+      "advanced": true
+    },
+    "rs": {
+      "type": "number",
+      "unit": "ohm",
+      "default": 0.05,
+      "doc": "Each junction's series resistance",
+      "min": 0,
+      "advanced": true
+    }
+  },
+  "model": {
+    "composite": {
+      "components": [
+        {
+          "id": "D1",
+          "component": "emblink/diode",
+          "params": {
+            "is": "$is",
+            "n": "$n",
+            "rs": "$rs"
+          }
+        },
+        {
+          "id": "D2",
+          "component": "emblink/diode",
+          "params": {
+            "is": "$is",
+            "n": "$n",
+            "rs": "$rs"
+          }
+        },
+        {
+          "id": "D3",
+          "component": "emblink/diode",
+          "params": {
+            "is": "$is",
+            "n": "$n",
+            "rs": "$rs"
+          }
+        },
+        {
+          "id": "D4",
+          "component": "emblink/diode",
+          "params": {
+            "is": "$is",
+            "n": "$n",
+            "rs": "$rs"
+          }
+        }
+      ],
+      "nets": {
+        "AC1": [
+          "D1.A",
+          "D3.K"
+        ],
+        "AC2": [
+          "D2.A",
+          "D4.K"
+        ],
+        "P": [
+          "D1.K",
+          "D2.K"
+        ],
+        "N": [
+          "D3.A",
+          "D4.A"
+        ]
+      },
+      "ports": {
+        "AC1": "D1.A",
+        "AC2": "D2.A",
+        "+": "D1.K",
+        "-": "D3.A"
+      }
+    }
+  },
+  "symbol": {
+    "svg": "symbol.svg",
+    "width": 60,
+    "height": 60,
+    "pins": {
+      "AC1": {
+        "x": 0,
+        "y": 30,
+        "side": "left"
+      },
+      "AC2": {
+        "x": 60,
+        "y": 30,
+        "side": "right"
+      },
+      "+": {
+        "x": 30,
+        "y": 0,
+        "side": "top"
+      },
+      "-": {
+        "x": 30,
+        "y": 60,
+        "side": "bottom"
+      }
+    }
+  },
+  "fidelity": {
+    "functional": null,
+    "timed": null,
+    "electrical": {
+      "claims": "Four Shockley junctions with series resistance in a bridge, each fitted under the datasheet's 1.0 V per diode at 1.0 A; blocking to VRRM with less than its 5.0 uA; full-wave rectification fixtures from the datasheet's limits.",
+      "omissions": [
+        "avalanche above VRRM: the datasheet gives no breakdown voltage, so the junctions block at any reverse voltage",
+        "the junctions' capacitance and reverse recovery",
+        "surge (IFSM 50 A, I2t 10 A2s) and the 1.5 A average current: no heating and no damage",
+        "temperature dependence",
+        "device-to-device spread between the four junctions",
+        "no manufacturer model qualification"
+      ],
+      "validation": [
+        "tests/*.json"
+      ]
+    }
+  },
+  "provenance": {
+    "author": "EmbSIM",
+    "license": "Apache-2.0",
+    "sources": [
+      {
+        "title": "Vishay W005G to W10G datasheet (document 88769)",
+        "url": "https://www.vishay.com/docs/88769/w005g.pdf",
+        "rev": "current at retrieval",
+        "date": "2026-11-03",
+        "hash": "sha256:64216060bf42e17acd880f9a1a28f23a62c5bee263324d310bb210c7dd6bd471",
+        "notes": "Page 1: WOG case, 1.5 A, VRRM and VDC per part, IFSM 50 A, VF 1.0 V max per diode at 1.0 A, IR 5.0 uA at VDC and 25 C; circuit configuration quad. generated from catalog/families/bridges_w0xg/family.json by tools/catalog/families.py; edit the family, not this file"
+      }
+    ]
+  },
+  "tests": [
+    "tests/*.json"
+  ],
+  "part": {
+    "manufacturer": "Vishay",
+    "mpn": "W08G",
+    "package": "WOG",
+    "datasheet": "https://www.vishay.com/docs/88769/w005g.pdf"
+  },
+  "i18n": {
+    "fr": {
+      "source": "8832aa8e05a9",
+      "description": "Vishay W08G, un pont redresseur monophasé de 1,5 A à jonctions passivées sous verre, en boîtier rond WOG, bloquant 800 V (VRRM) : quatre jonctions, chacune d'au plus 1,0 V à 1,0 A (un ajustement : 10 nA, n = 1,8, 50 mohm, 0,91 V), le courant inverse à VDC sous 5,0 uA. L'alternatif entre sur les deux fils ~, le continu sort sur + et −.",
+      "fidelity": {
+        "electrical": {
+          "claims": "Quatre jonctions de Shockley avec résistance série en pont, chacune ajustée sous le 1,0 V par diode à 1,0 A de la fiche technique ; blocage jusqu'à VRRM avec moins de ses 5,0 uA ; cas de test de redressement double alternance tirés des limites de la fiche technique.",
+          "omissions": [
+            "l'avalanche au-delà de VRRM : la fiche technique ne donne pas de tension de claquage, les jonctions bloquent donc à toute tension inverse",
+            "la capacité et le recouvrement inverse des jonctions",
+            "la surintensité (IFSM 50 A, I2t 10 A2s) et le courant moyen de 1,5 A : ni échauffement ni dommages",
+            "la dépendance à la température",
+            "la dispersion entre les quatre jonctions",
+            "aucune qualification par un modèle du fabricant"
+          ]
+        }
+      }
+    }
+  }
+}

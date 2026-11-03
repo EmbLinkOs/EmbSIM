@@ -42,6 +42,16 @@ describe('resistor colour code', () => {
     expect(resistorBands(parseValue('1M')!).slice(0, 3)).toEqual([brown, black, green]);
     expect(resistorBands(4.7).slice(0, 3)).toEqual([yellow, violet, '#c9a227']);
   });
+  it('marks 1 % parts with five bands, three digits and a brown tolerance band (IEC 60062)', () => {
+    const [red, brown, black, orange, white] = ['#d63031', '#7b3f00', '#111111', '#f39c12', '#f5f5f5'];
+    // CCF55 10K0: brown black black red brown
+    expect(resistorBands(10000, 1)).toEqual([brown, black, black, red, brown]);
+    // CCF55 301R: orange black brown black brown
+    expect(resistorBands(301, 1)).toEqual([orange, black, brown, black, brown]);
+    // 2 % (CCF07's G): four bands, the last red
+    expect(resistorBands(240, 2)).toEqual([red, '#f1c40f', brown, red]);
+    expect(resistorBands(9.09, 1).slice(0, 4)).toEqual([white, black, white, '#c0c0c0']); // 909 x 0.01: silver
+  });
 });
 
 describe('the bench view', () => {

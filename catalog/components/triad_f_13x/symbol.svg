@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 60 40" width="60" height="40" data-grid="10">
+  <style>.s{stroke:var(--symbol-stroke,#cdd6e4);fill:none;stroke-width:1.5;stroke-linecap:round;stroke-linejoin:round}.k{fill:var(--symbol-stroke,#cdd6e4);stroke:none}</style>
+  <line class="s" id="pin-p1" x1="0" y1="0" x2="20" y2="0"/><line class="s" id="pin-p2" x1="0" y1="40" x2="20" y2="40"/>
+  <line class="s" id="pin-s1" x1="60" y1="0" x2="40" y2="0"/><line class="s" id="pin-s2" x1="60" y1="40" x2="40" y2="40"/>
+  <path class="s" d="M20 0 V4 a4 4 0 0 1 0 8 a4 4 0 0 1 0 8 a4 4 0 0 1 0 8 a4 4 0 0 1 0 8 V40"/>
+  <path class="s" d="M40 0 V4 a4 4 0 0 0 0 8 a4 4 0 0 0 0 8 a4 4 0 0 0 0 8 a4 4 0 0 0 0 8 V40"/>
+  <line class="s" x1="28" y1="2" x2="28" y2="38"/><line class="s" x1="32" y1="2" x2="32" y2="38"/>
+  <circle class="k" cx="15" cy="5" r="1.5"/><circle class="k" cx="45" cy="5" r="1.5"/>
+</svg>

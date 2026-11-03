@@ -1,0 +1,56 @@
+{
+  "schema_version": 1,
+  "kind": "component_test",
+  "name": "leakage_75v",
+  "description": "75 V through 10 kohm: under 5 uA, so under 50 mV across the resistor",
+  "policy": "electrical",
+  "until": "100us",
+  "circuit": {
+    "components": [
+      {
+        "id": "V1",
+        "component": "emblink/vsource",
+        "params": {
+          "dc": 75
+        }
+      },
+      {
+        "id": "R1",
+        "component": "emblink/resistor",
+        "params": {
+          "resistance": "10k"
+        }
+      },
+      {
+        "id": "DUT",
+        "component": "emblink/diode_1n4448"
+      },
+      {
+        "id": "G",
+        "component": "emblink/gnd"
+      }
+    ],
+    "nets": {
+      "VIN": [
+        "V1.+",
+        "R1.1"
+      ],
+      "VK": [
+        "R1.2",
+        "DUT.K"
+      ],
+      "GND": [
+        "V1.-",
+        "DUT.A",
+        "G.GND"
+      ]
+    }
+  },
+  "expect": {
+    "net:VK": {
+      "at": "50us",
+      "min_v": 74.95,
+      "max_v": 75
+    }
+  }
+}

@@ -1,0 +1,68 @@
+{
+  "schema_version": 1,
+  "kind": "component_test",
+  "name": "vbe_on",
+  "description": "IC near 3 A at VCE = 3 V (the base fed 0.00136364 A): VBE(on) at most the datasheet's 2.5 V",
+  "policy": "electrical",
+  "until": "200us",
+  "settings": {
+    "imperfections": "ideal"
+  },
+  "circuit": {
+    "components": [
+      {
+        "id": "VC",
+        "component": "emblink/vsource",
+        "params": {
+          "kind": "dc",
+          "dc": 3.0
+        }
+      },
+      {
+        "id": "IB",
+        "component": "emblink/isource",
+        "params": {
+          "kind": "pulse",
+          "v1": 0,
+          "v2": 0.0013636363636363637,
+          "td": "1u",
+          "tr": "50u",
+          "tf": "1u",
+          "pw": "1",
+          "per": "2"
+        }
+      },
+      {
+        "id": "DUT",
+        "component": "emblink/tip122"
+      },
+      {
+        "id": "G",
+        "component": "emblink/gnd"
+      }
+    ],
+    "nets": {
+      "COLL": [
+        "VC.+",
+        "DUT.C"
+      ],
+      "BASE": [
+        "IB.-",
+        "DUT.B"
+      ],
+      "GND": [
+        "VC.-",
+        "IB.+",
+        "DUT.E",
+        "G.GND"
+      ]
+    }
+  },
+  "expect": {
+    "net:BASE": {
+      "at": "150us",
+      "min_v": 0.5,
+      "max_v": 2.5
+    }
+  }
+}

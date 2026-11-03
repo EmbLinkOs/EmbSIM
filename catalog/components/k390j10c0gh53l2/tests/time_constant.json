@@ -1,0 +1,60 @@
+{
+  "schema_version": 1,
+  "kind": "component_test",
+  "name": "time_constant",
+  "description": "1 V through R = 1 ms / C from 0 V: 1 - 1/e of it at 1 ms, the nominal capacitance",
+  "policy": "electrical",
+  "until": "1.2ms",
+  "settings": {
+    "imperfections": "ideal"
+  },
+  "circuit": {
+    "components": [
+      {
+        "id": "V1",
+        "component": "emblink/vsource",
+        "params": {
+          "dc": 1
+        }
+      },
+      {
+        "id": "R1",
+        "component": "emblink/resistor",
+        "params": {
+          "resistance": 25641000.0,
+          "tolerance": 0
+        }
+      },
+      {
+        "id": "DUT",
+        "component": "emblink/k390j10c0gh53l2"
+      },
+      {
+        "id": "G",
+        "component": "emblink/gnd"
+      }
+    ],
+    "nets": {
+      "VIN": [
+        "V1.+",
+        "R1.1"
+      ],
+      "VC": [
+        "R1.2",
+        "DUT.1"
+      ],
+      "GND": [
+        "V1.-",
+        "DUT.2",
+        "G.GND"
+      ]
+    }
+  },
+  "expect": {
+    "net:VC": {
+      "at": "1ms",
+      "min_v": 0.6258,
+      "max_v": 0.6385
+    }
+  }
+}

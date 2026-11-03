@@ -1,0 +1,60 @@
+{
+  "schema_version": 1,
+  "kind": "component_test",
+  "name": "reverse",
+  "description": "5 V reverse through 100 kohm: under the datasheet's reverse current, so under its drop across the resistor",
+  "policy": "electrical",
+  "until": "100us",
+  "settings": {
+    "imperfections": "ideal"
+  },
+  "circuit": {
+    "components": [
+      {
+        "id": "V1",
+        "component": "emblink/vsource",
+        "params": {
+          "dc": 5
+        }
+      },
+      {
+        "id": "R1",
+        "component": "emblink/resistor",
+        "params": {
+          "resistance": "100k",
+          "tolerance": 0
+        }
+      },
+      {
+        "id": "DUT",
+        "component": "emblink/wp7113it"
+      },
+      {
+        "id": "G",
+        "component": "emblink/gnd"
+      }
+    ],
+    "nets": {
+      "VIN": [
+        "V1.+",
+        "R1.1"
+      ],
+      "VK": [
+        "R1.2",
+        "DUT.K"
+      ],
+      "GND": [
+        "V1.-",
+        "DUT.A",
+        "G.GND"
+      ]
+    }
+  },
+  "expect": {
+    "net:VK": {
+      "at": "50us",
+      "min_v": 4.0,
+      "max_v": 5
+    }
+  }
+}

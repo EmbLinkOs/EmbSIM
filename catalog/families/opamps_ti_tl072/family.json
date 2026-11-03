@@ -1,0 +1,1172 @@
+{
+  "schema_version": 1,
+  "kind": "family",
+  "name": "Texas Instruments TL072 JFET-input dual op-amps",
+  "datasheets": {
+    "ti-tl072": {
+      "title": "Texas Instruments TL07xx low-noise FET-input operational amplifiers datasheet (SLOS080W)",
+      "url": "https://www.ti.com/lit/ds/symlink/tl072.pdf",
+      "rev": "W, July 2025",
+      "date": "2026-11-03",
+      "hash": "sha256:30a70a806642920df994222bc8e7d9b16b4e4cdbf228996dd21ee4bb2cdc863f",
+      "notes": "The TL07xH electrical characteristics (AOL 125 dB, GBW 5.25 MHz, SR 20 V/us, output headroom 115 and 105 mV at 10 kohm); the TL07xC/AC/BC/I DC and AC tables on +/-15 V (VOS 10/6/3/6 mV max, VOM +/-13.5 V at 10 kohm, AOL 200 V/mV, GBW 5.25 MHz or 3 MHz in PS and NS packages, SR 20 V/us); the packaging information's orderable part numbers."
+    }
+  },
+  "evidence": [
+    "GBW Gain-bandwidth product 5\\.25 MHz SR Slew rate VS = 40 V, G = \\+1, CL = 20 pF 20 V/μs",
+    "Positive rail headroom Voltage output swing from VS = 40 V, RL = 2 k. 520 965 mV rail VS = 40 V, RL = 10 k. 105 215",
+    "RL = 10 k. ±12 ±13\\.5 Maximum peak output",
+    "All NS and PS packages; All TL07xM devices 3 GBW MHz product All other devices 5\\.25",
+    "118 125 dB"
+  ],
+  "template": {
+    "schema_version": 1,
+    "kind": "component",
+    "id": "emblink/${short}",
+    "version": "1.0.0",
+    "name": "${mpn}",
+    "category": "operational_amplifiers",
+    "subcategory": "dual",
+    "description": "Texas Instruments ${mpn}, the ${device} low-noise JFET-input dual operational amplifier in ${pkg} (${temp}, up to ${vmax} V across the supplies): ${aol} V/mV open-loop gain, ${gbw} MHz gain-bandwidth, ${sr} V/us slew rate, ${vos} mV maximum offset, ${note}. Both channels on the industry-standard dual pinout.",
+    "keywords": [
+      "Texas Instruments",
+      "TI",
+      "${mpn}",
+      "${device}",
+      "TL072",
+      "op-amp",
+      "operational amplifier",
+      "dual",
+      "JFET input",
+      "audio",
+      "${pkg}"
+    ],
+    "pins": [
+      {
+        "name": "1OUT",
+        "number": 1,
+        "model": {
+          "kind": "analog"
+        }
+      },
+      {
+        "name": "1IN-",
+        "number": 2,
+        "model": {
+          "kind": "analog"
+        }
+      },
+      {
+        "name": "1IN+",
+        "number": 3,
+        "model": {
+          "kind": "analog"
+        }
+      },
+      {
+        "name": "VCC-",
+        "number": 4,
+        "model": {
+          "kind": "analog"
+        },
+        "doc": "Negative supply"
+      },
+      {
+        "name": "2IN+",
+        "number": 5,
+        "model": {
+          "kind": "analog"
+        }
+      },
+      {
+        "name": "2IN-",
+        "number": 6,
+        "model": {
+          "kind": "analog"
+        }
+      },
+      {
+        "name": "2OUT",
+        "number": 7,
+        "model": {
+          "kind": "analog"
+        }
+      },
+      {
+        "name": "VCC+",
+        "number": 8,
+        "model": {
+          "kind": "analog"
+        },
+        "doc": "Positive supply"
+      }
+    ],
+    "params": {},
+    "model": {
+      "composite": {
+        "components": [
+          {
+            "id": "A1",
+            "component": "emblink/opamp",
+            "params": {
+              "gain": "${gain}",
+              "gbw": "${gbw_si}",
+              "rout": 30,
+              "headroom_high": "${hh}",
+              "headroom_low": "${hl}",
+              "slew": "${sr}"
+            }
+          },
+          {
+            "id": "A2",
+            "component": "emblink/opamp",
+            "params": {
+              "gain": "${gain}",
+              "gbw": "${gbw_si}",
+              "rout": 30,
+              "headroom_high": "${hh}",
+              "headroom_low": "${hl}",
+              "slew": "${sr}"
+            }
+          }
+        ],
+        "nets": {
+          "VCC+": [
+            "A1.V+",
+            "A2.V+"
+          ],
+          "VCC-": [
+            "A1.V-",
+            "A2.V-"
+          ]
+        },
+        "ports": {
+          "1OUT": "A1.OUT",
+          "1IN-": "A1.-",
+          "1IN+": "A1.+",
+          "2OUT": "A2.OUT",
+          "2IN-": "A2.-",
+          "2IN+": "A2.+",
+          "VCC+": "A1.V+",
+          "VCC-": "A1.V-"
+        }
+      }
+    },
+    "functional": {
+      "composite": {
+        "components": [],
+        "nets": {},
+        "ports": {}
+      }
+    },
+    "symbol": {
+      "svg": "symbol.svg",
+      "width": 100,
+      "height": 120,
+      "pins": {
+        "1IN+": {
+          "x": 0,
+          "y": 20,
+          "side": "left"
+        },
+        "1IN-": {
+          "x": 0,
+          "y": 40,
+          "side": "left"
+        },
+        "1OUT": {
+          "x": 100,
+          "y": 30,
+          "side": "right"
+        },
+        "2IN+": {
+          "x": 0,
+          "y": 80,
+          "side": "left"
+        },
+        "2IN-": {
+          "x": 0,
+          "y": 100,
+          "side": "left"
+        },
+        "2OUT": {
+          "x": 100,
+          "y": 90,
+          "side": "right"
+        },
+        "VCC+": {
+          "x": 50,
+          "y": 0,
+          "side": "top"
+        },
+        "VCC-": {
+          "x": 50,
+          "y": 120,
+          "side": "bottom"
+        }
+      }
+    },
+    "fidelity": {
+      "functional": {
+        "claims": "Pins only: the functional policy has no analog voltages.",
+        "omissions": [
+          "amplification"
+        ],
+        "validation": [
+          "tests/*.json"
+        ]
+      },
+      "timed": {
+        "claims": "As electrical.",
+        "omissions": []
+      },
+      "electrical": {
+        "claims": "Two op-amps (SPEC-004 opamp) at the datasheet's typical open-loop gain, a single pole at its gain-bandwidth, its slew rate, and its output swing from each rail; fixtures on +/-15 V for a follower, the positive and negative swing, the slew rate and the bandwidth from those values.",
+        "omissions": [
+          "input offset voltage, bias and offset currents (picoamperes, doubling every 10 C), and their drift",
+          "the common-mode input range: the classic TL072 inverts its output when an input comes within about 2 V of the negative rail (phase reversal); not modelled nor diagnosed",
+          "further poles, the phase margin and the capacitive-load stability",
+          "the output short-circuit current (about 26 mA) and the swing's dependence on the load",
+          "noise (37 nV/rtHz)",
+          "supply current (1.4 mA per channel)",
+          "temperature dependence",
+          "device-to-device spread"
+        ],
+        "validation": [
+          "tests/*.json"
+        ]
+      }
+    },
+    "provenance": {
+      "author": "EmbSIM",
+      "license": "Apache-2.0",
+      "sources": []
+    },
+    "tests": [
+      "tests/*.json"
+    ],
+    "part": {
+      "manufacturer": "Texas Instruments",
+      "mpn": "${mpn}",
+      "package": "${pkg}",
+      "datasheet": "${datasheet_url}"
+    },
+    "i18n": {
+      "fr": {
+        "description": "Texas Instruments ${mpn}, l'amplificateur opérationnel double ${device} à entrées JFET et faible bruit en ${pkg} (${temp_fr}, jusqu'à ${vmax} V entre les alimentations) : gain en boucle ouverte de ${aol} V/mV, produit gain-bande de ${gbw_fr} MHz, vitesse de balayage de ${sr} V/us, décalage maximal de ${vos} mV, ${note_fr}. Les deux canaux sur le brochage double standard.",
+        "fidelity": {
+          "electrical": {
+            "claims": "Deux amplificateurs opérationnels (opamp de SPEC-004) au gain en boucle ouverte typique de la fiche technique, un pôle unique à son produit gain-bande, sa vitesse de balayage et l'excursion de sa sortie depuis chaque rail ; cas de test sur +/-15 V pour un suiveur, les excursions positive et négative, la vitesse de balayage et la bande passante tirés de ces valeurs.",
+            "omissions": [
+              "la tension de décalage d'entrée, les courants de polarisation et de décalage (des picoampères, doublant tous les 10 °C), et leur dérive",
+              "la plage d'entrée en mode commun : le TL072 classique inverse sa sortie quand une entrée approche à environ 2 V du rail négatif (inversion de phase) ; ni modélisée ni signalée",
+              "les pôles suivants, la marge de phase et la stabilité sur charge capacitive",
+              "le courant de court-circuit de sortie (environ 26 mA) et la dépendance de l'excursion à la charge",
+              "le bruit (37 nV/rtHz)",
+              "le courant d'alimentation (1,4 mA par canal)",
+              "la dépendance à la température",
+              "la dispersion d'un exemplaire à l'autre"
+            ]
+          }
+        }
+      }
+    }
+  },
+  "tests": {
+    "follower": {
+      "schema_version": 1,
+      "kind": "component_test",
+      "name": "follower",
+      "description": "Channel 1 as a follower at 1 V on +/-15 V: its output 1 V",
+      "policy": "electrical",
+      "until": "40us",
+      "settings": {
+        "imperfections": "ideal"
+      },
+      "circuit": {
+        "components": [
+          {
+            "id": "VI",
+            "component": "emblink/vsource",
+            "params": {
+              "kind": "dc",
+              "dc": 1
+            }
+          },
+          {
+            "id": "VP",
+            "component": "emblink/vsource",
+            "params": {
+              "kind": "dc",
+              "dc": 15
+            }
+          },
+          {
+            "id": "VN",
+            "component": "emblink/vsource",
+            "params": {
+              "kind": "dc",
+              "dc": 15
+            }
+          },
+          {
+            "id": "DUT",
+            "component": "emblink/${short}"
+          },
+          {
+            "id": "G",
+            "component": "emblink/gnd"
+          },
+          {
+            "id": "RL",
+            "component": "emblink/resistor",
+            "params": {
+              "resistance": "10k",
+              "tolerance": 0
+            }
+          }
+        ],
+        "nets": {
+          "IN": [
+            "VI.+",
+            "DUT.1IN+"
+          ],
+          "GND": [
+            "VI.-",
+            "VP.-",
+            "VN.+",
+            "G.GND",
+            "RL.2"
+          ],
+          "OUT": [
+            "DUT.1OUT",
+            "DUT.1IN-",
+            "RL.1"
+          ],
+          "VP": [
+            "VP.+",
+            "DUT.VCC+"
+          ],
+          "VN": [
+            "VN.-",
+            "DUT.VCC-"
+          ]
+        }
+      },
+      "expect": {
+        "net:OUT": {
+          "at": "20us",
+          "min_v": 0.99,
+          "max_v": 1.01
+        }
+      }
+    },
+    "swing_high": {
+      "schema_version": 1,
+      "kind": "component_test",
+      "name": "swing_high",
+      "description": "Channel 1 as a comparator driven high on +/-15 V into 10 kohm: its output ${hh} V below the positive rail, the datasheet's typical swing",
+      "policy": "electrical",
+      "until": "40us",
+      "settings": {
+        "imperfections": "ideal"
+      },
+      "circuit": {
+        "components": [
+          {
+            "id": "VI",
+            "component": "emblink/vsource",
+            "params": {
+              "kind": "dc",
+              "dc": 0.1
+            }
+          },
+          {
+            "id": "VP",
+            "component": "emblink/vsource",
+            "params": {
+              "kind": "dc",
+              "dc": 15
+            }
+          },
+          {
+            "id": "VN",
+            "component": "emblink/vsource",
+            "params": {
+              "kind": "dc",
+              "dc": 15
+            }
+          },
+          {
+            "id": "DUT",
+            "component": "emblink/${short}"
+          },
+          {
+            "id": "G",
+            "component": "emblink/gnd"
+          },
+          {
+            "id": "RL",
+            "component": "emblink/resistor",
+            "params": {
+              "resistance": "10k",
+              "tolerance": 0
+            }
+          }
+        ],
+        "nets": {
+          "IN": [
+            "VI.+",
+            "DUT.1IN+"
+          ],
+          "GND": [
+            "VI.-",
+            "VP.-",
+            "VN.+",
+            "G.GND",
+            "RL.2",
+            "DUT.1IN-"
+          ],
+          "OUT": [
+            "DUT.1OUT",
+            "RL.1"
+          ],
+          "VP": [
+            "VP.+",
+            "DUT.VCC+"
+          ],
+          "VN": [
+            "VN.-",
+            "DUT.VCC-"
+          ]
+        }
+      },
+      "expect": {
+        "net:OUT": {
+          "at": "30us",
+          "min_v": "${vtop_min}",
+          "max_v": "${vtop_max}"
+        }
+      }
+    },
+    "swing_low": {
+      "schema_version": 1,
+      "kind": "component_test",
+      "name": "swing_low",
+      "description": "Channel 2 as a comparator driven low on +/-15 V into 10 kohm: its output ${hl} V above the negative rail",
+      "policy": "electrical",
+      "until": "40us",
+      "settings": {
+        "imperfections": "ideal"
+      },
+      "circuit": {
+        "components": [
+          {
+            "id": "VI",
+            "component": "emblink/vsource",
+            "params": {
+              "kind": "dc",
+              "dc": -0.1
+            }
+          },
+          {
+            "id": "VP",
+            "component": "emblink/vsource",
+            "params": {
+              "kind": "dc",
+              "dc": 15
+            }
+          },
+          {
+            "id": "VN",
+            "component": "emblink/vsource",
+            "params": {
+              "kind": "dc",
+              "dc": 15
+            }
+          },
+          {
+            "id": "DUT",
+            "component": "emblink/${short}"
+          },
+          {
+            "id": "G",
+            "component": "emblink/gnd"
+          },
+          {
+            "id": "RL",
+            "component": "emblink/resistor",
+            "params": {
+              "resistance": "10k",
+              "tolerance": 0
+            }
+          }
+        ],
+        "nets": {
+          "IN": [
+            "VI.+",
+            "DUT.2IN+"
+          ],
+          "GND": [
+            "VI.-",
+            "VP.-",
+            "VN.+",
+            "G.GND",
+            "RL.2",
+            "DUT.2IN-"
+          ],
+          "OUT": [
+            "DUT.2OUT",
+            "RL.1"
+          ],
+          "VP": [
+            "VP.+",
+            "DUT.VCC+"
+          ],
+          "VN": [
+            "VN.-",
+            "DUT.VCC-"
+          ]
+        }
+      },
+      "expect": {
+        "net:OUT": {
+          "at": "30us",
+          "min_v": "${vbot_min}",
+          "max_v": "${vbot_max}"
+        }
+      }
+    },
+    "slew": {
+      "schema_version": 1,
+      "kind": "component_test",
+      "name": "slew",
+      "description": "Channel 2 as a follower given a -2 to +2 V step: the output slews at the datasheet's ${sr} V/us, through 0 V a tenth of a microsecond after the step",
+      "policy": "electrical",
+      "until": "12us",
+      "settings": {
+        "imperfections": "ideal"
+      },
+      "circuit": {
+        "components": [
+          {
+            "id": "VI",
+            "component": "emblink/vsource",
+            "params": {
+              "kind": "pulse",
+              "v1": -2.0,
+              "v2": 2.0,
+              "td": "10u",
+              "tr": "10n",
+              "tf": "10n",
+              "pw": "1m",
+              "per": "2m"
+            }
+          },
+          {
+            "id": "VP",
+            "component": "emblink/vsource",
+            "params": {
+              "kind": "dc",
+              "dc": 15
+            }
+          },
+          {
+            "id": "VN",
+            "component": "emblink/vsource",
+            "params": {
+              "kind": "dc",
+              "dc": 15
+            }
+          },
+          {
+            "id": "DUT",
+            "component": "emblink/${short}"
+          },
+          {
+            "id": "G",
+            "component": "emblink/gnd"
+          },
+          {
+            "id": "RL",
+            "component": "emblink/resistor",
+            "params": {
+              "resistance": "10k",
+              "tolerance": 0
+            }
+          }
+        ],
+        "nets": {
+          "IN": [
+            "VI.+",
+            "DUT.2IN+"
+          ],
+          "GND": [
+            "VI.-",
+            "VP.-",
+            "VN.+",
+            "G.GND",
+            "RL.2"
+          ],
+          "OUT": [
+            "DUT.2OUT",
+            "DUT.2IN-",
+            "RL.1"
+          ],
+          "VP": [
+            "VP.+",
+            "DUT.VCC+"
+          ],
+          "VN": [
+            "VN.-",
+            "DUT.VCC-"
+          ]
+        }
+      },
+      "expect": {
+        "net:OUT": {
+          "at": "10.105us",
+          "min_v": -0.3,
+          "max_v": 0.3
+        }
+      }
+    },
+    "bandwidth": {
+      "schema_version": 1,
+      "kind": "component_test",
+      "name": "bandwidth",
+      "description": "Channel 2 at a gain of 11 given a 10 mV step, too small to slew: one pole, its time constant 11 / (2 pi ${gbw} MHz), 63 % of the 110 mV step then",
+      "policy": "electrical",
+      "until": "15us",
+      "settings": {
+        "imperfections": "ideal"
+      },
+      "circuit": {
+        "components": [
+          {
+            "id": "VI",
+            "component": "emblink/vsource",
+            "params": {
+              "kind": "pulse",
+              "v1": 0.1,
+              "v2": 0.11,
+              "td": "10u",
+              "tr": "10n",
+              "tf": "10n",
+              "pw": "1m",
+              "per": "2m"
+            }
+          },
+          {
+            "id": "VP",
+            "component": "emblink/vsource",
+            "params": {
+              "kind": "dc",
+              "dc": 15
+            }
+          },
+          {
+            "id": "VN",
+            "component": "emblink/vsource",
+            "params": {
+              "kind": "dc",
+              "dc": 15
+            }
+          },
+          {
+            "id": "DUT",
+            "component": "emblink/${short}"
+          },
+          {
+            "id": "G",
+            "component": "emblink/gnd"
+          },
+          {
+            "id": "RF",
+            "component": "emblink/resistor",
+            "params": {
+              "resistance": "10k",
+              "tolerance": 0
+            }
+          },
+          {
+            "id": "RG",
+            "component": "emblink/resistor",
+            "params": {
+              "resistance": "1k",
+              "tolerance": 0
+            }
+          }
+        ],
+        "nets": {
+          "IN": [
+            "VI.+",
+            "DUT.2IN+"
+          ],
+          "GND": [
+            "VI.-",
+            "VP.-",
+            "VN.+",
+            "G.GND",
+            "RG.2"
+          ],
+          "OUT": [
+            "DUT.2OUT",
+            "RF.1"
+          ],
+          "FB": [
+            "DUT.2IN-",
+            "RF.2",
+            "RG.1"
+          ],
+          "VP": [
+            "VP.+",
+            "DUT.VCC+"
+          ],
+          "VN": [
+            "VN.-",
+            "DUT.VCC-"
+          ]
+        }
+      },
+      "expect": {
+        "net:OUT": {
+          "at": "${bw_at}",
+          "min_v": "${bw_min}",
+          "max_v": "${bw_max}"
+        }
+      }
+    }
+  },
+  "rows": [
+    {
+      "mpn": "TL072CP",
+      "short": "tl072cp",
+      "device": "TL072",
+      "pkg": "PDIP-8",
+      "temp": "0 to 70 C",
+      "temp_fr": "0 à 70 °C",
+      "vmax": 36,
+      "vos": 10,
+      "aol": 200,
+      "gain": "200k",
+      "gbw": 5.25,
+      "gbw_fr": "5,25",
+      "gbw_si": "5.25meg",
+      "sr": 20,
+      "hh": 1.5,
+      "hh_fr": "1,5",
+      "hl": 1.5,
+      "hl_fr": "1,5",
+      "note": "the classic version: on +/-15 V its output swings +/-13.5 V into 10 kohm, 1.5 V from each rail",
+      "note_fr": "la version classique : sur +/-15 V sa sortie atteint +/-13,5 V sur 10 kohm, à 1,5 V de chaque rail",
+      "bw_at": "10.3335us",
+      "bw_min": 1.1626,
+      "bw_max": 1.1765,
+      "vtop_min": 13.4,
+      "vtop_max": 13.6,
+      "vbot_min": -13.6,
+      "vbot_max": -13.4,
+      "datasheet": "ti-tl072",
+      "evidence": [
+        "TL072CP Active Production"
+      ]
+    },
+    {
+      "mpn": "TL072CDR",
+      "short": "tl072cdr",
+      "device": "TL072",
+      "pkg": "SOIC-8",
+      "temp": "0 to 70 C",
+      "temp_fr": "0 à 70 °C",
+      "vmax": 36,
+      "vos": 10,
+      "aol": 200,
+      "gain": "200k",
+      "gbw": 5.25,
+      "gbw_fr": "5,25",
+      "gbw_si": "5.25meg",
+      "sr": 20,
+      "hh": 1.5,
+      "hh_fr": "1,5",
+      "hl": 1.5,
+      "hl_fr": "1,5",
+      "note": "the classic version: on +/-15 V its output swings +/-13.5 V into 10 kohm, 1.5 V from each rail",
+      "note_fr": "la version classique : sur +/-15 V sa sortie atteint +/-13,5 V sur 10 kohm, à 1,5 V de chaque rail",
+      "bw_at": "10.3335us",
+      "bw_min": 1.1626,
+      "bw_max": 1.1765,
+      "vtop_min": 13.4,
+      "vtop_max": 13.6,
+      "vbot_min": -13.6,
+      "vbot_max": -13.4,
+      "datasheet": "ti-tl072",
+      "evidence": [
+        "TL072CDR Active Production"
+      ]
+    },
+    {
+      "mpn": "TL072CPSR",
+      "short": "tl072cpsr",
+      "device": "TL072",
+      "pkg": "SO-8 (PS)",
+      "temp": "0 to 70 C",
+      "temp_fr": "0 à 70 °C",
+      "vmax": 36,
+      "vos": 10,
+      "aol": 200,
+      "gain": "200k",
+      "gbw": 3,
+      "gbw_fr": "3",
+      "gbw_si": "3meg",
+      "sr": 20,
+      "hh": 1.5,
+      "hh_fr": "1,5",
+      "hl": 1.5,
+      "hl_fr": "1,5",
+      "note": "the classic version in the PS package, whose gain-bandwidth the datasheet gives as 3 MHz; on +/-15 V its output swings +/-13.5 V into 10 kohm",
+      "note_fr": "la version classique en boîtier PS, dont la fiche technique donne le produit gain-bande à 3 MHz ; sur +/-15 V sa sortie atteint +/-13,5 V sur 10 kohm",
+      "bw_at": "10.5836us",
+      "bw_min": 1.1626,
+      "bw_max": 1.1765,
+      "vtop_min": 13.4,
+      "vtop_max": 13.6,
+      "vbot_min": -13.6,
+      "vbot_max": -13.4,
+      "datasheet": "ti-tl072",
+      "evidence": [
+        "TL072CPSR Active Production"
+      ]
+    },
+    {
+      "mpn": "TL072CPWR",
+      "short": "tl072cpwr",
+      "device": "TL072",
+      "pkg": "TSSOP-8",
+      "temp": "0 to 70 C",
+      "temp_fr": "0 à 70 °C",
+      "vmax": 36,
+      "vos": 10,
+      "aol": 200,
+      "gain": "200k",
+      "gbw": 5.25,
+      "gbw_fr": "5,25",
+      "gbw_si": "5.25meg",
+      "sr": 20,
+      "hh": 1.5,
+      "hh_fr": "1,5",
+      "hl": 1.5,
+      "hl_fr": "1,5",
+      "note": "the classic version: on +/-15 V its output swings +/-13.5 V into 10 kohm, 1.5 V from each rail",
+      "note_fr": "la version classique : sur +/-15 V sa sortie atteint +/-13,5 V sur 10 kohm, à 1,5 V de chaque rail",
+      "bw_at": "10.3335us",
+      "bw_min": 1.1626,
+      "bw_max": 1.1765,
+      "vtop_min": 13.4,
+      "vtop_max": 13.6,
+      "vbot_min": -13.6,
+      "vbot_max": -13.4,
+      "datasheet": "ti-tl072",
+      "evidence": [
+        "TL072CPWR Active Production"
+      ]
+    },
+    {
+      "mpn": "TL072ACP",
+      "short": "tl072acp",
+      "device": "TL072A",
+      "pkg": "PDIP-8",
+      "temp": "0 to 70 C",
+      "temp_fr": "0 à 70 °C",
+      "vmax": 36,
+      "vos": 6,
+      "aol": 200,
+      "gain": "200k",
+      "gbw": 5.25,
+      "gbw_fr": "5,25",
+      "gbw_si": "5.25meg",
+      "sr": 20,
+      "hh": 1.5,
+      "hh_fr": "1,5",
+      "hl": 1.5,
+      "hl_fr": "1,5",
+      "note": "the classic version: on +/-15 V its output swings +/-13.5 V into 10 kohm, 1.5 V from each rail",
+      "note_fr": "la version classique : sur +/-15 V sa sortie atteint +/-13,5 V sur 10 kohm, à 1,5 V de chaque rail",
+      "bw_at": "10.3335us",
+      "bw_min": 1.1626,
+      "bw_max": 1.1765,
+      "vtop_min": 13.4,
+      "vtop_max": 13.6,
+      "vbot_min": -13.6,
+      "vbot_max": -13.4,
+      "datasheet": "ti-tl072",
+      "evidence": [
+        "TL072ACP Active Production"
+      ]
+    },
+    {
+      "mpn": "TL072ACDR",
+      "short": "tl072acdr",
+      "device": "TL072A",
+      "pkg": "SOIC-8",
+      "temp": "0 to 70 C",
+      "temp_fr": "0 à 70 °C",
+      "vmax": 36,
+      "vos": 6,
+      "aol": 200,
+      "gain": "200k",
+      "gbw": 5.25,
+      "gbw_fr": "5,25",
+      "gbw_si": "5.25meg",
+      "sr": 20,
+      "hh": 1.5,
+      "hh_fr": "1,5",
+      "hl": 1.5,
+      "hl_fr": "1,5",
+      "note": "the classic version: on +/-15 V its output swings +/-13.5 V into 10 kohm, 1.5 V from each rail",
+      "note_fr": "la version classique : sur +/-15 V sa sortie atteint +/-13,5 V sur 10 kohm, à 1,5 V de chaque rail",
+      "bw_at": "10.3335us",
+      "bw_min": 1.1626,
+      "bw_max": 1.1765,
+      "vtop_min": 13.4,
+      "vtop_max": 13.6,
+      "vbot_min": -13.6,
+      "vbot_max": -13.4,
+      "datasheet": "ti-tl072",
+      "evidence": [
+        "TL072ACDR Active Production"
+      ]
+    },
+    {
+      "mpn": "TL072BCP",
+      "short": "tl072bcp",
+      "device": "TL072B",
+      "pkg": "PDIP-8",
+      "temp": "0 to 70 C",
+      "temp_fr": "0 à 70 °C",
+      "vmax": 36,
+      "vos": 3,
+      "aol": 200,
+      "gain": "200k",
+      "gbw": 5.25,
+      "gbw_fr": "5,25",
+      "gbw_si": "5.25meg",
+      "sr": 20,
+      "hh": 1.5,
+      "hh_fr": "1,5",
+      "hl": 1.5,
+      "hl_fr": "1,5",
+      "note": "the classic version: on +/-15 V its output swings +/-13.5 V into 10 kohm, 1.5 V from each rail",
+      "note_fr": "la version classique : sur +/-15 V sa sortie atteint +/-13,5 V sur 10 kohm, à 1,5 V de chaque rail",
+      "bw_at": "10.3335us",
+      "bw_min": 1.1626,
+      "bw_max": 1.1765,
+      "vtop_min": 13.4,
+      "vtop_max": 13.6,
+      "vbot_min": -13.6,
+      "vbot_max": -13.4,
+      "datasheet": "ti-tl072",
+      "evidence": [
+        "TL072BCP Active Production"
+      ]
+    },
+    {
+      "mpn": "TL072BCDR",
+      "short": "tl072bcdr",
+      "device": "TL072B",
+      "pkg": "SOIC-8",
+      "temp": "0 to 70 C",
+      "temp_fr": "0 à 70 °C",
+      "vmax": 36,
+      "vos": 3,
+      "aol": 200,
+      "gain": "200k",
+      "gbw": 5.25,
+      "gbw_fr": "5,25",
+      "gbw_si": "5.25meg",
+      "sr": 20,
+      "hh": 1.5,
+      "hh_fr": "1,5",
+      "hl": 1.5,
+      "hl_fr": "1,5",
+      "note": "the classic version: on +/-15 V its output swings +/-13.5 V into 10 kohm, 1.5 V from each rail",
+      "note_fr": "la version classique : sur +/-15 V sa sortie atteint +/-13,5 V sur 10 kohm, à 1,5 V de chaque rail",
+      "bw_at": "10.3335us",
+      "bw_min": 1.1626,
+      "bw_max": 1.1765,
+      "vtop_min": 13.4,
+      "vtop_max": 13.6,
+      "vbot_min": -13.6,
+      "vbot_max": -13.4,
+      "datasheet": "ti-tl072",
+      "evidence": [
+        "TL072BCDR Active Production"
+      ]
+    },
+    {
+      "mpn": "TL072IP",
+      "short": "tl072ip",
+      "device": "TL072I",
+      "pkg": "PDIP-8",
+      "temp": "-40 to 85 C",
+      "temp_fr": "-40 à 85 °C",
+      "vmax": 36,
+      "vos": 6,
+      "aol": 200,
+      "gain": "200k",
+      "gbw": 5.25,
+      "gbw_fr": "5,25",
+      "gbw_si": "5.25meg",
+      "sr": 20,
+      "hh": 1.5,
+      "hh_fr": "1,5",
+      "hl": 1.5,
+      "hl_fr": "1,5",
+      "note": "the classic version: on +/-15 V its output swings +/-13.5 V into 10 kohm, 1.5 V from each rail",
+      "note_fr": "la version classique : sur +/-15 V sa sortie atteint +/-13,5 V sur 10 kohm, à 1,5 V de chaque rail",
+      "bw_at": "10.3335us",
+      "bw_min": 1.1626,
+      "bw_max": 1.1765,
+      "vtop_min": 13.4,
+      "vtop_max": 13.6,
+      "vbot_min": -13.6,
+      "vbot_max": -13.4,
+      "datasheet": "ti-tl072",
+      "evidence": [
+        "TL072IP Active Production"
+      ]
+    },
+    {
+      "mpn": "TL072IDR",
+      "short": "tl072idr",
+      "device": "TL072I",
+      "pkg": "SOIC-8",
+      "temp": "-40 to 85 C",
+      "temp_fr": "-40 à 85 °C",
+      "vmax": 36,
+      "vos": 6,
+      "aol": 200,
+      "gain": "200k",
+      "gbw": 5.25,
+      "gbw_fr": "5,25",
+      "gbw_si": "5.25meg",
+      "sr": 20,
+      "hh": 1.5,
+      "hh_fr": "1,5",
+      "hl": 1.5,
+      "hl_fr": "1,5",
+      "note": "the classic version: on +/-15 V its output swings +/-13.5 V into 10 kohm, 1.5 V from each rail",
+      "note_fr": "la version classique : sur +/-15 V sa sortie atteint +/-13,5 V sur 10 kohm, à 1,5 V de chaque rail",
+      "bw_at": "10.3335us",
+      "bw_min": 1.1626,
+      "bw_max": 1.1765,
+      "vtop_min": 13.4,
+      "vtop_max": 13.6,
+      "vbot_min": -13.6,
+      "vbot_max": -13.4,
+      "datasheet": "ti-tl072",
+      "evidence": [
+        "TL072IDR Active Production"
+      ]
+    },
+    {
+      "mpn": "TL072HIDR",
+      "short": "tl072hidr",
+      "device": "TL072H",
+      "pkg": "SOIC-8",
+      "temp": "-40 to 125 C",
+      "temp_fr": "-40 à 125 °C",
+      "vmax": 40,
+      "vos": 4,
+      "aol": 1778,
+      "gain": "1778k",
+      "gbw": 5.25,
+      "gbw_fr": "5,25",
+      "gbw_si": "5.25meg",
+      "sr": 20,
+      "hh": 0.115,
+      "hh_fr": "0,115",
+      "hl": 0.105,
+      "hl_fr": "0,105",
+      "note": "the H version: 4.5 to 40 V supply, 125 dB open-loop gain and an output within 115 mV of the positive rail and 105 mV of the negative one at 10 kohm",
+      "note_fr": "la version H : alimentation de 4,5 à 40 V, gain en boucle ouverte de 125 dB et sortie à 115 mV du rail positif et 105 mV du négatif sur 10 kohm",
+      "bw_at": "10.3335us",
+      "bw_min": 1.1626,
+      "bw_max": 1.1765,
+      "vtop_min": 14.785,
+      "vtop_max": 14.985,
+      "vbot_min": -14.995,
+      "vbot_max": -14.795,
+      "datasheet": "ti-tl072",
+      "evidence": [
+        "TL072HIDR Active Production"
+      ]
+    },
+    {
+      "mpn": "TL072HIPWR",
+      "short": "tl072hipwr",
+      "device": "TL072H",
+      "pkg": "TSSOP-8",
+      "temp": "-40 to 125 C",
+      "temp_fr": "-40 à 125 °C",
+      "vmax": 40,
+      "vos": 4,
+      "aol": 1778,
+      "gain": "1778k",
+      "gbw": 5.25,
+      "gbw_fr": "5,25",
+      "gbw_si": "5.25meg",
+      "sr": 20,
+      "hh": 0.115,
+      "hh_fr": "0,115",
+      "hl": 0.105,
+      "hl_fr": "0,105",
+      "note": "the H version: 4.5 to 40 V supply, 125 dB open-loop gain and an output within 115 mV of the positive rail and 105 mV of the negative one at 10 kohm",
+      "note_fr": "la version H : alimentation de 4,5 à 40 V, gain en boucle ouverte de 125 dB et sortie à 115 mV du rail positif et 105 mV du négatif sur 10 kohm",
+      "bw_at": "10.3335us",
+      "bw_min": 1.1626,
+      "bw_max": 1.1765,
+      "vtop_min": 14.785,
+      "vtop_max": 14.985,
+      "vbot_min": -14.995,
+      "vbot_max": -14.795,
+      "datasheet": "ti-tl072",
+      "evidence": [
+        "TL072HIPWR Active Production"
+      ]
+    },
+    {
+      "mpn": "TL072HIDDFR",
+      "short": "tl072hiddfr",
+      "device": "TL072H",
+      "pkg": "SOT-23-8",
+      "temp": "-40 to 125 C",
+      "temp_fr": "-40 à 125 °C",
+      "vmax": 40,
+      "vos": 4,
+      "aol": 1778,
+      "gain": "1778k",
+      "gbw": 5.25,
+      "gbw_fr": "5,25",
+      "gbw_si": "5.25meg",
+      "sr": 20,
+      "hh": 0.115,
+      "hh_fr": "0,115",
+      "hl": 0.105,
+      "hl_fr": "0,105",
+      "note": "the H version: 4.5 to 40 V supply, 125 dB open-loop gain and an output within 115 mV of the positive rail and 105 mV of the negative one at 10 kohm",
+      "note_fr": "la version H : alimentation de 4,5 à 40 V, gain en boucle ouverte de 125 dB et sortie à 115 mV du rail positif et 105 mV du négatif sur 10 kohm",
+      "bw_at": "10.3335us",
+      "bw_min": 1.1626,
+      "bw_max": 1.1765,
+      "vtop_min": 14.785,
+      "vtop_max": 14.985,
+      "vbot_min": -14.995,
+      "vbot_max": -14.795,
+      "datasheet": "ti-tl072",
+      "evidence": [
+        "TL072HIDDFR Active Production"
+      ]
+    }
+  ]
+}

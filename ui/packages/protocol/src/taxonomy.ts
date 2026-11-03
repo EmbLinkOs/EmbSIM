@@ -402,6 +402,22 @@ export const TAXONOMY: { categories: TaxonomyCategory[]; legacy: Record<string, 
           }
         },
         {
+          "id": "fixed",
+          "name": {
+            "en": "Fixed (leaded)",
+            "fr": "Fixes (à fils)",
+            "es": "Fijos (con terminales)"
+          }
+        },
+        {
+          "id": "power",
+          "name": {
+            "en": "Power (SMD)",
+            "fr": "De puissance (CMS)",
+            "es": "De potencia (SMD)"
+          }
+        },
+        {
           "id": "ferrite_beads",
           "name": {
             "en": "Ferrite beads",
@@ -1034,6 +1050,22 @@ export const TAXONOMY: { categories: TaxonomyCategory[]; legacy: Record<string, 
           }
         },
         {
+          "id": "darlington_npn",
+          "name": {
+            "en": "Darlington NPN",
+            "fr": "Darlington NPN",
+            "es": "Darlington NPN"
+          }
+        },
+        {
+          "id": "darlington_pnp",
+          "name": {
+            "en": "Darlington PNP",
+            "fr": "Darlington PNP",
+            "es": "Darlington PNP"
+          }
+        },
+        {
           "id": "darlington_arrays",
           "name": {
             "en": "Darlington arrays",
@@ -1063,6 +1095,40 @@ export const TAXONOMY: { categories: TaxonomyCategory[]; legacy: Record<string, 
             "en": "JFET",
             "fr": "JFET",
             "es": "JFET"
+          }
+        }
+      ]
+    },
+    {
+      "id": "thyristors",
+      "name": {
+        "en": "Thyristors",
+        "fr": "Thyristors",
+        "es": "Tiristores"
+      },
+      "subcategories": [
+        {
+          "id": "scrs",
+          "name": {
+            "en": "SCRs",
+            "fr": "Thyristors (SCR)",
+            "es": "SCR"
+          }
+        },
+        {
+          "id": "triacs",
+          "name": {
+            "en": "Triacs",
+            "fr": "Triacs",
+            "es": "Triacs"
+          }
+        },
+        {
+          "id": "diacs",
+          "name": {
+            "en": "Diacs",
+            "fr": "Diacs",
+            "es": "Diacs"
           }
         }
       ]

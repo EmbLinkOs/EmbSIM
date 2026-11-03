@@ -1,0 +1,74 @@
+{
+  "schema_version": 1,
+  "kind": "component_test",
+  "name": "off",
+  "description": "Gate at the source: the channel is off and the drain sits at the 12 V supply through 1 kohm",
+  "policy": "electrical",
+  "until": "100us",
+  "settings": {
+    "imperfections": "ideal"
+  },
+  "circuit": {
+    "components": [
+      {
+        "id": "V1",
+        "component": "emblink/vsource",
+        "params": {
+          "kind": "dc",
+          "dc": -12
+        }
+      },
+      {
+        "id": "VG",
+        "component": "emblink/vsource",
+        "params": {
+          "kind": "dc",
+          "dc": 0
+        }
+      },
+      {
+        "id": "R1",
+        "component": "emblink/resistor",
+        "params": {
+          "resistance": "1k",
+          "tolerance": 0
+        }
+      },
+      {
+        "id": "DUT",
+        "component": "emblink/irf9540"
+      },
+      {
+        "id": "G",
+        "component": "emblink/gnd"
+      }
+    ],
+    "nets": {
+      "VCC": [
+        "V1.+",
+        "R1.1"
+      ],
+      "GATE": [
+        "VG.+",
+        "DUT.G"
+      ],
+      "DRAIN": [
+        "R1.2",
+        "DUT.D"
+      ],
+      "GND": [
+        "V1.-",
+        "VG.-",
+        "DUT.S",
+        "G.GND"
+      ]
+    }
+  },
+  "expect": {
+    "net:DRAIN": {
+      "at": "50us",
+      "min_v": -12.001,
+      "max_v": -11.9
+    }
+  }
+}

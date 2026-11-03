@@ -51,6 +51,7 @@ KIND_SCHEMAS = {
     "library": "library.schema.json",
     "registers": "registers.schema.json",
     "taxonomy": "taxonomy.schema.json",
+    "family": "family.schema.json",
     "board_reference": "board-reference.schema.json",
 }
 
@@ -76,7 +77,7 @@ POWER_SIGNAL_RE = re.compile(r"^(V(DD|SS|CC|BAT|DDA|SSA|REF\+?|REF-?|CAP[0-9]*)|
 GPIO_RE = re.compile(r"^P([A-Z])([0-9]+)$")
 
 PRIMITIVE_PINS = {
-    "resistor": ["1", "2"], "capacitor": ["1", "2"], "inductor": ["1", "2"],
+    "resistor": ["1", "2"], "capacitor": ["1", "2"], "inductor": ["1", "2"], "transformer": ["P1", "P2", "S1", "S2"], "transformer_ct": ["P1", "P2", "S1", "CT", "S2"], "triac": ["MT2", "MT1", "G"], "diac": ["A1", "A2"],
     "instrument_input": ["+", "-"], "vsource": ["+", "-"], "isource": ["+", "-"], "switch": ["1", "2"],
     "potentiometer": ["1", "W", "2"], "diode": ["A", "K"], "led": ["A", "K"], "rgb_led": ["R", "COM", "G", "B"], "rgb_indicator": ["R", "COM", "G", "B"], "zener": ["A", "K"],
     "bjt_npn": ["C", "B", "E"], "bjt_pnp": ["C", "B", "E"], "nmos": ["D", "G", "S"],
@@ -1943,6 +1944,7 @@ CHECKS: dict[str, Callable[[Report, Path, dict, Index], Any]] = {
     "registers": check_registers,
     "library": check_library,
     "taxonomy": lambda report, path, doc, index: None,
+    "family": lambda report, path, doc, index: None,  # tools/catalog/families.py check
     "board_reference": lambda report, path, doc, index: _check_reference_home(report, path, doc),
 }
 

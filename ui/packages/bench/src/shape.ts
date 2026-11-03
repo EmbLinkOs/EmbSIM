@@ -55,6 +55,14 @@ export interface BenchShape {
   textured?: boolean;
   /** a small-outline part drawn on its SO-to-DIP breakout (the DIP's pins are the breakout's) */
   smallOutline?: SmallOutline;
+  /** a radial part's body: an electrolytic can, a dipped ceramic or a sleeved drum-core inductor */
+  radial?: 'electrolytic' | 'ceramic' | 'inductor';
+  /** an axial part's body: a resistor (with its colour bands), a glass or a moulded diode */
+  axial?: 'resistor' | 'glass' | 'moulded';
+  /** a resistor's nominal resistance, ohms (its description's default: the instance's value wins) */
+  ohms?: number;
+  /** a resistor's tolerance, %: 1 % and better are marked with five bands (IEC 60062) */
+  tolerance?: number;
   /** a distance sensor's beam: from `at` along `dir`, mm, x right, y towards the viewer, z up */
   sense?: { at?: [number, number, number]; dir?: [number, number, number] };
 }
@@ -119,7 +127,7 @@ export function boardStack(shape: BenchShape): { standoff: number; thickness: nu
   return { standoff, thickness, surface, headers, contact: surface + (headers === 'female' ? 8.5 : headers === 'male' ? 8 : 0) };
 }
 
-type Desc = Pick<ComponentDescription, 'id' | 'name' | 'category' | 'pins' | 'bench' | 'artwork'> & Partial<Pick<ComponentDescription, 'subcategory'>> & { kind?: string; ports?: Record<string, unknown> };
+type Desc = Pick<ComponentDescription, 'id' | 'name' | 'category' | 'pins' | 'bench' | 'artwork'> & Partial<Pick<ComponentDescription, 'subcategory' | 'params'>> & { kind?: string; ports?: Record<string, unknown> };
 
 /** an integrated circuit's function block (a gate, an op-amp, a comparator, a converter), by
  *  its library category and sub-category; the pre-taxonomy names are kept for older libraries */
@@ -161,6 +169,43 @@ const AXIAL: Record<string, { span: number; body: [number, number]; color: strin
   bzx55c5v1: { span: 7.62, body: [3.8, 1.8], color: '#d35400' },
   inductor: { span: 10.16, body: [7, 3.2], color: '#2e86de' },
   ferrite_bead: { span: 10.16, body: [3.5, 3.5], color: '#4b4b4b' },
+};
+
+/** a number or an SI-suffixed string ("4k7" is not one: "4.7k" is) as a value */
+function siValue(v: unknown): number | undefined {
+  if (typeof v === 'number') return v;
+  if (typeof v !== 'string') return undefined;
+  const m = /^\s*([\d.]+(?:e[-+]?\d+)?)\s*(meg|[pnuµmkKMG])?/.exec(v);
+  if (!m) return undefined;
+  const mult: Record<string, number> = { p: 1e-12, n: 1e-9, u: 1e-6, µ: 1e-6, m: 1e-3, k: 1e3, K: 1e3, M: 1e6, meg: 1e6, G: 1e9 };
+  return Number(m[1]) * (m[2] ? mult[m[2]] ?? 1 : 1);
+}
+
+/** a radial can as a datasheet names it: "Radial 8 x 11.5 mm, P 3.5 mm" (diameter, length,
+ *  lead spacing), an aluminium electrolytic's black sleeve */
+function radialPackage(pkg: string | undefined): { span: number; dia: number; h: number; color: string } | undefined {
+  const m = /^Radial ([\d.]+) x ([\d.]+) mm(?:, P ([\d.]+) mm)?/.exec(pkg ?? '');
+  if (!m) return undefined;
+  const dia = Number(m[1]);
+  return { dia, h: Number(m[2]), span: m[3] ? Number(m[3]) : dia < 8 ? 2.5 : dia < 10 ? 3.5 : dia < 16 ? 5 : 7.5, color: '#1b1b1b' };
+}
+
+/** a radial leaded MLCC by its size code: "MLCC size 15, P 2.5 mm" (Vishay's K series:
+ *  size 10, 15 and 20 are 3.6, 4.0 and 5.0 mm wide and high at most), black epoxy */
+function mlccPackage(pkg: string | undefined): { span: number; dia: number; h: number; color: string } | undefined {
+  const m = /^MLCC size (\d+), P ([\d.]+) mm/.exec(pkg ?? '');
+  if (!m) return undefined;
+  const wb = ({ 10: 3.6, 15: 4.0, 20: 5.0 } as Record<string, number>)[m[1]!] ?? 4.0;
+  return { dia: wb, h: wb, span: Number(m[2]), color: '#1b1b1b' };
+}
+
+/** axial packages by the name a datasheet gives them (JEDEC outlines): the
+ *  body's length and diameter, the lead span a breadboard takes it at */
+const AXIAL_PACKAGES: Record<string, { span: number; body: [number, number]; color: string }> = {
+  'DO-35': { span: 7.62, body: [3.8, 1.8], color: '#d35400' }, // glass, 4.25 mm x 1.85 mm max
+  'DO-41': { span: 10.16, body: [5.2, 2.7], color: '#1d1d1d' }, // moulded, 5.2 mm x 2.7 mm max
+  'DO-201AD': { span: 15.24, body: [9.5, 5.3], color: '#1d1d1d' }, // moulded, 9.5 mm x 5.3 mm max
+  DIN0207: { span: 10.16, body: [6.3, 2.4], color: '#a0523d' }, // a 1/4 W film resistor: 6.3 mm x 2.4 mm (Vishay CCF55/CCF07: 6.22 x 2.29, red-brown)
 };
 
 const RADIAL: Record<string, { span: number; dia: number; h: number; color: string }> = {
@@ -437,10 +482,16 @@ function deriveShape(desc: Desc, params?: Record<string, unknown>, artwork?: str
     const spacing = names.length > 1 ? Math.min(7.62, (box.size[0] - 4) / (names.length - 1)) : 0;
     return { package: 'box', size: box.size, pins: inRow(names, box.size, spacing, box.size[1] - 4), color: box.color, label: box.label };
   }
-  const ax = AXIAL[short];
+  const ax = AXIAL[short] ?? AXIAL_PACKAGES[(desc as { part?: { package?: string } }).part?.package ?? ''];
   if (ax && names.length === 2) {
     const size: [number, number, number] = [ax.span, ax.body[1], ax.body[1]];
-    return { package: 'axial', size, pins: inRow(names, size, ax.span, ax.body[1] / 2), color: ax.color };
+    const pkgName = (desc as { part?: { package?: string } }).part?.package ?? '';
+    const isRes = short === 'resistor' || desc.category === 'resistors' || desc.category === 'passives';
+    const kind = isRes ? 'resistor' : pkgName === 'DO-35' || short === 'diode_1n4148' || short === 'zener' || short === 'bzx55c5v1' ? 'glass' : 'moulded';
+    const def = desc.params?.resistance?.default;
+    const ohms = isRes ? siValue(def) : undefined;
+    const tol = isRes ? siValue(desc.params?.tolerance?.default) : undefined;
+    return { package: 'axial', size, pins: inRow(names, size, ax.span, ax.body[1] / 2), color: ax.color, axial: kind, ...(ohms !== undefined ? { ohms } : {}), ...(tol !== undefined ? { tolerance: tol } : {}) };
   }
   if (short === 'led') {
     const size: [number, number, number] = [5.8, 5.8, 8.6];
@@ -452,16 +503,20 @@ function deriveShape(desc: Desc, params?: Record<string, unknown>, artwork?: str
     const size: [number, number, number] = [8, 5.8, 8.6];
     return { package: 'led', size, pins: inRow(names, size, PITCH, 2.9), color: '#f4f6ff' };
   }
-  const rad = RADIAL[short];
+  const radPkg = (desc as { part?: { package?: string } }).part?.package;
+  const rad = RADIAL[short] ?? radialPackage(radPkg) ?? mlccPackage(radPkg);
   if (rad && names.length === 2) {
     const size: [number, number, number] = [Math.max(rad.dia, rad.span + 1), rad.dia, rad.h];
-    return { package: 'radial', size, pins: inRow(names, size, rad.span, rad.dia / 2), color: rad.color };
+    const inductor = desc.category === 'inductors' && /^Radial /.test(radPkg ?? '');
+    const kind = inductor ? 'inductor' : short === 'electrolytic_capacitor' || /^Radial /.test(radPkg ?? '') ? 'electrolytic' : short === 'capacitor' || /^MLCC /.test(radPkg ?? '') ? 'ceramic' : undefined;
+    return { package: 'radial', size, pins: inRow(names, size, rad.span, rad.dia / 2), color: kind === 'inductor' ? '#2a2a2a' : rad.color, ...(kind ? { radial: kind } : {}) };
   }
-  if (TO92.has(short) && names.length === 3) {
+  const pkg = (desc as { part?: { package?: string } }).part?.package ?? '';
+  if ((TO92.has(short) || /^TO-92\b/.test(pkg)) && names.length === 3) {
     const size: [number, number, number] = [5.2, 4.2, 5.2];
     return { package: 'to92', size, pins: inRow(names, size, PITCH, 2.1), label: desc.name.split(' ')[0] };
   }
-  if (TO220.has(short) && names.length === 3) {
+  if ((TO220.has(short) || /^TO-220\b/.test(pkg)) && names.length === 3) {
     const size: [number, number, number] = [10.2, 4.6, 15.6];
     return { package: 'to220', size, pins: inRow(names, size, PITCH, 3.4), label: desc.name.split(' ')[0] };
   }

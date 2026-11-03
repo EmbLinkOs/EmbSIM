@@ -1,0 +1,713 @@
+{
+  "schema_version": 1,
+  "kind": "family",
+  "name": "onsemi BZX79C zener diodes",
+  "datasheets": {
+    "onsemi-bzx79": {
+      "title": "onsemi BZX79C2V4 to BZX79C18 datasheet (BZX79C2V4/D)",
+      "url": "https://www.onsemi.com/pdf/datasheet/bzx79c2v4-d.pdf",
+      "rev": "5, December 2023",
+      "date": "2026-11-03",
+      "hash": "sha256:41ae4e97f7123974638725a172a612737642a02fb6007065ce4e7ab78e314edd",
+      "notes": "Pages 1 and 2: PD 500 mW; per device VZ minimum and maximum at IZ, ZZ maximum, IR at VR (the text extraction prints the micro sign as m), the temperature coefficient and the capacitance at 0 V and 1 MHz; VF 1.2 V max at 200 mA; axial lead DO-35."
+    }
+  },
+  "evidence": [
+    "Zener Diodes BZX79C2V4 - BZX79C18",
+    "VF Forward Voltage = 1\\.2 V Max\\. @ IF = 200 mA",
+    "Power Dissipation @ TL ≤ 75°C, Lead 500 mW"
+  ],
+  "template": {
+    "schema_version": 1,
+    "kind": "component",
+    "id": "emblink/${short}",
+    "version": "1.0.0",
+    "name": "${mpn}",
+    "category": "diodes",
+    "subcategory": "zener",
+    "description": "onsemi ${mpn}, a 500 mW small-signal zener in DO-35: ${vz} V nominal by its type designation (${vz_min} to ${vz_max} V) at its test current IZT of ${izt_ma} mA. The breakdown is placed so the voltage at IZT is the nominal one; the reverse current at ${vr} V stays under the datasheet's ${ir} uA and the forward voltage at 200 mA under its 1.2 V.",
+    "keywords": [
+      "onsemi",
+      "${mpn}",
+      "BZX79",
+      "DO-35",
+      "zener",
+      "voltage reference",
+      "regulator",
+      "${vz} V"
+    ],
+    "pins": [
+      {
+        "name": "A",
+        "number": 2,
+        "model": {
+          "kind": "passive"
+        },
+        "doc": "Anode"
+      },
+      {
+        "name": "K",
+        "number": 1,
+        "model": {
+          "kind": "passive"
+        },
+        "doc": "Cathode"
+      }
+    ],
+    "params": {
+      "vz": {
+        "type": "number",
+        "unit": "V",
+        "default": "${vz}",
+        "doc": "Zener voltage at the test current izt",
+        "min": 1,
+        "max": 200
+      },
+      "is": {
+        "type": "number",
+        "unit": "A",
+        "default": "1e-14",
+        "doc": "Forward saturation current",
+        "min": "1e-20",
+        "max": "1m",
+        "advanced": true
+      },
+      "n": {
+        "type": "number",
+        "unit": "",
+        "default": 1,
+        "doc": "Forward emission coefficient",
+        "min": 0.5,
+        "max": 5,
+        "advanced": true
+      },
+      "rs": {
+        "type": "number",
+        "unit": "ohm",
+        "default": 0.5,
+        "doc": "Forward series resistance",
+        "min": 0,
+        "advanced": true
+      },
+      "izt": {
+        "type": "number",
+        "unit": "A",
+        "default": "${izt}",
+        "doc": "Test current at which the voltage is vz (IZT1)",
+        "min": "1u",
+        "max": "0.2",
+        "advanced": true
+      }
+    },
+    "model": {
+      "primitive": "zener"
+    },
+    "symbol": {
+      "svg": "symbol.svg",
+      "width": 60,
+      "height": 20,
+      "pins": {
+        "A": {
+          "x": 0,
+          "y": 10,
+          "side": "left"
+        },
+        "K": {
+          "x": 60,
+          "y": 10,
+          "side": "right"
+        }
+      }
+    },
+    "fidelity": {
+      "functional": null,
+      "timed": null,
+      "electrical": {
+        "claims": "Zener junction placed so the voltage at IZT is the nominal VZ, inside the datasheet's minimum and maximum; leakage under the table's IR at VR; forward voltage under 1.2 V at 200 mA. DC and low-frequency fixtures from the datasheet's table.",
+        "omissions": [
+          "the knee's softness below IZT (ZZK at IZT2): the model's knee is a sharp exponential",
+          "dynamic resistance: one 0.5 ohm series resistance serves both directions, so the slope above IZT is under the table's ZZ maximum rather than at it",
+          "the temperature coefficient (TKVZ)",
+          "capacitance (${cap} pF at 0 V)",
+          "power dissipation (500 mW) and damage",
+          "device-to-device spread within the tolerance",
+          "noise",
+          "no manufacturer model qualification"
+        ],
+        "validation": [
+          "tests/*.json"
+        ]
+      }
+    },
+    "provenance": {
+      "author": "EmbSIM",
+      "license": "Apache-2.0",
+      "sources": [
+        {
+          "title": "KiCad family/package reference, revision 4e17d759",
+          "url": "https://github.com/KiCad/kicad-symbols/blob/4e17d7595f9691d45d97aea8ad64572652fb5bed/Diode.lib"
+        }
+      ]
+    },
+    "tests": [
+      "tests/*.json"
+    ],
+    "part": {
+      "manufacturer": "onsemi",
+      "mpn": "${mpn}",
+      "package": "DO-35",
+      "datasheet": "${datasheet_url}"
+    },
+    "artwork": {
+      "svg": "artwork.svg"
+    },
+    "i18n": {
+      "fr": {
+        "description": "onsemi ${mpn}, une zener petits signaux de 500 mW en DO-35 : ${vz} V nominal selon sa désignation (${vz_min} à ${vz_max} V) à son courant de test IZT de ${izt_ma} mA. Le claquage est placé pour que la tension à IZT soit la nominale ; le courant inverse à ${vr} V reste sous les ${ir} uA de la fiche technique et la tension directe à 200 mA sous ses 1,2 V.",
+        "fidelity": {
+          "electrical": {
+            "claims": "Jonction zener placée pour que la tension à IZT soit la VZ nominale, entre le minimum et le maximum de la fiche technique ; fuite sous l'IR du tableau à VR ; tension directe sous 1,2 V à 200 mA. Cas de test en continu et basse fréquence tirés du tableau de la fiche technique.",
+            "omissions": [
+              "la douceur du coude sous IZT (ZZK à IZT2) : le coude du modèle est une exponentielle franche",
+              "la résistance dynamique : une seule résistance série de 0,5 ohm sert dans les deux sens, la pente au-dessus d'IZT est donc sous le maximum ZZ du tableau plutôt qu'à sa valeur",
+              "le coefficient de température (TKVZ)",
+              "la capacité (${cap} pF à 0 V)",
+              "la puissance dissipée (500 mW) et les dommages",
+              "la dispersion d'un exemplaire à l'autre dans la tolérance",
+              "le bruit",
+              "aucune qualification par un modèle du fabricant"
+            ]
+          }
+        }
+      }
+    }
+  },
+  "tests": {
+    "zener": {
+      "schema_version": 1,
+      "kind": "component_test",
+      "name": "zener",
+      "description": "IZT in reverse: the voltage within the datasheet's minimum and maximum",
+      "policy": "electrical",
+      "until": "100us",
+      "circuit": {
+        "components": [
+          {
+            "id": "I1",
+            "component": "emblink/isource",
+            "params": {
+              "dc": "${izt}"
+            }
+          },
+          {
+            "id": "DUT",
+            "component": "emblink/${short}"
+          },
+          {
+            "id": "G",
+            "component": "emblink/gnd"
+          }
+        ],
+        "nets": {
+          "VZ": [
+            "I1.-",
+            "DUT.K"
+          ],
+          "GND": [
+            "I1.+",
+            "DUT.A",
+            "G.GND"
+          ]
+        }
+      },
+      "expect": {
+        "net:VZ": {
+          "at": "50us",
+          "min_v": "${vz_min}",
+          "max_v": "${vz_max}"
+        }
+      }
+    },
+    "leakage": {
+      "schema_version": 1,
+      "kind": "component_test",
+      "name": "leakage",
+      "description": "VR across it through 100 kohm: under the datasheet's IR at 25 C",
+      "policy": "electrical",
+      "until": "100us",
+      "circuit": {
+        "components": [
+          {
+            "id": "V1",
+            "component": "emblink/vsource",
+            "params": {
+              "dc": "${vr}"
+            }
+          },
+          {
+            "id": "R1",
+            "component": "emblink/resistor",
+            "params": {
+              "resistance": "100k"
+            }
+          },
+          {
+            "id": "DUT",
+            "component": "emblink/${short}"
+          },
+          {
+            "id": "G",
+            "component": "emblink/gnd"
+          }
+        ],
+        "nets": {
+          "VIN": [
+            "V1.+",
+            "R1.1"
+          ],
+          "VK": [
+            "R1.2",
+            "DUT.K"
+          ],
+          "GND": [
+            "V1.-",
+            "DUT.A",
+            "G.GND"
+          ]
+        }
+      },
+      "expect": {
+        "net:VK": {
+          "at": "50us",
+          "min_v": "${vk_min}",
+          "max_v": "${vr}"
+        }
+      }
+    },
+    "forward": {
+      "schema_version": 1,
+      "kind": "component_test",
+      "name": "forward",
+      "description": "200 mA forward: under the datasheet's 1.2 V",
+      "policy": "electrical",
+      "until": "100us",
+      "circuit": {
+        "components": [
+          {
+            "id": "I1",
+            "component": "emblink/isource",
+            "params": {
+              "dc": 0.2
+            }
+          },
+          {
+            "id": "DUT",
+            "component": "emblink/${short}"
+          },
+          {
+            "id": "G",
+            "component": "emblink/gnd"
+          }
+        ],
+        "nets": {
+          "VD": [
+            "I1.-",
+            "DUT.A"
+          ],
+          "GND": [
+            "I1.+",
+            "DUT.K",
+            "G.GND"
+          ]
+        }
+      },
+      "expect": {
+        "net:VD": {
+          "at": "50us",
+          "min_v": 0.6,
+          "max_v": 1.2
+        }
+      }
+    }
+  },
+  "rows": [
+    {
+      "mpn": "BZX79C2V4",
+      "short": "bzx79c2v4",
+      "vz": 2.4,
+      "vz_min": 2.2,
+      "vz_max": 2.6,
+      "izt_ma": 5,
+      "izt": 0.005,
+      "ir": 100,
+      "vr": 1,
+      "zz": 100,
+      "cap": 0,
+      "vk_min": 0.0,
+      "datasheet": "onsemi-bzx79",
+      "evidence": [
+        "${mpn} ${vz_min} ${vz_max} ${izt_ma} ${zz} ${ir} ${vr} "
+      ]
+    },
+    {
+      "mpn": "BZX79C2V7",
+      "short": "bzx79c2v7",
+      "vz": 2.7,
+      "vz_min": 2.5,
+      "vz_max": 2.9,
+      "izt_ma": 5,
+      "izt": 0.005,
+      "ir": 75,
+      "vr": 1,
+      "zz": 100,
+      "cap": 0,
+      "vk_min": 0.0,
+      "datasheet": "onsemi-bzx79",
+      "evidence": [
+        "${mpn} ${vz_min} ${vz_max} ${izt_ma} ${zz} ${ir} ${vr} "
+      ]
+    },
+    {
+      "mpn": "BZX79C3V3",
+      "short": "bzx79c3v3",
+      "vz": 3.3,
+      "vz_min": 3.1,
+      "vz_max": 3.5,
+      "izt_ma": 5,
+      "izt": 0.005,
+      "ir": 25,
+      "vr": 1,
+      "zz": 95,
+      "cap": 0,
+      "vk_min": 0.0,
+      "datasheet": "onsemi-bzx79",
+      "evidence": [
+        "${mpn} ${vz_min} ${vz_max} ${izt_ma} ${zz} ${ir} ${vr} "
+      ]
+    },
+    {
+      "mpn": "BZX79C3V6",
+      "short": "bzx79c3v6",
+      "vz": 3.6,
+      "vz_min": 3.4,
+      "vz_max": 3.8,
+      "izt_ma": 5,
+      "izt": 0.005,
+      "ir": 15,
+      "vr": 1,
+      "zz": 90,
+      "cap": 0,
+      "vk_min": 0.0,
+      "datasheet": "onsemi-bzx79",
+      "evidence": [
+        "${mpn} ${vz_min} ${vz_max} ${izt_ma} ${zz} ${ir} ${vr} "
+      ]
+    },
+    {
+      "mpn": "BZX79C3V9",
+      "short": "bzx79c3v9",
+      "vz": 3.9,
+      "vz_min": 3.7,
+      "vz_max": 4.1,
+      "izt_ma": 5,
+      "izt": 0.005,
+      "ir": 10,
+      "vr": 1,
+      "zz": 90,
+      "cap": 0.3,
+      "vk_min": 0.0,
+      "datasheet": "onsemi-bzx79",
+      "evidence": [
+        "${mpn} ${vz_min} ${vz_max} ${izt_ma} ${zz} ${ir} ${vr} "
+      ]
+    },
+    {
+      "mpn": "BZX79C4V3",
+      "short": "bzx79c4v3",
+      "vz": 4.3,
+      "vz_min": 4,
+      "vz_max": 4.6,
+      "izt_ma": 5,
+      "izt": 0.005,
+      "ir": 5,
+      "vr": 1,
+      "zz": 90,
+      "cap": 1,
+      "vk_min": 0.5,
+      "datasheet": "onsemi-bzx79",
+      "evidence": [
+        "${mpn} ${vz_min} ${vz_max} ${izt_ma} ${zz} ${ir} ${vr} "
+      ]
+    },
+    {
+      "mpn": "BZX79C4V7",
+      "short": "bzx79c4v7",
+      "vz": 4.7,
+      "vz_min": 4.4,
+      "vz_max": 5,
+      "izt_ma": 5,
+      "izt": 0.005,
+      "ir": 3,
+      "vr": 2,
+      "zz": 80,
+      "cap": 0.2,
+      "vk_min": 1.7,
+      "datasheet": "onsemi-bzx79",
+      "evidence": [
+        "${mpn} ${vz_min} ${vz_max} ${izt_ma} ${zz} ${ir} ${vr} "
+      ]
+    },
+    {
+      "mpn": "BZX79C5V1",
+      "short": "bzx79c5v1",
+      "vz": 5.1,
+      "vz_min": 4.8,
+      "vz_max": 5.4,
+      "izt_ma": 5,
+      "izt": 0.005,
+      "ir": 2,
+      "vr": 2,
+      "zz": 60,
+      "cap": 1.2,
+      "vk_min": 1.8,
+      "datasheet": "onsemi-bzx79",
+      "evidence": [
+        "${mpn} ${vz_min} ${vz_max} ${izt_ma} ${zz} ${ir} ${vr} "
+      ]
+    },
+    {
+      "mpn": "BZX79C5V6",
+      "short": "bzx79c5v6",
+      "vz": 5.6,
+      "vz_min": 5.2,
+      "vz_max": 6,
+      "izt_ma": 5,
+      "izt": 0.005,
+      "ir": 1,
+      "vr": 2,
+      "zz": 40,
+      "cap": 2.5,
+      "vk_min": 1.9,
+      "datasheet": "onsemi-bzx79",
+      "evidence": [
+        "${mpn} ${vz_min} ${vz_max} ${izt_ma} ${zz} ${ir} ${vr} "
+      ]
+    },
+    {
+      "mpn": "BZX79C6V2",
+      "short": "bzx79c6v2",
+      "vz": 6.2,
+      "vz_min": 5.8,
+      "vz_max": 6.6,
+      "izt_ma": 5,
+      "izt": 0.005,
+      "ir": 3,
+      "vr": 4,
+      "zz": 10,
+      "cap": 3.7,
+      "vk_min": 3.7,
+      "datasheet": "onsemi-bzx79",
+      "evidence": [
+        "${mpn} ${vz_min} ${vz_max} ${izt_ma} ${zz} ${ir} ${vr} "
+      ]
+    },
+    {
+      "mpn": "BZX79C6V8",
+      "short": "bzx79c6v8",
+      "vz": 6.8,
+      "vz_min": 6.4,
+      "vz_max": 7.2,
+      "izt_ma": 5,
+      "izt": 0.005,
+      "ir": 2,
+      "vr": 4,
+      "zz": 15,
+      "cap": 4.5,
+      "vk_min": 3.8,
+      "datasheet": "onsemi-bzx79",
+      "evidence": [
+        "${mpn} ${vz_min} ${vz_max} ${izt_ma} ${zz} ${ir} ${vr} "
+      ]
+    },
+    {
+      "mpn": "BZX79C7V5",
+      "short": "bzx79c7v5",
+      "vz": 7.5,
+      "vz_min": 7,
+      "vz_max": 7.9,
+      "izt_ma": 5,
+      "izt": 0.005,
+      "ir": 1,
+      "vr": 5,
+      "zz": 15,
+      "cap": 5.3,
+      "vk_min": 4.9,
+      "datasheet": "onsemi-bzx79",
+      "evidence": [
+        "${mpn} ${vz_min} ${vz_max} ${izt_ma} ${zz} ${ir} ${vr} "
+      ]
+    },
+    {
+      "mpn": "BZX79C8V2",
+      "short": "bzx79c8v2",
+      "vz": 8.2,
+      "vz_min": 7.7,
+      "vz_max": 8.7,
+      "izt_ma": 5,
+      "izt": 0.005,
+      "ir": 0.7,
+      "vr": 5,
+      "zz": 15,
+      "cap": 6.2,
+      "vk_min": 4.93,
+      "datasheet": "onsemi-bzx79",
+      "evidence": [
+        "${mpn} ${vz_min} ${vz_max} ${izt_ma} ${zz} ${ir} ${vr} "
+      ]
+    },
+    {
+      "mpn": "BZX79C9V1",
+      "short": "bzx79c9v1",
+      "vz": 9.1,
+      "vz_min": 8.5,
+      "vz_max": 9.6,
+      "izt_ma": 5,
+      "izt": 0.005,
+      "ir": 0.5,
+      "vr": 6,
+      "zz": 15,
+      "cap": 7,
+      "vk_min": 5.95,
+      "datasheet": "onsemi-bzx79",
+      "evidence": [
+        "${mpn} ${vz_min} ${vz_max} ${izt_ma} ${zz} ${ir} ${vr} "
+      ]
+    },
+    {
+      "mpn": "BZX79C10",
+      "short": "bzx79c10",
+      "vz": 10,
+      "vz_min": 9.4,
+      "vz_max": 10.6,
+      "izt_ma": 5,
+      "izt": 0.005,
+      "ir": 0.2,
+      "vr": 7,
+      "zz": 20,
+      "cap": 8,
+      "vk_min": 6.98,
+      "datasheet": "onsemi-bzx79",
+      "evidence": [
+        "${mpn} ${vz_min} ${vz_max} ${izt_ma} ${zz} ${ir} ${vr} "
+      ]
+    },
+    {
+      "mpn": "BZX79C11",
+      "short": "bzx79c11",
+      "vz": 11,
+      "vz_min": 10.4,
+      "vz_max": 11.6,
+      "izt_ma": 5,
+      "izt": 0.005,
+      "ir": 0.1,
+      "vr": 8,
+      "zz": 20,
+      "cap": 9,
+      "vk_min": 7.99,
+      "datasheet": "onsemi-bzx79",
+      "evidence": [
+        "${mpn} ${vz_min} ${vz_max} ${izt_ma} ${zz} ${ir} ${vr} "
+      ]
+    },
+    {
+      "mpn": "BZX79C12",
+      "short": "bzx79c12",
+      "vz": 12,
+      "vz_min": 11.4,
+      "vz_max": 12.7,
+      "izt_ma": 5,
+      "izt": 0.005,
+      "ir": 0.1,
+      "vr": 8,
+      "zz": 25,
+      "cap": 10,
+      "vk_min": 7.99,
+      "datasheet": "onsemi-bzx79",
+      "evidence": [
+        "${mpn} ${vz_min} ${vz_max} ${izt_ma} ${zz} ${ir} ${vr} "
+      ]
+    },
+    {
+      "mpn": "BZX79C13",
+      "short": "bzx79c13",
+      "vz": 13,
+      "vz_min": 12.4,
+      "vz_max": 14.1,
+      "izt_ma": 5,
+      "izt": 0.005,
+      "ir": 0.1,
+      "vr": 8,
+      "zz": 30,
+      "cap": 11,
+      "vk_min": 7.99,
+      "datasheet": "onsemi-bzx79",
+      "evidence": [
+        "${mpn} ${vz_min} ${vz_max} ${izt_ma} ${zz} ${ir} ${vr} "
+      ]
+    },
+    {
+      "mpn": "BZX79C15",
+      "short": "bzx79c15",
+      "vz": 15,
+      "vz_min": 13.8,
+      "vz_max": 15.6,
+      "izt_ma": 5,
+      "izt": 0.005,
+      "ir": 0.05,
+      "vr": 10.5,
+      "zz": 30,
+      "cap": 13,
+      "vk_min": 10.495,
+      "datasheet": "onsemi-bzx79",
+      "evidence": [
+        "${mpn} ${vz_min} ${vz_max} ${izt_ma} ${zz} ${ir} ${vr} "
+      ]
+    },
+    {
+      "mpn": "BZX79C16",
+      "short": "bzx79c16",
+      "vz": 16,
+      "vz_min": 15.3,
+      "vz_max": 17.1,
+      "izt_ma": 5,
+      "izt": 0.005,
+      "ir": 0.05,
+      "vr": 11.2,
+      "zz": 40,
+      "cap": 14,
+      "vk_min": 11.195,
+      "datasheet": "onsemi-bzx79",
+      "evidence": [
+        "${mpn} ${vz_min} ${vz_max} ${izt_ma} ${zz} ${ir} ${vr} "
+      ]
+    },
+    {
+      "mpn": "BZX79C18",
+      "short": "bzx79c18",
+      "vz": 18,
+      "vz_min": 16.8,
+      "vz_max": 19.1,
+      "izt_ma": 5,
+      "izt": 0.005,
+      "ir": 0.05,
+      "vr": 12.6,
+      "zz": 45,
+      "cap": 16,
+      "vk_min": 12.595,
+      "datasheet": "onsemi-bzx79",
+      "evidence": [
+        "${mpn} ${vz_min} ${vz_max} ${izt_ma} ${zz} ${ir} ${vr} "
+      ]
+    }
+  ]
+}

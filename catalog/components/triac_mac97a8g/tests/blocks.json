@@ -1,0 +1,62 @@
+{
+  "schema_version": 1,
+  "kind": "component_test",
+  "name": "blocks",
+  "description": "The rated 600 V across it through 100 ohm, no gate current: it blocks, its leakage the datasheet's 10 uA maximum at most",
+  "policy": "electrical",
+  "until": "400us",
+  "settings": {
+    "imperfections": "ideal"
+  },
+  "circuit": {
+    "components": [
+      {
+        "id": "VD",
+        "component": "emblink/vsource",
+        "params": {
+          "kind": "dc",
+          "dc": 600
+        }
+      },
+      {
+        "id": "RL",
+        "component": "emblink/resistor",
+        "params": {
+          "resistance": 100,
+          "tolerance": 0
+        }
+      },
+      {
+        "id": "DUT",
+        "component": "emblink/triac_mac97a8g"
+      },
+      {
+        "id": "G0",
+        "component": "emblink/gnd"
+      }
+    ],
+    "nets": {
+      "VCC": [
+        "VD.+",
+        "RL.1"
+      ],
+      "M2": [
+        "RL.2",
+        "DUT.MT2"
+      ],
+      "GND": [
+        "VD.-",
+        "DUT.MT1",
+        "DUT.G",
+        "G0.GND"
+      ]
+    }
+  },
+  "expect": {
+    "net:M2": {
+      "at": "100us",
+      "min_v": 599.9989,
+      "max_v": 600
+    }
+  }
+}

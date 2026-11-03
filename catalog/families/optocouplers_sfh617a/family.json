@@ -1,0 +1,464 @@
+{
+  "schema_version": 1,
+  "kind": "family",
+  "name": "Vishay SFH617A phototransistor optocouplers",
+  "datasheets": {
+    "vishay-83740": {
+      "title": "Vishay SFH617A datasheet (document 83740)",
+      "url": "https://www.vishay.com/docs/83740/sfh617a.pdf",
+      "rev": "current at retrieval",
+      "date": "2026-11-03",
+      "hash": "sha256:5664f321e22a575766524001c200d1c2c7aaaf123d5a1185b359e5b491873115",
+      "notes": "Electrical characteristics (VF at 60 mA, VCEsat at 10 mA and 2.5 mA) and the CTR ranks -1 to -4 at IF = 10 mA, VCE = 5 V; DIP-4."
+    }
+  },
+  "evidence": [
+    "Forward voltage IF = 60 mA VF 1\\.35 1\\.65 V",
+    "Collector emitter saturation voltage IF = 10 mA, IC = 2\\.5 mA VCEsat 0\\.25 0\\.4 V"
+  ],
+  "template": {
+    "schema_version": 1,
+    "kind": "component",
+    "id": "emblink/${short}",
+    "version": "1.0.0",
+    "name": "${mpn}",
+    "category": "optoelectronics",
+    "subcategory": "optocouplers",
+    "description": "Vishay ${mpn}, a phototransistor optocoupler in DIP-4: CTR ${ctr_txt} at 10 mA and 5 V, VF 1.35 V typical at 60 mA (at most 1.65 V), VCE(sat) at most 0.4 V. The model's CTR is ${ctr_pct} %, ${ctr_why}.",
+    "keywords": [
+      "Vishay",
+      "${mpn}",
+      "SFH617A",
+      "optocoupler",
+      "optoisolator",
+      "phototransistor",
+      "DIP-4",
+      "isolation"
+    ],
+    "pins": [
+      {
+        "name": "A",
+        "number": 1,
+        "model": {
+          "kind": "passive"
+        },
+        "doc": "LED anode"
+      },
+      {
+        "name": "K",
+        "number": 2,
+        "model": {
+          "kind": "passive"
+        },
+        "doc": "LED cathode"
+      },
+      {
+        "name": "E",
+        "number": 3,
+        "model": {
+          "kind": "passive"
+        },
+        "doc": "Phototransistor emitter"
+      },
+      {
+        "name": "C",
+        "number": 4,
+        "model": {
+          "kind": "passive"
+        },
+        "doc": "Phototransistor collector"
+      }
+    ],
+    "params": {
+      "ctr": {
+        "type": "number",
+        "unit": "A/A",
+        "default": "${ctr}",
+        "doc": "Current transfer ratio in the unsaturated region: ${ctr_why}",
+        "min": 0,
+        "max": 10
+      },
+      "vf": {
+        "type": "number",
+        "unit": "V",
+        "default": 1.05,
+        "doc": "LED knee: the datasheet's 1.35 V at 60 mA less r_led's drop",
+        "min": 0,
+        "max": 5,
+        "advanced": true
+      },
+      "r_led": {
+        "type": "number",
+        "unit": "ohm",
+        "default": 5,
+        "doc": "LED slope resistance above vf",
+        "min": 0.01,
+        "max": 10000,
+        "advanced": true
+      },
+      "r_off": {
+        "type": "number",
+        "unit": "ohm",
+        "default": "10G",
+        "doc": "Collector-emitter leakage resistance with the LED off",
+        "min": 1,
+        "advanced": true
+      },
+      "r_sat": {
+        "type": "number",
+        "unit": "ohm",
+        "default": 100,
+        "doc": "Saturation resistance: the datasheet's typical VCE(sat) at its test current",
+        "min": 0.01,
+        "max": 10000,
+        "advanced": true
+      }
+    },
+    "model": {
+      "primitive": "optocoupler"
+    },
+    "symbol": {
+      "svg": "symbol.svg",
+      "width": 160,
+      "height": 60,
+      "pins": {
+        "A": {
+          "x": 0,
+          "y": 20,
+          "side": "left"
+        },
+        "K": {
+          "x": 0,
+          "y": 40,
+          "side": "left"
+        },
+        "C": {
+          "x": 160,
+          "y": 20,
+          "side": "right"
+        },
+        "E": {
+          "x": 160,
+          "y": 40,
+          "side": "right"
+        }
+      }
+    },
+    "fidelity": {
+      "functional": null,
+      "timed": null,
+      "electrical": {
+        "claims": "Piecewise-linear LED input (knee and slope fitted to the datasheet's typical VF), a collector current of CTR times the LED current, saturating through r_sat (the typical VCE(sat)), no galvanic path between input and output; fixtures for the CTR within its rank, VF and VCE(sat) from the datasheet's tables.",
+        "omissions": [
+          "the CTR's dependence on the LED current and on temperature (the datasheet's figures)",
+          "switching times, the phototransistor's capacitances and bandwidth",
+          "CTR degradation over life",
+          "the isolation voltage and creepage: no breakdown",
+          "the absolute maximum ratings: no damage"
+        ],
+        "validation": [
+          "tests/*.json"
+        ]
+      }
+    },
+    "provenance": {
+      "author": "EmbSIM",
+      "license": "Apache-2.0",
+      "sources": []
+    },
+    "tests": [
+      "tests/*.json"
+    ],
+    "part": {
+      "manufacturer": "Vishay",
+      "mpn": "${mpn}",
+      "package": "DIP-4",
+      "datasheet": "${datasheet_url}"
+    },
+    "i18n": {
+      "fr": {
+        "description": "Vishay ${mpn}, un optocoupleur à phototransistor en DIP-4: CTR ${ctr_txt_fr} à 10 mA et 5 V, VF de 1,35 V typique à 60 mA (au plus 1,65 V), VCE(sat) d'au plus 0,4 V. Le CTR du modèle est de ${ctr_pct_fr} %, ${ctr_why_fr}.",
+        "fidelity": {
+          "electrical": {
+            "claims": "Entrée DEL linéaire par morceaux (coude et pente ajustés sur la VF typique de la fiche technique), un courant de collecteur égal au CTR fois le courant de la DEL, saturant à travers r_sat (la VCE(sat) typique), aucun chemin galvanique entre entrée et sortie ; cas de test pour le CTR dans son rang, la VF et la VCE(sat) tirés des tableaux de la fiche technique.",
+            "omissions": [
+              "la dépendance du CTR au courant de la DEL et à la température (les figures de la fiche technique)",
+              "les temps de commutation, les capacités et la bande passante du phototransistor",
+              "la dégradation du CTR au cours de la vie",
+              "la tension d'isolement et les lignes de fuite : pas de claquage",
+              "les valeurs limites absolues : pas de dommages"
+            ]
+          }
+        }
+      }
+    }
+  },
+  "tests": {
+    "ctr": {
+      "schema_version": 1,
+      "kind": "component_test",
+      "name": "ctr",
+      "description": "IF = 10 mA, the collector at 5 V through 100 ohm: the collector current, read across the resistor, within the rank's CTR",
+      "policy": "electrical",
+      "until": "100us",
+      "settings": {
+        "imperfections": "ideal"
+      },
+      "circuit": {
+        "components": [
+          {
+            "id": "IF",
+            "component": "emblink/isource",
+            "params": {
+              "dc": 0.01
+            }
+          },
+          {
+            "id": "VC",
+            "component": "emblink/vsource",
+            "params": {
+              "dc": 5
+            }
+          },
+          {
+            "id": "RC",
+            "component": "emblink/resistor",
+            "params": {
+              "resistance": 100,
+              "tolerance": 0
+            }
+          },
+          {
+            "id": "DUT",
+            "component": "emblink/${short}"
+          },
+          {
+            "id": "G",
+            "component": "emblink/gnd"
+          }
+        ],
+        "nets": {
+          "AN": [
+            "IF.-",
+            "DUT.A"
+          ],
+          "VCC": [
+            "VC.+",
+            "RC.1"
+          ],
+          "COL": [
+            "RC.2",
+            "DUT.C"
+          ],
+          "GND": [
+            "IF.+",
+            "DUT.K",
+            "VC.-",
+            "DUT.E",
+            "G.GND"
+          ]
+        }
+      },
+      "expect": {
+        "net:COL": {
+          "at": "50us",
+          "min_v": "${vc_min}",
+          "max_v": "${vc_max}"
+        }
+      }
+    },
+    "vf": {
+      "schema_version": 1,
+      "kind": "component_test",
+      "name": "vf",
+      "description": "IF = 60 mA: VF under the datasheet's 1.65 V maximum, near its 1.35 V typical",
+      "policy": "electrical",
+      "until": "100us",
+      "settings": {
+        "imperfections": "ideal"
+      },
+      "circuit": {
+        "components": [
+          {
+            "id": "IF",
+            "component": "emblink/isource",
+            "params": {
+              "dc": 0.06
+            }
+          },
+          {
+            "id": "DUT",
+            "component": "emblink/${short}"
+          },
+          {
+            "id": "G",
+            "component": "emblink/gnd"
+          }
+        ],
+        "nets": {
+          "AN": [
+            "IF.-",
+            "DUT.A"
+          ],
+          "GND": [
+            "IF.+",
+            "DUT.K",
+            "DUT.E",
+            "DUT.C",
+            "G.GND"
+          ]
+        }
+      },
+      "expect": {
+        "net:AN": {
+          "at": "50us",
+          "min_v": 1.25,
+          "max_v": 1.65
+        }
+      }
+    },
+    "vce_sat": {
+      "schema_version": 1,
+      "kind": "component_test",
+      "name": "vce_sat",
+      "description": "IF = 10 mA, IC = 2.5 mA: VCE(sat) under the datasheet's 0.4 V",
+      "policy": "electrical",
+      "until": "100us",
+      "settings": {
+        "imperfections": "ideal"
+      },
+      "circuit": {
+        "components": [
+          {
+            "id": "IF",
+            "component": "emblink/isource",
+            "params": {
+              "dc": 0.01
+            }
+          },
+          {
+            "id": "IC",
+            "component": "emblink/isource",
+            "params": {
+              "dc": 0.0025
+            }
+          },
+          {
+            "id": "DUT",
+            "component": "emblink/${short}"
+          },
+          {
+            "id": "G",
+            "component": "emblink/gnd"
+          }
+        ],
+        "nets": {
+          "AN": [
+            "IF.-",
+            "DUT.A"
+          ],
+          "COL": [
+            "IC.-",
+            "DUT.C"
+          ],
+          "GND": [
+            "IF.+",
+            "DUT.K",
+            "IC.+",
+            "DUT.E",
+            "G.GND"
+          ]
+        }
+      },
+      "expect": {
+        "net:COL": {
+          "at": "50us",
+          "min_v": 0,
+          "max_v": 0.4
+        }
+      }
+    }
+  },
+  "rows": [
+    {
+      "mpn": "SFH617A-1",
+      "short": "sfh617a_1",
+      "label": "SFH617A-1",
+      "ctr_min": 40,
+      "ctr_max": 80,
+      "ctr": 0.5657,
+      "ctr_pct": 56.6,
+      "ctr_pct_fr": "56,6",
+      "ctr_txt": "40 to 80 %",
+      "ctr_txt_fr": "de 40 à 80 %",
+      "ctr_why": "the geometric middle of its rank",
+      "ctr_why_fr": "le milieu géométrique de son rang",
+      "evidence": [
+        "SFH617A\\-1 CTR 40 80 %"
+      ],
+      "vc_min": 4.2,
+      "vc_max": 4.6,
+      "datasheet": "vishay-83740"
+    },
+    {
+      "mpn": "SFH617A-2",
+      "short": "sfh617a_2",
+      "label": "SFH617A-2",
+      "ctr_min": 63,
+      "ctr_max": 125,
+      "ctr": 0.8874,
+      "ctr_pct": 88.7,
+      "ctr_pct_fr": "88,7",
+      "ctr_txt": "63 to 125 %",
+      "ctr_txt_fr": "de 63 à 125 %",
+      "ctr_why": "the geometric middle of its rank",
+      "ctr_why_fr": "le milieu géométrique de son rang",
+      "evidence": [
+        "SFH617A\\-2 CTR 63 125 %"
+      ],
+      "vc_min": 3.75,
+      "vc_max": 4.37,
+      "datasheet": "vishay-83740"
+    },
+    {
+      "mpn": "SFH617A-3",
+      "short": "sfh617a_3",
+      "label": "SFH617A-3",
+      "ctr_min": 100,
+      "ctr_max": 200,
+      "ctr": 1.4142,
+      "ctr_pct": 141.4,
+      "ctr_pct_fr": "141,4",
+      "ctr_txt": "100 to 200 %",
+      "ctr_txt_fr": "de 100 à 200 %",
+      "ctr_why": "the geometric middle of its rank",
+      "ctr_why_fr": "le milieu géométrique de son rang",
+      "evidence": [
+        "SFH617A\\-3 CTR 100 200 %"
+      ],
+      "vc_min": 3.0,
+      "vc_max": 4.0,
+      "datasheet": "vishay-83740"
+    },
+    {
+      "mpn": "SFH617A-4",
+      "short": "sfh617a_4",
+      "label": "SFH617A-4",
+      "ctr_min": 160,
+      "ctr_max": 320,
+      "ctr": 2.2627,
+      "ctr_pct": 226.3,
+      "ctr_pct_fr": "226,3",
+      "ctr_txt": "160 to 320 %",
+      "ctr_txt_fr": "de 160 à 320 %",
+      "ctr_why": "the geometric middle of its rank",
+      "ctr_why_fr": "le milieu géométrique de son rang",
+      "evidence": [
+        "SFH617A\\-4 CTR 160 320 %"
+      ],
+      "vc_min": 1.8,
+      "vc_max": 3.4,
+      "datasheet": "vishay-83740"
+    }
+  ]
+}

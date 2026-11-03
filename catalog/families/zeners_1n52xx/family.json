@@ -1,0 +1,2309 @@
+{
+  "schema_version": 1,
+  "kind": "family",
+  "name": "Vishay 1N5221 to 1N5267 zener diodes (B and C)",
+  "datasheets": {
+    "vishay-85588": {
+      "title": "Vishay 1N5221 to 1N5267 datasheet (document 85588)",
+      "url": "https://www.vishay.com/docs/85588/1n5221.pdf",
+      "rev": "current at retrieval",
+      "date": "2026-11-03",
+      "hash": "sha256:10af8e5f252fc19d2a6bf68c0e3c33632e65ca4cc6f5b7969d967313c326c32f",
+      "notes": "Pages 1 and 2: the B suffix is the ±5 % and the C suffix the ±2 % tolerance of the type's nominal VZ; VZ at IZT1, IZT1 and IZT2, IR at VR, ZZ and ZZK; VF 1.1 V max at 200 mA; Ptot 500 mW; DO-35."
+    }
+  },
+  "evidence": [
+    "Standard Zener voltage tolerance is ± 5 % with a “B” suffix in the ordering code \\(e\\.g\\.: 1N5221B\\), suffix “C” is ± 2 % tolerance",
+    "Forward voltage \\(max\\.\\) IF = 200 mA VF 1\\.1 V",
+    "DO-35 \\(DO-204AH\\)"
+  ],
+  "template": {
+    "schema_version": 1,
+    "kind": "component",
+    "id": "emblink/${short}",
+    "version": "1.0.0",
+    "name": "${mpn}",
+    "category": "diodes",
+    "subcategory": "zener",
+    "description": "Vishay ${mpn}, a 500 mW small-signal zener in DO-35: ${vz} V nominal (${vz_min} to ${vz_max} V, ±${tol_pct} %, its suffix's tolerance) at its test current IZT of ${izt_ma} mA. The breakdown is placed so the voltage at IZT is the nominal one; the reverse current at ${vr} V stays under the datasheet's ${ir} uA and the forward voltage at 200 mA under its 1.1 V.",
+    "keywords": [
+      "Vishay",
+      "${mpn}",
+      "1N52xx",
+      "DO-35",
+      "zener",
+      "voltage reference",
+      "regulator",
+      "${vz} V"
+    ],
+    "pins": [
+      {
+        "name": "A",
+        "number": 2,
+        "model": {
+          "kind": "passive"
+        },
+        "doc": "Anode"
+      },
+      {
+        "name": "K",
+        "number": 1,
+        "model": {
+          "kind": "passive"
+        },
+        "doc": "Cathode"
+      }
+    ],
+    "params": {
+      "vz": {
+        "type": "number",
+        "unit": "V",
+        "default": "${vz}",
+        "doc": "Zener voltage at the test current izt",
+        "min": 1,
+        "max": 200
+      },
+      "is": {
+        "type": "number",
+        "unit": "A",
+        "default": "1e-14",
+        "doc": "Forward saturation current",
+        "min": "1e-20",
+        "max": "1m",
+        "advanced": true
+      },
+      "n": {
+        "type": "number",
+        "unit": "",
+        "default": 1,
+        "doc": "Forward emission coefficient",
+        "min": 0.5,
+        "max": 5,
+        "advanced": true
+      },
+      "rs": {
+        "type": "number",
+        "unit": "ohm",
+        "default": 0.5,
+        "doc": "Forward series resistance",
+        "min": 0,
+        "advanced": true
+      },
+      "izt": {
+        "type": "number",
+        "unit": "A",
+        "default": "${izt}",
+        "doc": "Test current at which the voltage is vz (IZT1)",
+        "min": "1u",
+        "max": "0.2",
+        "advanced": true
+      }
+    },
+    "model": {
+      "primitive": "zener"
+    },
+    "symbol": {
+      "svg": "symbol.svg",
+      "width": 60,
+      "height": 20,
+      "pins": {
+        "A": {
+          "x": 0,
+          "y": 10,
+          "side": "left"
+        },
+        "K": {
+          "x": 60,
+          "y": 10,
+          "side": "right"
+        }
+      }
+    },
+    "fidelity": {
+      "functional": null,
+      "timed": null,
+      "electrical": {
+        "claims": "Zener junction placed so the voltage at IZT is the nominal VZ, inside its suffix's tolerance of the nominal; leakage under the table's IR at VR; forward voltage under 1.1 V at 200 mA. DC and low-frequency fixtures from the datasheet's table.",
+        "omissions": [
+          "the knee's softness below IZT (ZZK at IZT2): the model's knee is a sharp exponential",
+          "dynamic resistance: one 0.5 ohm series resistance serves both directions, so the slope above IZT is under the table's ZZ maximum rather than at it",
+          "the temperature coefficient (TKVZ)",
+          "capacitance",
+          "power dissipation (500 mW) and damage",
+          "device-to-device spread within the tolerance",
+          "noise",
+          "no manufacturer model qualification"
+        ],
+        "validation": [
+          "tests/*.json"
+        ]
+      }
+    },
+    "provenance": {
+      "author": "EmbSIM",
+      "license": "Apache-2.0",
+      "sources": [
+        {
+          "title": "KiCad family/package reference, revision 4e17d759",
+          "url": "https://github.com/KiCad/kicad-symbols/blob/4e17d7595f9691d45d97aea8ad64572652fb5bed/Diode.lib"
+        }
+      ]
+    },
+    "tests": [
+      "tests/*.json"
+    ],
+    "part": {
+      "manufacturer": "Vishay",
+      "mpn": "${mpn}",
+      "package": "DO-35",
+      "datasheet": "${datasheet_url}"
+    },
+    "artwork": {
+      "svg": "artwork.svg"
+    },
+    "i18n": {
+      "fr": {
+        "description": "Vishay ${mpn}, une zener petits signaux de 500 mW en DO-35 : ${vz} V nominal (${vz_min} à ${vz_max} V, ±${tol_pct} %, la tolérance de son suffixe) à son courant de test IZT de ${izt_ma} mA. Le claquage est placé pour que la tension à IZT soit la nominale ; le courant inverse à ${vr} V reste sous les ${ir} uA de la fiche technique et la tension directe à 200 mA sous ses 1,1 V.",
+        "fidelity": {
+          "electrical": {
+            "claims": "Jonction zener placée pour que la tension à IZT soit la VZ nominale, la tolérance de son suffixe autour de la nominale ; fuite sous l'IR du tableau à VR ; tension directe sous 1,1 V à 200 mA. Cas de test en continu et basse fréquence tirés du tableau de la fiche technique.",
+            "omissions": [
+              "la douceur du coude sous IZT (ZZK à IZT2) : le coude du modèle est une exponentielle franche",
+              "la résistance dynamique : une seule résistance série de 0,5 ohm sert dans les deux sens, la pente au-dessus d'IZT est donc sous le maximum ZZ du tableau plutôt qu'à sa valeur",
+              "le coefficient de température (TKVZ)",
+              "la capacité",
+              "la puissance dissipée (500 mW) et les dommages",
+              "la dispersion d'un exemplaire à l'autre dans la tolérance",
+              "le bruit",
+              "aucune qualification par un modèle du fabricant"
+            ]
+          }
+        }
+      }
+    }
+  },
+  "tests": {
+    "zener": {
+      "schema_version": 1,
+      "kind": "component_test",
+      "name": "zener",
+      "description": "IZT in reverse: the voltage within its suffix's tolerance of the nominal",
+      "policy": "electrical",
+      "until": "100us",
+      "circuit": {
+        "components": [
+          {
+            "id": "I1",
+            "component": "emblink/isource",
+            "params": {
+              "dc": "${izt}"
+            }
+          },
+          {
+            "id": "DUT",
+            "component": "emblink/${short}"
+          },
+          {
+            "id": "G",
+            "component": "emblink/gnd"
+          }
+        ],
+        "nets": {
+          "VZ": [
+            "I1.-",
+            "DUT.K"
+          ],
+          "GND": [
+            "I1.+",
+            "DUT.A",
+            "G.GND"
+          ]
+        }
+      },
+      "expect": {
+        "net:VZ": {
+          "at": "50us",
+          "min_v": "${vz_min}",
+          "max_v": "${vz_max}"
+        }
+      }
+    },
+    "leakage": {
+      "schema_version": 1,
+      "kind": "component_test",
+      "name": "leakage",
+      "description": "VR across it through 100 kohm: under the datasheet's IR at 25 C",
+      "policy": "electrical",
+      "until": "100us",
+      "circuit": {
+        "components": [
+          {
+            "id": "V1",
+            "component": "emblink/vsource",
+            "params": {
+              "dc": "${vr}"
+            }
+          },
+          {
+            "id": "R1",
+            "component": "emblink/resistor",
+            "params": {
+              "resistance": "100k"
+            }
+          },
+          {
+            "id": "DUT",
+            "component": "emblink/${short}"
+          },
+          {
+            "id": "G",
+            "component": "emblink/gnd"
+          }
+        ],
+        "nets": {
+          "VIN": [
+            "V1.+",
+            "R1.1"
+          ],
+          "VK": [
+            "R1.2",
+            "DUT.K"
+          ],
+          "GND": [
+            "V1.-",
+            "DUT.A",
+            "G.GND"
+          ]
+        }
+      },
+      "expect": {
+        "net:VK": {
+          "at": "50us",
+          "min_v": "${vk_min}",
+          "max_v": "${vr}"
+        }
+      }
+    },
+    "forward": {
+      "schema_version": 1,
+      "kind": "component_test",
+      "name": "forward",
+      "description": "200 mA forward: under the datasheet's 1.1 V",
+      "policy": "electrical",
+      "until": "100us",
+      "circuit": {
+        "components": [
+          {
+            "id": "I1",
+            "component": "emblink/isource",
+            "params": {
+              "dc": 0.2
+            }
+          },
+          {
+            "id": "DUT",
+            "component": "emblink/${short}"
+          },
+          {
+            "id": "G",
+            "component": "emblink/gnd"
+          }
+        ],
+        "nets": {
+          "VD": [
+            "I1.-",
+            "DUT.A"
+          ],
+          "GND": [
+            "I1.+",
+            "DUT.K",
+            "G.GND"
+          ]
+        }
+      },
+      "expect": {
+        "net:VD": {
+          "at": "50us",
+          "min_v": 0.6,
+          "max_v": 1.1
+        }
+      }
+    }
+  },
+  "rows": [
+    {
+      "mpn": "1N5221B",
+      "short": "zener_1n5221b",
+      "type": "1N5221",
+      "vz": 2.4,
+      "vz_min": 2.28,
+      "vz_max": 2.52,
+      "izt_ma": 20,
+      "izt": 0.02,
+      "izt2_ma": 0.25,
+      "ir": 100,
+      "vr": 1,
+      "zz": 30,
+      "zzk": 1200,
+      "tol_pct": 5,
+      "vk_min": 0.0,
+      "datasheet": "vishay-85588",
+      "evidence": [
+        "${type} ${vz} ${izt_ma} ${izt2_ma} ${ir} ${vr} ${zz} ${zzk} "
+      ]
+    },
+    {
+      "mpn": "1N5221C",
+      "short": "zener_1n5221c",
+      "type": "1N5221",
+      "vz": 2.4,
+      "vz_min": 2.352,
+      "vz_max": 2.448,
+      "izt_ma": 20,
+      "izt": 0.02,
+      "izt2_ma": 0.25,
+      "ir": 100,
+      "vr": 1,
+      "zz": 30,
+      "zzk": 1200,
+      "tol_pct": 2,
+      "vk_min": 0.0,
+      "datasheet": "vishay-85588",
+      "evidence": [
+        "${type} ${vz} ${izt_ma} ${izt2_ma} ${ir} ${vr} ${zz} ${zzk} "
+      ]
+    },
+    {
+      "mpn": "1N5222B",
+      "short": "zener_1n5222b",
+      "type": "1N5222",
+      "vz": 2.5,
+      "vz_min": 2.375,
+      "vz_max": 2.625,
+      "izt_ma": 20,
+      "izt": 0.02,
+      "izt2_ma": 0.25,
+      "ir": 100,
+      "vr": 1,
+      "zz": 30,
+      "zzk": 1250,
+      "tol_pct": 5,
+      "vk_min": 0.0,
+      "datasheet": "vishay-85588",
+      "evidence": [
+        "${type} ${vz} ${izt_ma} ${izt2_ma} ${ir} ${vr} ${zz} ${zzk} "
+      ]
+    },
+    {
+      "mpn": "1N5222C",
+      "short": "zener_1n5222c",
+      "type": "1N5222",
+      "vz": 2.5,
+      "vz_min": 2.45,
+      "vz_max": 2.55,
+      "izt_ma": 20,
+      "izt": 0.02,
+      "izt2_ma": 0.25,
+      "ir": 100,
+      "vr": 1,
+      "zz": 30,
+      "zzk": 1250,
+      "tol_pct": 2,
+      "vk_min": 0.0,
+      "datasheet": "vishay-85588",
+      "evidence": [
+        "${type} ${vz} ${izt_ma} ${izt2_ma} ${ir} ${vr} ${zz} ${zzk} "
+      ]
+    },
+    {
+      "mpn": "1N5223B",
+      "short": "zener_1n5223b",
+      "type": "1N5223",
+      "vz": 2.7,
+      "vz_min": 2.565,
+      "vz_max": 2.835,
+      "izt_ma": 20,
+      "izt": 0.02,
+      "izt2_ma": 0.25,
+      "ir": 75,
+      "vr": 1,
+      "zz": 30,
+      "zzk": 1300,
+      "tol_pct": 5,
+      "vk_min": 0.0,
+      "datasheet": "vishay-85588",
+      "evidence": [
+        "${type} ${vz} ${izt_ma} ${izt2_ma} ${ir} ${vr} ${zz} ${zzk} "
+      ]
+    },
+    {
+      "mpn": "1N5223C",
+      "short": "zener_1n5223c",
+      "type": "1N5223",
+      "vz": 2.7,
+      "vz_min": 2.646,
+      "vz_max": 2.754,
+      "izt_ma": 20,
+      "izt": 0.02,
+      "izt2_ma": 0.25,
+      "ir": 75,
+      "vr": 1,
+      "zz": 30,
+      "zzk": 1300,
+      "tol_pct": 2,
+      "vk_min": 0.0,
+      "datasheet": "vishay-85588",
+      "evidence": [
+        "${type} ${vz} ${izt_ma} ${izt2_ma} ${ir} ${vr} ${zz} ${zzk} "
+      ]
+    },
+    {
+      "mpn": "1N5224B",
+      "short": "zener_1n5224b",
+      "type": "1N5224",
+      "vz": 2.8,
+      "vz_min": 2.66,
+      "vz_max": 2.94,
+      "izt_ma": 20,
+      "izt": 0.02,
+      "izt2_ma": 0.25,
+      "ir": 75,
+      "vr": 1,
+      "zz": 30,
+      "zzk": 1400,
+      "tol_pct": 5,
+      "vk_min": 0.0,
+      "datasheet": "vishay-85588",
+      "evidence": [
+        "${type} ${vz} ${izt_ma} ${izt2_ma} ${ir} ${vr} ${zz} ${zzk} "
+      ]
+    },
+    {
+      "mpn": "1N5224C",
+      "short": "zener_1n5224c",
+      "type": "1N5224",
+      "vz": 2.8,
+      "vz_min": 2.744,
+      "vz_max": 2.856,
+      "izt_ma": 20,
+      "izt": 0.02,
+      "izt2_ma": 0.25,
+      "ir": 75,
+      "vr": 1,
+      "zz": 30,
+      "zzk": 1400,
+      "tol_pct": 2,
+      "vk_min": 0.0,
+      "datasheet": "vishay-85588",
+      "evidence": [
+        "${type} ${vz} ${izt_ma} ${izt2_ma} ${ir} ${vr} ${zz} ${zzk} "
+      ]
+    },
+    {
+      "mpn": "1N5225B",
+      "short": "zener_1n5225b",
+      "type": "1N5225",
+      "vz": 3,
+      "vz_min": 2.85,
+      "vz_max": 3.15,
+      "izt_ma": 20,
+      "izt": 0.02,
+      "izt2_ma": 0.25,
+      "ir": 50,
+      "vr": 1,
+      "zz": 29,
+      "zzk": 1600,
+      "tol_pct": 5,
+      "vk_min": 0.0,
+      "datasheet": "vishay-85588",
+      "evidence": [
+        "${type} ${vz} ${izt_ma} ${izt2_ma} ${ir} ${vr} ${zz} ${zzk} "
+      ]
+    },
+    {
+      "mpn": "1N5225C",
+      "short": "zener_1n5225c",
+      "type": "1N5225",
+      "vz": 3,
+      "vz_min": 2.94,
+      "vz_max": 3.06,
+      "izt_ma": 20,
+      "izt": 0.02,
+      "izt2_ma": 0.25,
+      "ir": 50,
+      "vr": 1,
+      "zz": 29,
+      "zzk": 1600,
+      "tol_pct": 2,
+      "vk_min": 0.0,
+      "datasheet": "vishay-85588",
+      "evidence": [
+        "${type} ${vz} ${izt_ma} ${izt2_ma} ${ir} ${vr} ${zz} ${zzk} "
+      ]
+    },
+    {
+      "mpn": "1N5226B",
+      "short": "zener_1n5226b",
+      "type": "1N5226",
+      "vz": 3.3,
+      "vz_min": 3.135,
+      "vz_max": 3.465,
+      "izt_ma": 20,
+      "izt": 0.02,
+      "izt2_ma": 0.25,
+      "ir": 25,
+      "vr": 1,
+      "zz": 28,
+      "zzk": 1600,
+      "tol_pct": 5,
+      "vk_min": 0.0,
+      "datasheet": "vishay-85588",
+      "evidence": [
+        "${type} ${vz} ${izt_ma} ${izt2_ma} ${ir} ${vr} ${zz} ${zzk} "
+      ]
+    },
+    {
+      "mpn": "1N5226C",
+      "short": "zener_1n5226c",
+      "type": "1N5226",
+      "vz": 3.3,
+      "vz_min": 3.234,
+      "vz_max": 3.366,
+      "izt_ma": 20,
+      "izt": 0.02,
+      "izt2_ma": 0.25,
+      "ir": 25,
+      "vr": 1,
+      "zz": 28,
+      "zzk": 1600,
+      "tol_pct": 2,
+      "vk_min": 0.0,
+      "datasheet": "vishay-85588",
+      "evidence": [
+        "${type} ${vz} ${izt_ma} ${izt2_ma} ${ir} ${vr} ${zz} ${zzk} "
+      ]
+    },
+    {
+      "mpn": "1N5227B",
+      "short": "zener_1n5227b",
+      "type": "1N5227",
+      "vz": 3.6,
+      "vz_min": 3.42,
+      "vz_max": 3.78,
+      "izt_ma": 20,
+      "izt": 0.02,
+      "izt2_ma": 0.25,
+      "ir": 15,
+      "vr": 1,
+      "zz": 24,
+      "zzk": 1700,
+      "tol_pct": 5,
+      "vk_min": 0.0,
+      "datasheet": "vishay-85588",
+      "evidence": [
+        "${type} ${vz} ${izt_ma} ${izt2_ma} ${ir} ${vr} ${zz} ${zzk} "
+      ]
+    },
+    {
+      "mpn": "1N5227C",
+      "short": "zener_1n5227c",
+      "type": "1N5227",
+      "vz": 3.6,
+      "vz_min": 3.528,
+      "vz_max": 3.672,
+      "izt_ma": 20,
+      "izt": 0.02,
+      "izt2_ma": 0.25,
+      "ir": 15,
+      "vr": 1,
+      "zz": 24,
+      "zzk": 1700,
+      "tol_pct": 2,
+      "vk_min": 0.0,
+      "datasheet": "vishay-85588",
+      "evidence": [
+        "${type} ${vz} ${izt_ma} ${izt2_ma} ${ir} ${vr} ${zz} ${zzk} "
+      ]
+    },
+    {
+      "mpn": "1N5228B",
+      "short": "zener_1n5228b",
+      "type": "1N5228",
+      "vz": 3.9,
+      "vz_min": 3.705,
+      "vz_max": 4.095,
+      "izt_ma": 20,
+      "izt": 0.02,
+      "izt2_ma": 0.25,
+      "ir": 10,
+      "vr": 1,
+      "zz": 23,
+      "zzk": 1900,
+      "tol_pct": 5,
+      "vk_min": 0.0,
+      "datasheet": "vishay-85588",
+      "evidence": [
+        "${type} ${vz} ${izt_ma} ${izt2_ma} ${ir} ${vr} ${zz} ${zzk} "
+      ]
+    },
+    {
+      "mpn": "1N5228C",
+      "short": "zener_1n5228c",
+      "type": "1N5228",
+      "vz": 3.9,
+      "vz_min": 3.822,
+      "vz_max": 3.978,
+      "izt_ma": 20,
+      "izt": 0.02,
+      "izt2_ma": 0.25,
+      "ir": 10,
+      "vr": 1,
+      "zz": 23,
+      "zzk": 1900,
+      "tol_pct": 2,
+      "vk_min": 0.0,
+      "datasheet": "vishay-85588",
+      "evidence": [
+        "${type} ${vz} ${izt_ma} ${izt2_ma} ${ir} ${vr} ${zz} ${zzk} "
+      ]
+    },
+    {
+      "mpn": "1N5229B",
+      "short": "zener_1n5229b",
+      "type": "1N5229",
+      "vz": 4.3,
+      "vz_min": 4.085,
+      "vz_max": 4.515,
+      "izt_ma": 20,
+      "izt": 0.02,
+      "izt2_ma": 0.25,
+      "ir": 5,
+      "vr": 1,
+      "zz": 22,
+      "zzk": 2000,
+      "tol_pct": 5,
+      "vk_min": 0.5,
+      "datasheet": "vishay-85588",
+      "evidence": [
+        "${type} ${vz} ${izt_ma} ${izt2_ma} ${ir} ${vr} ${zz} ${zzk} "
+      ]
+    },
+    {
+      "mpn": "1N5229C",
+      "short": "zener_1n5229c",
+      "type": "1N5229",
+      "vz": 4.3,
+      "vz_min": 4.214,
+      "vz_max": 4.386,
+      "izt_ma": 20,
+      "izt": 0.02,
+      "izt2_ma": 0.25,
+      "ir": 5,
+      "vr": 1,
+      "zz": 22,
+      "zzk": 2000,
+      "tol_pct": 2,
+      "vk_min": 0.5,
+      "datasheet": "vishay-85588",
+      "evidence": [
+        "${type} ${vz} ${izt_ma} ${izt2_ma} ${ir} ${vr} ${zz} ${zzk} "
+      ]
+    },
+    {
+      "mpn": "1N5230B",
+      "short": "zener_1n5230b",
+      "type": "1N5230",
+      "vz": 4.7,
+      "vz_min": 4.465,
+      "vz_max": 4.935,
+      "izt_ma": 20,
+      "izt": 0.02,
+      "izt2_ma": 0.25,
+      "ir": 5,
+      "vr": 2,
+      "zz": 19,
+      "zzk": 1900,
+      "tol_pct": 5,
+      "vk_min": 1.5,
+      "datasheet": "vishay-85588",
+      "evidence": [
+        "${type} ${vz} ${izt_ma} ${izt2_ma} ${ir} ${vr} ${zz} ${zzk} "
+      ]
+    },
+    {
+      "mpn": "1N5230C",
+      "short": "zener_1n5230c",
+      "type": "1N5230",
+      "vz": 4.7,
+      "vz_min": 4.606,
+      "vz_max": 4.794,
+      "izt_ma": 20,
+      "izt": 0.02,
+      "izt2_ma": 0.25,
+      "ir": 5,
+      "vr": 2,
+      "zz": 19,
+      "zzk": 1900,
+      "tol_pct": 2,
+      "vk_min": 1.5,
+      "datasheet": "vishay-85588",
+      "evidence": [
+        "${type} ${vz} ${izt_ma} ${izt2_ma} ${ir} ${vr} ${zz} ${zzk} "
+      ]
+    },
+    {
+      "mpn": "1N5231B",
+      "short": "zener_1n5231b",
+      "type": "1N5231",
+      "vz": 5.1,
+      "vz_min": 4.845,
+      "vz_max": 5.355,
+      "izt_ma": 20,
+      "izt": 0.02,
+      "izt2_ma": 0.25,
+      "ir": 5,
+      "vr": 2,
+      "zz": 17,
+      "zzk": 1600,
+      "tol_pct": 5,
+      "vk_min": 1.5,
+      "datasheet": "vishay-85588",
+      "evidence": [
+        "${type} ${vz} ${izt_ma} ${izt2_ma} ${ir} ${vr} ${zz} ${zzk} "
+      ]
+    },
+    {
+      "mpn": "1N5231C",
+      "short": "zener_1n5231c",
+      "type": "1N5231",
+      "vz": 5.1,
+      "vz_min": 4.998,
+      "vz_max": 5.202,
+      "izt_ma": 20,
+      "izt": 0.02,
+      "izt2_ma": 0.25,
+      "ir": 5,
+      "vr": 2,
+      "zz": 17,
+      "zzk": 1600,
+      "tol_pct": 2,
+      "vk_min": 1.5,
+      "datasheet": "vishay-85588",
+      "evidence": [
+        "${type} ${vz} ${izt_ma} ${izt2_ma} ${ir} ${vr} ${zz} ${zzk} "
+      ]
+    },
+    {
+      "mpn": "1N5232B",
+      "short": "zener_1n5232b",
+      "type": "1N5232",
+      "vz": 5.6,
+      "vz_min": 5.32,
+      "vz_max": 5.88,
+      "izt_ma": 20,
+      "izt": 0.02,
+      "izt2_ma": 0.25,
+      "ir": 5,
+      "vr": 3,
+      "zz": 11,
+      "zzk": 1600,
+      "tol_pct": 5,
+      "vk_min": 2.5,
+      "datasheet": "vishay-85588",
+      "evidence": [
+        "${type} ${vz} ${izt_ma} ${izt2_ma} ${ir} ${vr} ${zz} ${zzk} "
+      ]
+    },
+    {
+      "mpn": "1N5232C",
+      "short": "zener_1n5232c",
+      "type": "1N5232",
+      "vz": 5.6,
+      "vz_min": 5.488,
+      "vz_max": 5.712,
+      "izt_ma": 20,
+      "izt": 0.02,
+      "izt2_ma": 0.25,
+      "ir": 5,
+      "vr": 3,
+      "zz": 11,
+      "zzk": 1600,
+      "tol_pct": 2,
+      "vk_min": 2.5,
+      "datasheet": "vishay-85588",
+      "evidence": [
+        "${type} ${vz} ${izt_ma} ${izt2_ma} ${ir} ${vr} ${zz} ${zzk} "
+      ]
+    },
+    {
+      "mpn": "1N5233B",
+      "short": "zener_1n5233b",
+      "type": "1N5233",
+      "vz": 6,
+      "vz_min": 5.7,
+      "vz_max": 6.3,
+      "izt_ma": 20,
+      "izt": 0.02,
+      "izt2_ma": 0.25,
+      "ir": 5,
+      "vr": 3.5,
+      "zz": 7,
+      "zzk": 1600,
+      "tol_pct": 5,
+      "vk_min": 3.0,
+      "datasheet": "vishay-85588",
+      "evidence": [
+        "${type} ${vz} ${izt_ma} ${izt2_ma} ${ir} ${vr} ${zz} ${zzk} "
+      ]
+    },
+    {
+      "mpn": "1N5233C",
+      "short": "zener_1n5233c",
+      "type": "1N5233",
+      "vz": 6,
+      "vz_min": 5.88,
+      "vz_max": 6.12,
+      "izt_ma": 20,
+      "izt": 0.02,
+      "izt2_ma": 0.25,
+      "ir": 5,
+      "vr": 3.5,
+      "zz": 7,
+      "zzk": 1600,
+      "tol_pct": 2,
+      "vk_min": 3.0,
+      "datasheet": "vishay-85588",
+      "evidence": [
+        "${type} ${vz} ${izt_ma} ${izt2_ma} ${ir} ${vr} ${zz} ${zzk} "
+      ]
+    },
+    {
+      "mpn": "1N5234B",
+      "short": "zener_1n5234b",
+      "type": "1N5234",
+      "vz": 6.2,
+      "vz_min": 5.89,
+      "vz_max": 6.51,
+      "izt_ma": 20,
+      "izt": 0.02,
+      "izt2_ma": 0.25,
+      "ir": 5,
+      "vr": 4,
+      "zz": 7,
+      "zzk": 1000,
+      "tol_pct": 5,
+      "vk_min": 3.5,
+      "datasheet": "vishay-85588",
+      "evidence": [
+        "${type} ${vz} ${izt_ma} ${izt2_ma} ${ir} ${vr} ${zz} ${zzk} "
+      ]
+    },
+    {
+      "mpn": "1N5234C",
+      "short": "zener_1n5234c",
+      "type": "1N5234",
+      "vz": 6.2,
+      "vz_min": 6.076,
+      "vz_max": 6.324,
+      "izt_ma": 20,
+      "izt": 0.02,
+      "izt2_ma": 0.25,
+      "ir": 5,
+      "vr": 4,
+      "zz": 7,
+      "zzk": 1000,
+      "tol_pct": 2,
+      "vk_min": 3.5,
+      "datasheet": "vishay-85588",
+      "evidence": [
+        "${type} ${vz} ${izt_ma} ${izt2_ma} ${ir} ${vr} ${zz} ${zzk} "
+      ]
+    },
+    {
+      "mpn": "1N5235B",
+      "short": "zener_1n5235b",
+      "type": "1N5235",
+      "vz": 6.8,
+      "vz_min": 6.46,
+      "vz_max": 7.14,
+      "izt_ma": 20,
+      "izt": 0.02,
+      "izt2_ma": 0.25,
+      "ir": 3,
+      "vr": 5,
+      "zz": 5,
+      "zzk": 750,
+      "tol_pct": 5,
+      "vk_min": 4.7,
+      "datasheet": "vishay-85588",
+      "evidence": [
+        "${type} ${vz} ${izt_ma} ${izt2_ma} ${ir} ${vr} ${zz} ${zzk} "
+      ]
+    },
+    {
+      "mpn": "1N5235C",
+      "short": "zener_1n5235c",
+      "type": "1N5235",
+      "vz": 6.8,
+      "vz_min": 6.664,
+      "vz_max": 6.936,
+      "izt_ma": 20,
+      "izt": 0.02,
+      "izt2_ma": 0.25,
+      "ir": 3,
+      "vr": 5,
+      "zz": 5,
+      "zzk": 750,
+      "tol_pct": 2,
+      "vk_min": 4.7,
+      "datasheet": "vishay-85588",
+      "evidence": [
+        "${type} ${vz} ${izt_ma} ${izt2_ma} ${ir} ${vr} ${zz} ${zzk} "
+      ]
+    },
+    {
+      "mpn": "1N5236B",
+      "short": "zener_1n5236b",
+      "type": "1N5236",
+      "vz": 7.5,
+      "vz_min": 7.125,
+      "vz_max": 7.875,
+      "izt_ma": 20,
+      "izt": 0.02,
+      "izt2_ma": 0.25,
+      "ir": 3,
+      "vr": 6,
+      "zz": 6,
+      "zzk": 500,
+      "tol_pct": 5,
+      "vk_min": 5.7,
+      "datasheet": "vishay-85588",
+      "evidence": [
+        "${type} ${vz} ${izt_ma} ${izt2_ma} ${ir} ${vr} ${zz} ${zzk} "
+      ]
+    },
+    {
+      "mpn": "1N5236C",
+      "short": "zener_1n5236c",
+      "type": "1N5236",
+      "vz": 7.5,
+      "vz_min": 7.35,
+      "vz_max": 7.65,
+      "izt_ma": 20,
+      "izt": 0.02,
+      "izt2_ma": 0.25,
+      "ir": 3,
+      "vr": 6,
+      "zz": 6,
+      "zzk": 500,
+      "tol_pct": 2,
+      "vk_min": 5.7,
+      "datasheet": "vishay-85588",
+      "evidence": [
+        "${type} ${vz} ${izt_ma} ${izt2_ma} ${ir} ${vr} ${zz} ${zzk} "
+      ]
+    },
+    {
+      "mpn": "1N5237B",
+      "short": "zener_1n5237b",
+      "type": "1N5237",
+      "vz": 8.2,
+      "vz_min": 7.79,
+      "vz_max": 8.61,
+      "izt_ma": 20,
+      "izt": 0.02,
+      "izt2_ma": 0.25,
+      "ir": 3,
+      "vr": 6.5,
+      "zz": 8,
+      "zzk": 500,
+      "tol_pct": 5,
+      "vk_min": 6.2,
+      "datasheet": "vishay-85588",
+      "evidence": [
+        "${type} ${vz} ${izt_ma} ${izt2_ma} ${ir} ${vr} ${zz} ${zzk} "
+      ]
+    },
+    {
+      "mpn": "1N5237C",
+      "short": "zener_1n5237c",
+      "type": "1N5237",
+      "vz": 8.2,
+      "vz_min": 8.036,
+      "vz_max": 8.364,
+      "izt_ma": 20,
+      "izt": 0.02,
+      "izt2_ma": 0.25,
+      "ir": 3,
+      "vr": 6.5,
+      "zz": 8,
+      "zzk": 500,
+      "tol_pct": 2,
+      "vk_min": 6.2,
+      "datasheet": "vishay-85588",
+      "evidence": [
+        "${type} ${vz} ${izt_ma} ${izt2_ma} ${ir} ${vr} ${zz} ${zzk} "
+      ]
+    },
+    {
+      "mpn": "1N5238B",
+      "short": "zener_1n5238b",
+      "type": "1N5238",
+      "vz": 8.7,
+      "vz_min": 8.265,
+      "vz_max": 9.135,
+      "izt_ma": 20,
+      "izt": 0.02,
+      "izt2_ma": 0.25,
+      "ir": 3,
+      "vr": 6.5,
+      "zz": 8,
+      "zzk": 600,
+      "tol_pct": 5,
+      "vk_min": 6.2,
+      "datasheet": "vishay-85588",
+      "evidence": [
+        "${type} ${vz} ${izt_ma} ${izt2_ma} ${ir} ${vr} ${zz} ${zzk} "
+      ]
+    },
+    {
+      "mpn": "1N5238C",
+      "short": "zener_1n5238c",
+      "type": "1N5238",
+      "vz": 8.7,
+      "vz_min": 8.526,
+      "vz_max": 8.874,
+      "izt_ma": 20,
+      "izt": 0.02,
+      "izt2_ma": 0.25,
+      "ir": 3,
+      "vr": 6.5,
+      "zz": 8,
+      "zzk": 600,
+      "tol_pct": 2,
+      "vk_min": 6.2,
+      "datasheet": "vishay-85588",
+      "evidence": [
+        "${type} ${vz} ${izt_ma} ${izt2_ma} ${ir} ${vr} ${zz} ${zzk} "
+      ]
+    },
+    {
+      "mpn": "1N5239B",
+      "short": "zener_1n5239b",
+      "type": "1N5239",
+      "vz": 9.1,
+      "vz_min": 8.645,
+      "vz_max": 9.555,
+      "izt_ma": 20,
+      "izt": 0.02,
+      "izt2_ma": 0.25,
+      "ir": 3,
+      "vr": 7,
+      "zz": 10,
+      "zzk": 600,
+      "tol_pct": 5,
+      "vk_min": 6.7,
+      "datasheet": "vishay-85588",
+      "evidence": [
+        "${type} ${vz} ${izt_ma} ${izt2_ma} ${ir} ${vr} ${zz} ${zzk} "
+      ]
+    },
+    {
+      "mpn": "1N5239C",
+      "short": "zener_1n5239c",
+      "type": "1N5239",
+      "vz": 9.1,
+      "vz_min": 8.918,
+      "vz_max": 9.282,
+      "izt_ma": 20,
+      "izt": 0.02,
+      "izt2_ma": 0.25,
+      "ir": 3,
+      "vr": 7,
+      "zz": 10,
+      "zzk": 600,
+      "tol_pct": 2,
+      "vk_min": 6.7,
+      "datasheet": "vishay-85588",
+      "evidence": [
+        "${type} ${vz} ${izt_ma} ${izt2_ma} ${ir} ${vr} ${zz} ${zzk} "
+      ]
+    },
+    {
+      "mpn": "1N5240B",
+      "short": "zener_1n5240b",
+      "type": "1N5240",
+      "vz": 10,
+      "vz_min": 9.5,
+      "vz_max": 10.5,
+      "izt_ma": 20,
+      "izt": 0.02,
+      "izt2_ma": 0.25,
+      "ir": 3,
+      "vr": 8,
+      "zz": 17,
+      "zzk": 600,
+      "tol_pct": 5,
+      "vk_min": 7.7,
+      "datasheet": "vishay-85588",
+      "evidence": [
+        "${type} ${vz} ${izt_ma} ${izt2_ma} ${ir} ${vr} ${zz} ${zzk} "
+      ]
+    },
+    {
+      "mpn": "1N5240C",
+      "short": "zener_1n5240c",
+      "type": "1N5240",
+      "vz": 10,
+      "vz_min": 9.8,
+      "vz_max": 10.2,
+      "izt_ma": 20,
+      "izt": 0.02,
+      "izt2_ma": 0.25,
+      "ir": 3,
+      "vr": 8,
+      "zz": 17,
+      "zzk": 600,
+      "tol_pct": 2,
+      "vk_min": 7.7,
+      "datasheet": "vishay-85588",
+      "evidence": [
+        "${type} ${vz} ${izt_ma} ${izt2_ma} ${ir} ${vr} ${zz} ${zzk} "
+      ]
+    },
+    {
+      "mpn": "1N5241B",
+      "short": "zener_1n5241b",
+      "type": "1N5241",
+      "vz": 11,
+      "vz_min": 10.45,
+      "vz_max": 11.55,
+      "izt_ma": 20,
+      "izt": 0.02,
+      "izt2_ma": 0.25,
+      "ir": 2,
+      "vr": 8.4,
+      "zz": 22,
+      "zzk": 600,
+      "tol_pct": 5,
+      "vk_min": 8.2,
+      "datasheet": "vishay-85588",
+      "evidence": [
+        "${type} ${vz} ${izt_ma} ${izt2_ma} ${ir} ${vr} ${zz} ${zzk} "
+      ]
+    },
+    {
+      "mpn": "1N5241C",
+      "short": "zener_1n5241c",
+      "type": "1N5241",
+      "vz": 11,
+      "vz_min": 10.78,
+      "vz_max": 11.22,
+      "izt_ma": 20,
+      "izt": 0.02,
+      "izt2_ma": 0.25,
+      "ir": 2,
+      "vr": 8.4,
+      "zz": 22,
+      "zzk": 600,
+      "tol_pct": 2,
+      "vk_min": 8.2,
+      "datasheet": "vishay-85588",
+      "evidence": [
+        "${type} ${vz} ${izt_ma} ${izt2_ma} ${ir} ${vr} ${zz} ${zzk} "
+      ]
+    },
+    {
+      "mpn": "1N5242B",
+      "short": "zener_1n5242b",
+      "type": "1N5242",
+      "vz": 12,
+      "vz_min": 11.4,
+      "vz_max": 12.6,
+      "izt_ma": 20,
+      "izt": 0.02,
+      "izt2_ma": 0.25,
+      "ir": 1,
+      "vr": 9.1,
+      "zz": 30,
+      "zzk": 600,
+      "tol_pct": 5,
+      "vk_min": 9.0,
+      "datasheet": "vishay-85588",
+      "evidence": [
+        "${type} ${vz} ${izt_ma} ${izt2_ma} ${ir} ${vr} ${zz} ${zzk} "
+      ]
+    },
+    {
+      "mpn": "1N5242C",
+      "short": "zener_1n5242c",
+      "type": "1N5242",
+      "vz": 12,
+      "vz_min": 11.76,
+      "vz_max": 12.24,
+      "izt_ma": 20,
+      "izt": 0.02,
+      "izt2_ma": 0.25,
+      "ir": 1,
+      "vr": 9.1,
+      "zz": 30,
+      "zzk": 600,
+      "tol_pct": 2,
+      "vk_min": 9.0,
+      "datasheet": "vishay-85588",
+      "evidence": [
+        "${type} ${vz} ${izt_ma} ${izt2_ma} ${ir} ${vr} ${zz} ${zzk} "
+      ]
+    },
+    {
+      "mpn": "1N5243B",
+      "short": "zener_1n5243b",
+      "type": "1N5243",
+      "vz": 13,
+      "vz_min": 12.35,
+      "vz_max": 13.65,
+      "izt_ma": 9.5,
+      "izt": 0.0095,
+      "izt2_ma": 0.25,
+      "ir": 0.5,
+      "vr": 9.9,
+      "zz": 13,
+      "zzk": 600,
+      "tol_pct": 5,
+      "vk_min": 9.85,
+      "datasheet": "vishay-85588",
+      "evidence": [
+        "${type} ${vz} ${izt_ma} ${izt2_ma} ${ir} ${vr} ${zz} ${zzk} "
+      ]
+    },
+    {
+      "mpn": "1N5243C",
+      "short": "zener_1n5243c",
+      "type": "1N5243",
+      "vz": 13,
+      "vz_min": 12.74,
+      "vz_max": 13.26,
+      "izt_ma": 9.5,
+      "izt": 0.0095,
+      "izt2_ma": 0.25,
+      "ir": 0.5,
+      "vr": 9.9,
+      "zz": 13,
+      "zzk": 600,
+      "tol_pct": 2,
+      "vk_min": 9.85,
+      "datasheet": "vishay-85588",
+      "evidence": [
+        "${type} ${vz} ${izt_ma} ${izt2_ma} ${ir} ${vr} ${zz} ${zzk} "
+      ]
+    },
+    {
+      "mpn": "1N5244B",
+      "short": "zener_1n5244b",
+      "type": "1N5244",
+      "vz": 14,
+      "vz_min": 13.3,
+      "vz_max": 14.7,
+      "izt_ma": 9,
+      "izt": 0.009,
+      "izt2_ma": 0.25,
+      "ir": 0.1,
+      "vr": 10,
+      "zz": 15,
+      "zzk": 600,
+      "tol_pct": 5,
+      "vk_min": 9.99,
+      "datasheet": "vishay-85588",
+      "evidence": [
+        "${type} ${vz} ${izt_ma} ${izt2_ma} ${ir} ${vr} ${zz} ${zzk} "
+      ]
+    },
+    {
+      "mpn": "1N5244C",
+      "short": "zener_1n5244c",
+      "type": "1N5244",
+      "vz": 14,
+      "vz_min": 13.72,
+      "vz_max": 14.28,
+      "izt_ma": 9,
+      "izt": 0.009,
+      "izt2_ma": 0.25,
+      "ir": 0.1,
+      "vr": 10,
+      "zz": 15,
+      "zzk": 600,
+      "tol_pct": 2,
+      "vk_min": 9.99,
+      "datasheet": "vishay-85588",
+      "evidence": [
+        "${type} ${vz} ${izt_ma} ${izt2_ma} ${ir} ${vr} ${zz} ${zzk} "
+      ]
+    },
+    {
+      "mpn": "1N5245B",
+      "short": "zener_1n5245b",
+      "type": "1N5245",
+      "vz": 15,
+      "vz_min": 14.25,
+      "vz_max": 15.75,
+      "izt_ma": 8.5,
+      "izt": 0.0085,
+      "izt2_ma": 0.25,
+      "ir": 0.1,
+      "vr": 11,
+      "zz": 16,
+      "zzk": 600,
+      "tol_pct": 5,
+      "vk_min": 10.99,
+      "datasheet": "vishay-85588",
+      "evidence": [
+        "${type} ${vz} ${izt_ma} ${izt2_ma} ${ir} ${vr} ${zz} ${zzk} "
+      ]
+    },
+    {
+      "mpn": "1N5245C",
+      "short": "zener_1n5245c",
+      "type": "1N5245",
+      "vz": 15,
+      "vz_min": 14.7,
+      "vz_max": 15.3,
+      "izt_ma": 8.5,
+      "izt": 0.0085,
+      "izt2_ma": 0.25,
+      "ir": 0.1,
+      "vr": 11,
+      "zz": 16,
+      "zzk": 600,
+      "tol_pct": 2,
+      "vk_min": 10.99,
+      "datasheet": "vishay-85588",
+      "evidence": [
+        "${type} ${vz} ${izt_ma} ${izt2_ma} ${ir} ${vr} ${zz} ${zzk} "
+      ]
+    },
+    {
+      "mpn": "1N5246B",
+      "short": "zener_1n5246b",
+      "type": "1N5246",
+      "vz": 16,
+      "vz_min": 15.2,
+      "vz_max": 16.8,
+      "izt_ma": 7.8,
+      "izt": 0.0078,
+      "izt2_ma": 0.25,
+      "ir": 0.1,
+      "vr": 12,
+      "zz": 17,
+      "zzk": 600,
+      "tol_pct": 5,
+      "vk_min": 11.99,
+      "datasheet": "vishay-85588",
+      "evidence": [
+        "${type} ${vz} ${izt_ma} ${izt2_ma} ${ir} ${vr} ${zz} ${zzk} "
+      ]
+    },
+    {
+      "mpn": "1N5246C",
+      "short": "zener_1n5246c",
+      "type": "1N5246",
+      "vz": 16,
+      "vz_min": 15.68,
+      "vz_max": 16.32,
+      "izt_ma": 7.8,
+      "izt": 0.0078,
+      "izt2_ma": 0.25,
+      "ir": 0.1,
+      "vr": 12,
+      "zz": 17,
+      "zzk": 600,
+      "tol_pct": 2,
+      "vk_min": 11.99,
+      "datasheet": "vishay-85588",
+      "evidence": [
+        "${type} ${vz} ${izt_ma} ${izt2_ma} ${ir} ${vr} ${zz} ${zzk} "
+      ]
+    },
+    {
+      "mpn": "1N5247B",
+      "short": "zener_1n5247b",
+      "type": "1N5247",
+      "vz": 17,
+      "vz_min": 16.15,
+      "vz_max": 17.85,
+      "izt_ma": 7.4,
+      "izt": 0.0074,
+      "izt2_ma": 0.25,
+      "ir": 0.1,
+      "vr": 13,
+      "zz": 19,
+      "zzk": 600,
+      "tol_pct": 5,
+      "vk_min": 12.99,
+      "datasheet": "vishay-85588",
+      "evidence": [
+        "${type} ${vz} ${izt_ma} ${izt2_ma} ${ir} ${vr} ${zz} ${zzk} "
+      ]
+    },
+    {
+      "mpn": "1N5247C",
+      "short": "zener_1n5247c",
+      "type": "1N5247",
+      "vz": 17,
+      "vz_min": 16.66,
+      "vz_max": 17.34,
+      "izt_ma": 7.4,
+      "izt": 0.0074,
+      "izt2_ma": 0.25,
+      "ir": 0.1,
+      "vr": 13,
+      "zz": 19,
+      "zzk": 600,
+      "tol_pct": 2,
+      "vk_min": 12.99,
+      "datasheet": "vishay-85588",
+      "evidence": [
+        "${type} ${vz} ${izt_ma} ${izt2_ma} ${ir} ${vr} ${zz} ${zzk} "
+      ]
+    },
+    {
+      "mpn": "1N5248B",
+      "short": "zener_1n5248b",
+      "type": "1N5248",
+      "vz": 18,
+      "vz_min": 17.1,
+      "vz_max": 18.9,
+      "izt_ma": 7,
+      "izt": 0.007,
+      "izt2_ma": 0.25,
+      "ir": 0.1,
+      "vr": 14,
+      "zz": 21,
+      "zzk": 600,
+      "tol_pct": 5,
+      "vk_min": 13.99,
+      "datasheet": "vishay-85588",
+      "evidence": [
+        "${type} ${vz} ${izt_ma} ${izt2_ma} ${ir} ${vr} ${zz} ${zzk} "
+      ]
+    },
+    {
+      "mpn": "1N5248C",
+      "short": "zener_1n5248c",
+      "type": "1N5248",
+      "vz": 18,
+      "vz_min": 17.64,
+      "vz_max": 18.36,
+      "izt_ma": 7,
+      "izt": 0.007,
+      "izt2_ma": 0.25,
+      "ir": 0.1,
+      "vr": 14,
+      "zz": 21,
+      "zzk": 600,
+      "tol_pct": 2,
+      "vk_min": 13.99,
+      "datasheet": "vishay-85588",
+      "evidence": [
+        "${type} ${vz} ${izt_ma} ${izt2_ma} ${ir} ${vr} ${zz} ${zzk} "
+      ]
+    },
+    {
+      "mpn": "1N5249B",
+      "short": "zener_1n5249b",
+      "type": "1N5249",
+      "vz": 19,
+      "vz_min": 18.05,
+      "vz_max": 19.95,
+      "izt_ma": 6.6,
+      "izt": 0.0066,
+      "izt2_ma": 0.25,
+      "ir": 0.1,
+      "vr": 14,
+      "zz": 23,
+      "zzk": 600,
+      "tol_pct": 5,
+      "vk_min": 13.99,
+      "datasheet": "vishay-85588",
+      "evidence": [
+        "${type} ${vz} ${izt_ma} ${izt2_ma} ${ir} ${vr} ${zz} ${zzk} "
+      ]
+    },
+    {
+      "mpn": "1N5249C",
+      "short": "zener_1n5249c",
+      "type": "1N5249",
+      "vz": 19,
+      "vz_min": 18.62,
+      "vz_max": 19.38,
+      "izt_ma": 6.6,
+      "izt": 0.0066,
+      "izt2_ma": 0.25,
+      "ir": 0.1,
+      "vr": 14,
+      "zz": 23,
+      "zzk": 600,
+      "tol_pct": 2,
+      "vk_min": 13.99,
+      "datasheet": "vishay-85588",
+      "evidence": [
+        "${type} ${vz} ${izt_ma} ${izt2_ma} ${ir} ${vr} ${zz} ${zzk} "
+      ]
+    },
+    {
+      "mpn": "1N5250B",
+      "short": "zener_1n5250b",
+      "type": "1N5250",
+      "vz": 20,
+      "vz_min": 19.0,
+      "vz_max": 21.0,
+      "izt_ma": 6.2,
+      "izt": 0.0062,
+      "izt2_ma": 0.25,
+      "ir": 0.1,
+      "vr": 15,
+      "zz": 25,
+      "zzk": 600,
+      "tol_pct": 5,
+      "vk_min": 14.99,
+      "datasheet": "vishay-85588",
+      "evidence": [
+        "${type} ${vz} ${izt_ma} ${izt2_ma} ${ir} ${vr} ${zz} ${zzk} "
+      ]
+    },
+    {
+      "mpn": "1N5250C",
+      "short": "zener_1n5250c",
+      "type": "1N5250",
+      "vz": 20,
+      "vz_min": 19.6,
+      "vz_max": 20.4,
+      "izt_ma": 6.2,
+      "izt": 0.0062,
+      "izt2_ma": 0.25,
+      "ir": 0.1,
+      "vr": 15,
+      "zz": 25,
+      "zzk": 600,
+      "tol_pct": 2,
+      "vk_min": 14.99,
+      "datasheet": "vishay-85588",
+      "evidence": [
+        "${type} ${vz} ${izt_ma} ${izt2_ma} ${ir} ${vr} ${zz} ${zzk} "
+      ]
+    },
+    {
+      "mpn": "1N5251B",
+      "short": "zener_1n5251b",
+      "type": "1N5251",
+      "vz": 22,
+      "vz_min": 20.9,
+      "vz_max": 23.1,
+      "izt_ma": 5.6,
+      "izt": 0.0056,
+      "izt2_ma": 0.25,
+      "ir": 0.1,
+      "vr": 17,
+      "zz": 29,
+      "zzk": 600,
+      "tol_pct": 5,
+      "vk_min": 16.99,
+      "datasheet": "vishay-85588",
+      "evidence": [
+        "${type} ${vz} ${izt_ma} ${izt2_ma} ${ir} ${vr} ${zz} ${zzk} "
+      ]
+    },
+    {
+      "mpn": "1N5251C",
+      "short": "zener_1n5251c",
+      "type": "1N5251",
+      "vz": 22,
+      "vz_min": 21.56,
+      "vz_max": 22.44,
+      "izt_ma": 5.6,
+      "izt": 0.0056,
+      "izt2_ma": 0.25,
+      "ir": 0.1,
+      "vr": 17,
+      "zz": 29,
+      "zzk": 600,
+      "tol_pct": 2,
+      "vk_min": 16.99,
+      "datasheet": "vishay-85588",
+      "evidence": [
+        "${type} ${vz} ${izt_ma} ${izt2_ma} ${ir} ${vr} ${zz} ${zzk} "
+      ]
+    },
+    {
+      "mpn": "1N5252B",
+      "short": "zener_1n5252b",
+      "type": "1N5252",
+      "vz": 24,
+      "vz_min": 22.8,
+      "vz_max": 25.2,
+      "izt_ma": 5.2,
+      "izt": 0.0052,
+      "izt2_ma": 0.25,
+      "ir": 0.1,
+      "vr": 18,
+      "zz": 33,
+      "zzk": 600,
+      "tol_pct": 5,
+      "vk_min": 17.99,
+      "datasheet": "vishay-85588",
+      "evidence": [
+        "${type} ${vz} ${izt_ma} ${izt2_ma} ${ir} ${vr} ${zz} ${zzk} "
+      ]
+    },
+    {
+      "mpn": "1N5252C",
+      "short": "zener_1n5252c",
+      "type": "1N5252",
+      "vz": 24,
+      "vz_min": 23.52,
+      "vz_max": 24.48,
+      "izt_ma": 5.2,
+      "izt": 0.0052,
+      "izt2_ma": 0.25,
+      "ir": 0.1,
+      "vr": 18,
+      "zz": 33,
+      "zzk": 600,
+      "tol_pct": 2,
+      "vk_min": 17.99,
+      "datasheet": "vishay-85588",
+      "evidence": [
+        "${type} ${vz} ${izt_ma} ${izt2_ma} ${ir} ${vr} ${zz} ${zzk} "
+      ]
+    },
+    {
+      "mpn": "1N5253B",
+      "short": "zener_1n5253b",
+      "type": "1N5253",
+      "vz": 25,
+      "vz_min": 23.75,
+      "vz_max": 26.25,
+      "izt_ma": 5,
+      "izt": 0.005,
+      "izt2_ma": 0.25,
+      "ir": 0.1,
+      "vr": 19,
+      "zz": 35,
+      "zzk": 600,
+      "tol_pct": 5,
+      "vk_min": 18.99,
+      "datasheet": "vishay-85588",
+      "evidence": [
+        "${type} ${vz} ${izt_ma} ${izt2_ma} ${ir} ${vr} ${zz} ${zzk} "
+      ]
+    },
+    {
+      "mpn": "1N5253C",
+      "short": "zener_1n5253c",
+      "type": "1N5253",
+      "vz": 25,
+      "vz_min": 24.5,
+      "vz_max": 25.5,
+      "izt_ma": 5,
+      "izt": 0.005,
+      "izt2_ma": 0.25,
+      "ir": 0.1,
+      "vr": 19,
+      "zz": 35,
+      "zzk": 600,
+      "tol_pct": 2,
+      "vk_min": 18.99,
+      "datasheet": "vishay-85588",
+      "evidence": [
+        "${type} ${vz} ${izt_ma} ${izt2_ma} ${ir} ${vr} ${zz} ${zzk} "
+      ]
+    },
+    {
+      "mpn": "1N5254B",
+      "short": "zener_1n5254b",
+      "type": "1N5254",
+      "vz": 27,
+      "vz_min": 25.65,
+      "vz_max": 28.35,
+      "izt_ma": 4.6,
+      "izt": 0.0046,
+      "izt2_ma": 0.25,
+      "ir": 0.1,
+      "vr": 21,
+      "zz": 41,
+      "zzk": 600,
+      "tol_pct": 5,
+      "vk_min": 20.99,
+      "datasheet": "vishay-85588",
+      "evidence": [
+        "${type} ${vz} ${izt_ma} ${izt2_ma} ${ir} ${vr} ${zz} ${zzk} "
+      ]
+    },
+    {
+      "mpn": "1N5254C",
+      "short": "zener_1n5254c",
+      "type": "1N5254",
+      "vz": 27,
+      "vz_min": 26.46,
+      "vz_max": 27.54,
+      "izt_ma": 4.6,
+      "izt": 0.0046,
+      "izt2_ma": 0.25,
+      "ir": 0.1,
+      "vr": 21,
+      "zz": 41,
+      "zzk": 600,
+      "tol_pct": 2,
+      "vk_min": 20.99,
+      "datasheet": "vishay-85588",
+      "evidence": [
+        "${type} ${vz} ${izt_ma} ${izt2_ma} ${ir} ${vr} ${zz} ${zzk} "
+      ]
+    },
+    {
+      "mpn": "1N5255B",
+      "short": "zener_1n5255b",
+      "type": "1N5255",
+      "vz": 28,
+      "vz_min": 26.6,
+      "vz_max": 29.4,
+      "izt_ma": 4.5,
+      "izt": 0.0045,
+      "izt2_ma": 0.25,
+      "ir": 0.1,
+      "vr": 21,
+      "zz": 44,
+      "zzk": 600,
+      "tol_pct": 5,
+      "vk_min": 20.99,
+      "datasheet": "vishay-85588",
+      "evidence": [
+        "${type} ${vz} ${izt_ma} ${izt2_ma} ${ir} ${vr} ${zz} ${zzk} "
+      ]
+    },
+    {
+      "mpn": "1N5255C",
+      "short": "zener_1n5255c",
+      "type": "1N5255",
+      "vz": 28,
+      "vz_min": 27.44,
+      "vz_max": 28.56,
+      "izt_ma": 4.5,
+      "izt": 0.0045,
+      "izt2_ma": 0.25,
+      "ir": 0.1,
+      "vr": 21,
+      "zz": 44,
+      "zzk": 600,
+      "tol_pct": 2,
+      "vk_min": 20.99,
+      "datasheet": "vishay-85588",
+      "evidence": [
+        "${type} ${vz} ${izt_ma} ${izt2_ma} ${ir} ${vr} ${zz} ${zzk} "
+      ]
+    },
+    {
+      "mpn": "1N5256B",
+      "short": "zener_1n5256b",
+      "type": "1N5256",
+      "vz": 30,
+      "vz_min": 28.5,
+      "vz_max": 31.5,
+      "izt_ma": 4.2,
+      "izt": 0.0042,
+      "izt2_ma": 0.25,
+      "ir": 0.1,
+      "vr": 23,
+      "zz": 49,
+      "zzk": 600,
+      "tol_pct": 5,
+      "vk_min": 22.99,
+      "datasheet": "vishay-85588",
+      "evidence": [
+        "${type} ${vz} ${izt_ma} ${izt2_ma} ${ir} ${vr} ${zz} ${zzk} "
+      ]
+    },
+    {
+      "mpn": "1N5256C",
+      "short": "zener_1n5256c",
+      "type": "1N5256",
+      "vz": 30,
+      "vz_min": 29.4,
+      "vz_max": 30.6,
+      "izt_ma": 4.2,
+      "izt": 0.0042,
+      "izt2_ma": 0.25,
+      "ir": 0.1,
+      "vr": 23,
+      "zz": 49,
+      "zzk": 600,
+      "tol_pct": 2,
+      "vk_min": 22.99,
+      "datasheet": "vishay-85588",
+      "evidence": [
+        "${type} ${vz} ${izt_ma} ${izt2_ma} ${ir} ${vr} ${zz} ${zzk} "
+      ]
+    },
+    {
+      "mpn": "1N5257B",
+      "short": "zener_1n5257b",
+      "type": "1N5257",
+      "vz": 33,
+      "vz_min": 31.35,
+      "vz_max": 34.65,
+      "izt_ma": 3.8,
+      "izt": 0.0038,
+      "izt2_ma": 0.25,
+      "ir": 0.1,
+      "vr": 25,
+      "zz": 58,
+      "zzk": 700,
+      "tol_pct": 5,
+      "vk_min": 24.99,
+      "datasheet": "vishay-85588",
+      "evidence": [
+        "${type} ${vz} ${izt_ma} ${izt2_ma} ${ir} ${vr} ${zz} ${zzk} "
+      ]
+    },
+    {
+      "mpn": "1N5257C",
+      "short": "zener_1n5257c",
+      "type": "1N5257",
+      "vz": 33,
+      "vz_min": 32.34,
+      "vz_max": 33.66,
+      "izt_ma": 3.8,
+      "izt": 0.0038,
+      "izt2_ma": 0.25,
+      "ir": 0.1,
+      "vr": 25,
+      "zz": 58,
+      "zzk": 700,
+      "tol_pct": 2,
+      "vk_min": 24.99,
+      "datasheet": "vishay-85588",
+      "evidence": [
+        "${type} ${vz} ${izt_ma} ${izt2_ma} ${ir} ${vr} ${zz} ${zzk} "
+      ]
+    },
+    {
+      "mpn": "1N5258B",
+      "short": "zener_1n5258b",
+      "type": "1N5258",
+      "vz": 36,
+      "vz_min": 34.2,
+      "vz_max": 37.8,
+      "izt_ma": 3.4,
+      "izt": 0.0034,
+      "izt2_ma": 0.25,
+      "ir": 0.1,
+      "vr": 27,
+      "zz": 70,
+      "zzk": 700,
+      "tol_pct": 5,
+      "vk_min": 26.99,
+      "datasheet": "vishay-85588",
+      "evidence": [
+        "${type} ${vz} ${izt_ma} ${izt2_ma} ${ir} ${vr} ${zz} ${zzk} "
+      ]
+    },
+    {
+      "mpn": "1N5258C",
+      "short": "zener_1n5258c",
+      "type": "1N5258",
+      "vz": 36,
+      "vz_min": 35.28,
+      "vz_max": 36.72,
+      "izt_ma": 3.4,
+      "izt": 0.0034,
+      "izt2_ma": 0.25,
+      "ir": 0.1,
+      "vr": 27,
+      "zz": 70,
+      "zzk": 700,
+      "tol_pct": 2,
+      "vk_min": 26.99,
+      "datasheet": "vishay-85588",
+      "evidence": [
+        "${type} ${vz} ${izt_ma} ${izt2_ma} ${ir} ${vr} ${zz} ${zzk} "
+      ]
+    },
+    {
+      "mpn": "1N5259B",
+      "short": "zener_1n5259b",
+      "type": "1N5259",
+      "vz": 39,
+      "vz_min": 37.05,
+      "vz_max": 40.95,
+      "izt_ma": 3.2,
+      "izt": 0.0032,
+      "izt2_ma": 0.25,
+      "ir": 0.1,
+      "vr": 30,
+      "zz": 80,
+      "zzk": 800,
+      "tol_pct": 5,
+      "vk_min": 29.99,
+      "datasheet": "vishay-85588",
+      "evidence": [
+        "${type} ${vz} ${izt_ma} ${izt2_ma} ${ir} ${vr} ${zz} ${zzk} "
+      ]
+    },
+    {
+      "mpn": "1N5259C",
+      "short": "zener_1n5259c",
+      "type": "1N5259",
+      "vz": 39,
+      "vz_min": 38.22,
+      "vz_max": 39.78,
+      "izt_ma": 3.2,
+      "izt": 0.0032,
+      "izt2_ma": 0.25,
+      "ir": 0.1,
+      "vr": 30,
+      "zz": 80,
+      "zzk": 800,
+      "tol_pct": 2,
+      "vk_min": 29.99,
+      "datasheet": "vishay-85588",
+      "evidence": [
+        "${type} ${vz} ${izt_ma} ${izt2_ma} ${ir} ${vr} ${zz} ${zzk} "
+      ]
+    },
+    {
+      "mpn": "1N5260B",
+      "short": "zener_1n5260b",
+      "type": "1N5260",
+      "vz": 43,
+      "vz_min": 40.85,
+      "vz_max": 45.15,
+      "izt_ma": 3,
+      "izt": 0.003,
+      "izt2_ma": 0.25,
+      "ir": 0.1,
+      "vr": 33,
+      "zz": 93,
+      "zzk": 900,
+      "tol_pct": 5,
+      "vk_min": 32.99,
+      "datasheet": "vishay-85588",
+      "evidence": [
+        "${type} ${vz} ${izt_ma} ${izt2_ma} ${ir} ${vr} ${zz} ${zzk} "
+      ]
+    },
+    {
+      "mpn": "1N5260C",
+      "short": "zener_1n5260c",
+      "type": "1N5260",
+      "vz": 43,
+      "vz_min": 42.14,
+      "vz_max": 43.86,
+      "izt_ma": 3,
+      "izt": 0.003,
+      "izt2_ma": 0.25,
+      "ir": 0.1,
+      "vr": 33,
+      "zz": 93,
+      "zzk": 900,
+      "tol_pct": 2,
+      "vk_min": 32.99,
+      "datasheet": "vishay-85588",
+      "evidence": [
+        "${type} ${vz} ${izt_ma} ${izt2_ma} ${ir} ${vr} ${zz} ${zzk} "
+      ]
+    },
+    {
+      "mpn": "1N5261B",
+      "short": "zener_1n5261b",
+      "type": "1N5261",
+      "vz": 47,
+      "vz_min": 44.65,
+      "vz_max": 49.35,
+      "izt_ma": 2.7,
+      "izt": 0.0027,
+      "izt2_ma": 0.25,
+      "ir": 0.1,
+      "vr": 36,
+      "zz": 105,
+      "zzk": 1000,
+      "tol_pct": 5,
+      "vk_min": 35.99,
+      "datasheet": "vishay-85588",
+      "evidence": [
+        "${type} ${vz} ${izt_ma} ${izt2_ma} ${ir} ${vr} ${zz} ${zzk} "
+      ]
+    },
+    {
+      "mpn": "1N5261C",
+      "short": "zener_1n5261c",
+      "type": "1N5261",
+      "vz": 47,
+      "vz_min": 46.06,
+      "vz_max": 47.94,
+      "izt_ma": 2.7,
+      "izt": 0.0027,
+      "izt2_ma": 0.25,
+      "ir": 0.1,
+      "vr": 36,
+      "zz": 105,
+      "zzk": 1000,
+      "tol_pct": 2,
+      "vk_min": 35.99,
+      "datasheet": "vishay-85588",
+      "evidence": [
+        "${type} ${vz} ${izt_ma} ${izt2_ma} ${ir} ${vr} ${zz} ${zzk} "
+      ]
+    },
+    {
+      "mpn": "1N5262B",
+      "short": "zener_1n5262b",
+      "type": "1N5262",
+      "vz": 51,
+      "vz_min": 48.45,
+      "vz_max": 53.55,
+      "izt_ma": 2.5,
+      "izt": 0.0025,
+      "izt2_ma": 0.25,
+      "ir": 0.1,
+      "vr": 39,
+      "zz": 125,
+      "zzk": 1100,
+      "tol_pct": 5,
+      "vk_min": 38.99,
+      "datasheet": "vishay-85588",
+      "evidence": [
+        "${type} ${vz} ${izt_ma} ${izt2_ma} ${ir} ${vr} ${zz} ${zzk} "
+      ]
+    },
+    {
+      "mpn": "1N5262C",
+      "short": "zener_1n5262c",
+      "type": "1N5262",
+      "vz": 51,
+      "vz_min": 49.98,
+      "vz_max": 52.02,
+      "izt_ma": 2.5,
+      "izt": 0.0025,
+      "izt2_ma": 0.25,
+      "ir": 0.1,
+      "vr": 39,
+      "zz": 125,
+      "zzk": 1100,
+      "tol_pct": 2,
+      "vk_min": 38.99,
+      "datasheet": "vishay-85588",
+      "evidence": [
+        "${type} ${vz} ${izt_ma} ${izt2_ma} ${ir} ${vr} ${zz} ${zzk} "
+      ]
+    },
+    {
+      "mpn": "1N5263B",
+      "short": "zener_1n5263b",
+      "type": "1N5263",
+      "vz": 56,
+      "vz_min": 53.2,
+      "vz_max": 58.8,
+      "izt_ma": 2.2,
+      "izt": 0.0022,
+      "izt2_ma": 0.25,
+      "ir": 0.1,
+      "vr": 43,
+      "zz": 150,
+      "zzk": 1300,
+      "tol_pct": 5,
+      "vk_min": 42.99,
+      "datasheet": "vishay-85588",
+      "evidence": [
+        "${type} ${vz} ${izt_ma} ${izt2_ma} ${ir} ${vr} ${zz} ${zzk} "
+      ]
+    },
+    {
+      "mpn": "1N5263C",
+      "short": "zener_1n5263c",
+      "type": "1N5263",
+      "vz": 56,
+      "vz_min": 54.88,
+      "vz_max": 57.12,
+      "izt_ma": 2.2,
+      "izt": 0.0022,
+      "izt2_ma": 0.25,
+      "ir": 0.1,
+      "vr": 43,
+      "zz": 150,
+      "zzk": 1300,
+      "tol_pct": 2,
+      "vk_min": 42.99,
+      "datasheet": "vishay-85588",
+      "evidence": [
+        "${type} ${vz} ${izt_ma} ${izt2_ma} ${ir} ${vr} ${zz} ${zzk} "
+      ]
+    },
+    {
+      "mpn": "1N5264B",
+      "short": "zener_1n5264b",
+      "type": "1N5264",
+      "vz": 60,
+      "vz_min": 57.0,
+      "vz_max": 63.0,
+      "izt_ma": 2.1,
+      "izt": 0.0021,
+      "izt2_ma": 0.25,
+      "ir": 0.1,
+      "vr": 46,
+      "zz": 170,
+      "zzk": 1400,
+      "tol_pct": 5,
+      "vk_min": 45.99,
+      "datasheet": "vishay-85588",
+      "evidence": [
+        "${type} ${vz} ${izt_ma} ${izt2_ma} ${ir} ${vr} ${zz} ${zzk} "
+      ]
+    },
+    {
+      "mpn": "1N5264C",
+      "short": "zener_1n5264c",
+      "type": "1N5264",
+      "vz": 60,
+      "vz_min": 58.8,
+      "vz_max": 61.2,
+      "izt_ma": 2.1,
+      "izt": 0.0021,
+      "izt2_ma": 0.25,
+      "ir": 0.1,
+      "vr": 46,
+      "zz": 170,
+      "zzk": 1400,
+      "tol_pct": 2,
+      "vk_min": 45.99,
+      "datasheet": "vishay-85588",
+      "evidence": [
+        "${type} ${vz} ${izt_ma} ${izt2_ma} ${ir} ${vr} ${zz} ${zzk} "
+      ]
+    },
+    {
+      "mpn": "1N5265B",
+      "short": "zener_1n5265b",
+      "type": "1N5265",
+      "vz": 62,
+      "vz_min": 58.9,
+      "vz_max": 65.1,
+      "izt_ma": 2,
+      "izt": 0.002,
+      "izt2_ma": 0.25,
+      "ir": 0.1,
+      "vr": 47,
+      "zz": 185,
+      "zzk": 1400,
+      "tol_pct": 5,
+      "vk_min": 46.99,
+      "datasheet": "vishay-85588",
+      "evidence": [
+        "${type} ${vz} ${izt_ma} ${izt2_ma} ${ir} ${vr} ${zz} ${zzk} "
+      ]
+    },
+    {
+      "mpn": "1N5265C",
+      "short": "zener_1n5265c",
+      "type": "1N5265",
+      "vz": 62,
+      "vz_min": 60.76,
+      "vz_max": 63.24,
+      "izt_ma": 2,
+      "izt": 0.002,
+      "izt2_ma": 0.25,
+      "ir": 0.1,
+      "vr": 47,
+      "zz": 185,
+      "zzk": 1400,
+      "tol_pct": 2,
+      "vk_min": 46.99,
+      "datasheet": "vishay-85588",
+      "evidence": [
+        "${type} ${vz} ${izt_ma} ${izt2_ma} ${ir} ${vr} ${zz} ${zzk} "
+      ]
+    },
+    {
+      "mpn": "1N5266B",
+      "short": "zener_1n5266b",
+      "type": "1N5266",
+      "vz": 68,
+      "vz_min": 64.6,
+      "vz_max": 71.4,
+      "izt_ma": 1.8,
+      "izt": 0.0018,
+      "izt2_ma": 0.25,
+      "ir": 0.1,
+      "vr": 52,
+      "zz": 230,
+      "zzk": 1600,
+      "tol_pct": 5,
+      "vk_min": 51.99,
+      "datasheet": "vishay-85588",
+      "evidence": [
+        "${type} ${vz} ${izt_ma} ${izt2_ma} ${ir} ${vr} ${zz} ${zzk} "
+      ]
+    },
+    {
+      "mpn": "1N5266C",
+      "short": "zener_1n5266c",
+      "type": "1N5266",
+      "vz": 68,
+      "vz_min": 66.64,
+      "vz_max": 69.36,
+      "izt_ma": 1.8,
+      "izt": 0.0018,
+      "izt2_ma": 0.25,
+      "ir": 0.1,
+      "vr": 52,
+      "zz": 230,
+      "zzk": 1600,
+      "tol_pct": 2,
+      "vk_min": 51.99,
+      "datasheet": "vishay-85588",
+      "evidence": [
+        "${type} ${vz} ${izt_ma} ${izt2_ma} ${ir} ${vr} ${zz} ${zzk} "
+      ]
+    },
+    {
+      "mpn": "1N5267B",
+      "short": "zener_1n5267b",
+      "type": "1N5267",
+      "vz": 75,
+      "vz_min": 71.25,
+      "vz_max": 78.75,
+      "izt_ma": 1.7,
+      "izt": 0.0017,
+      "izt2_ma": 0.25,
+      "ir": 0.1,
+      "vr": 56,
+      "zz": 270,
+      "zzk": 1700,
+      "tol_pct": 5,
+      "vk_min": 55.99,
+      "datasheet": "vishay-85588",
+      "evidence": [
+        "${type} ${vz} ${izt_ma} ${izt2_ma} ${ir} ${vr} ${zz} ${zzk} "
+      ]
+    },
+    {
+      "mpn": "1N5267C",
+      "short": "zener_1n5267c",
+      "type": "1N5267",
+      "vz": 75,
+      "vz_min": 73.5,
+      "vz_max": 76.5,
+      "izt_ma": 1.7,
+      "izt": 0.0017,
+      "izt2_ma": 0.25,
+      "ir": 0.1,
+      "vr": 56,
+      "zz": 270,
+      "zzk": 1700,
+      "tol_pct": 2,
+      "vk_min": 55.99,
+      "datasheet": "vishay-85588",
+      "evidence": [
+        "${type} ${vz} ${izt_ma} ${izt2_ma} ${ir} ${vr} ${zz} ${zzk} "
+      ]
+    }
+  ]
+}

@@ -1,0 +1,50 @@
+{
+  "schema_version": 1,
+  "kind": "component_test",
+  "name": "vf",
+  "description": "IF = 10 mA: VF under the datasheet's 1.5 V maximum, near its 1.3 V typical",
+  "policy": "electrical",
+  "until": "100us",
+  "settings": {
+    "imperfections": "ideal"
+  },
+  "circuit": {
+    "components": [
+      {
+        "id": "IF",
+        "component": "emblink/isource",
+        "params": {
+          "dc": 0.01
+        }
+      },
+      {
+        "id": "DUT",
+        "component": "emblink/opto_4n35"
+      },
+      {
+        "id": "G",
+        "component": "emblink/gnd"
+      }
+    ],
+    "nets": {
+      "AN": [
+        "IF.-",
+        "DUT.A"
+      ],
+      "GND": [
+        "IF.+",
+        "DUT.K",
+        "DUT.E",
+        "DUT.C",
+        "G.GND"
+      ]
+    }
+  },
+  "expect": {
+    "net:AN": {
+      "at": "50us",
+      "min_v": 1.2,
+      "max_v": 1.5
+    }
+  }
+}

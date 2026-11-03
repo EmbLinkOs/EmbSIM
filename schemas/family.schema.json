@@ -1,0 +1,135 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://emblink.dev/embsim/schemas/family.schema.json",
+  "title": "EmbSIM part family",
+  "description": "Many real part numbers from one datasheet table (SPEC-005 §2): a component template and fixtures with ${var} placeholders, the datasheets, the evidence each row's values must match in their text, and one row per part number. tools/catalog/families.py expands it into catalog entries.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "kind",
+    "name",
+    "datasheets",
+    "template",
+    "rows"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": 1
+    },
+    "kind": {
+      "const": "family"
+    },
+    "name": {
+      "type": "string",
+      "minLength": 1
+    },
+    "vars": {
+      "type": "object",
+      "description": "Variables every row shares."
+    },
+    "datasheets": {
+      "type": "object",
+      "minProperties": 1,
+      "additionalProperties": {
+        "type": "object",
+        "required": [
+          "title",
+          "url",
+          "hash"
+        ],
+        "properties": {
+          "title": {
+            "type": "string"
+          },
+          "url": {
+            "type": "string",
+            "pattern": "^https://"
+          },
+          "rev": {
+            "type": "string"
+          },
+          "date": {
+            "type": "string"
+          },
+          "hash": {
+            "type": "string",
+            "pattern": "^sha256:[0-9a-f]{64}$"
+          },
+          "notes": {
+            "type": "string"
+          }
+        },
+        "additionalProperties": false
+      }
+    },
+    "evidence": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Regular expressions every row's datasheet text must match, with the row's ${var} values."
+    },
+    "template": {
+      "type": "object",
+      "required": [
+        "kind",
+        "id"
+      ],
+      "description": "A component description with ${var} placeholders."
+    },
+    "tests": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "object"
+      },
+      "description": "Fixtures by name, with ${var} placeholders."
+    },
+    "rows": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "required": [
+          "mpn",
+          "short",
+          "datasheet"
+        ],
+        "properties": {
+          "mpn": {
+            "type": "string",
+            "minLength": 1
+          },
+          "short": {
+            "type": "string",
+            "pattern": "^[a-z][a-z0-9_-]*$"
+          },
+          "datasheet": {
+            "type": "string"
+          },
+          "evidence": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "skip_tests": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "additionalProperties": {
+          "description": "The row's variables: the datasheet's values for this part number.",
+          "type": [
+            "string",
+            "number",
+            "boolean",
+            "array"
+          ]
+        }
+      }
+    }
+  }
+}

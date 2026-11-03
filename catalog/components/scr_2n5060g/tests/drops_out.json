@@ -1,0 +1,90 @@
+{
+  "schema_version": 1,
+  "kind": "component_test",
+  "name": "drops_out",
+  "description": "The same pulse with 7 V through 22 kohm (0.3 mA, under any holding current) and 1 kohm gate to cathode: it turns off once the gate current ends",
+  "policy": "electrical",
+  "until": "200us",
+  "settings": {
+    "imperfections": "ideal"
+  },
+  "circuit": {
+    "components": [
+      {
+        "id": "VA",
+        "component": "emblink/vsource",
+        "params": {
+          "kind": "dc",
+          "dc": 7
+        }
+      },
+      {
+        "id": "RL",
+        "component": "emblink/resistor",
+        "params": {
+          "resistance": "22k",
+          "tolerance": 0
+        }
+      },
+      {
+        "id": "IG",
+        "component": "emblink/isource",
+        "params": {
+          "kind": "pulse",
+          "v1": 0,
+          "v2": 0.001,
+          "td": "10u",
+          "tr": "100n",
+          "tf": "100n",
+          "pw": "20u",
+          "per": "1"
+        }
+      },
+      {
+        "id": "RGK",
+        "component": "emblink/resistor",
+        "params": {
+          "resistance": "1k",
+          "tolerance": 0
+        }
+      },
+      {
+        "id": "DUT",
+        "component": "emblink/scr_2n5060g"
+      },
+      {
+        "id": "G0",
+        "component": "emblink/gnd"
+      }
+    ],
+    "nets": {
+      "VCC": [
+        "VA.+",
+        "RL.1"
+      ],
+      "AN": [
+        "RL.2",
+        "DUT.A"
+      ],
+      "GATE": [
+        "IG.-",
+        "DUT.G",
+        "RGK.1"
+      ],
+      "GND": [
+        "VA.-",
+        "IG.+",
+        "RGK.2",
+        "DUT.K",
+        "G0.GND"
+      ]
+    }
+  },
+  "expect": {
+    "net:AN": {
+      "at": "150us",
+      "min_v": 6.9,
+      "max_v": 7.0
+    }
+  }
+}

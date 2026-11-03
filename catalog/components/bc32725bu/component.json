@@ -1,0 +1,185 @@
+{
+  "schema_version": 1,
+  "kind": "component",
+  "id": "emblink/bc32725bu",
+  "version": "1.0.0",
+  "name": "BC32725BU",
+  "category": "transistors",
+  "subcategory": "bipolar_pnp",
+  "description": "onsemi BC32725BU, a PNP transistor in TO-92 (C1, B2, E3): VCEO 45 V, 0.8 A, 0.625 W at 25 C ambient; hFE group -25: 160 to 400 at 100 mA, at least 60 at 300 mA; VCE(sat) 0.7 V maximum at 500 mA, VBE(on) 1.2 V maximum at 300 mA. The model's gain is 253, the middle of the group.",
+  "keywords": [
+    "onsemi",
+    "BC32725BU",
+    "BC327-25",
+    "PNP",
+    "BJT",
+    "transistor",
+    "small signal",
+    "TO-92"
+  ],
+  "pins": [
+    {
+      "name": "C",
+      "number": 1,
+      "model": {
+        "kind": "passive"
+      },
+      "doc": "Collector"
+    },
+    {
+      "name": "B",
+      "number": 2,
+      "model": {
+        "kind": "passive"
+      },
+      "doc": "Base"
+    },
+    {
+      "name": "E",
+      "number": 3,
+      "model": {
+        "kind": "passive"
+      },
+      "doc": "Emitter"
+    }
+  ],
+  "params": {
+    "is": {
+      "type": "number",
+      "unit": "A",
+      "default": 1e-14,
+      "doc": "Transport saturation current",
+      "min": "1e-20",
+      "max": "1m",
+      "advanced": true
+    },
+    "bf": {
+      "type": "number",
+      "unit": "",
+      "default": 253,
+      "doc": "Forward current gain",
+      "min": 1,
+      "max": 2000
+    },
+    "br": {
+      "type": "number",
+      "unit": "",
+      "default": 1,
+      "doc": "Reverse current gain",
+      "min": 0.01,
+      "max": 100,
+      "advanced": true
+    },
+    "rb": {
+      "type": "number",
+      "unit": "ohm",
+      "default": 0,
+      "doc": "Base resistance",
+      "min": 0,
+      "advanced": true
+    },
+    "rc": {
+      "type": "number",
+      "unit": "ohm",
+      "default": 0.3,
+      "doc": "Collector resistance",
+      "min": 0,
+      "advanced": true
+    },
+    "re": {
+      "type": "number",
+      "unit": "ohm",
+      "default": 0.1,
+      "doc": "Emitter resistance",
+      "min": 0,
+      "advanced": true
+    }
+  },
+  "model": {
+    "primitive": "bjt_pnp"
+  },
+  "symbol": {
+    "svg": "symbol.svg",
+    "width": 40,
+    "height": 40,
+    "pins": {
+      "B": {
+        "x": 0,
+        "y": 20,
+        "side": "left"
+      },
+      "C": {
+        "x": 40,
+        "y": 0,
+        "side": "top"
+      },
+      "E": {
+        "x": 40,
+        "y": 40,
+        "side": "bottom"
+      }
+    }
+  },
+  "fidelity": {
+    "functional": null,
+    "timed": null,
+    "electrical": {
+      "claims": "Ebers-Moll transistor at a constant gain of 253 (the geometric middle of the group's 160 to 400 at 100 mA), collector and emitter resistances for VCE(sat) and VBE(on); fixtures for the gain at 100 mA and 300 mA, VCE(sat) at 500 mA and VBE(on) at 300 mA.",
+      "omissions": [
+        "the gain's fall with current: it stays 253",
+        "the Early effect: the collector current does not rise with VCE",
+        "capacitances and fT, so no switching times",
+        "temperature: VBE's -2 mV/C and the gain's rise",
+        "second breakdown, the safe operating area and damage past the ratings",
+        "device-to-device spread within the gain limits",
+        "no manufacturer model qualification"
+      ],
+      "validation": [
+        "tests/*.json"
+      ]
+    }
+  },
+  "provenance": {
+    "author": "EmbSIM",
+    "license": "Apache-2.0",
+    "sources": [
+      {
+        "title": "onsemi BC327 PNP epitaxial silicon transistor datasheet (BC327/D)",
+        "url": "https://www.onsemi.com/download/data-sheet/pdf/bc327-d.pdf",
+        "rev": "current at retrieval",
+        "date": "2026-11-03",
+        "hash": "sha256:d855d044ed4ac0959f56d1580a111f8bfdae533df4c4532a89d9de1de6259d95",
+        "notes": "Maximum ratings (VCEO -45 V, IC -800 mA); hFE1 100 to 630 at -100 mA and its classification (16: 100 to 250, 25: 160 to 400, 40: 250 to 630); hFE2 60 at -300 mA; VCE(sat) -0.7 V at -500 mA, -50 mA; VBE(on) -1.2 V at -300 mA; TO-92 C1 B2 E3; the ordering information. generated from catalog/families/bjt_onsemi_bc327/family.json by tools/catalog/families.py; edit the family, not this file"
+      }
+    ]
+  },
+  "part": {
+    "manufacturer": "onsemi",
+    "mpn": "BC32725BU",
+    "package": "TO-92",
+    "datasheet": "https://www.onsemi.com/download/data-sheet/pdf/bc327-d.pdf"
+  },
+  "tests": [
+    "tests/*.json"
+  ],
+  "i18n": {
+    "fr": {
+      "source": "ab37510954f6",
+      "description": "onsemi BC32725BU, un transistor PNP en TO-92 (C1, B2, E3) : VCEO 45 V, 0,8 A, 0,625 W à 25 °C ambiant ; groupe de gain -25 : 160 à 400 à 100 mA, au moins 60 à 300 mA ; VCE(sat) de 0,7 V au maximum à 500 mA, VBE(on) de 1,2 V au maximum à 300 mA. Le gain du modèle est 253, au milieu du groupe.",
+      "fidelity": {
+        "electrical": {
+          "claims": "Transistor d'Ebers-Moll à un gain constant de 253 (le milieu géométrique des 160 à 400 du groupe à 100 mA), résistances de collecteur et d'émetteur pour VCE(sat) et VBE(on) ; cas de test pour le gain à 100 mA et 300 mA, VCE(sat) à 500 mA et VBE(on) à 300 mA.",
+          "omissions": [
+            "la baisse du gain avec le courant : il reste 253",
+            "l'effet Early : le courant de collecteur ne croît pas avec VCE",
+            "les capacités et fT, donc pas de temps de commutation",
+            "la température : les -2 mV/°C de VBE et la hausse du gain",
+            "le second claquage, l'aire de sécurité et les dommages au-delà des valeurs nominales",
+            "la dispersion d'un exemplaire à l'autre dans les limites de gain",
+            "aucune qualification par un modèle du fabricant"
+          ]
+        }
+      }
+    }
+  }
+}

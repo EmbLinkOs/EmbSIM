@@ -1,0 +1,948 @@
+{
+  "schema_version": 1,
+  "kind": "family",
+  "name": "1N4728A to 1N4761A zener diodes",
+  "datasheets": {
+    "vishay-85816": {
+      "title": "Vishay 1N4728A to 1N4761A datasheet (document 85816)",
+      "url": "https://www.vishay.com/docs/85816/1n4728a.pdf",
+      "rev": "2.7, 7 November 2024",
+      "date": "2026-11-03",
+      "hash": "sha256:eb8913e493841b5d9e32c25ee452764810d6a2acb8f800203f8953df28203f79",
+      "notes": "Pages 1 and 2: VZ nominal at IZT1 with the series' 5 % tolerance, IR at VR, ZZT and ZZK, the surge and regulator currents; VF 1.2 V max at 200 mA; Ptot 1300 mW. DO-41, the band at the cathode; A2/K1 numbering is an ECAD convention."
+    }
+  },
+  "evidence": [
+    "Standard Zener voltage tolerance is ± 5 %",
+    "Forward voltage \\(max\\.\\) IF = 200 mA VF 1\\.2 V",
+    "${mpn} ${vz} ${izt_ma} ${izt2_ma} ${ir} ${vr} ${zz} ${zzk} ${isurge} ${izm} "
+  ],
+  "template": {
+    "schema_version": 1,
+    "kind": "component",
+    "id": "emblink/${short}",
+    "version": "1.0.0",
+    "name": "${mpn}",
+    "category": "diodes",
+    "subcategory": "zener",
+    "description": "Vishay ${mpn}, a 1.3 W zener in DO-41: ${vz} V nominal (${vz_min} to ${vz_max} V, the series' 5 % tolerance) at its test current IZT of ${izt_ma} mA. The breakdown is placed so the voltage at IZT is the nominal one; the reverse current at ${vr} V stays under the datasheet's ${ir} uA and the forward voltage at 200 mA under its 1.2 V.",
+    "keywords": [
+      "Vishay",
+      "${mpn}",
+      "1N47xxA",
+      "DO-41",
+      "zener",
+      "1.3 W",
+      "voltage reference",
+      "regulator",
+      "${vz} V"
+    ],
+    "pins": [
+      {
+        "name": "A",
+        "number": 2,
+        "model": {
+          "kind": "passive"
+        },
+        "doc": "Anode"
+      },
+      {
+        "name": "K",
+        "number": 1,
+        "model": {
+          "kind": "passive"
+        },
+        "doc": "Cathode"
+      }
+    ],
+    "params": {
+      "vz": {
+        "type": "number",
+        "unit": "V",
+        "default": "${vz}",
+        "doc": "Zener voltage at the test current izt",
+        "min": 1,
+        "max": 200
+      },
+      "is": {
+        "type": "number",
+        "unit": "A",
+        "default": "1e-14",
+        "doc": "Forward saturation current",
+        "min": "1e-20",
+        "max": "1m",
+        "advanced": true
+      },
+      "n": {
+        "type": "number",
+        "unit": "",
+        "default": 1,
+        "doc": "Forward emission coefficient",
+        "min": 0.5,
+        "max": 5,
+        "advanced": true
+      },
+      "rs": {
+        "type": "number",
+        "unit": "ohm",
+        "default": 0.5,
+        "doc": "Forward series resistance",
+        "min": 0,
+        "advanced": true
+      },
+      "izt": {
+        "type": "number",
+        "unit": "A",
+        "default": "${izt}",
+        "doc": "Test current at which the voltage is vz (IZT1)",
+        "min": "1u",
+        "max": "0.2",
+        "advanced": true
+      }
+    },
+    "model": {
+      "primitive": "zener"
+    },
+    "symbol": {
+      "svg": "symbol.svg",
+      "width": 60,
+      "height": 20,
+      "pins": {
+        "A": {
+          "x": 0,
+          "y": 10,
+          "side": "left"
+        },
+        "K": {
+          "x": 60,
+          "y": 10,
+          "side": "right"
+        }
+      }
+    },
+    "fidelity": {
+      "functional": null,
+      "timed": null,
+      "electrical": {
+        "claims": "Zener junction placed so the voltage at IZT is the nominal VZ, inside the series' 5 % tolerance; leakage under the table's IR at VR; forward voltage under 1.2 V at 200 mA. DC and low-frequency fixtures from the datasheet's table.",
+        "omissions": [
+          "the knee's softness below IZT (ZZK at IZT2): the model's knee is a sharp exponential",
+          "dynamic resistance: one 0.5 ohm series resistance serves both directions, so the slope above IZT is under the table's ZZT maximum rather than at it",
+          "the temperature coefficient",
+          "capacitance",
+          "power dissipation (1.3 W), the surge current IR and the regulator current IZM and damage",
+          "device-to-device spread within the grade",
+          "noise",
+          "no manufacturer model qualification"
+        ],
+        "validation": [
+          "tests/*.json"
+        ]
+      }
+    },
+    "provenance": {
+      "author": "EmbSIM",
+      "license": "Apache-2.0",
+      "sources": [
+        {
+          "title": "KiCad family/package reference, revision 4e17d759",
+          "url": "https://github.com/KiCad/kicad-symbols/blob/4e17d7595f9691d45d97aea8ad64572652fb5bed/Diode.lib"
+        }
+      ]
+    },
+    "tests": [
+      "tests/*.json"
+    ],
+    "part": {
+      "manufacturer": "Vishay",
+      "mpn": "${mpn}",
+      "package": "DO-41",
+      "datasheet": "${datasheet_url}"
+    },
+    "artwork": {
+      "svg": "artwork.svg"
+    },
+    "i18n": {
+      "fr": {
+        "description": "Vishay ${mpn}, une zener de 1,3 W en DO-41 : ${vz} V nominal (${vz_min} à ${vz_max} V, la tolérance de 5 % de la série) à son courant de test IZT de ${izt_ma} mA. Le claquage est placé pour que la tension à IZT soit la nominale ; le courant inverse à ${vr} V reste sous les ${ir} uA de la fiche technique et la tension directe à 200 mA sous ses 1,2 V.",
+        "fidelity": {
+          "electrical": {
+            "claims": "Jonction zener placée pour que la tension à IZT soit la VZ nominale, dans la tolérance de 5 % de la série ; fuite sous l'IR du tableau à VR ; tension directe sous 1,2 V à 200 mA. Cas de test en continu et basse fréquence tirés du tableau de la fiche technique.",
+            "omissions": [
+              "la douceur du coude sous IZT (ZZK à IZT2) : le coude du modèle est une exponentielle franche",
+              "la résistance dynamique : une seule résistance série de 0,5 ohm sert dans les deux sens, la pente au-dessus d'IZT est donc sous le maximum ZZT du tableau plutôt qu'à sa valeur",
+              "le coefficient de température (TKVZ)",
+              "la capacité",
+              "la puissance dissipée (1,3 W), le courant de surcharge IR et le courant de régulation IZM et les dommages",
+              "la dispersion d'un exemplaire à l'autre dans la classe",
+              "le bruit",
+              "aucune qualification par un modèle du fabricant"
+            ]
+          }
+        }
+      }
+    }
+  },
+  "tests": {
+    "zener": {
+      "schema_version": 1,
+      "kind": "component_test",
+      "name": "zener",
+      "description": "IZT in reverse: the voltage within the series' 5 % of the nominal VZ",
+      "policy": "electrical",
+      "until": "100us",
+      "circuit": {
+        "components": [
+          {
+            "id": "I1",
+            "component": "emblink/isource",
+            "params": {
+              "dc": "${izt}"
+            }
+          },
+          {
+            "id": "DUT",
+            "component": "emblink/${short}"
+          },
+          {
+            "id": "G",
+            "component": "emblink/gnd"
+          }
+        ],
+        "nets": {
+          "VZ": [
+            "I1.-",
+            "DUT.K"
+          ],
+          "GND": [
+            "I1.+",
+            "DUT.A",
+            "G.GND"
+          ]
+        }
+      },
+      "expect": {
+        "net:VZ": {
+          "at": "50us",
+          "min_v": "${vz_min}",
+          "max_v": "${vz_max}"
+        }
+      }
+    },
+    "leakage": {
+      "schema_version": 1,
+      "kind": "component_test",
+      "name": "leakage",
+      "description": "VR across it through 100 kohm: under the datasheet's IR at 25 C",
+      "policy": "electrical",
+      "until": "100us",
+      "circuit": {
+        "components": [
+          {
+            "id": "V1",
+            "component": "emblink/vsource",
+            "params": {
+              "dc": "${vr}"
+            }
+          },
+          {
+            "id": "R1",
+            "component": "emblink/resistor",
+            "params": {
+              "resistance": "100k"
+            }
+          },
+          {
+            "id": "DUT",
+            "component": "emblink/${short}"
+          },
+          {
+            "id": "G",
+            "component": "emblink/gnd"
+          }
+        ],
+        "nets": {
+          "VIN": [
+            "V1.+",
+            "R1.1"
+          ],
+          "VK": [
+            "R1.2",
+            "DUT.K"
+          ],
+          "GND": [
+            "V1.-",
+            "DUT.A",
+            "G.GND"
+          ]
+        }
+      },
+      "expect": {
+        "net:VK": {
+          "at": "50us",
+          "min_v": "${vk_min}",
+          "max_v": "${vr}"
+        }
+      }
+    },
+    "forward": {
+      "schema_version": 1,
+      "kind": "component_test",
+      "name": "forward",
+      "description": "200 mA forward: under the datasheet's 1.2 V",
+      "policy": "electrical",
+      "until": "100us",
+      "circuit": {
+        "components": [
+          {
+            "id": "I1",
+            "component": "emblink/isource",
+            "params": {
+              "dc": 0.2
+            }
+          },
+          {
+            "id": "DUT",
+            "component": "emblink/${short}"
+          },
+          {
+            "id": "G",
+            "component": "emblink/gnd"
+          }
+        ],
+        "nets": {
+          "VD": [
+            "I1.-",
+            "DUT.A"
+          ],
+          "GND": [
+            "I1.+",
+            "DUT.K",
+            "G.GND"
+          ]
+        }
+      },
+      "expect": {
+        "net:VD": {
+          "at": "50us",
+          "min_v": 0.6,
+          "max_v": 1.2
+        }
+      }
+    }
+  },
+  "rows": [
+    {
+      "mpn": "1N4728A",
+      "short": "zener_1n4728a",
+      "vz": 3.3,
+      "vz_min": 3.135,
+      "vz_max": 3.465,
+      "izt_ma": 76,
+      "izt": 0.076,
+      "izt2_ma": 1,
+      "ir": 100,
+      "vr": 1,
+      "zz": 10,
+      "zzk": 400,
+      "isurge": 1380,
+      "izm": 276,
+      "vk_min": 0.0,
+      "datasheet": "vishay-85816"
+    },
+    {
+      "mpn": "1N4729A",
+      "short": "zener_1n4729a",
+      "vz": 3.6,
+      "vz_min": 3.42,
+      "vz_max": 3.78,
+      "izt_ma": 69,
+      "izt": 0.069,
+      "izt2_ma": 1,
+      "ir": 100,
+      "vr": 1,
+      "zz": 10,
+      "zzk": 400,
+      "isurge": 1260,
+      "izm": 252,
+      "vk_min": 0.0,
+      "datasheet": "vishay-85816"
+    },
+    {
+      "mpn": "1N4730A",
+      "short": "zener_1n4730a",
+      "vz": 3.9,
+      "vz_min": 3.705,
+      "vz_max": 4.095,
+      "izt_ma": 64,
+      "izt": 0.064,
+      "izt2_ma": 1,
+      "ir": 50,
+      "vr": 1,
+      "zz": 9,
+      "zzk": 400,
+      "isurge": 1190,
+      "izm": 234,
+      "vk_min": 0.0,
+      "datasheet": "vishay-85816"
+    },
+    {
+      "mpn": "1N4731A",
+      "short": "zener_1n4731a",
+      "vz": 4.3,
+      "vz_min": 4.085,
+      "vz_max": 4.515,
+      "izt_ma": 58,
+      "izt": 0.058,
+      "izt2_ma": 1,
+      "ir": 10,
+      "vr": 1,
+      "zz": 9,
+      "zzk": 400,
+      "isurge": 1070,
+      "izm": 217,
+      "vk_min": 0.0,
+      "datasheet": "vishay-85816"
+    },
+    {
+      "mpn": "1N4732A",
+      "short": "zener_1n4732a",
+      "vz": 4.7,
+      "vz_min": 4.465,
+      "vz_max": 4.935,
+      "izt_ma": 53,
+      "izt": 0.053,
+      "izt2_ma": 1,
+      "ir": 10,
+      "vr": 1,
+      "zz": 8,
+      "zzk": 500,
+      "isurge": 970,
+      "izm": 193,
+      "vk_min": 0.0,
+      "datasheet": "vishay-85816"
+    },
+    {
+      "mpn": "1N4733A",
+      "short": "zener_1n4733a",
+      "vz": 5.1,
+      "vz_min": 4.845,
+      "vz_max": 5.355,
+      "izt_ma": 49,
+      "izt": 0.049,
+      "izt2_ma": 1,
+      "ir": 10,
+      "vr": 1,
+      "zz": 7,
+      "zzk": 550,
+      "isurge": 890,
+      "izm": 178,
+      "vk_min": 0.0,
+      "datasheet": "vishay-85816"
+    },
+    {
+      "mpn": "1N4734A",
+      "short": "zener_1n4734a",
+      "vz": 5.6,
+      "vz_min": 5.32,
+      "vz_max": 5.88,
+      "izt_ma": 45,
+      "izt": 0.045,
+      "izt2_ma": 1,
+      "ir": 10,
+      "vr": 2,
+      "zz": 5,
+      "zzk": 600,
+      "isurge": 810,
+      "izm": 162,
+      "vk_min": 1.0,
+      "datasheet": "vishay-85816"
+    },
+    {
+      "mpn": "1N4735A",
+      "short": "zener_1n4735a",
+      "vz": 6.2,
+      "vz_min": 5.89,
+      "vz_max": 6.51,
+      "izt_ma": 41,
+      "izt": 0.041,
+      "izt2_ma": 1,
+      "ir": 10,
+      "vr": 3,
+      "zz": 2,
+      "zzk": 700,
+      "isurge": 730,
+      "izm": 146,
+      "vk_min": 2.0,
+      "datasheet": "vishay-85816"
+    },
+    {
+      "mpn": "1N4736A",
+      "short": "zener_1n4736a",
+      "vz": 6.8,
+      "vz_min": 6.46,
+      "vz_max": 7.14,
+      "izt_ma": 37,
+      "izt": 0.037,
+      "izt2_ma": 1,
+      "ir": 10,
+      "vr": 4,
+      "zz": 3.5,
+      "zzk": 700,
+      "isurge": 660,
+      "izm": 133,
+      "vk_min": 3.0,
+      "datasheet": "vishay-85816"
+    },
+    {
+      "mpn": "1N4737A",
+      "short": "zener_1n4737a",
+      "vz": 7.5,
+      "vz_min": 7.125,
+      "vz_max": 7.875,
+      "izt_ma": 34,
+      "izt": 0.034,
+      "izt2_ma": 0.5,
+      "ir": 10,
+      "vr": 5,
+      "zz": 4,
+      "zzk": 700,
+      "isurge": 605,
+      "izm": 121,
+      "vk_min": 4.0,
+      "datasheet": "vishay-85816"
+    },
+    {
+      "mpn": "1N4738A",
+      "short": "zener_1n4738a",
+      "vz": 8.2,
+      "vz_min": 7.79,
+      "vz_max": 8.61,
+      "izt_ma": 31,
+      "izt": 0.031,
+      "izt2_ma": 0.5,
+      "ir": 10,
+      "vr": 6,
+      "zz": 4.5,
+      "zzk": 700,
+      "isurge": 550,
+      "izm": 110,
+      "vk_min": 5.0,
+      "datasheet": "vishay-85816"
+    },
+    {
+      "mpn": "1N4739A",
+      "short": "zener_1n4739a",
+      "vz": 9.1,
+      "vz_min": 8.645,
+      "vz_max": 9.555,
+      "izt_ma": 28,
+      "izt": 0.028,
+      "izt2_ma": 0.5,
+      "ir": 10,
+      "vr": 7,
+      "zz": 5,
+      "zzk": 700,
+      "isurge": 500,
+      "izm": 100,
+      "vk_min": 6.0,
+      "datasheet": "vishay-85816"
+    },
+    {
+      "mpn": "1N4740A",
+      "short": "zener_1n4740a",
+      "vz": 10,
+      "vz_min": 9.5,
+      "vz_max": 10.5,
+      "izt_ma": 25,
+      "izt": 0.025,
+      "izt2_ma": 0.25,
+      "ir": 10,
+      "vr": 7.6,
+      "zz": 7,
+      "zzk": 700,
+      "isurge": 454,
+      "izm": 91,
+      "vk_min": 6.6,
+      "datasheet": "vishay-85816"
+    },
+    {
+      "mpn": "1N4741A",
+      "short": "zener_1n4741a",
+      "vz": 11,
+      "vz_min": 10.45,
+      "vz_max": 11.55,
+      "izt_ma": 23,
+      "izt": 0.023,
+      "izt2_ma": 0.25,
+      "ir": 5,
+      "vr": 8.4,
+      "zz": 8,
+      "zzk": 700,
+      "isurge": 414,
+      "izm": 83,
+      "vk_min": 7.9,
+      "datasheet": "vishay-85816"
+    },
+    {
+      "mpn": "1N4742A",
+      "short": "zener_1n4742a",
+      "vz": 12,
+      "vz_min": 11.4,
+      "vz_max": 12.6,
+      "izt_ma": 21,
+      "izt": 0.021,
+      "izt2_ma": 0.25,
+      "ir": 5,
+      "vr": 9.1,
+      "zz": 9,
+      "zzk": 700,
+      "isurge": 380,
+      "izm": 76,
+      "vk_min": 8.6,
+      "datasheet": "vishay-85816"
+    },
+    {
+      "mpn": "1N4743A",
+      "short": "zener_1n4743a",
+      "vz": 13,
+      "vz_min": 12.35,
+      "vz_max": 13.65,
+      "izt_ma": 19,
+      "izt": 0.019,
+      "izt2_ma": 0.25,
+      "ir": 5,
+      "vr": 9.9,
+      "zz": 10,
+      "zzk": 700,
+      "isurge": 344,
+      "izm": 69,
+      "vk_min": 9.4,
+      "datasheet": "vishay-85816"
+    },
+    {
+      "mpn": "1N4744A",
+      "short": "zener_1n4744a",
+      "vz": 15,
+      "vz_min": 14.25,
+      "vz_max": 15.75,
+      "izt_ma": 17,
+      "izt": 0.017,
+      "izt2_ma": 0.25,
+      "ir": 5,
+      "vr": 11.4,
+      "zz": 14,
+      "zzk": 700,
+      "isurge": 304,
+      "izm": 61,
+      "vk_min": 10.9,
+      "datasheet": "vishay-85816"
+    },
+    {
+      "mpn": "1N4745A",
+      "short": "zener_1n4745a",
+      "vz": 16,
+      "vz_min": 15.2,
+      "vz_max": 16.8,
+      "izt_ma": 15.5,
+      "izt": 0.0155,
+      "izt2_ma": 0.25,
+      "ir": 5,
+      "vr": 12.2,
+      "zz": 16,
+      "zzk": 700,
+      "isurge": 285,
+      "izm": 57,
+      "vk_min": 11.7,
+      "datasheet": "vishay-85816"
+    },
+    {
+      "mpn": "1N4746A",
+      "short": "zener_1n4746a",
+      "vz": 18,
+      "vz_min": 17.1,
+      "vz_max": 18.9,
+      "izt_ma": 14,
+      "izt": 0.014,
+      "izt2_ma": 0.25,
+      "ir": 5,
+      "vr": 13.7,
+      "zz": 20,
+      "zzk": 750,
+      "isurge": 250,
+      "izm": 50,
+      "vk_min": 13.2,
+      "datasheet": "vishay-85816"
+    },
+    {
+      "mpn": "1N4747A",
+      "short": "zener_1n4747a",
+      "vz": 20,
+      "vz_min": 19.0,
+      "vz_max": 21.0,
+      "izt_ma": 12.5,
+      "izt": 0.0125,
+      "izt2_ma": 0.25,
+      "ir": 5,
+      "vr": 15.2,
+      "zz": 22,
+      "zzk": 750,
+      "isurge": 225,
+      "izm": 45,
+      "vk_min": 14.7,
+      "datasheet": "vishay-85816"
+    },
+    {
+      "mpn": "1N4748A",
+      "short": "zener_1n4748a",
+      "vz": 22,
+      "vz_min": 20.9,
+      "vz_max": 23.1,
+      "izt_ma": 11.5,
+      "izt": 0.0115,
+      "izt2_ma": 0.25,
+      "ir": 5,
+      "vr": 16.7,
+      "zz": 23,
+      "zzk": 750,
+      "isurge": 205,
+      "izm": 41,
+      "vk_min": 16.2,
+      "datasheet": "vishay-85816"
+    },
+    {
+      "mpn": "1N4749A",
+      "short": "zener_1n4749a",
+      "vz": 24,
+      "vz_min": 22.8,
+      "vz_max": 25.2,
+      "izt_ma": 10.5,
+      "izt": 0.0105,
+      "izt2_ma": 0.25,
+      "ir": 5,
+      "vr": 18.2,
+      "zz": 25,
+      "zzk": 750,
+      "isurge": 190,
+      "izm": 38,
+      "vk_min": 17.7,
+      "datasheet": "vishay-85816"
+    },
+    {
+      "mpn": "1N4750A",
+      "short": "zener_1n4750a",
+      "vz": 27,
+      "vz_min": 25.65,
+      "vz_max": 28.35,
+      "izt_ma": 9.5,
+      "izt": 0.0095,
+      "izt2_ma": 0.25,
+      "ir": 5,
+      "vr": 20.6,
+      "zz": 35,
+      "zzk": 750,
+      "isurge": 170,
+      "izm": 34,
+      "vk_min": 20.1,
+      "datasheet": "vishay-85816"
+    },
+    {
+      "mpn": "1N4751A",
+      "short": "zener_1n4751a",
+      "vz": 30,
+      "vz_min": 28.5,
+      "vz_max": 31.5,
+      "izt_ma": 8.5,
+      "izt": 0.0085,
+      "izt2_ma": 0.25,
+      "ir": 5,
+      "vr": 22.8,
+      "zz": 40,
+      "zzk": 1000,
+      "isurge": 150,
+      "izm": 30,
+      "vk_min": 22.3,
+      "datasheet": "vishay-85816"
+    },
+    {
+      "mpn": "1N4752A",
+      "short": "zener_1n4752a",
+      "vz": 33,
+      "vz_min": 31.35,
+      "vz_max": 34.65,
+      "izt_ma": 7.5,
+      "izt": 0.0075,
+      "izt2_ma": 0.25,
+      "ir": 5,
+      "vr": 25.1,
+      "zz": 45,
+      "zzk": 1000,
+      "isurge": 135,
+      "izm": 27,
+      "vk_min": 24.6,
+      "datasheet": "vishay-85816"
+    },
+    {
+      "mpn": "1N4753A",
+      "short": "zener_1n4753a",
+      "vz": 36,
+      "vz_min": 34.2,
+      "vz_max": 37.8,
+      "izt_ma": 7,
+      "izt": 0.007,
+      "izt2_ma": 0.25,
+      "ir": 5,
+      "vr": 27.4,
+      "zz": 50,
+      "zzk": 1000,
+      "isurge": 125,
+      "izm": 25,
+      "vk_min": 26.9,
+      "datasheet": "vishay-85816"
+    },
+    {
+      "mpn": "1N4754A",
+      "short": "zener_1n4754a",
+      "vz": 39,
+      "vz_min": 37.05,
+      "vz_max": 40.95,
+      "izt_ma": 6.5,
+      "izt": 0.0065,
+      "izt2_ma": 0.25,
+      "ir": 5,
+      "vr": 29.7,
+      "zz": 60,
+      "zzk": 1000,
+      "isurge": 115,
+      "izm": 23,
+      "vk_min": 29.2,
+      "datasheet": "vishay-85816"
+    },
+    {
+      "mpn": "1N4755A",
+      "short": "zener_1n4755a",
+      "vz": 43,
+      "vz_min": 40.85,
+      "vz_max": 45.15,
+      "izt_ma": 6,
+      "izt": 0.006,
+      "izt2_ma": 0.25,
+      "ir": 5,
+      "vr": 32.7,
+      "zz": 70,
+      "zzk": 1500,
+      "isurge": 110,
+      "izm": 22,
+      "vk_min": 32.2,
+      "datasheet": "vishay-85816"
+    },
+    {
+      "mpn": "1N4756A",
+      "short": "zener_1n4756a",
+      "vz": 47,
+      "vz_min": 44.65,
+      "vz_max": 49.35,
+      "izt_ma": 5.5,
+      "izt": 0.0055,
+      "izt2_ma": 0.25,
+      "ir": 5,
+      "vr": 35.8,
+      "zz": 80,
+      "zzk": 1500,
+      "isurge": 95,
+      "izm": 19,
+      "vk_min": 35.3,
+      "datasheet": "vishay-85816"
+    },
+    {
+      "mpn": "1N4757A",
+      "short": "zener_1n4757a",
+      "vz": 51,
+      "vz_min": 48.45,
+      "vz_max": 53.55,
+      "izt_ma": 5,
+      "izt": 0.005,
+      "izt2_ma": 0.25,
+      "ir": 5,
+      "vr": 38.8,
+      "zz": 95,
+      "zzk": 1500,
+      "isurge": 90,
+      "izm": 18,
+      "vk_min": 38.3,
+      "datasheet": "vishay-85816"
+    },
+    {
+      "mpn": "1N4758A",
+      "short": "zener_1n4758a",
+      "vz": 56,
+      "vz_min": 53.2,
+      "vz_max": 58.8,
+      "izt_ma": 4.5,
+      "izt": 0.0045,
+      "izt2_ma": 0.25,
+      "ir": 5,
+      "vr": 42.6,
+      "zz": 110,
+      "zzk": 2000,
+      "isurge": 80,
+      "izm": 16,
+      "vk_min": 42.1,
+      "datasheet": "vishay-85816"
+    },
+    {
+      "mpn": "1N4759A",
+      "short": "zener_1n4759a",
+      "vz": 62,
+      "vz_min": 58.9,
+      "vz_max": 65.1,
+      "izt_ma": 4,
+      "izt": 0.004,
+      "izt2_ma": 0.25,
+      "ir": 5,
+      "vr": 47.1,
+      "zz": 125,
+      "zzk": 2000,
+      "isurge": 70,
+      "izm": 14,
+      "vk_min": 46.6,
+      "datasheet": "vishay-85816"
+    },
+    {
+      "mpn": "1N4760A",
+      "short": "zener_1n4760a",
+      "vz": 68,
+      "vz_min": 64.6,
+      "vz_max": 71.4,
+      "izt_ma": 3.7,
+      "izt": 0.0037,
+      "izt2_ma": 0.25,
+      "ir": 5,
+      "vr": 51.7,
+      "zz": 150,
+      "zzk": 2000,
+      "isurge": 65,
+      "izm": 13,
+      "vk_min": 51.2,
+      "datasheet": "vishay-85816"
+    },
+    {
+      "mpn": "1N4761A",
+      "short": "zener_1n4761a",
+      "vz": 75,
+      "vz_min": 71.25,
+      "vz_max": 78.75,
+      "izt_ma": 3.3,
+      "izt": 0.0033,
+      "izt2_ma": 0.25,
+      "ir": 5,
+      "vr": 56,
+      "zz": 175,
+      "zzk": 2000,
+      "isurge": 60,
+      "izm": 12,
+      "vk_min": 55.5,
+      "datasheet": "vishay-85816"
+    }
+  ]
+}

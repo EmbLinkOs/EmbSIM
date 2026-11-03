@@ -1,0 +1,812 @@
+{
+  "schema_version": 1,
+  "kind": "family",
+  "name": "onsemi MC7900 negative voltage regulators",
+  "datasheets": {
+    "onsemi-mc7900": {
+      "title": "onsemi MC7900 series negative voltage regulators datasheet (MC7900/D)",
+      "url": "https://www.onsemi.com/pdf/datasheet/mc7900-d.pdf",
+      "rev": "current at retrieval",
+      "date": "2026-11-03",
+      "hash": "sha256:1c69e4a310464bae135bfb64f4f185059031386fb3366cb58facea406b2b26f7",
+      "notes": "TO-220 pinout (1 ground, 2 input, 3 output; heatsink to pin 2); per voltage an electrical characteristics table for the B and C grades and one for the AC grade: VO at 25 C, input bias current, dropout 1.3 V typical at 1.0 A, load regulation to 1.5 A; ordering codes."
+    }
+  },
+  "evidence": [
+    "Pin 1\\. Ground",
+    "2\\. Input 3\\. Output",
+    "Dropout Voltage VI−VO Vdc IO = 1\\.0 A, TJ = \\+25°C − 1\\.3 −",
+    "Input Bias Current \\(TJ = \\+25°C\\) IIB − ${iq} ${iq_max} mA|Input Bias Current IIB − ${iq} ${iq_max} mA"
+  ],
+  "template": {
+    "schema_version": 1,
+    "kind": "component",
+    "id": "emblink/${short}",
+    "version": "1.0.0",
+    "name": "${mpn}",
+    "category": "analog_ics",
+    "subcategory": "regulators",
+    "description": "onsemi ${mpn}, a 1.0 A fixed -${vo} V negative linear regulator in TO-220 (GND 1, IN 2, OUT 3; the tab is the input): ${vo_min} to ${vo_max} V at 25 C (${grade}), ${iq} mA typical input bias current (${iq_max} mA maximum), 1.3 V typical dropout at 1.0 A. The 79xx complement of the 78xx for split supplies; ${order} is its orderable TO-220 code.",
+    "keywords": [
+      "onsemi",
+      "${mpn}",
+      "${order}",
+      "MC79xx",
+      "79${vcode}",
+      "TO-220",
+      "regulator",
+      "linear",
+      "fixed",
+      "negative",
+      "-${vo} V",
+      "power supply"
+    ],
+    "pins": [
+      {
+        "name": "GND",
+        "number": 1,
+        "model": {
+          "kind": "power",
+          "role": "ground"
+        },
+        "doc": "Ground"
+      },
+      {
+        "name": "IN",
+        "number": 2,
+        "model": {
+          "kind": "analog"
+        },
+        "doc": "Unregulated negative input (and the tab)"
+      },
+      {
+        "name": "OUT",
+        "number": 3,
+        "model": {
+          "kind": "analog"
+        },
+        "doc": "Regulated negative output"
+      }
+    ],
+    "params": {
+      "vout": {
+        "type": "number",
+        "unit": "V",
+        "default": "${vo}",
+        "doc": "Output voltage magnitude (the output is this far below GND)",
+        "min": 0.5,
+        "max": 50
+      },
+      "dropout": {
+        "type": "number",
+        "unit": "V",
+        "default": 1.3,
+        "doc": "Minimum input-output difference for regulation",
+        "min": 0,
+        "max": 5
+      },
+      "imax": {
+        "type": "number",
+        "unit": "A",
+        "default": 2.0,
+        "doc": "Current limit",
+        "min": "1m",
+        "max": 20
+      },
+      "quiescent": {
+        "type": "number",
+        "unit": "A",
+        "default": "${iq_a}",
+        "doc": "Ground pin current",
+        "min": 0,
+        "advanced": true
+      },
+      "polarity": {
+        "type": "number",
+        "unit": "",
+        "default": -1,
+        "doc": "-1: a negative regulator, IN and OUT below GND",
+        "min": -1,
+        "max": 1,
+        "advanced": true
+      }
+    },
+    "model": {
+      "primitive": "regulator"
+    },
+    "symbol": {
+      "svg": "symbol.svg",
+      "width": 60,
+      "height": 30,
+      "pins": {
+        "IN": {
+          "x": 0,
+          "y": 10,
+          "side": "left"
+        },
+        "OUT": {
+          "x": 60,
+          "y": 10,
+          "side": "right"
+        },
+        "GND": {
+          "x": 30,
+          "y": 30,
+          "side": "bottom"
+        }
+      }
+    },
+    "fidelity": {
+      "functional": null,
+      "timed": null,
+      "electrical": {
+        "claims": "Negative fixed regulator (the regulator primitive at polarity -1) at the table's typical output voltage (inside its 25 C minimum and maximum), dropping out below the typical 1.3 V input-output difference, its ground pin carrying the typical input bias current. DC fixtures from the datasheet's table at its own test conditions.",
+        "omissions": [
+          "line and load regulation (the output does not move with input or load while regulating; the table allows tens of mV)",
+          "the current limit: set at 2.0 A, above the 1.5 A of the load regulation test (the datasheet gives the peak output current only as a curve), and the safe-area compensation",
+          "thermal shutdown and junction heating",
+          "ripple rejection (70 dB typical) and output noise (40 uV typical)",
+          "stability against the output capacitor and the start-up transient (a negative regulator needs its input and output capacitors)",
+          "the temperature coefficient (-1.0 mV/C) and the output voltage over the full temperature and line range",
+          "device-to-device spread within the grade",
+          "no manufacturer model qualification"
+        ],
+        "validation": [
+          "tests/*.json"
+        ]
+      }
+    },
+    "provenance": {
+      "author": "EmbSIM",
+      "license": "Apache-2.0",
+      "sources": []
+    },
+    "tests": [
+      "tests/*.json"
+    ],
+    "part": {
+      "manufacturer": "onsemi",
+      "mpn": "${mpn}",
+      "package": "TO-220",
+      "datasheet": "${datasheet_url}"
+    },
+    "i18n": {
+      "fr": {
+        "description": "onsemi ${mpn}, un régulateur linéaire négatif fixe de -${vo_fr} V et 1,0 A en TO-220 (GND 1, IN 2, OUT 3 ; la languette est l'entrée) : ${vo_min_fr} à ${vo_max_fr} V à 25 °C (${grade_fr}), ${iq_fr} mA de courant de polarisation d'entrée typique (${iq_max_fr} mA au plus), 1,3 V de chute typique à 1,0 A. Le complément 79xx du 78xx pour les alimentations symétriques ; ${order} est son code de commande en TO-220.",
+        "fidelity": {
+          "electrical": {
+            "claims": "Régulateur fixe négatif (la primitive regulator à la polarité -1) à la tension de sortie typique du tableau (entre son minimum et son maximum à 25 °C), décrochant sous la différence entrée-sortie typique de 1,3 V, sa broche de masse portant le courant de polarisation d'entrée typique. Cas de test en continu tirés du tableau de la fiche technique, à ses propres conditions de test.",
+            "omissions": [
+              "la régulation de ligne et de charge (la sortie ne bouge pas avec l'entrée ni la charge tant qu'elle régule ; le tableau admet des dizaines de mV)",
+              "la limite de courant : fixée à 2,0 A, au-delà des 1,5 A du test de régulation de charge (la fiche technique ne donne le courant de sortie crête qu'en courbe), et la compensation de zone de sécurité",
+              "la coupure thermique et l'échauffement de la jonction",
+              "la réjection d'ondulation (70 dB typique) et le bruit de sortie (40 uV typique)",
+              "la stabilité selon le condensateur de sortie et le transitoire de démarrage (un régulateur négatif exige ses condensateurs d'entrée et de sortie)",
+              "le coefficient de température (-1,0 mV/°C) et la tension de sortie sur toute la plage de température et de ligne",
+              "la dispersion d'un exemplaire à l'autre dans la classe",
+              "aucune qualification par un modèle du fabricant"
+            ]
+          }
+        }
+      }
+    }
+  },
+  "tests": {
+    "regulation": {
+      "schema_version": 1,
+      "kind": "component_test",
+      "name": "regulation",
+      "description": "The table's own conditions (VI = ${vin} V, IO = 500 mA): VO inside its 25 C minimum and maximum",
+      "policy": "electrical",
+      "until": "100us",
+      "circuit": {
+        "components": [
+          {
+            "id": "V1",
+            "component": "emblink/vsource",
+            "params": {
+              "dc": "${vin}"
+            }
+          },
+          {
+            "id": "DUT",
+            "component": "emblink/${short}"
+          },
+          {
+            "id": "RL",
+            "component": "emblink/resistor",
+            "params": {
+              "resistance": "${rl_500}",
+              "tolerance": 0
+            }
+          },
+          {
+            "id": "G",
+            "component": "emblink/gnd"
+          }
+        ],
+        "nets": {
+          "VIN": [
+            "V1.+",
+            "DUT.IN"
+          ],
+          "VOUT": [
+            "DUT.OUT",
+            "RL.1"
+          ],
+          "GND": [
+            "V1.-",
+            "DUT.GND",
+            "RL.2",
+            "G.GND"
+          ]
+        }
+      },
+      "expect": {
+        "net:VOUT": {
+          "at": "50us",
+          "min_v": "${vo_lo}",
+          "max_v": "${vo_hi}"
+        }
+      }
+    },
+    "full_load": {
+      "schema_version": 1,
+      "kind": "component_test",
+      "name": "full_load",
+      "description": "1.0 A with the typical 1.3 V dropout plus 0.5 V of headroom: still regulating inside the 25 C limits",
+      "policy": "electrical",
+      "until": "100us",
+      "circuit": {
+        "components": [
+          {
+            "id": "V1",
+            "component": "emblink/vsource",
+            "params": {
+              "dc": "${vin_hd}"
+            }
+          },
+          {
+            "id": "DUT",
+            "component": "emblink/${short}"
+          },
+          {
+            "id": "RL",
+            "component": "emblink/resistor",
+            "params": {
+              "resistance": "${rl_1a}",
+              "tolerance": 0
+            }
+          },
+          {
+            "id": "G",
+            "component": "emblink/gnd"
+          }
+        ],
+        "nets": {
+          "VIN": [
+            "V1.+",
+            "DUT.IN"
+          ],
+          "VOUT": [
+            "DUT.OUT",
+            "RL.1"
+          ],
+          "GND": [
+            "V1.-",
+            "DUT.GND",
+            "RL.2",
+            "G.GND"
+          ]
+        }
+      },
+      "expect": {
+        "net:VOUT": {
+          "at": "50us",
+          "min_v": "${vo_lo}",
+          "max_v": "${vo_hi}"
+        }
+      }
+    },
+    "dropout": {
+      "schema_version": 1,
+      "kind": "component_test",
+      "name": "dropout",
+      "description": "0.8 V of headroom at 1.0 A, under the typical 1.3 V dropout: the output follows the input 1.3 V above it",
+      "policy": "electrical",
+      "until": "100us",
+      "circuit": {
+        "components": [
+          {
+            "id": "V1",
+            "component": "emblink/vsource",
+            "params": {
+              "dc": "${vin_do}"
+            }
+          },
+          {
+            "id": "DUT",
+            "component": "emblink/${short}"
+          },
+          {
+            "id": "RL",
+            "component": "emblink/resistor",
+            "params": {
+              "resistance": "${rl_1a}",
+              "tolerance": 0
+            }
+          },
+          {
+            "id": "G",
+            "component": "emblink/gnd"
+          }
+        ],
+        "nets": {
+          "VIN": [
+            "V1.+",
+            "DUT.IN"
+          ],
+          "VOUT": [
+            "DUT.OUT",
+            "RL.1"
+          ],
+          "GND": [
+            "V1.-",
+            "DUT.GND",
+            "RL.2",
+            "G.GND"
+          ]
+        }
+      },
+      "expect": {
+        "net:VOUT": {
+          "at": "50us",
+          "min_v": "${vdo_lo}",
+          "max_v": "${vdo_hi}"
+        }
+      }
+    },
+    "quiescent": {
+      "schema_version": 1,
+      "kind": "component_test",
+      "name": "quiescent",
+      "description": "Input through 100 ohm with a 10 kohm load: the drop is the load current plus the ground pin's, under the table's ${iq_max} mA maximum input bias current",
+      "policy": "electrical",
+      "until": "100us",
+      "circuit": {
+        "components": [
+          {
+            "id": "V1",
+            "component": "emblink/vsource",
+            "params": {
+              "dc": "${vin}"
+            }
+          },
+          {
+            "id": "RS",
+            "component": "emblink/resistor",
+            "params": {
+              "resistance": 100,
+              "tolerance": 0
+            }
+          },
+          {
+            "id": "DUT",
+            "component": "emblink/${short}"
+          },
+          {
+            "id": "RL",
+            "component": "emblink/resistor",
+            "params": {
+              "resistance": "10k",
+              "tolerance": 0
+            }
+          },
+          {
+            "id": "G",
+            "component": "emblink/gnd"
+          }
+        ],
+        "nets": {
+          "VS": [
+            "V1.+",
+            "RS.1"
+          ],
+          "VIN": [
+            "RS.2",
+            "DUT.IN"
+          ],
+          "VOUT": [
+            "DUT.OUT",
+            "RL.1"
+          ],
+          "GND": [
+            "V1.-",
+            "DUT.GND",
+            "RL.2",
+            "G.GND"
+          ]
+        }
+      },
+      "expect": {
+        "net:VIN": {
+          "at": "50us",
+          "min_v": "${vq_lo}",
+          "max_v": "${vq_hi}"
+        }
+      }
+    }
+  },
+  "rows": [
+    {
+      "mpn": "MC7905B",
+      "short": "mc7905b",
+      "order": "MC7905BTG",
+      "vcode": "05",
+      "vo": 5,
+      "vo_fr": "5",
+      "vo_min": -4.8,
+      "vo_max": -5.2,
+      "vo_min_fr": "-4,8",
+      "vo_max_fr": "-5,2",
+      "vo_lo": -5.2,
+      "vo_hi": -4.8,
+      "iq": 4.3,
+      "iq_fr": "4,3",
+      "iq_max": 8,
+      "iq_max_fr": "8",
+      "iq_a": 0.0043,
+      "grade": "the B grade, 4 %, -40 to 125 C",
+      "grade_fr": "la classe B, 4 %, -40 à 125 °C",
+      "vin": -10,
+      "rl_500": 10.0,
+      "rl_1a": 5.0,
+      "vin_hd": -6.8,
+      "vin_do": -5.8,
+      "vdo_lo": -4.65,
+      "vdo_hi": -4.35,
+      "vq_lo": -9.95,
+      "vq_hi": -9.15,
+      "datasheet": "onsemi-mc7900",
+      "evidence": [
+        "MC7905B(?:, MC79\\d\\dC)? ELECTRICAL CHARACTERISTICS \\(VI = − ?#{vin_abs} V, IO = 500 mA",
+        "Output Voltage \\(TJ = \\+25°C\\) VO −4\\.8 −5\\.0 −5\\.2 Vdc",
+        "MC7905BTG "
+      ],
+      "vin_abs": 10
+    },
+    {
+      "mpn": "MC7905C",
+      "short": "mc7905c",
+      "order": "MC7905CTG",
+      "vcode": "05",
+      "vo": 5,
+      "vo_fr": "5",
+      "vo_min": -4.8,
+      "vo_max": -5.2,
+      "vo_min_fr": "-4,8",
+      "vo_max_fr": "-5,2",
+      "vo_lo": -5.2,
+      "vo_hi": -4.8,
+      "iq": 4.3,
+      "iq_fr": "4,3",
+      "iq_max": 8,
+      "iq_max_fr": "8",
+      "iq_a": 0.0043,
+      "grade": "the C grade, 4 %, 0 to 125 C",
+      "grade_fr": "la classe C, 4 %, 0 à 125 °C",
+      "vin": -10,
+      "rl_500": 10.0,
+      "rl_1a": 5.0,
+      "vin_hd": -6.8,
+      "vin_do": -5.8,
+      "vdo_lo": -4.65,
+      "vdo_hi": -4.35,
+      "vq_lo": -9.95,
+      "vq_hi": -9.15,
+      "datasheet": "onsemi-mc7900",
+      "evidence": [
+        "MC7905C(?:, MC79\\d\\dC)? ELECTRICAL CHARACTERISTICS \\(VI = − ?#{vin_abs} V, IO = 500 mA",
+        "Output Voltage \\(TJ = \\+25°C\\) VO −4\\.8 −5\\.0 −5\\.2 Vdc",
+        "MC7905CTG "
+      ],
+      "vin_abs": 10
+    },
+    {
+      "mpn": "MC7906C",
+      "short": "mc7906c",
+      "order": "MC7906CTG",
+      "vcode": "06",
+      "vo": 6,
+      "vo_fr": "6",
+      "vo_min": -5.75,
+      "vo_max": -6.25,
+      "vo_min_fr": "-5,75",
+      "vo_max_fr": "-6,25",
+      "vo_lo": -6.25,
+      "vo_hi": -5.75,
+      "iq": 4.3,
+      "iq_fr": "4,3",
+      "iq_max": 8,
+      "iq_max_fr": "8",
+      "iq_a": 0.0043,
+      "grade": "the C grade, 4 %, 0 to 125 C",
+      "grade_fr": "la classe C, 4 %, 0 à 125 °C",
+      "vin": -11,
+      "rl_500": 12.0,
+      "rl_1a": 6.0,
+      "vin_hd": -7.8,
+      "vin_do": -6.8,
+      "vdo_lo": -5.65,
+      "vdo_hi": -5.35,
+      "vq_lo": -10.94,
+      "vq_hi": -10.14,
+      "datasheet": "onsemi-mc7900",
+      "evidence": [
+        "MC7906C(?:, MC79\\d\\dC)? ELECTRICAL CHARACTERISTICS \\(VI = − ?#{vin_abs} V, IO = 500 mA",
+        "Output Voltage \\(TJ = \\+25°C\\) VO −5\\.75 −6\\.0 −6\\.25 Vdc",
+        "MC7906CTG "
+      ],
+      "vin_abs": 11
+    },
+    {
+      "mpn": "MC7912B",
+      "short": "mc7912b",
+      "order": "MC7912BTG",
+      "vcode": "12",
+      "vo": 12,
+      "vo_fr": "12",
+      "vo_min": -11.5,
+      "vo_max": -12.5,
+      "vo_min_fr": "-11,5",
+      "vo_max_fr": "-12,5",
+      "vo_lo": -12.5,
+      "vo_hi": -11.5,
+      "iq": 4.4,
+      "iq_fr": "4,4",
+      "iq_max": 8,
+      "iq_max_fr": "8",
+      "iq_a": 0.0044,
+      "grade": "the B grade, 4 %, -40 to 125 C",
+      "grade_fr": "la classe B, 4 %, -40 à 125 °C",
+      "vin": -19,
+      "rl_500": 24.0,
+      "rl_1a": 12.0,
+      "vin_hd": -13.8,
+      "vin_do": -12.8,
+      "vdo_lo": -11.65,
+      "vdo_hi": -11.35,
+      "vq_lo": -18.88,
+      "vq_hi": -18.08,
+      "datasheet": "onsemi-mc7900",
+      "evidence": [
+        "MC7912B(?:, MC79\\d\\dC)? ELECTRICAL CHARACTERISTICS \\(VI = − ?#{vin_abs} V, IO = 500 mA",
+        "Output Voltage \\(TJ = \\+25°C\\) VO −11\\.5 −12 −12\\.5 Vdc",
+        "MC7912BTG "
+      ],
+      "vin_abs": 19
+    },
+    {
+      "mpn": "MC7912C",
+      "short": "mc7912c",
+      "order": "MC7912CTG",
+      "vcode": "12",
+      "vo": 12,
+      "vo_fr": "12",
+      "vo_min": -11.5,
+      "vo_max": -12.5,
+      "vo_min_fr": "-11,5",
+      "vo_max_fr": "-12,5",
+      "vo_lo": -12.5,
+      "vo_hi": -11.5,
+      "iq": 4.4,
+      "iq_fr": "4,4",
+      "iq_max": 8,
+      "iq_max_fr": "8",
+      "iq_a": 0.0044,
+      "grade": "the C grade, 4 %, 0 to 125 C",
+      "grade_fr": "la classe C, 4 %, 0 à 125 °C",
+      "vin": -19,
+      "rl_500": 24.0,
+      "rl_1a": 12.0,
+      "vin_hd": -13.8,
+      "vin_do": -12.8,
+      "vdo_lo": -11.65,
+      "vdo_hi": -11.35,
+      "vq_lo": -18.88,
+      "vq_hi": -18.08,
+      "datasheet": "onsemi-mc7900",
+      "evidence": [
+        "MC7912C(?:, MC79\\d\\dC)? ELECTRICAL CHARACTERISTICS \\(VI = − ?#{vin_abs} V, IO = 500 mA",
+        "Output Voltage \\(TJ = \\+25°C\\) VO −11\\.5 −12 −12\\.5 Vdc",
+        "MC7912CTG "
+      ],
+      "vin_abs": 19
+    },
+    {
+      "mpn": "MC7912AC",
+      "short": "mc7912ac",
+      "order": "MC7912ACTG",
+      "vcode": "12",
+      "vo": 12,
+      "vo_fr": "12",
+      "vo_min": -11.75,
+      "vo_max": -12.25,
+      "vo_min_fr": "-11,75",
+      "vo_max_fr": "-12,25",
+      "vo_lo": -12.25,
+      "vo_hi": -11.75,
+      "iq": 4.4,
+      "iq_fr": "4,4",
+      "iq_max": 8,
+      "iq_max_fr": "8",
+      "iq_a": 0.0044,
+      "grade": "the AC grade, 2 %, 0 to 125 C",
+      "grade_fr": "la classe AC, 2 %, 0 à 125 °C",
+      "vin": -19,
+      "rl_500": 24.0,
+      "rl_1a": 12.0,
+      "vin_hd": -13.8,
+      "vin_do": -12.8,
+      "vdo_lo": -11.65,
+      "vdo_hi": -11.35,
+      "vq_lo": -18.88,
+      "vq_hi": -18.08,
+      "datasheet": "onsemi-mc7900",
+      "evidence": [
+        "MC7912AC(?:, MC79\\d\\dC)? ELECTRICAL CHARACTERISTICS \\(VI = − ?#{vin_abs} V, IO = 500 mA",
+        "Output Voltage \\(TJ = \\+25°C\\) VO −11\\.75 −12 −12\\.25 Vdc",
+        "MC7912ACTG "
+      ],
+      "vin_abs": 19
+    },
+    {
+      "mpn": "MC7915B",
+      "short": "mc7915b",
+      "order": "MC7915BTG",
+      "vcode": "15",
+      "vo": 15,
+      "vo_fr": "15",
+      "vo_min": -14.4,
+      "vo_max": -15.6,
+      "vo_min_fr": "-14,4",
+      "vo_max_fr": "-15,6",
+      "vo_lo": -15.6,
+      "vo_hi": -14.4,
+      "iq": 4.4,
+      "iq_fr": "4,4",
+      "iq_max": 8,
+      "iq_max_fr": "8",
+      "iq_a": 0.0044,
+      "grade": "the B grade, 4 %, -40 to 125 C",
+      "grade_fr": "la classe B, 4 %, -40 à 125 °C",
+      "vin": -23,
+      "rl_500": 30.0,
+      "rl_1a": 15.0,
+      "vin_hd": -16.8,
+      "vin_do": -15.8,
+      "vdo_lo": -14.65,
+      "vdo_hi": -14.35,
+      "vq_lo": -22.85,
+      "vq_hi": -22.05,
+      "datasheet": "onsemi-mc7900",
+      "evidence": [
+        "MC7915B(?:, MC79\\d\\dC)? ELECTRICAL CHARACTERISTICS \\(VI = − ?#{vin_abs} V, IO = 500 mA",
+        "Output Voltage \\(TJ = \\+25°C\\) VO −14\\.4 −15 −15\\.6 Vdc",
+        "MC7915BTG "
+      ],
+      "vin_abs": 23
+    },
+    {
+      "mpn": "MC7915C",
+      "short": "mc7915c",
+      "order": "MC7915CTG",
+      "vcode": "15",
+      "vo": 15,
+      "vo_fr": "15",
+      "vo_min": -14.4,
+      "vo_max": -15.6,
+      "vo_min_fr": "-14,4",
+      "vo_max_fr": "-15,6",
+      "vo_lo": -15.6,
+      "vo_hi": -14.4,
+      "iq": 4.4,
+      "iq_fr": "4,4",
+      "iq_max": 8,
+      "iq_max_fr": "8",
+      "iq_a": 0.0044,
+      "grade": "the C grade, 4 %, 0 to 125 C",
+      "grade_fr": "la classe C, 4 %, 0 à 125 °C",
+      "vin": -23,
+      "rl_500": 30.0,
+      "rl_1a": 15.0,
+      "vin_hd": -16.8,
+      "vin_do": -15.8,
+      "vdo_lo": -14.65,
+      "vdo_hi": -14.35,
+      "vq_lo": -22.85,
+      "vq_hi": -22.05,
+      "datasheet": "onsemi-mc7900",
+      "evidence": [
+        "MC7915C(?:, MC79\\d\\dC)? ELECTRICAL CHARACTERISTICS \\(VI = − ?#{vin_abs} V, IO = 500 mA",
+        "Output Voltage \\(TJ = \\+25°C\\) VO −14\\.4 −15 −15\\.6 Vdc",
+        "MC7915CTG "
+      ],
+      "vin_abs": 23
+    },
+    {
+      "mpn": "MC7915AC",
+      "short": "mc7915ac",
+      "order": "MC7915ACTG",
+      "vcode": "15",
+      "vo": 15,
+      "vo_fr": "15",
+      "vo_min": -14.7,
+      "vo_max": -15.3,
+      "vo_min_fr": "-14,7",
+      "vo_max_fr": "-15,3",
+      "vo_lo": -15.3,
+      "vo_hi": -14.7,
+      "iq": 4.4,
+      "iq_fr": "4,4",
+      "iq_max": 8,
+      "iq_max_fr": "8",
+      "iq_a": 0.0044,
+      "grade": "the AC grade, 2 %, 0 to 125 C",
+      "grade_fr": "la classe AC, 2 %, 0 à 125 °C",
+      "vin": -23,
+      "rl_500": 30.0,
+      "rl_1a": 15.0,
+      "vin_hd": -16.8,
+      "vin_do": -15.8,
+      "vdo_lo": -14.65,
+      "vdo_hi": -14.35,
+      "vq_lo": -22.85,
+      "vq_hi": -22.05,
+      "datasheet": "onsemi-mc7900",
+      "evidence": [
+        "MC7915AC(?:, MC79\\d\\dC)? ELECTRICAL CHARACTERISTICS \\(VI = − ?#{vin_abs} V, IO = 500 mA",
+        "Output Voltage \\(TJ = \\+25°C\\) VO −14\\.7 −15 −15\\.3 Vdc",
+        "MC7915ACTG "
+      ],
+      "vin_abs": 23
+    },
+    {
+      "mpn": "MC7918C",
+      "short": "mc7918c",
+      "order": "MC7918CTG",
+      "vcode": "18",
+      "vo": 18,
+      "vo_fr": "18",
+      "vo_min": -17.3,
+      "vo_max": -18.7,
+      "vo_min_fr": "-17,3",
+      "vo_max_fr": "-18,7",
+      "vo_lo": -18.7,
+      "vo_hi": -17.3,
+      "iq": 4.5,
+      "iq_fr": "4,5",
+      "iq_max": 8,
+      "iq_max_fr": "8",
+      "iq_a": 0.0045,
+      "grade": "the C grade, 4 %, 0 to 125 C",
+      "grade_fr": "la classe C, 4 %, 0 à 125 °C",
+      "vin": -27,
+      "rl_500": 36.0,
+      "rl_1a": 18.0,
+      "vin_hd": -19.8,
+      "vin_do": -18.8,
+      "vdo_lo": -17.65,
+      "vdo_hi": -17.35,
+      "vq_lo": -26.82,
+      "vq_hi": -26.02,
+      "datasheet": "onsemi-mc7900",
+      "evidence": [
+        "MC7918C(?:, MC79\\d\\dC)? ELECTRICAL CHARACTERISTICS \\(VI = − ?#{vin_abs} V, IO = 500 mA",
+        "Output Voltage \\(TJ = \\+25°C\\) VO −17\\.3 −18 −18\\.7 Vdc",
+        "MC7918CTG "
+      ],
+      "vin_abs": 27
+    }
+  ]
+}

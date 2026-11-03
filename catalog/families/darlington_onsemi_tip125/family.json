@@ -1,0 +1,565 @@
+{
+  "schema_version": 1,
+  "kind": "family",
+  "name": "onsemi TIP125, TIP126 and TIP127 PNP Darlington power transistors",
+  "datasheets": {
+    "onsemi-tip120": {
+      "title": "onsemi TIP120, TIP121, TIP122 (NPN), TIP125, TIP126, TIP127 (PNP) Darlington transistors datasheet (TIP120/D)",
+      "url": "https://www.onsemi.com/download/data-sheet/pdf/tip120-d.pdf",
+      "rev": "current at retrieval",
+      "date": "2026-11-03",
+      "hash": "sha256:4971349ba57ed93c3515146fa3cc2c5bddebf2d7ef50a5f3f8a55642f161a6bc",
+      "notes": "Maximum ratings (VCEO 60, 80, 100 V, IC 5 A, IB 120 mA, PD 65 W at 25 C case); hFE 1000 minimum at 0.5 A and 3 A (2500 typical at 4 A); VCE(sat) 2.0 V at 3 A, 12 mA and 4.0 V at 5 A, 20 mA; VBE(on) 2.5 V at 3 A; Figure 1, the Darlington circuit with its 8.0 k and 120 ohm shunts and its diode; TO-220AB B1 C2 E3; the ordering information."
+    }
+  },
+  "evidence": [
+    "\\(IC = 0\\.5 Adc, VCE = 3\\.0 Vdc\\) 1000 − − \\(IC = 3\\.0 Adc, VCE = 3\\.0 Vdc\\) 1000",
+    "\\(IC = 3\\.0 Adc, IB = 12 mAdc\\) − 2\\.0",
+    "\\(IC = 3\\.0 Adc, VCE = 3\\.0 Vdc\\) − 2\\.5",
+    "≈ 8\\.0 k ≈ 120",
+    "Collector Current − Continuous 5\\.0 Adc"
+  ],
+  "template": {
+    "schema_version": 1,
+    "kind": "component",
+    "id": "emblink/${short}",
+    "version": "1.0.0",
+    "name": "${mpn}",
+    "category": "transistors",
+    "subcategory": "darlington_pnp",
+    "description": "onsemi ${mpn}, a PNP Darlington power transistor in TO-220 (B1, C2, E3, tab C): VCEO ${vceo} V, 5 A, 65 W at 25 C case; hFE at least 1000 at 0.5 A and 3 A (2500 typical at 4 A), VCE(sat) 2.0 V maximum at 3 A and 12 mA, VBE(on) 2.5 V maximum at 3 A; the base-emitter shunt resistors (about 8 kohm and 120 ohm) and the collector-emitter diode built in. The model is the datasheet's Darlington schematic: two transistors of gain 50 each, the two resistors and the diode.",
+    "keywords": [
+      "onsemi",
+      "${mpn}",
+      "${series}",
+      "PNP",
+      "BJT",
+      "transistor",
+      "power transistor",
+      "TO-220",
+      "Darlington"
+    ],
+    "pins": [
+      {
+        "name": "B",
+        "number": 1,
+        "model": {
+          "kind": "passive"
+        },
+        "doc": "Base"
+      },
+      {
+        "name": "C",
+        "number": 2,
+        "model": {
+          "kind": "passive"
+        },
+        "doc": "Collector (and the tab)"
+      },
+      {
+        "name": "E",
+        "number": 3,
+        "model": {
+          "kind": "passive"
+        },
+        "doc": "Emitter"
+      }
+    ],
+    "params": {},
+    "model": {
+      "composite": {
+        "components": [
+          {
+            "id": "Q1",
+            "component": "emblink/bjt_pnp",
+            "params": {
+              "is": 1e-14,
+              "bf": 50,
+              "br": 1,
+              "rb": 0,
+              "rc": 0,
+              "re": 0
+            }
+          },
+          {
+            "id": "Q2",
+            "component": "emblink/bjt_pnp",
+            "params": {
+              "is": 1e-12,
+              "bf": 50,
+              "br": 1,
+              "rb": 0,
+              "rc": 0.1,
+              "re": 0.05
+            }
+          },
+          {
+            "id": "R1",
+            "component": "emblink/resistor",
+            "params": {
+              "resistance": "8k",
+              "tolerance": 0
+            }
+          },
+          {
+            "id": "R2",
+            "component": "emblink/resistor",
+            "params": {
+              "resistance": "120",
+              "tolerance": 0
+            }
+          },
+          {
+            "id": "D1",
+            "component": "emblink/diode",
+            "params": {
+              "is": "1e-12",
+              "n": 1,
+              "rs": 0.05
+            }
+          }
+        ],
+        "nets": {
+          "B": [
+            "Q1.B",
+            "R1.1"
+          ],
+          "C": [
+            "Q1.C",
+            "Q2.C",
+            "D1.A"
+          ],
+          "B2": [
+            "Q1.E",
+            "Q2.B",
+            "R1.2",
+            "R2.1"
+          ],
+          "E": [
+            "Q2.E",
+            "R2.2",
+            "D1.K"
+          ]
+        },
+        "ports": {
+          "B": "Q1.B",
+          "C": "Q2.C",
+          "E": "Q2.E"
+        }
+      }
+    },
+    "symbol": {
+      "svg": "symbol.svg",
+      "width": 40,
+      "height": 40,
+      "pins": {
+        "B": {
+          "x": 0,
+          "y": 20,
+          "side": "left"
+        },
+        "C": {
+          "x": 40,
+          "y": 0,
+          "side": "top"
+        },
+        "E": {
+          "x": 40,
+          "y": 40,
+          "side": "bottom"
+        }
+      }
+    },
+    "fidelity": {
+      "functional": null,
+      "timed": null,
+      "electrical": {
+        "claims": "The datasheet's Darlington circuit (Figure 1): a driver and an output transistor of gain 50 each (2500 overall, the datasheet's typical), the 8 kohm and 120 ohm base-emitter shunts that lower the gain at small currents, and the anti-parallel collector-emitter diode; fixtures for the gain at 0.5 A and 3 A, VCE(sat) and VBE(on) at 3 A.",
+        "omissions": [
+          "each transistor's gain is constant (50): the overall gain's fall above 4 A is not modelled",
+          "the Early effect: the collector current does not rise with VCE",
+          "capacitances and fT, so no switching times",
+          "temperature: VBE's -2 mV/C and the gain's rise",
+          "second breakdown, the safe operating area and damage past the ratings",
+          "device-to-device spread within the gain limits",
+          "no manufacturer model qualification"
+        ],
+        "validation": [
+          "tests/*.json"
+        ]
+      }
+    },
+    "provenance": {
+      "author": "EmbSIM",
+      "license": "Apache-2.0",
+      "sources": []
+    },
+    "part": {
+      "manufacturer": "onsemi",
+      "mpn": "${mpn}",
+      "package": "TO-220",
+      "datasheet": "${datasheet_url}"
+    },
+    "tests": [
+      "tests/*.json"
+    ],
+    "i18n": {
+      "fr": {
+        "description": "onsemi ${mpn}, un transistor de puissance Darlington PNP en TO-220 (B1, C2, E3, languette C) : VCEO ${vceo} V, 5 A, 65 W à 25 °C de boîtier ; hFE d'au moins 1000 à 0,5 A et 3 A (2500 typique à 4 A), VCE(sat) de 2,0 V au maximum à 3 A et 12 mA, VBE(on) de 2,5 V au maximum à 3 A ; les résistances de shunt base-émetteur (environ 8 kohm et 120 ohm) et la diode collecteur-émetteur intégrées. Le modèle est le schéma Darlington de la fiche technique : deux transistors de gain 50 chacun, les deux résistances et la diode.",
+        "fidelity": {
+          "electrical": {
+            "claims": "Le circuit Darlington de la fiche technique (figure 1) : un transistor pilote et un transistor de sortie de gain 50 chacun (2500 au total, la valeur typique de la fiche technique), les shunts base-émetteur de 8 kohm et 120 ohm qui abaissent le gain aux faibles courants, et la diode collecteur-émetteur antiparallèle ; cas de test pour le gain à 0,5 A et 3 A, VCE(sat) et VBE(on) à 3 A.",
+            "omissions": [
+              "le gain de chaque transistor est constant (50) : la baisse du gain global au-delà de 4 A n'est pas modélisée",
+              "l'effet Early : le courant de collecteur ne croît pas avec VCE",
+              "les capacités et fT, donc pas de temps de commutation",
+              "la température : les -2 mV/°C de VBE et la hausse du gain",
+              "le second claquage, l'aire de sécurité et les dommages au-delà des valeurs nominales",
+              "la dispersion d'un exemplaire à l'autre dans les limites de gain",
+              "aucune qualification par un modèle du fabricant"
+            ]
+          }
+        }
+      }
+    }
+  },
+  "tests": {
+    "hfe_1": {
+      "schema_version": 1,
+      "kind": "component_test",
+      "name": "hfe_1",
+      "description": "IC near 0.5 A at VCE = 3 V (the base fed 0.0004 A, the collector from 6 V through 6 ohm): the gain at least 1000, the datasheet's hFE there",
+      "policy": "electrical",
+      "until": "200us",
+      "settings": {
+        "imperfections": "ideal"
+      },
+      "circuit": {
+        "components": [
+          {
+            "id": "VC",
+            "component": "emblink/vsource",
+            "params": {
+              "kind": "dc",
+              "dc": -6.0
+            }
+          },
+          {
+            "id": "RC",
+            "component": "emblink/resistor",
+            "params": {
+              "resistance": 6.0,
+              "tolerance": 0
+            }
+          },
+          {
+            "id": "IB",
+            "component": "emblink/isource",
+            "params": {
+              "kind": "pulse",
+              "v1": 0,
+              "v2": -0.0004,
+              "td": "1u",
+              "tr": "50u",
+              "tf": "1u",
+              "pw": "1",
+              "per": "2"
+            }
+          },
+          {
+            "id": "DUT",
+            "component": "emblink/${short}"
+          },
+          {
+            "id": "G",
+            "component": "emblink/gnd"
+          }
+        ],
+        "nets": {
+          "VCC": [
+            "VC.+",
+            "RC.1"
+          ],
+          "COLL": [
+            "RC.2",
+            "DUT.C"
+          ],
+          "BASE": [
+            "IB.-",
+            "DUT.B"
+          ],
+          "GND": [
+            "VC.-",
+            "IB.+",
+            "DUT.E",
+            "G.GND"
+          ]
+        }
+      },
+      "expect": {
+        "net:COLL": {
+          "at": "150us",
+          "min_v": -3.6,
+          "max_v": -0.0
+        }
+      }
+    },
+    "hfe_2": {
+      "schema_version": 1,
+      "kind": "component_test",
+      "name": "hfe_2",
+      "description": "IC near 3 A at VCE = 3 V (the base fed 0.00136364 A, the collector from 6 V through 1 ohm): the gain at least 1000, the datasheet's hFE there",
+      "policy": "electrical",
+      "until": "200us",
+      "settings": {
+        "imperfections": "ideal"
+      },
+      "circuit": {
+        "components": [
+          {
+            "id": "VC",
+            "component": "emblink/vsource",
+            "params": {
+              "kind": "dc",
+              "dc": -6.0
+            }
+          },
+          {
+            "id": "RC",
+            "component": "emblink/resistor",
+            "params": {
+              "resistance": 1.0,
+              "tolerance": 0
+            }
+          },
+          {
+            "id": "IB",
+            "component": "emblink/isource",
+            "params": {
+              "kind": "pulse",
+              "v1": 0,
+              "v2": -0.0013636363636363637,
+              "td": "1u",
+              "tr": "50u",
+              "tf": "1u",
+              "pw": "1",
+              "per": "2"
+            }
+          },
+          {
+            "id": "DUT",
+            "component": "emblink/${short}"
+          },
+          {
+            "id": "G",
+            "component": "emblink/gnd"
+          }
+        ],
+        "nets": {
+          "VCC": [
+            "VC.+",
+            "RC.1"
+          ],
+          "COLL": [
+            "RC.2",
+            "DUT.C"
+          ],
+          "BASE": [
+            "IB.-",
+            "DUT.B"
+          ],
+          "GND": [
+            "VC.-",
+            "IB.+",
+            "DUT.E",
+            "G.GND"
+          ]
+        }
+      },
+      "expect": {
+        "net:COLL": {
+          "at": "150us",
+          "min_v": -4.6364,
+          "max_v": -0.0
+        }
+      }
+    },
+    "vce_sat": {
+      "schema_version": 1,
+      "kind": "component_test",
+      "name": "vce_sat",
+      "description": "IC = 3 A with IB = 0.012 A: VCE(sat) at most the datasheet's 2 V",
+      "policy": "electrical",
+      "until": "200us",
+      "settings": {
+        "imperfections": "ideal"
+      },
+      "circuit": {
+        "components": [
+          {
+            "id": "IC",
+            "component": "emblink/isource",
+            "params": {
+              "kind": "pulse",
+              "v1": 0,
+              "v2": -3.0,
+              "td": "1u",
+              "tr": "50u",
+              "tf": "1u",
+              "pw": "1",
+              "per": "2"
+            }
+          },
+          {
+            "id": "IB",
+            "component": "emblink/isource",
+            "params": {
+              "kind": "pulse",
+              "v1": 0,
+              "v2": -0.012,
+              "td": "1u",
+              "tr": "50u",
+              "tf": "1u",
+              "pw": "1",
+              "per": "2"
+            }
+          },
+          {
+            "id": "DUT",
+            "component": "emblink/${short}"
+          },
+          {
+            "id": "G",
+            "component": "emblink/gnd"
+          }
+        ],
+        "nets": {
+          "COLL": [
+            "IC.-",
+            "DUT.C"
+          ],
+          "BASE": [
+            "IB.-",
+            "DUT.B"
+          ],
+          "GND": [
+            "IC.+",
+            "IB.+",
+            "DUT.E",
+            "G.GND"
+          ]
+        }
+      },
+      "expect": {
+        "net:COLL": {
+          "at": "150us",
+          "min_v": -2.0,
+          "max_v": 0
+        }
+      }
+    },
+    "vbe_on": {
+      "schema_version": 1,
+      "kind": "component_test",
+      "name": "vbe_on",
+      "description": "IC near 3 A at VCE = 3 V (the base fed 0.00136364 A): VBE(on) at most the datasheet's 2.5 V",
+      "policy": "electrical",
+      "until": "200us",
+      "settings": {
+        "imperfections": "ideal"
+      },
+      "circuit": {
+        "components": [
+          {
+            "id": "VC",
+            "component": "emblink/vsource",
+            "params": {
+              "kind": "dc",
+              "dc": -3.0
+            }
+          },
+          {
+            "id": "IB",
+            "component": "emblink/isource",
+            "params": {
+              "kind": "pulse",
+              "v1": 0,
+              "v2": -0.0013636363636363637,
+              "td": "1u",
+              "tr": "50u",
+              "tf": "1u",
+              "pw": "1",
+              "per": "2"
+            }
+          },
+          {
+            "id": "DUT",
+            "component": "emblink/${short}"
+          },
+          {
+            "id": "G",
+            "component": "emblink/gnd"
+          }
+        ],
+        "nets": {
+          "COLL": [
+            "VC.+",
+            "DUT.C"
+          ],
+          "BASE": [
+            "IB.-",
+            "DUT.B"
+          ],
+          "GND": [
+            "VC.-",
+            "IB.+",
+            "DUT.E",
+            "G.GND"
+          ]
+        }
+      },
+      "expect": {
+        "net:BASE": {
+          "at": "150us",
+          "min_v": -2.5,
+          "max_v": -0.5
+        }
+      }
+    }
+  },
+  "rows": [
+    {
+      "mpn": "TIP125",
+      "short": "tip125",
+      "series": "TIP125",
+      "vceo": 60,
+      "evidence": [
+        "TIP125 TO−220 50 Units / Rail",
+        "= 60 Vdc \\(Min\\) − TIP120, "
+      ],
+      "datasheet": "onsemi-tip120"
+    },
+    {
+      "mpn": "TIP126",
+      "short": "tip126",
+      "series": "TIP126",
+      "vceo": 80,
+      "evidence": [
+        "TIP126 TO−220 50 Units / Rail",
+        "= 80 Vdc \\(Min\\) − TIP121, "
+      ],
+      "datasheet": "onsemi-tip120"
+    },
+    {
+      "mpn": "TIP127",
+      "short": "tip127",
+      "series": "TIP127",
+      "vceo": 100,
+      "evidence": [
+        "TIP127 TO−220 50 Units / Rail",
+        "= 100 Vdc \\(Min\\) − TIP122, "
+      ],
+      "datasheet": "onsemi-tip120"
+    }
+  ]
+}

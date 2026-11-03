@@ -73,6 +73,69 @@
       "doc": "Forward series resistance",
       "min": 0,
       "advanced": true
+    },
+    "cj0": {
+      "type": "number",
+      "unit": "F",
+      "default": 0,
+      "doc": "Zero-bias junction capacitance",
+      "min": 0,
+      "max": "1u",
+      "advanced": true
+    },
+    "vj": {
+      "type": "number",
+      "unit": "V",
+      "default": 1,
+      "doc": "Junction built-in potential",
+      "min": 0.1,
+      "max": 3,
+      "advanced": true
+    },
+    "m": {
+      "type": "number",
+      "unit": "",
+      "default": 0.5,
+      "doc": "Junction grading coefficient",
+      "min": 0.05,
+      "max": 0.95,
+      "advanced": true
+    },
+    "fc": {
+      "type": "number",
+      "unit": "",
+      "default": 0.5,
+      "doc": "Forward-bias depletion capacitance coefficient",
+      "min": 0,
+      "max": 0.95,
+      "advanced": true
+    },
+    "tt": {
+      "type": "number",
+      "unit": "s",
+      "default": 0,
+      "doc": "Transit time (reverse-recovery charge per ampere)",
+      "min": 0,
+      "max": "1m",
+      "advanced": true
+    },
+    "rbv": {
+      "type": "number",
+      "unit": "ohm",
+      "default": 0,
+      "doc": "Breakdown series resistance (the dynamic resistance past the knee)",
+      "min": 0,
+      "max": "1M",
+      "advanced": true
+    },
+    "nbv": {
+      "type": "number",
+      "unit": "",
+      "default": 0,
+      "doc": "Breakdown emission coefficient (the knee's softness; 0: sharp)",
+      "min": 0,
+      "max": 1000,
+      "advanced": true
     }
   },
   "model": {
@@ -110,11 +173,9 @@
       "omissions": []
     },
     "electrical": {
-      "claims": "Forward Shockley diode plus reverse breakdown at vz with slope resistance rz (SPEC-004 §7 zener).",
+      "claims": "Forward Shockley diode plus reverse breakdown at vz: with rz alone a sharp knee and one series resistance shared by both directions; with rbv / nbv a breakdown path of its own whose knee is soft (nbv Vt / I) and whose dynamic resistance is rbv, the forward drop untouched; junction (cj0) and diffusion (tt) charge (SPEC-004 §7 zener).",
       "omissions": [
-        "temperature coefficient of vz",
-        "knee softness",
-        "capacitance"
+        "temperature coefficient of vz"
       ],
       "range": {
         "current_a": [
@@ -141,7 +202,7 @@
   ],
   "i18n": {
     "fr": {
-      "source": "3e37f7e1f97d",
+      "source": "09bc14d222c9",
       "description": "Diode zener/à avalanche avec tension de claquage vz et résistance dynamique rz.",
       "fidelity": {
         "functional": {
@@ -154,11 +215,9 @@
           "claims": "Comme en électrique."
         },
         "electrical": {
-          "claims": "Diode de Shockley en direct plus claquage inverse à vz avec résistance de pente rz (SPEC-004 §7 zener).",
+          "claims": "Diode de Shockley en direct plus claquage inverse à vz : avec rz seul, un coude franc et une résistance série commune aux deux sens ; avec rbv / nbv, un chemin de claquage propre dont le coude est doux (nbv Vt / I) et la résistance dynamique rbv, la chute directe inchangée ; charges de jonction (cj0) et de diffusion (tt) (SPEC-004 §7 zener).",
           "omissions": [
-            "le coefficient de température de vz",
-            "la douceur du coude",
-            "la capacité"
+            "le coefficient de température de vz"
           ]
         }
       }

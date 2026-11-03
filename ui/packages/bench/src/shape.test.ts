@@ -19,6 +19,16 @@ describe('bench shapes', () => {
     expect(span(led, 'A', 'K')).toBeCloseTo(PITCH);
   });
 
+  it('draws a radial inductor as a sleeved drum core and an electrolytic as a can, each at its datasheet size', () => {
+    const l = benchShape(component('rlb0608_1r0ml'));
+    expect(l.package).toBe('radial');
+    expect(l.radial).toBe('inductor');
+    expect(span(l, '1', '2')).toBeCloseTo(2.0);
+    expect(l.size[2]).toBeCloseTo(6.5);
+    const c = benchShape(component('uhe0j102mpd'));
+    expect(c.radial).toBe('electrolytic');
+  });
+
   it('puts a DIP-14 on 0.3 in rows, pin 1 at the bottom left, counter-clockwise', () => {
     const s = benchShape(component('ic_74hc00'));
     expect(s.package).toBe('dip');

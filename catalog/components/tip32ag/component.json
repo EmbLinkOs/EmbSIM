@@ -1,0 +1,185 @@
+{
+  "schema_version": 1,
+  "kind": "component",
+  "id": "emblink/tip32ag",
+  "version": "1.0.0",
+  "name": "TIP32AG",
+  "category": "transistors",
+  "subcategory": "bipolar_pnp",
+  "description": "onsemi TIP32AG, a PNP power transistor in TO-220 (B1, C2, E3, tab C): VCEO 60 V, 3 A, 40 W at 25 C case; hFE at least 25 at 1 A and 10 to 50 at 3 A, VCE(sat) 1.2 V maximum at 3 A, VBE(on) 1.8 V maximum. The model's gain is 30, inside both.",
+  "keywords": [
+    "onsemi",
+    "TIP32AG",
+    "TIP32A",
+    "PNP",
+    "BJT",
+    "transistor",
+    "power transistor",
+    "TO-220"
+  ],
+  "pins": [
+    {
+      "name": "B",
+      "number": 1,
+      "model": {
+        "kind": "passive"
+      },
+      "doc": "Base"
+    },
+    {
+      "name": "C",
+      "number": 2,
+      "model": {
+        "kind": "passive"
+      },
+      "doc": "Collector (and the tab)"
+    },
+    {
+      "name": "E",
+      "number": 3,
+      "model": {
+        "kind": "passive"
+      },
+      "doc": "Emitter"
+    }
+  ],
+  "params": {
+    "is": {
+      "type": "number",
+      "unit": "A",
+      "default": 2e-14,
+      "doc": "Transport saturation current",
+      "min": "1e-20",
+      "max": "1m",
+      "advanced": true
+    },
+    "bf": {
+      "type": "number",
+      "unit": "",
+      "default": 30,
+      "doc": "Forward current gain",
+      "min": 1,
+      "max": 2000
+    },
+    "br": {
+      "type": "number",
+      "unit": "",
+      "default": 1,
+      "doc": "Reverse current gain",
+      "min": 0.01,
+      "max": 100,
+      "advanced": true
+    },
+    "rb": {
+      "type": "number",
+      "unit": "ohm",
+      "default": 0,
+      "doc": "Base resistance",
+      "min": 0,
+      "advanced": true
+    },
+    "rc": {
+      "type": "number",
+      "unit": "ohm",
+      "default": 0.1,
+      "doc": "Collector resistance",
+      "min": 0,
+      "advanced": true
+    },
+    "re": {
+      "type": "number",
+      "unit": "ohm",
+      "default": 0.03,
+      "doc": "Emitter resistance",
+      "min": 0,
+      "advanced": true
+    }
+  },
+  "model": {
+    "primitive": "bjt_pnp"
+  },
+  "symbol": {
+    "svg": "symbol.svg",
+    "width": 40,
+    "height": 40,
+    "pins": {
+      "B": {
+        "x": 0,
+        "y": 20,
+        "side": "left"
+      },
+      "C": {
+        "x": 40,
+        "y": 0,
+        "side": "top"
+      },
+      "E": {
+        "x": 40,
+        "y": 40,
+        "side": "bottom"
+      }
+    }
+  },
+  "fidelity": {
+    "functional": null,
+    "timed": null,
+    "electrical": {
+      "claims": "Ebers-Moll transistor at a constant gain of 30 (the datasheet's hFE is at least 25 at 1 A and 10 to 50 at 3 A), collector and emitter resistances for its high-current VCE(sat) and VBE(on); fixtures for the gain at 1 A and 3 A, VCE(sat) and VBE(on) at 3 A.",
+      "omissions": [
+        "the gain's fall with current (25 at 1 A, down to 10 at 3 A in the limits): it stays 30",
+        "the Early effect: the collector current does not rise with VCE",
+        "capacitances and fT, so no switching times",
+        "temperature: VBE's -2 mV/C and the gain's rise",
+        "second breakdown, the safe operating area and damage past the ratings",
+        "device-to-device spread within the gain limits",
+        "no manufacturer model qualification"
+      ],
+      "validation": [
+        "tests/*.json"
+      ]
+    }
+  },
+  "provenance": {
+    "author": "EmbSIM",
+    "license": "Apache-2.0",
+    "sources": [
+      {
+        "title": "onsemi TIP31G, TIP31AG, TIP31BG, TIP31CG, TIP32G, TIP32AG, TIP32BG, TIP32CG datasheet (TIP31A/D)",
+        "url": "https://www.onsemi.com/download/data-sheet/pdf/tip31a-d.pdf",
+        "rev": "current at retrieval",
+        "date": "2026-11-03",
+        "hash": "sha256:c630da0302cb6a47287f933f0887abbe92c7f6890f007879083e124c90d1e1fc",
+        "notes": "Maximum ratings (VCEO by type, IC 3 A, PD 40 W); hFE 25 minimum at 1 A and 10 to 50 at 3 A; VCE(sat) 1.2 V at 3 A, 375 mA; VBE(on) 1.8 V at 3 A, 4 V; TO-220 B1 C2 E3; the ordering information. generated from catalog/families/bjt_onsemi_tip32/family.json by tools/catalog/families.py; edit the family, not this file"
+      }
+    ]
+  },
+  "part": {
+    "manufacturer": "onsemi",
+    "mpn": "TIP32AG",
+    "package": "TO-220",
+    "datasheet": "https://www.onsemi.com/download/data-sheet/pdf/tip31a-d.pdf"
+  },
+  "tests": [
+    "tests/*.json"
+  ],
+  "i18n": {
+    "fr": {
+      "source": "594063e18dfa",
+      "description": "onsemi TIP32AG, un transistor de puissance PNP en TO-220 (B1, C2, E3, languette C) : VCEO 60 V, 3 A, 40 W à 25 °C de boîtier ; hFE d'au moins 25 à 1 A et de 10 à 50 à 3 A, VCE(sat) de 1,2 V au maximum à 3 A, VBE(on) de 1,8 V au maximum. Le gain du modèle est 30, dans les deux.",
+      "fidelity": {
+        "electrical": {
+          "claims": "Transistor d'Ebers-Moll à un gain constant de 30 (le hFE de la fiche technique est d'au moins 25 à 1 A et de 10 à 50 à 3 A), résistances de collecteur et d'émetteur pour son VCE(sat) et son VBE(on) à fort courant ; cas de test pour le gain à 1 A et 3 A, VCE(sat) et VBE(on) à 3 A.",
+          "omissions": [
+            "la baisse du gain avec le courant (25 à 1 A, jusqu'à 10 à 3 A dans les limites) : il reste 30",
+            "l'effet Early : le courant de collecteur ne croît pas avec VCE",
+            "les capacités et fT, donc pas de temps de commutation",
+            "la température : les -2 mV/°C de VBE et la hausse du gain",
+            "le second claquage, l'aire de sécurité et les dommages au-delà des valeurs nominales",
+            "la dispersion d'un exemplaire à l'autre dans les limites de gain",
+            "aucune qualification par un modèle du fabricant"
+          ]
+        }
+      }
+    }
+  }
+}

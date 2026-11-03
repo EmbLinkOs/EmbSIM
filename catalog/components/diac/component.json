@@ -1,0 +1,156 @@
+{
+  "schema_version": 1,
+  "kind": "component",
+  "id": "emblink/diac",
+  "version": "1.0.0",
+  "name": "Diac",
+  "category": "thyristors",
+  "subcategory": "diacs",
+  "description": "Diac: a bidirectional trigger diode that blocks until the voltage across it reaches its breakover voltage in either direction, then folds back and conducts until its current falls under the holding current. The defaults are a typical 32 V trigger diac (the DB3 class) for triac phase control.",
+  "keywords": [
+    "diac",
+    "trigger diode",
+    "DB3",
+    "thyristor",
+    "phase control"
+  ],
+  "pins": [
+    {
+      "name": "A1",
+      "number": 1,
+      "model": {
+        "kind": "passive"
+      },
+      "doc": "Anode 1"
+    },
+    {
+      "name": "A2",
+      "number": 2,
+      "model": {
+        "kind": "passive"
+      },
+      "doc": "Anode 2"
+    }
+  ],
+  "params": {
+    "vbo": {
+      "type": "number",
+      "unit": "V",
+      "default": 32,
+      "doc": "Breakover voltage (either direction)",
+      "min": 1,
+      "max": 1000
+    },
+    "ih": {
+      "type": "number",
+      "unit": "A",
+      "default": "100u",
+      "doc": "Holding current",
+      "min": 1e-07,
+      "max": 1
+    },
+    "vtm": {
+      "type": "number",
+      "unit": "V",
+      "default": 26,
+      "doc": "On-state voltage at itm (the breakover voltage less the foldback)",
+      "min": 0.1,
+      "max": 1000
+    },
+    "itm": {
+      "type": "number",
+      "unit": "A",
+      "default": "10m",
+      "doc": "Current at which vtm is given",
+      "min": 1e-06,
+      "max": 100,
+      "advanced": true
+    },
+    "n": {
+      "type": "number",
+      "unit": "",
+      "default": 2,
+      "doc": "On-state knee emission coefficient",
+      "min": 0.5,
+      "max": 10,
+      "advanced": true
+    },
+    "roff": {
+      "type": "number",
+      "unit": "ohm",
+      "default": "1G",
+      "doc": "Off-state resistance (the leakage)",
+      "min": 1000.0,
+      "advanced": true
+    }
+  },
+  "model": {
+    "primitive": "diac"
+  },
+  "symbol": {
+    "svg": "symbol.svg",
+    "width": 40,
+    "height": 40,
+    "pins": {
+      "A1": {
+        "x": 20,
+        "y": 0,
+        "side": "top"
+      },
+      "A2": {
+        "x": 20,
+        "y": 40,
+        "side": "bottom"
+      }
+    }
+  },
+  "fidelity": {
+    "functional": null,
+    "timed": {
+      "claims": "As electrical.",
+      "omissions": []
+    },
+    "electrical": {
+      "claims": "The diac primitive (SPEC-004 triac/diac): off it leaks through roff; past vbo in either direction it latches on, its voltage folding back to vtm at itm with a smooth knee, and turns off when its current falls under ih. The state changes on accepted steps, where the island restarts.",
+      "omissions": [
+        "breakover current",
+        "temperature",
+        "the negative-resistance region between breakover and conduction (the switch is abrupt)"
+      ],
+      "validation": [
+        "tests/*.json"
+      ]
+    }
+  },
+  "provenance": {
+    "author": "EmbSIM",
+    "license": "Apache-2.0",
+    "sources": [
+      {
+        "title": "SPEC-004 triac and diac primitives"
+      }
+    ]
+  },
+  "tests": [
+    "tests/*.json"
+  ],
+  "i18n": {
+    "fr": {
+      "source": "cba03a4b9f21",
+      "description": "Diac : diode de déclenchement bidirectionnelle qui bloque jusqu'à ce que la tension à ses bornes atteigne sa tension de retournement dans un sens ou l'autre, puis se replie et conduit jusqu'à ce que son courant passe sous le courant de maintien. Les valeurs par défaut sont celles d'un diac de déclenchement typique de 32 V (classe DB3) pour la commande de phase des triacs.",
+      "fidelity": {
+        "timed": {
+          "claims": "Comme en électrique."
+        },
+        "electrical": {
+          "claims": "La primitive diac (SPEC-004 triac/diac) : bloquée elle fuit par roff ; au-delà de vbo dans un sens ou l'autre elle s'amorce, sa tension se repliant à vtm sous itm avec un coude doux, et se bloque quand son courant passe sous ih. L'état change aux pas acceptés, où l'îlot redémarre.",
+          "omissions": [
+            "le courant de retournement",
+            "la température",
+            "la région à résistance négative entre retournement et conduction (la commutation est franche)"
+          ]
+        }
+      }
+    }
+  }
+}

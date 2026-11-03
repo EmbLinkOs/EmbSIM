@@ -1,0 +1,507 @@
+{
+  "schema_version": 1,
+  "kind": "family",
+  "name": "Triad Magnetics F series power transformers",
+  "datasheets": {
+    "f_13x": {
+      "title": "Triad Magnetics F-13X datasheet",
+      "url": "https://catalog.triadmagnetics.com/Asset/F-13X.pdf",
+      "rev": "current at retrieval",
+      "date": "2026-11-03",
+      "hash": "sha256:e5c76d00c1820ce1675acfe1dd30fae6569afdb94e254511294da7969214ba4a",
+      "notes": "Electrical specifications: maximum power (VA), the 115 V primary, the secondary's voltage at its rated current, the voltage regulation from full load to no load; construction, dimensions, lead colours."
+    },
+    "f_43x": {
+      "title": "Triad Magnetics F-43X datasheet",
+      "url": "https://catalog.triadmagnetics.com/Asset/F-43X.pdf",
+      "rev": "current at retrieval",
+      "date": "2026-11-03",
+      "hash": "sha256:aaf1f29c2f962decc8d404ed3464516432def2858491baf1a38d009a37ed29a0",
+      "notes": "Electrical specifications: maximum power (VA), the 115 V primary, the secondary's voltage at its rated current, the voltage regulation from full load to no load; construction, dimensions, lead colours."
+    },
+    "f_46x": {
+      "title": "Triad Magnetics F-46X datasheet",
+      "url": "https://catalog.triadmagnetics.com/Asset/F-46X.pdf",
+      "rev": "current at retrieval",
+      "date": "2026-11-03",
+      "hash": "sha256:21e3c702e582e388b22fab7c123b6f8f040f8b05e7b1c6f8a9255cb1d58ea3ca",
+      "notes": "Electrical specifications: maximum power (VA), the 115 V primary, the secondary's voltage at its rated current, the voltage regulation from full load to no load; construction, dimensions, lead colours."
+    }
+  },
+  "evidence": [
+    "P ?OWE ?R T ?RAN ?S ?FO ?R ?M ?E ?R|POWER TRANSFORMER",
+    "Chassis Mount"
+  ],
+  "template": {
+    "schema_version": 1,
+    "kind": "component",
+    "id": "emblink/${short}",
+    "version": "1.0.0",
+    "name": "${mpn}",
+    "category": "inductors",
+    "subcategory": "transformers",
+    "description": "Triad Magnetics ${mpn}, a ${va} VA chassis-mount power transformer: 115 V ${freq} Hz primary, ${vfl} V secondary at ${ifl} A, ${reg} % regulation (${vnl} V at no load). The model is a pair of coupled windings at the no-load ratio, their copper resistance the regulation's drop split between them, its magnetising inductance an assumption the datasheet does not give.",
+    "keywords": [
+      "Triad",
+      "Triad Magnetics",
+      "${mpn}",
+      "transformer",
+      "power",
+      "mains",
+      "115 V",
+      "${vfl} V"
+    ],
+    "pins": [
+      {
+        "name": "P1",
+        "number": 1,
+        "model": {
+          "kind": "passive"
+        },
+        "doc": "Primary, black lead (the dotted end); 1 to 4 numbering is an ECAD convention, the leads are colour-coded"
+      },
+      {
+        "name": "P2",
+        "number": 2,
+        "model": {
+          "kind": "passive"
+        },
+        "doc": "Primary, black lead"
+      },
+      {
+        "name": "S1",
+        "number": 3,
+        "model": {
+          "kind": "passive"
+        },
+        "doc": "Secondary, green lead (the dotted end)"
+      },
+      {
+        "name": "S2",
+        "number": 4,
+        "model": {
+          "kind": "passive"
+        },
+        "doc": "Secondary, green lead"
+      }
+    ],
+    "params": {
+      "lp": {
+        "type": "number",
+        "unit": "H",
+        "default": "${lp}",
+        "doc": "Primary (magnetising) inductance: set so the magnetising current is 5 % of the rated primary current (not in the datasheet)",
+        "min": "1u",
+        "advanced": true
+      },
+      "ls": {
+        "type": "number",
+        "unit": "H",
+        "default": "${ls}",
+        "doc": "Secondary inductance: lp times the no-load voltage ratio squared",
+        "min": "1n",
+        "advanced": true
+      },
+      "k": {
+        "type": "number",
+        "unit": "",
+        "default": 0.999,
+        "doc": "Coupling coefficient",
+        "min": 0,
+        "max": 0.9999,
+        "advanced": true
+      },
+      "rp": {
+        "type": "number",
+        "unit": "ohm",
+        "default": "${rp}",
+        "doc": "Primary winding resistance: half the regulation's drop, referred to the primary",
+        "min": 0,
+        "advanced": true
+      },
+      "rs": {
+        "type": "number",
+        "unit": "ohm",
+        "default": "${rs}",
+        "doc": "Secondary winding resistance (whole winding): half the regulation's drop",
+        "min": 0,
+        "advanced": true
+      }
+    },
+    "model": {
+      "primitive": "transformer"
+    },
+    "symbol": {
+      "svg": "symbol.svg",
+      "width": 60,
+      "height": 40,
+      "pins": {
+        "P1": {
+          "x": 0,
+          "y": 0,
+          "side": "left"
+        },
+        "P2": {
+          "x": 0,
+          "y": 40,
+          "side": "left"
+        },
+        "S1": {
+          "x": 60,
+          "y": 0,
+          "side": "right"
+        },
+        "S2": {
+          "x": 60,
+          "y": 40,
+          "side": "right"
+        }
+      }
+    },
+    "fidelity": {
+      "functional": null,
+      "timed": null,
+      "electrical": {
+        "claims": "Coupled windings (SPEC-004 transformer) at the datasheet's no-load voltage ratio (its full-load secondary voltage raised by its regulation), with copper resistance giving that regulation at the rated current; galvanic isolation between primary and secondary; no DC transfer. A full-load fixture from the datasheet's rating.",
+        "omissions": [
+          "the magnetising inductance: the datasheet gives no no-load current, so it is set for a magnetising current of 5 % of the rated primary current",
+          "core saturation, hysteresis and eddy losses: the core is linear and lossless",
+          "leakage inductance beyond k = 0.999 and the inter-winding capacitance",
+          "the temperature rise and the thermal limits (Class B insulation, 130 C): no heating and no damage",
+          "the 2500 V hipot isolation: the windings never break down",
+          "50 Hz operation's higher magnetising current where only 60 Hz is rated"
+        ],
+        "validation": [
+          "tests/*.json"
+        ]
+      }
+    },
+    "provenance": {
+      "author": "EmbSIM",
+      "license": "Apache-2.0",
+      "sources": []
+    },
+    "tests": [
+      "tests/*.json"
+    ],
+    "part": {
+      "manufacturer": "Triad Magnetics",
+      "mpn": "${mpn}",
+      "package": "Chassis mount, flying leads",
+      "datasheet": "${datasheet_url}"
+    },
+    "i18n": {
+      "fr": {
+        "description": "Triad Magnetics ${mpn}, un transformateur d'alimentation de ${va_fr} VA à fixation sur châssis : primaire 115 V ${freq} Hz, secondaire de ${vfl_fr} V à ${ifl_fr} A, régulation de ${reg} % (${vnl_fr} V à vide). Le modèle est une paire d'enroulements couplés au rapport à vide, leur résistance de cuivre la chute de la régulation répartie entre eux, son inductance magnétisante une hypothèse que la fiche technique ne donne pas.",
+        "fidelity": {
+          "electrical": {
+            "claims": "Enroulements couplés (transformer de SPEC-004) au rapport de tension à vide de la fiche technique (sa tension secondaire à pleine charge augmentée de sa régulation), avec une résistance de cuivre donnant cette régulation au courant nominal ; isolement galvanique entre primaire et secondaire ; aucun transfert de continu. Un cas de test à pleine charge tiré des valeurs nominales de la fiche technique.",
+            "omissions": [
+              "l'inductance magnétisante : la fiche technique ne donne pas de courant à vide, elle est donc fixée pour un courant magnétisant de 5 % du courant primaire nominal",
+              "la saturation du noyau, l'hystérésis et les courants de Foucault : le noyau est linéaire et sans pertes",
+              "l'inductance de fuite au-delà de k = 0,999 et la capacité entre enroulements",
+              "l'échauffement et les limites thermiques (isolation classe B, 130 °C) : ni échauffement ni dommages",
+              "l'isolement de 2500 V à l'essai diélectrique : les enroulements ne claquent jamais",
+              "le fonctionnement à 50 Hz et son courant magnétisant plus élevé là où seuls 60 Hz sont spécifiés"
+            ]
+          }
+        }
+      }
+    }
+  },
+  "tests": {
+    "full_load": {
+      "schema_version": 1,
+      "kind": "component_test",
+      "name": "full_load",
+      "description": "115 V rms at 60 Hz on the primary, the rated current's load on the secondary: its peak at the fifth cycle's crest is sqrt(2) times the rated secondary voltage (within 5 %)",
+      "policy": "electrical",
+      "until": "75ms",
+      "settings": {
+        "imperfections": "ideal"
+      },
+      "circuit": {
+        "components": [
+          {
+            "id": "V1",
+            "component": "emblink/vsource",
+            "params": {
+              "kind": "sine",
+              "vo": 0,
+              "va": 162.63,
+              "freq": 60
+            }
+          },
+          {
+            "id": "DUT",
+            "component": "emblink/${short}"
+          },
+          {
+            "id": "RL",
+            "component": "emblink/resistor",
+            "params": {
+              "resistance": "${rl}",
+              "tolerance": 0
+            }
+          },
+          {
+            "id": "G",
+            "component": "emblink/gnd"
+          }
+        ],
+        "nets": {
+          "MAINS": [
+            "V1.+",
+            "DUT.P1"
+          ],
+          "SEC": [
+            "DUT.S1",
+            "RL.1"
+          ],
+          "GND": [
+            "V1.-",
+            "DUT.P2",
+            "RL.2",
+            "DUT.S2",
+            "G.GND"
+          ]
+        }
+      },
+      "expect": {
+        "net:SEC": {
+          "at": "70.833ms",
+          "min_v": "${vpk_min}",
+          "max_v": "${vpk_max}"
+        }
+      }
+    },
+    "low_line": {
+      "schema_version": 1,
+      "kind": "component_test",
+      "name": "low_line",
+      "description": "The mains 10 % low (103.5 V rms), the rated load on the secondary: the secondary's peak follows the line, 0.9 times the full-load peak (within 5 %)",
+      "policy": "electrical",
+      "until": "75ms",
+      "settings": {
+        "imperfections": "ideal"
+      },
+      "circuit": {
+        "components": [
+          {
+            "id": "V1",
+            "component": "emblink/vsource",
+            "params": {
+              "kind": "sine",
+              "vo": 0,
+              "va": 146.367,
+              "freq": 60
+            }
+          },
+          {
+            "id": "DUT",
+            "component": "emblink/${short}"
+          },
+          {
+            "id": "RL",
+            "component": "emblink/resistor",
+            "params": {
+              "resistance": "${rl}",
+              "tolerance": 0
+            }
+          },
+          {
+            "id": "G",
+            "component": "emblink/gnd"
+          }
+        ],
+        "nets": {
+          "MAINS": [
+            "V1.+",
+            "DUT.P1"
+          ],
+          "SEC": [
+            "DUT.S1",
+            "RL.1"
+          ],
+          "GND": [
+            "V1.-",
+            "DUT.P2",
+            "RL.2",
+            "DUT.S2",
+            "G.GND"
+          ]
+        }
+      },
+      "expect": {
+        "net:SEC": {
+          "at": "70.833ms",
+          "min_v": "${vpk_low_min}",
+          "max_v": "${vpk_low_max}"
+        }
+      }
+    },
+    "high_line": {
+      "schema_version": 1,
+      "kind": "component_test",
+      "name": "high_line",
+      "description": "The mains 10 % high (126.5 V rms), the rated load on the secondary: the secondary's peak follows the line, 1.1 times the full-load peak (within 5 %)",
+      "policy": "electrical",
+      "until": "75ms",
+      "settings": {
+        "imperfections": "ideal"
+      },
+      "circuit": {
+        "components": [
+          {
+            "id": "V1",
+            "component": "emblink/vsource",
+            "params": {
+              "kind": "sine",
+              "vo": 0,
+              "va": 178.893,
+              "freq": 60
+            }
+          },
+          {
+            "id": "DUT",
+            "component": "emblink/${short}"
+          },
+          {
+            "id": "RL",
+            "component": "emblink/resistor",
+            "params": {
+              "resistance": "${rl}",
+              "tolerance": 0
+            }
+          },
+          {
+            "id": "G",
+            "component": "emblink/gnd"
+          }
+        ],
+        "nets": {
+          "MAINS": [
+            "V1.+",
+            "DUT.P1"
+          ],
+          "SEC": [
+            "DUT.S1",
+            "RL.1"
+          ],
+          "GND": [
+            "V1.-",
+            "DUT.P2",
+            "RL.2",
+            "DUT.S2",
+            "G.GND"
+          ]
+        }
+      },
+      "expect": {
+        "net:SEC": {
+          "at": "70.833ms",
+          "min_v": "${vpk_high_min}",
+          "max_v": "${vpk_high_max}"
+        }
+      }
+    }
+  },
+  "rows": [
+    {
+      "mpn": "F-13X",
+      "short": "triad_f_13x",
+      "datasheet": "f_13x",
+      "va": 3.78,
+      "va_fr": "3,78",
+      "vfl": 6.3,
+      "vfl_fr": "6,3",
+      "ifl": 0.68,
+      "ifl_fr": "0,68",
+      "reg": 30,
+      "freq": "50/60",
+      "vnl": 8.19,
+      "vnl_fr": "8,19",
+      "lp": 185.6,
+      "ls": 0.9414,
+      "rp": 274.0,
+      "rs": 1.39,
+      "rl": 9.265,
+      "vpk_min": 8.4641,
+      "vpk_max": 9.355,
+      "evidence": [
+        "Maximum Power: ${va} ?VA",
+        "Primary: 115V (?:50/60|60) Hz",
+        "Secondary: ${vfl}V @ ${ifl} Amps?",
+        "Voltage Regulation: ${reg} ?%"
+      ],
+      "vpk_low_min": 7.6177,
+      "vpk_low_max": 8.4195,
+      "vpk_high_min": 9.3105,
+      "vpk_high_max": 10.2905
+    },
+    {
+      "mpn": "F-43X",
+      "short": "triad_f_43x",
+      "datasheet": "f_43x",
+      "va": 25.2,
+      "va_fr": "25,2",
+      "vfl": 6.3,
+      "vfl_fr": "6,3",
+      "ifl": 4,
+      "ifl_fr": "4",
+      "reg": 15,
+      "freq": "60",
+      "vnl": 7.245,
+      "vnl_fr": "7,245",
+      "lp": 27.84,
+      "ls": 0.1105,
+      "rp": 29.76,
+      "rs": 0.1181,
+      "rl": 1.575,
+      "vpk_min": 8.4641,
+      "vpk_max": 9.355,
+      "evidence": [
+        "Maximum Power: ${va} ?VA",
+        "Primary: 115V (?:50/60|60) Hz",
+        "Secondary: ${vfl}V @ ${ifl} Amps?",
+        "Voltage Regulation: ${reg} ?%"
+      ],
+      "vpk_low_min": 7.6177,
+      "vpk_low_max": 8.4195,
+      "vpk_high_min": 9.3105,
+      "vpk_high_max": 10.2905
+    },
+    {
+      "mpn": "F-46X",
+      "short": "triad_f_46x",
+      "datasheet": "f_46x",
+      "va": 24,
+      "va_fr": "24",
+      "vfl": 24,
+      "vfl_fr": "24",
+      "ifl": 1,
+      "ifl_fr": "1",
+      "reg": 10,
+      "freq": "60",
+      "vnl": 26.4,
+      "vnl_fr": "26,4",
+      "lp": 29.23,
+      "ls": 1.541,
+      "rp": 22.77,
+      "rs": 1.2,
+      "rl": 24.0,
+      "vpk_min": 32.2441,
+      "vpk_max": 35.6382,
+      "evidence": [
+        "Maximum Power: ${va} ?VA",
+        "Primary: 115V (?:50/60|60) Hz",
+        "Secondary: ${vfl}V @ ${ifl} Amps?",
+        "Voltage Regulation: ${reg} ?%"
+      ],
+      "vpk_low_min": 29.0197,
+      "vpk_low_max": 32.0744,
+      "vpk_high_min": 35.4685,
+      "vpk_high_max": 39.202
+    }
+  ]
+}

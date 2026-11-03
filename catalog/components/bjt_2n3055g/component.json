@@ -1,0 +1,185 @@
+{
+  "schema_version": 1,
+  "kind": "component",
+  "id": "emblink/bjt_2n3055g",
+  "version": "1.0.0",
+  "name": "2N3055G",
+  "category": "transistors",
+  "subcategory": "bipolar_npn",
+  "description": "onsemi 2N3055G, a NPN power transistor in TO-204AA (B1, E2, case C): VCEO 60 V, 15 A, 115 W at 25 C case; hFE 20 to 70 at 4 A and at least 5 at 10 A, VCE(sat) 1.1 V maximum at 4 A, VBE(on) 1.5 V maximum at 4 A. The model's gain is 37, the middle of the 4 A limits.",
+  "keywords": [
+    "onsemi",
+    "2N3055G",
+    "2N3055",
+    "NPN",
+    "BJT",
+    "transistor",
+    "power transistor",
+    "TO-204AA"
+  ],
+  "pins": [
+    {
+      "name": "B",
+      "number": 1,
+      "model": {
+        "kind": "passive"
+      },
+      "doc": "Base"
+    },
+    {
+      "name": "E",
+      "number": 2,
+      "model": {
+        "kind": "passive"
+      },
+      "doc": "Emitter"
+    },
+    {
+      "name": "C",
+      "number": 3,
+      "model": {
+        "kind": "passive"
+      },
+      "doc": "Collector (the case)"
+    }
+  ],
+  "params": {
+    "is": {
+      "type": "number",
+      "unit": "A",
+      "default": 1e-12,
+      "doc": "Transport saturation current",
+      "min": "1e-20",
+      "max": "1m",
+      "advanced": true
+    },
+    "bf": {
+      "type": "number",
+      "unit": "",
+      "default": 37,
+      "doc": "Forward current gain",
+      "min": 1,
+      "max": 2000
+    },
+    "br": {
+      "type": "number",
+      "unit": "",
+      "default": 1,
+      "doc": "Reverse current gain",
+      "min": 0.01,
+      "max": 100,
+      "advanced": true
+    },
+    "rb": {
+      "type": "number",
+      "unit": "ohm",
+      "default": 0,
+      "doc": "Base resistance",
+      "min": 0,
+      "advanced": true
+    },
+    "rc": {
+      "type": "number",
+      "unit": "ohm",
+      "default": 0.1,
+      "doc": "Collector resistance",
+      "min": 0,
+      "advanced": true
+    },
+    "re": {
+      "type": "number",
+      "unit": "ohm",
+      "default": 0.05,
+      "doc": "Emitter resistance",
+      "min": 0,
+      "advanced": true
+    }
+  },
+  "model": {
+    "primitive": "bjt_npn"
+  },
+  "symbol": {
+    "svg": "symbol.svg",
+    "width": 40,
+    "height": 40,
+    "pins": {
+      "B": {
+        "x": 0,
+        "y": 20,
+        "side": "left"
+      },
+      "C": {
+        "x": 40,
+        "y": 0,
+        "side": "top"
+      },
+      "E": {
+        "x": 40,
+        "y": 40,
+        "side": "bottom"
+      }
+    }
+  },
+  "fidelity": {
+    "functional": null,
+    "timed": null,
+    "electrical": {
+      "claims": "Ebers-Moll transistor at a constant gain of 37 (the geometric middle of the datasheet's 20 to 70 at 4 A), collector and emitter resistances for VCE(sat) and VBE(on); fixtures for the gain at 4 A and 10 A, VCE(sat) and VBE(on) at 4 A.",
+      "omissions": [
+        "the gain's fall at high current (5 minimum at 10 A): it stays 37",
+        "the Early effect: the collector current does not rise with VCE",
+        "capacitances and fT, so no switching times",
+        "temperature: VBE's -2 mV/C and the gain's rise",
+        "second breakdown, the safe operating area and damage past the ratings",
+        "device-to-device spread within the gain limits",
+        "no manufacturer model qualification"
+      ],
+      "validation": [
+        "tests/*.json"
+      ]
+    }
+  },
+  "provenance": {
+    "author": "EmbSIM",
+    "license": "Apache-2.0",
+    "sources": [
+      {
+        "title": "onsemi 2N3055, MJ2955 complementary silicon power transistors datasheet (2N3055/D)",
+        "url": "https://www.onsemi.com/download/data-sheet/pdf/2n3055-d.pdf",
+        "rev": "current at retrieval",
+        "date": "2026-11-03",
+        "hash": "sha256:5e4e89543350822487cfffa81fca986919a8275caf8085683b40bcd574c0a2fb",
+        "notes": "Maximum ratings (VCEO 60 V, IC 15 A, PD 115 W at 25 C case); hFE 20 to 70 at 4 A and 5 at 10 A; VCE(sat) 1.1 V at 4 A, 400 mA; VBE(on) 1.5 V at 4 A; TO-204AA (TO-3); the ordering information. generated from catalog/families/bjt_onsemi_2n3055/family.json by tools/catalog/families.py; edit the family, not this file"
+      }
+    ]
+  },
+  "part": {
+    "manufacturer": "onsemi",
+    "mpn": "2N3055G",
+    "package": "TO-204AA",
+    "datasheet": "https://www.onsemi.com/download/data-sheet/pdf/2n3055-d.pdf"
+  },
+  "tests": [
+    "tests/*.json"
+  ],
+  "i18n": {
+    "fr": {
+      "source": "046494830b67",
+      "description": "onsemi 2N3055G, un transistor de puissance NPN en TO-204AA (B1, E2, boîtier C) : VCEO 60 V, 15 A, 115 W à 25 °C de boîtier ; hFE de 20 à 70 à 4 A et d'au moins 5 à 10 A, VCE(sat) de 1,1 V au maximum à 4 A, VBE(on) de 1,5 V au maximum à 4 A. Le gain du modèle est 37, au milieu des limites à 4 A.",
+      "fidelity": {
+        "electrical": {
+          "claims": "Transistor d'Ebers-Moll à un gain constant de 37 (le milieu géométrique des 20 à 70 de la fiche technique à 4 A), résistances de collecteur et d'émetteur pour VCE(sat) et VBE(on) ; cas de test pour le gain à 4 A et 10 A, VCE(sat) et VBE(on) à 4 A.",
+          "omissions": [
+            "la baisse du gain à fort courant (5 au minimum à 10 A) : il reste 37",
+            "l'effet Early : le courant de collecteur ne croît pas avec VCE",
+            "les capacités et fT, donc pas de temps de commutation",
+            "la température : les -2 mV/°C de VBE et la hausse du gain",
+            "le second claquage, l'aire de sécurité et les dommages au-delà des valeurs nominales",
+            "la dispersion d'un exemplaire à l'autre dans les limites de gain",
+            "aucune qualification par un modèle du fabricant"
+          ]
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,174 @@
+{
+  "schema_version": 1,
+  "kind": "component",
+  "id": "emblink/diode_1n914b",
+  "version": "1.0.0",
+  "name": "1N914B",
+  "category": "diodes",
+  "subcategory": "switching",
+  "description": "onsemi 1N914B, a small-signal fast switching diode in DO-35 (100 V VRRM, 200 mA average). Its forward voltage is 0.62 to 0.72 V at 5 mA and at most 1.0 V at 100 mA. One fit serves the family (3.1 nA, n = 1.8, 0.5 ohm): 0.67 V at 5 mA, 0.70 V at 10 mA, 0.86 V at 100 mA; breakdown at the datasheet's minimum, 100 V at 100 uA.",
+  "keywords": [
+    "onsemi",
+    "1N914B",
+    "DO-35",
+    "diode",
+    "switching",
+    "signal",
+    "1N914",
+    "1N4148",
+    "fast"
+  ],
+  "pins": [
+    {
+      "name": "A",
+      "number": 2,
+      "model": {
+        "kind": "passive"
+      },
+      "doc": "Anode"
+    },
+    {
+      "name": "K",
+      "number": 1,
+      "model": {
+        "kind": "passive"
+      },
+      "doc": "Cathode"
+    }
+  ],
+  "params": {
+    "is": {
+      "type": "number",
+      "unit": "A",
+      "default": "3.1n",
+      "doc": "Saturation current",
+      "min": "1e-20",
+      "max": "1m",
+      "advanced": true
+    },
+    "n": {
+      "type": "number",
+      "unit": "",
+      "default": 1.8,
+      "doc": "Emission coefficient",
+      "min": 0.5,
+      "max": 5,
+      "advanced": true
+    },
+    "rs": {
+      "type": "number",
+      "unit": "ohm",
+      "default": 0.5,
+      "doc": "Series resistance",
+      "min": 0,
+      "advanced": true
+    },
+    "bv": {
+      "type": "number",
+      "unit": "V",
+      "default": 100,
+      "doc": "Reverse breakdown voltage",
+      "min": 0.1,
+      "max": 10000,
+      "advanced": true
+    },
+    "ibv": {
+      "type": "number",
+      "unit": "A",
+      "default": "100u",
+      "doc": "Current at which the reverse voltage is bv",
+      "min": "1n",
+      "max": "0.1",
+      "advanced": true
+    }
+  },
+  "model": {
+    "primitive": "diode"
+  },
+  "symbol": {
+    "svg": "symbol.svg",
+    "width": 60,
+    "height": 20,
+    "pins": {
+      "A": {
+        "x": 0,
+        "y": 10,
+        "side": "left"
+      },
+      "K": {
+        "x": 60,
+        "y": 10,
+        "side": "right"
+      }
+    }
+  },
+  "fidelity": {
+    "functional": null,
+    "timed": null,
+    "electrical": {
+      "claims": "Shockley junction with series resistance inside the datasheet's forward limits for the grade, leakage under 25 nA at 20 V and 5 uA at 75 V, breakdown at the 100 V minimum; DC and low-frequency fixtures from the datasheet's table.",
+      "omissions": [
+        "the 4 pF capacitance",
+        "reverse recovery (4 ns trr)",
+        "temperature dependence (the 150 C leakage)",
+        "breakdown above its 100 V minimum: real parts break down higher",
+        "surge ratings and damage",
+        "device-to-device spread",
+        "no manufacturer model qualification"
+      ],
+      "validation": [
+        "tests/*.json"
+      ]
+    }
+  },
+  "provenance": {
+    "author": "EmbSIM",
+    "license": "Apache-2.0",
+    "sources": [
+      {
+        "title": "onsemi 1N91x, 1N4x48, FDLL914, FDLL4x48 datasheet (1N914/D)",
+        "url": "https://www.onsemi.com/pdf/datasheet/1n914-d.pdf",
+        "rev": "6, September 2024",
+        "date": "2026-11-03",
+        "hash": "sha256:af77f97304678948faca40198e6936a53433ce75fd81325cedeb805ae7cff4a8",
+        "notes": "Pages 1 and 2: the parts and their DO-35 package, VRRM 100 V, VR at 100 uA and 5 uA, VF per grade, IR at 20 V and 75 V, CT per grade, trr. The text extraction prints the micro sign as m. A2/K1 numbering is an ECAD convention. generated from catalog/families/switching_1n914/family.json by tools/catalog/families.py; edit the family, not this file"
+      },
+      {
+        "title": "KiCad family/package reference, revision 4e17d759",
+        "url": "https://github.com/KiCad/kicad-symbols/blob/4e17d7595f9691d45d97aea8ad64572652fb5bed/Diode.lib"
+      }
+    ]
+  },
+  "tests": [
+    "tests/*.json"
+  ],
+  "part": {
+    "manufacturer": "onsemi",
+    "mpn": "1N914B",
+    "package": "DO-35",
+    "datasheet": "https://www.onsemi.com/pdf/datasheet/1n914-d.pdf"
+  },
+  "artwork": {
+    "svg": "artwork.svg"
+  },
+  "i18n": {
+    "fr": {
+      "source": "1cd8d82c49db",
+      "description": "onsemi 1N914B, une diode de commutation rapide petits signaux en DO-35 (100 V de VRRM, 200 mA en moyenne). Sa tension directe est de 0,62 à 0,72 V à 5 mA et d'au plus 1,0 V à 100 mA. Un même ajustement sert à la famille (3,1 nA, n = 1,8, 0,5 ohm) : 0,67 V à 5 mA, 0,70 V à 10 mA, 0,86 V à 100 mA ; claquage au minimum de la fiche technique, 100 V à 100 uA.",
+      "fidelity": {
+        "electrical": {
+          "claims": "Jonction de Shockley avec résistance série dans les limites directes de la fiche technique pour la classe, fuite sous 25 nA à 20 V et 5 uA à 75 V, claquage au minimum de 100 V ; cas de test en continu et basse fréquence tirés du tableau de la fiche technique.",
+          "omissions": [
+            "la capacité de 4 pF",
+            "le recouvrement inverse (trr de 4 ns)",
+            "la dépendance à la température (la fuite à 150 °C)",
+            "le claquage au-delà de son minimum de 100 V : les composants réels claquent plus haut",
+            "les surintensités nominales et les dommages",
+            "la dispersion d'un exemplaire à l'autre",
+            "aucune qualification par un modèle du fabricant"
+          ]
+        }
+      }
+    }
+  }
+}

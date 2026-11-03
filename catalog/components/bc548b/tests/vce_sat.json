@@ -1,0 +1,57 @@
+{
+  "schema_version": 1,
+  "kind": "component_test",
+  "name": "vce_sat",
+  "description": "IC = 10 mA, IB = 0.5 mA: VCE(sat) under the datasheet's 0.25 V",
+  "policy": "electrical",
+  "until": "100us",
+  "circuit": {
+    "components": [
+      {
+        "id": "IC",
+        "component": "emblink/isource",
+        "params": {
+          "dc": 0.01
+        }
+      },
+      {
+        "id": "IB",
+        "component": "emblink/isource",
+        "params": {
+          "dc": 0.0005
+        }
+      },
+      {
+        "id": "DUT",
+        "component": "emblink/bc548b"
+      },
+      {
+        "id": "G",
+        "component": "emblink/gnd"
+      }
+    ],
+    "nets": {
+      "COLL": [
+        "IC.-",
+        "DUT.C"
+      ],
+      "BASE": [
+        "IB.-",
+        "DUT.B"
+      ],
+      "GND": [
+        "IC.+",
+        "IB.+",
+        "DUT.E",
+        "G.GND"
+      ]
+    }
+  },
+  "expect": {
+    "net:COLL": {
+      "at": "50us",
+      "min_v": 0,
+      "max_v": 0.25
+    }
+  }
+}

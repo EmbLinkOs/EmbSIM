@@ -1,0 +1,56 @@
+{
+  "schema_version": 1,
+  "kind": "component_test",
+  "name": "leakage",
+  "description": "VR across it through 100 kohm: under the datasheet's IR at 25 C",
+  "policy": "electrical",
+  "until": "100us",
+  "circuit": {
+    "components": [
+      {
+        "id": "V1",
+        "component": "emblink/vsource",
+        "params": {
+          "dc": 6.5
+        }
+      },
+      {
+        "id": "R1",
+        "component": "emblink/resistor",
+        "params": {
+          "resistance": "100k"
+        }
+      },
+      {
+        "id": "DUT",
+        "component": "emblink/zener_1n5237c"
+      },
+      {
+        "id": "G",
+        "component": "emblink/gnd"
+      }
+    ],
+    "nets": {
+      "VIN": [
+        "V1.+",
+        "R1.1"
+      ],
+      "VK": [
+        "R1.2",
+        "DUT.K"
+      ],
+      "GND": [
+        "V1.-",
+        "DUT.A",
+        "G.GND"
+      ]
+    }
+  },
+  "expect": {
+    "net:VK": {
+      "at": "50us",
+      "min_v": 6.2,
+      "max_v": 6.5
+    }
+  }
+}

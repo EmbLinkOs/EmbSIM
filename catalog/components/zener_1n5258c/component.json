@@ -1,0 +1,174 @@
+{
+  "schema_version": 1,
+  "kind": "component",
+  "id": "emblink/zener_1n5258c",
+  "version": "1.0.0",
+  "name": "1N5258C",
+  "category": "diodes",
+  "subcategory": "zener",
+  "description": "Vishay 1N5258C, a 500 mW small-signal zener in DO-35: 36 V nominal (35.28 to 36.72 V, ±2 %, its suffix's tolerance) at its test current IZT of 3.4 mA. The breakdown is placed so the voltage at IZT is the nominal one; the reverse current at 27 V stays under the datasheet's 0.1 uA and the forward voltage at 200 mA under its 1.1 V.",
+  "keywords": [
+    "Vishay",
+    "1N5258C",
+    "1N52xx",
+    "DO-35",
+    "zener",
+    "voltage reference",
+    "regulator",
+    "36 V"
+  ],
+  "pins": [
+    {
+      "name": "A",
+      "number": 2,
+      "model": {
+        "kind": "passive"
+      },
+      "doc": "Anode"
+    },
+    {
+      "name": "K",
+      "number": 1,
+      "model": {
+        "kind": "passive"
+      },
+      "doc": "Cathode"
+    }
+  ],
+  "params": {
+    "vz": {
+      "type": "number",
+      "unit": "V",
+      "default": 36,
+      "doc": "Zener voltage at the test current izt",
+      "min": 1,
+      "max": 200
+    },
+    "is": {
+      "type": "number",
+      "unit": "A",
+      "default": "1e-14",
+      "doc": "Forward saturation current",
+      "min": "1e-20",
+      "max": "1m",
+      "advanced": true
+    },
+    "n": {
+      "type": "number",
+      "unit": "",
+      "default": 1,
+      "doc": "Forward emission coefficient",
+      "min": 0.5,
+      "max": 5,
+      "advanced": true
+    },
+    "rs": {
+      "type": "number",
+      "unit": "ohm",
+      "default": 0.5,
+      "doc": "Forward series resistance",
+      "min": 0,
+      "advanced": true
+    },
+    "izt": {
+      "type": "number",
+      "unit": "A",
+      "default": 0.0034,
+      "doc": "Test current at which the voltage is vz (IZT1)",
+      "min": "1u",
+      "max": "0.2",
+      "advanced": true
+    }
+  },
+  "model": {
+    "primitive": "zener"
+  },
+  "symbol": {
+    "svg": "symbol.svg",
+    "width": 60,
+    "height": 20,
+    "pins": {
+      "A": {
+        "x": 0,
+        "y": 10,
+        "side": "left"
+      },
+      "K": {
+        "x": 60,
+        "y": 10,
+        "side": "right"
+      }
+    }
+  },
+  "fidelity": {
+    "functional": null,
+    "timed": null,
+    "electrical": {
+      "claims": "Zener junction placed so the voltage at IZT is the nominal VZ, inside its suffix's tolerance of the nominal; leakage under the table's IR at VR; forward voltage under 1.1 V at 200 mA. DC and low-frequency fixtures from the datasheet's table.",
+      "omissions": [
+        "the knee's softness below IZT (ZZK at IZT2): the model's knee is a sharp exponential",
+        "dynamic resistance: one 0.5 ohm series resistance serves both directions, so the slope above IZT is under the table's ZZ maximum rather than at it",
+        "the temperature coefficient (TKVZ)",
+        "capacitance",
+        "power dissipation (500 mW) and damage",
+        "device-to-device spread within the tolerance",
+        "noise",
+        "no manufacturer model qualification"
+      ],
+      "validation": [
+        "tests/*.json"
+      ]
+    }
+  },
+  "provenance": {
+    "author": "EmbSIM",
+    "license": "Apache-2.0",
+    "sources": [
+      {
+        "title": "Vishay 1N5221 to 1N5267 datasheet (document 85588)",
+        "url": "https://www.vishay.com/docs/85588/1n5221.pdf",
+        "rev": "current at retrieval",
+        "date": "2026-11-03",
+        "hash": "sha256:10af8e5f252fc19d2a6bf68c0e3c33632e65ca4cc6f5b7969d967313c326c32f",
+        "notes": "Pages 1 and 2: the B suffix is the ±5 % and the C suffix the ±2 % tolerance of the type's nominal VZ; VZ at IZT1, IZT1 and IZT2, IR at VR, ZZ and ZZK; VF 1.1 V max at 200 mA; Ptot 500 mW; DO-35. generated from catalog/families/zeners_1n52xx/family.json by tools/catalog/families.py; edit the family, not this file"
+      },
+      {
+        "title": "KiCad family/package reference, revision 4e17d759",
+        "url": "https://github.com/KiCad/kicad-symbols/blob/4e17d7595f9691d45d97aea8ad64572652fb5bed/Diode.lib"
+      }
+    ]
+  },
+  "tests": [
+    "tests/*.json"
+  ],
+  "part": {
+    "manufacturer": "Vishay",
+    "mpn": "1N5258C",
+    "package": "DO-35",
+    "datasheet": "https://www.vishay.com/docs/85588/1n5221.pdf"
+  },
+  "artwork": {
+    "svg": "artwork.svg"
+  },
+  "i18n": {
+    "fr": {
+      "source": "a9506f2c3876",
+      "description": "Vishay 1N5258C, une zener petits signaux de 500 mW en DO-35 : 36 V nominal (35.28 à 36.72 V, ±2 %, la tolérance de son suffixe) à son courant de test IZT de 3.4 mA. Le claquage est placé pour que la tension à IZT soit la nominale ; le courant inverse à 27 V reste sous les 0.1 uA de la fiche technique et la tension directe à 200 mA sous ses 1,1 V.",
+      "fidelity": {
+        "electrical": {
+          "claims": "Jonction zener placée pour que la tension à IZT soit la VZ nominale, la tolérance de son suffixe autour de la nominale ; fuite sous l'IR du tableau à VR ; tension directe sous 1,1 V à 200 mA. Cas de test en continu et basse fréquence tirés du tableau de la fiche technique.",
+          "omissions": [
+            "la douceur du coude sous IZT (ZZK à IZT2) : le coude du modèle est une exponentielle franche",
+            "la résistance dynamique : une seule résistance série de 0,5 ohm sert dans les deux sens, la pente au-dessus d'IZT est donc sous le maximum ZZ du tableau plutôt qu'à sa valeur",
+            "le coefficient de température (TKVZ)",
+            "la capacité",
+            "la puissance dissipée (500 mW) et les dommages",
+            "la dispersion d'un exemplaire à l'autre dans la tolérance",
+            "le bruit",
+            "aucune qualification par un modèle du fabricant"
+          ]
+        }
+      }
+    }
+  }
+}

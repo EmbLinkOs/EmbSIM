@@ -1,0 +1,748 @@
+{
+  "schema_version": 1,
+  "kind": "family",
+  "name": "onsemi 2N5060 series sensitive-gate SCRs",
+  "datasheets": {
+    "onsemi-2n5060": {
+      "title": "onsemi 2N5060 series sensitive gate silicon controlled rectifiers datasheet (2N5060/D)",
+      "url": "https://www.onsemi.com/download/data-sheet/pdf/2n5060-d.pdf",
+      "rev": "current at retrieval",
+      "date": "2026-11-03",
+      "hash": "sha256:7b33226665212be4e50f3e546ccac582f690d225d061bf48f67c518ffb3e9eeb",
+      "notes": "Maximum ratings (VDRM and VRRM by type with RGK = 1 kohm, IT(RMS) 0.8 A); IDRM and IRRM 10 uA; VTM 1.7 V at 1.2 A; IGT 200 uA and VGT 0.8 V at VAK = 7 V, RL = 100 ohm; VGD 0.1 V; IH 5 mA; the pin assignment (1 cathode, 2 gate, 3 anode); the ordering information."
+    }
+  },
+  "evidence": [
+    "Sensitive Gate Silicon Controlled Rectifiers",
+    "VTM − − 1\\.7 V \\(ITM = 1\\.2 A peak",
+    "\\(VAK = 7\\.0 Vdc, RL = 100 W\\) TC = 25°C − − 200",
+    "TC = 25°C VGT − − 0\\.8 V",
+    "Holding Current \\(Note 3\\) TC = 25°C IH − − 5\\.0",
+    "1 Cathode",
+    "2 Gate",
+    "3 Anode",
+    "TC = 25°C − − 10 mA"
+  ],
+  "template": {
+    "schema_version": 1,
+    "kind": "component",
+    "id": "emblink/${short}",
+    "version": "1.0.0",
+    "name": "${mpn}",
+    "category": "thyristors",
+    "subcategory": "scrs",
+    "description": "onsemi ${mpn}, a ${vdrm} V, 0.8 A RMS sensitive-gate silicon controlled rectifier in TO-92 (K1, G2, A3): gate trigger current 200 uA and voltage 0.8 V at most, holding current 5 mA at most (with 1 kohm gate to cathode), on-state voltage 1.7 V at most at 1.2 A. The model is the thyristor's two-transistor equivalent: it latches on a gate pulse, holds above its holding current and blocks both ways until it breaks over.",
+    "keywords": [
+      "onsemi",
+      "${mpn}",
+      "${series}",
+      "SCR",
+      "thyristor",
+      "silicon controlled rectifier",
+      "sensitive gate",
+      "TO-92"
+    ],
+    "pins": [
+      {
+        "name": "K",
+        "number": 1,
+        "model": {
+          "kind": "passive"
+        },
+        "doc": "Cathode"
+      },
+      {
+        "name": "G",
+        "number": 2,
+        "model": {
+          "kind": "passive"
+        },
+        "doc": "Gate"
+      },
+      {
+        "name": "A",
+        "number": 3,
+        "model": {
+          "kind": "passive"
+        },
+        "doc": "Anode"
+      }
+    ],
+    "params": {},
+    "model": {
+      "composite": {
+        "components": [
+          {
+            "id": "Q1",
+            "component": "emblink/bjt_pnp",
+            "params": {
+              "is": 1e-14,
+              "bf": 0.5,
+              "br": 1,
+              "re": 0.3,
+              "bvebo": "${vbo}"
+            }
+          },
+          {
+            "id": "Q2",
+            "component": "emblink/bjt_npn",
+            "params": {
+              "is": 1e-14,
+              "bf": 100,
+              "br": 1,
+              "re": 0.1,
+              "bvcbo": "${vbo}"
+            }
+          },
+          {
+            "id": "RSH",
+            "component": "emblink/resistor",
+            "params": {
+              "resistance": "6.8k",
+              "tolerance": 0
+            }
+          }
+        ],
+        "nets": {
+          "A": [
+            "Q1.E"
+          ],
+          "N": [
+            "Q1.B",
+            "Q2.C"
+          ],
+          "G": [
+            "Q1.C",
+            "Q2.B",
+            "RSH.1"
+          ],
+          "K": [
+            "Q2.E",
+            "RSH.2"
+          ]
+        },
+        "ports": {
+          "A": "Q1.E",
+          "G": "Q2.B",
+          "K": "Q2.E"
+        }
+      }
+    },
+    "symbol": {
+      "svg": "symbol.svg",
+      "width": 40,
+      "height": 40,
+      "pins": {
+        "A": {
+          "x": 0,
+          "y": 20,
+          "side": "left"
+        },
+        "K": {
+          "x": 40,
+          "y": 20,
+          "side": "right"
+        },
+        "G": {
+          "x": 30,
+          "y": 40,
+          "side": "bottom"
+        }
+      }
+    },
+    "fidelity": {
+      "functional": null,
+      "timed": null,
+      "electrical": {
+        "claims": "The thyristor's two-transistor equivalent (a PNP of gain 0.5 and an NPN of gain 100 in a regenerative loop) with a 6.8 kohm gate-cathode shunt for the cathode's emitter shorts: it triggers at a gate current under the datasheet's 200 uA, latches and holds above a current under its 5 mA (with 1 kohm gate to cathode), drops under 1.7 V at 1.2 A, and blocks forward and reverse until its middle (or anode) junction breaks down. Fixtures for blocking at VDRM, triggering at the maximum IGT, no trigger at VGD, latching, dropping out below the holding current and VTM.",
+        "omissions": [
+          "the breakover voltage: set 25 % above the rated VDRM (${vbo} V); the datasheet gives only the rating",
+          "dv/dt triggering and the junction capacitances, turn-on delay (3 us typical) and the turn-off time tq",
+          "the gate's own reverse breakdown",
+          "temperature: the gate trigger and holding currents double at -40 C",
+          "the on-state voltage's curve beyond its 1.2 A point; surge and I2t ratings and damage",
+          "device-to-device spread of IGT and IH",
+          "no manufacturer model qualification"
+        ],
+        "validation": [
+          "tests/*.json"
+        ]
+      }
+    },
+    "provenance": {
+      "author": "EmbSIM",
+      "license": "Apache-2.0",
+      "sources": []
+    },
+    "part": {
+      "manufacturer": "onsemi",
+      "mpn": "${mpn}",
+      "package": "TO-92",
+      "datasheet": "${datasheet_url}"
+    },
+    "tests": [
+      "tests/*.json"
+    ],
+    "i18n": {
+      "fr": {
+        "description": "onsemi ${mpn}, un thyristor (redresseur commandé au silicium) à gâchette sensible de ${vdrm} V et 0,8 A eff. en TO-92 (K1, G2, A3) : courant de déclenchement de 200 uA et tension de 0,8 V au plus, courant de maintien de 5 mA au plus (avec 1 kohm entre gâchette et cathode), tension à l'état passant de 1,7 V au plus à 1,2 A. Le modèle est l'équivalent à deux transistors du thyristor : il s'amorce sur une impulsion de gâchette, se maintient au-dessus de son courant de maintien et bloque dans les deux sens jusqu'au retournement.",
+        "fidelity": {
+          "electrical": {
+            "claims": "L'équivalent à deux transistors du thyristor (un PNP de gain 0,5 et un NPN de gain 100 en boucle régénérative) avec un shunt gâchette-cathode de 6,8 kohm pour les courts-circuits d'émetteur de la cathode : il s'amorce à un courant de gâchette sous les 200 uA de la fiche technique, se verrouille et se maintient au-dessus d'un courant sous ses 5 mA (avec 1 kohm entre gâchette et cathode), chute sous 1,7 V à 1,2 A et bloque en direct et en inverse jusqu'au claquage de sa jonction centrale (ou d'anode). Cas de test pour le blocage à VDRM, l'amorçage au IGT maximal, le non-amorçage à VGD, le verrouillage, le désamorçage sous le courant de maintien et VTM.",
+            "omissions": [
+              "la tension de retournement : fixée 25 % au-dessus du VDRM nominal (${vbo} V) ; la fiche technique ne donne que la valeur nominale",
+              "l'amorçage par dv/dt et les capacités de jonction, le retard à l'amorçage (3 us typique) et le temps de désamorçage tq",
+              "le claquage inverse propre de la gâchette",
+              "la température : les courants de déclenchement et de maintien doublent à -40 °C",
+              "la courbe de la tension à l'état passant au-delà de son point à 1,2 A ; les valeurs de surintensité et d'I2t et les dégâts",
+              "la dispersion d'IGT et d'IH d'un exemplaire à l'autre",
+              "aucune qualification par un modèle du fabricant"
+            ]
+          }
+        }
+      }
+    }
+  },
+  "tests": {
+    "blocks": {
+      "schema_version": 1,
+      "kind": "component_test",
+      "name": "blocks",
+      "description": "The rated ${vdrm} V across it through 100 ohm, 1 kohm gate to cathode and no gate current: it blocks, the leakage under the datasheet's 10 uA",
+      "policy": "electrical",
+      "until": "200us",
+      "settings": {
+        "imperfections": "ideal"
+      },
+      "circuit": {
+        "components": [
+          {
+            "id": "VA",
+            "component": "emblink/vsource",
+            "params": {
+              "kind": "dc",
+              "dc": "${v_block}"
+            }
+          },
+          {
+            "id": "RL",
+            "component": "emblink/resistor",
+            "params": {
+              "resistance": 100,
+              "tolerance": 0
+            }
+          },
+          {
+            "id": "RGK",
+            "component": "emblink/resistor",
+            "params": {
+              "resistance": "1k",
+              "tolerance": 0
+            }
+          },
+          {
+            "id": "DUT",
+            "component": "emblink/${short}"
+          },
+          {
+            "id": "G0",
+            "component": "emblink/gnd"
+          }
+        ],
+        "nets": {
+          "VCC": [
+            "VA.+",
+            "RL.1"
+          ],
+          "AN": [
+            "RL.2",
+            "DUT.A"
+          ],
+          "GATE": [
+            "DUT.G",
+            "RGK.1"
+          ],
+          "GND": [
+            "VA.-",
+            "RGK.2",
+            "DUT.K",
+            "G0.GND"
+          ]
+        }
+      },
+      "expect": {
+        "net:AN": {
+          "at": "100us",
+          "min_v": "${v_block_lo}",
+          "max_v": "${v_block}"
+        }
+      }
+    },
+    "triggers": {
+      "schema_version": 1,
+      "kind": "component_test",
+      "name": "triggers",
+      "description": "7 V through 100 ohm (the datasheet's test circuit) and the maximum 200 uA into the gate: it turns on, the anode under 1.7 V",
+      "policy": "electrical",
+      "until": "200us",
+      "settings": {
+        "imperfections": "ideal"
+      },
+      "circuit": {
+        "components": [
+          {
+            "id": "VA",
+            "component": "emblink/vsource",
+            "params": {
+              "kind": "dc",
+              "dc": 7
+            }
+          },
+          {
+            "id": "RL",
+            "component": "emblink/resistor",
+            "params": {
+              "resistance": 100,
+              "tolerance": 0
+            }
+          },
+          {
+            "id": "IG",
+            "component": "emblink/isource",
+            "params": {
+              "kind": "dc",
+              "dc": 0.0002
+            }
+          },
+          {
+            "id": "DUT",
+            "component": "emblink/${short}"
+          },
+          {
+            "id": "G0",
+            "component": "emblink/gnd"
+          }
+        ],
+        "nets": {
+          "VCC": [
+            "VA.+",
+            "RL.1"
+          ],
+          "AN": [
+            "RL.2",
+            "DUT.A"
+          ],
+          "GATE": [
+            "IG.-",
+            "DUT.G"
+          ],
+          "GND": [
+            "VA.-",
+            "IG.+",
+            "DUT.K",
+            "G0.GND"
+          ]
+        }
+      },
+      "expect": {
+        "net:AN": {
+          "at": "100us",
+          "min_v": 0.5,
+          "max_v": 1.7
+        }
+      }
+    },
+    "no_trigger": {
+      "schema_version": 1,
+      "kind": "component_test",
+      "name": "no_trigger",
+      "description": "7 V through 100 ohm with the gate held at 0.1 V, the datasheet's VGD minimum: it stays off",
+      "policy": "electrical",
+      "until": "200us",
+      "settings": {
+        "imperfections": "ideal"
+      },
+      "circuit": {
+        "components": [
+          {
+            "id": "VA",
+            "component": "emblink/vsource",
+            "params": {
+              "kind": "dc",
+              "dc": 7
+            }
+          },
+          {
+            "id": "RL",
+            "component": "emblink/resistor",
+            "params": {
+              "resistance": 100,
+              "tolerance": 0
+            }
+          },
+          {
+            "id": "VG",
+            "component": "emblink/vsource",
+            "params": {
+              "kind": "dc",
+              "dc": 0.1
+            }
+          },
+          {
+            "id": "DUT",
+            "component": "emblink/${short}"
+          },
+          {
+            "id": "G0",
+            "component": "emblink/gnd"
+          }
+        ],
+        "nets": {
+          "VCC": [
+            "VA.+",
+            "RL.1"
+          ],
+          "AN": [
+            "RL.2",
+            "DUT.A"
+          ],
+          "GATE": [
+            "VG.+",
+            "DUT.G"
+          ],
+          "GND": [
+            "VA.-",
+            "VG.-",
+            "DUT.K",
+            "G0.GND"
+          ]
+        }
+      },
+      "expect": {
+        "net:AN": {
+          "at": "100us",
+          "min_v": 6.99,
+          "max_v": 7.0
+        }
+      }
+    },
+    "latches": {
+      "schema_version": 1,
+      "kind": "component_test",
+      "name": "latches",
+      "description": "A 20 us gate pulse of 200 uA in the datasheet's trigger circuit, then the gate left open: 7 V through 100 ohm (about 55 mA, ten times the holding current) keeps it on",
+      "policy": "electrical",
+      "until": "200us",
+      "settings": {
+        "imperfections": "ideal"
+      },
+      "circuit": {
+        "components": [
+          {
+            "id": "VA",
+            "component": "emblink/vsource",
+            "params": {
+              "kind": "dc",
+              "dc": 7
+            }
+          },
+          {
+            "id": "RL",
+            "component": "emblink/resistor",
+            "params": {
+              "resistance": 100,
+              "tolerance": 0
+            }
+          },
+          {
+            "id": "IG",
+            "component": "emblink/isource",
+            "params": {
+              "kind": "pulse",
+              "v1": 0,
+              "v2": 0.0002,
+              "td": "10u",
+              "tr": "100n",
+              "tf": "100n",
+              "pw": "20u",
+              "per": "1"
+            }
+          },
+          {
+            "id": "DUT",
+            "component": "emblink/${short}"
+          },
+          {
+            "id": "G0",
+            "component": "emblink/gnd"
+          }
+        ],
+        "nets": {
+          "VCC": [
+            "VA.+",
+            "RL.1"
+          ],
+          "AN": [
+            "RL.2",
+            "DUT.A"
+          ],
+          "GATE": [
+            "IG.-",
+            "DUT.G"
+          ],
+          "GND": [
+            "VA.-",
+            "IG.+",
+            "DUT.K",
+            "G0.GND"
+          ]
+        }
+      },
+      "expect": {
+        "net:AN": {
+          "at": "150us",
+          "min_v": 0.5,
+          "max_v": 1.7
+        }
+      }
+    },
+    "drops_out": {
+      "schema_version": 1,
+      "kind": "component_test",
+      "name": "drops_out",
+      "description": "The same pulse with 7 V through 22 kohm (0.3 mA, under any holding current) and 1 kohm gate to cathode: it turns off once the gate current ends",
+      "policy": "electrical",
+      "until": "200us",
+      "settings": {
+        "imperfections": "ideal"
+      },
+      "circuit": {
+        "components": [
+          {
+            "id": "VA",
+            "component": "emblink/vsource",
+            "params": {
+              "kind": "dc",
+              "dc": 7
+            }
+          },
+          {
+            "id": "RL",
+            "component": "emblink/resistor",
+            "params": {
+              "resistance": "22k",
+              "tolerance": 0
+            }
+          },
+          {
+            "id": "IG",
+            "component": "emblink/isource",
+            "params": {
+              "kind": "pulse",
+              "v1": 0,
+              "v2": 0.001,
+              "td": "10u",
+              "tr": "100n",
+              "tf": "100n",
+              "pw": "20u",
+              "per": "1"
+            }
+          },
+          {
+            "id": "RGK",
+            "component": "emblink/resistor",
+            "params": {
+              "resistance": "1k",
+              "tolerance": 0
+            }
+          },
+          {
+            "id": "DUT",
+            "component": "emblink/${short}"
+          },
+          {
+            "id": "G0",
+            "component": "emblink/gnd"
+          }
+        ],
+        "nets": {
+          "VCC": [
+            "VA.+",
+            "RL.1"
+          ],
+          "AN": [
+            "RL.2",
+            "DUT.A"
+          ],
+          "GATE": [
+            "IG.-",
+            "DUT.G",
+            "RGK.1"
+          ],
+          "GND": [
+            "VA.-",
+            "IG.+",
+            "RGK.2",
+            "DUT.K",
+            "G0.GND"
+          ]
+        }
+      },
+      "expect": {
+        "net:AN": {
+          "at": "150us",
+          "min_v": 6.9,
+          "max_v": 7.0
+        }
+      }
+    },
+    "on_voltage": {
+      "schema_version": 1,
+      "kind": "component_test",
+      "name": "on_voltage",
+      "description": "Triggered, 1.2 A into the anode (the datasheet's VTM point): the on-state voltage under its 1.7 V maximum",
+      "policy": "electrical",
+      "until": "200us",
+      "settings": {
+        "imperfections": "ideal"
+      },
+      "circuit": {
+        "components": [
+          {
+            "id": "IA",
+            "component": "emblink/isource",
+            "params": {
+              "kind": "pulse",
+              "v1": 0,
+              "v2": 1.2,
+              "td": "20u",
+              "tr": "50u",
+              "tf": "1u",
+              "pw": "1",
+              "per": "2"
+            }
+          },
+          {
+            "id": "RP",
+            "component": "emblink/resistor",
+            "params": {
+              "resistance": "1k",
+              "tolerance": 0
+            }
+          },
+          {
+            "id": "VS",
+            "component": "emblink/vsource",
+            "params": {
+              "kind": "dc",
+              "dc": 7
+            }
+          },
+          {
+            "id": "IG",
+            "component": "emblink/isource",
+            "params": {
+              "kind": "dc",
+              "dc": 0.001
+            }
+          },
+          {
+            "id": "DUT",
+            "component": "emblink/${short}"
+          },
+          {
+            "id": "G0",
+            "component": "emblink/gnd"
+          }
+        ],
+        "nets": {
+          "PRE": [
+            "VS.+",
+            "RP.1"
+          ],
+          "AN": [
+            "RP.2",
+            "IA.-",
+            "DUT.A"
+          ],
+          "GATE": [
+            "IG.-",
+            "DUT.G"
+          ],
+          "GND": [
+            "VS.-",
+            "IA.+",
+            "IG.+",
+            "DUT.K",
+            "G0.GND"
+          ]
+        }
+      },
+      "expect": {
+        "net:AN": {
+          "at": "150us",
+          "min_v": 0.8,
+          "max_v": 1.7
+        }
+      }
+    }
+  },
+  "rows": [
+    {
+      "mpn": "2N5060G",
+      "short": "scr_2n5060g",
+      "series": "2N5060",
+      "vdrm": 30,
+      "vbo": 37.5,
+      "v_block": 30,
+      "datasheet": "onsemi-2n5060",
+      "evidence": [
+        "2N5060 30 ",
+        "2N5060G TO−92"
+      ],
+      "v_block_lo": 29.999
+    },
+    {
+      "mpn": "2N5061G",
+      "short": "scr_2n5061g",
+      "series": "2N5061",
+      "vdrm": 60,
+      "vbo": 75.0,
+      "v_block": 60,
+      "datasheet": "onsemi-2n5060",
+      "evidence": [
+        "2N5061 60 ",
+        "2N5061G TO−92"
+      ],
+      "v_block_lo": 59.999
+    },
+    {
+      "mpn": "2N5062G",
+      "short": "scr_2n5062g",
+      "series": "2N5062",
+      "vdrm": 100,
+      "vbo": 125.0,
+      "v_block": 100,
+      "datasheet": "onsemi-2n5060",
+      "evidence": [
+        "2N5062 100 ",
+        "2N5062G TO−92"
+      ],
+      "v_block_lo": 99.999
+    },
+    {
+      "mpn": "2N5064G",
+      "short": "scr_2n5064g",
+      "series": "2N5064",
+      "vdrm": 200,
+      "vbo": 250.0,
+      "v_block": 200,
+      "datasheet": "onsemi-2n5060",
+      "evidence": [
+        "2N5064 200 ",
+        "2N5064G TO−92"
+      ],
+      "v_block_lo": 199.999
+    }
+  ]
+}

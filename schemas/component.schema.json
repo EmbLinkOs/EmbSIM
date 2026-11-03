@@ -49,7 +49,7 @@
     "category": {
       "description": "The catalog's category (catalog/taxonomy.json, after Proteus's device categories); the categories before it are still accepted, with a warning.",
       "type": "string",
-      "enum": ["analog_ics", "capacitors", "cmos_4000", "connectors", "data_converters", "diodes", "electromechanical", "inductors", "memory_ics", "microprocessor_ics", "boards", "miscellaneous", "operational_amplifiers", "optoelectronics", "resistors", "simulator_primitives", "speakers_sounders", "switches_relays", "transducers", "transistors", "ttl_74", "instruments", "networks", "actuators", "amplifiers", "analog", "comparators", "displays", "indicators", "inputs", "interfaces", "logic", "mcu", "mechanical", "memory", "misc", "passives", "power", "semiconductors", "sensors", "sources", "switches", "timers"]
+      "enum": ["analog_ics", "capacitors", "cmos_4000", "connectors", "data_converters", "diodes", "electromechanical", "inductors", "memory_ics", "microprocessor_ics", "boards", "miscellaneous", "operational_amplifiers", "optoelectronics", "resistors", "simulator_primitives", "speakers_sounders", "switches_relays", "transducers", "transistors", "thyristors", "ttl_74", "instruments", "networks", "actuators", "amplifiers", "analog", "comparators", "displays", "indicators", "inputs", "interfaces", "logic", "mcu", "mechanical", "memory", "misc", "passives", "power", "semiconductors", "sensors", "sources", "switches", "timers"]
     },
     "subcategory": {
       "description": "The category's sub-category (catalog/taxonomy.json), checked semantically.",
