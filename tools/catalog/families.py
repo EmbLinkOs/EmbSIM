@@ -139,7 +139,7 @@ def cmd_generate(names):
     n = 0
     for name, fam in families(names):
         files = render(name, fam)
-        dirs = {str(Path(p).parent) for p in files if p.endswith("component.json")}
+        dirs = {Path(p).parent.as_posix() for p in files if p.endswith("component.json")}
         for d in dirs:  # a family owns its entries' tests: stale ones go
             t = ROOT / d / "tests"
             if t.is_dir():
@@ -165,7 +165,7 @@ def cmd_check():
             if not p.exists() or p.read_text(encoding="utf-8") != text:
                 print(f"{rel}: differs from catalog/families/{name} (run tools/catalog/families.py generate)")
                 bad += 1
-        for d in {str(Path(p).parent) for p in files if p.endswith("component.json")}:
+        for d in {Path(p).parent.as_posix() for p in files if p.endswith("component.json")}:
             for old in (ROOT / d / "tests").glob("*.json"):
                 if f"{d}/tests/{old.name}" not in files:
                     print(f"{d}/tests/{old.name}: not in catalog/families/{name}")
