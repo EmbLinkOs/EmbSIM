@@ -1,0 +1,94 @@
+{
+  "schema_version": 1,
+  "kind": "component_test",
+  "name": "slew",
+  "description": "Channel 2 as a follower given a -1 to +1 V step: the output slews at the datasheet's 5 V/us, through 0 V two tenths of a microsecond after the step",
+  "policy": "electrical",
+  "until": "12us",
+  "settings": {
+    "imperfections": "ideal"
+  },
+  "circuit": {
+    "components": [
+      {
+        "id": "VI",
+        "component": "emblink/vsource",
+        "params": {
+          "kind": "pulse",
+          "v1": -1.0,
+          "v2": 1.0,
+          "td": "10u",
+          "tr": "10n",
+          "tf": "10n",
+          "pw": "1m",
+          "per": "2m"
+        }
+      },
+      {
+        "id": "VP",
+        "component": "emblink/vsource",
+        "params": {
+          "kind": "dc",
+          "dc": 15
+        }
+      },
+      {
+        "id": "VN",
+        "component": "emblink/vsource",
+        "params": {
+          "kind": "dc",
+          "dc": 15
+        }
+      },
+      {
+        "id": "DUT",
+        "component": "emblink/ne5532dr"
+      },
+      {
+        "id": "G",
+        "component": "emblink/gnd"
+      },
+      {
+        "id": "RL",
+        "component": "emblink/resistor",
+        "params": {
+          "resistance": "10k",
+          "tolerance": 0
+        }
+      }
+    ],
+    "nets": {
+      "IN": [
+        "VI.+",
+        "DUT.2IN+"
+      ],
+      "GND": [
+        "VI.-",
+        "VP.-",
+        "VN.+",
+        "G.GND",
+        "RL.2"
+      ],
+      "OUT": [
+        "DUT.2OUT",
+        "DUT.2IN-",
+        "RL.1"
+      ],
+      "VP": [
+        "VP.+",
+        "DUT.VCC+"
+      ],
+      "VN": [
+        "VN.-",
+        "DUT.VCC-"
+      ]
+    }
+  },
+  "expect": {
+    "net:OUT": {
+      "at": "10.205us",
+      "min_v": -0.2,
+      "max_v": 0.2
+    }
+  }
+}

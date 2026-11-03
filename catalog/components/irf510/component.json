@@ -1,0 +1,224 @@
+{
+  "schema_version": 1,
+  "kind": "component",
+  "id": "emblink/irf510",
+  "version": "1.0.0",
+  "name": "IRF510",
+  "category": "transistors",
+  "subcategory": "mosfet_n",
+  "description": "Vishay Siliconix IRF510 (IRF510PbF), an N-channel power MOSFET in TO-220AB (G1, D2, S3, tab D): 100 V, 5.6 A at 25 C case, RDS(on) 0.54 ohm maximum at 10 V and 3.4 A, VGS(th) 2 to 4 V, Ciss 180 pF. The model: a level-1 channel at threshold 3 V, its gain set so RDS(on) meets the maximum and gfs the 1.3 S minimum, the body diode at the datasheet's VSD maximum, and the gate, drain and output capacitances.",
+  "keywords": [
+    "Vishay",
+    "Siliconix",
+    "IRF510",
+    "IRF510PbF",
+    "MOSFET",
+    "N-channel",
+    "power MOSFET",
+    "TO-220",
+    "switch"
+  ],
+  "pins": [
+    {
+      "name": "G",
+      "number": 1,
+      "model": {
+        "kind": "passive"
+      },
+      "doc": "Gate"
+    },
+    {
+      "name": "D",
+      "number": 2,
+      "model": {
+        "kind": "passive"
+      },
+      "doc": "Drain (and the tab)"
+    },
+    {
+      "name": "S",
+      "number": 3,
+      "model": {
+        "kind": "passive"
+      },
+      "doc": "Source"
+    }
+  ],
+  "params": {},
+  "model": {
+    "composite": {
+      "components": [
+        {
+          "id": "M1",
+          "component": "emblink/nmos",
+          "params": {
+            "vto": 3.0,
+            "kp": 0.3098,
+            "lambda": 0,
+            "w": 1,
+            "l": 1
+          }
+        },
+        {
+          "id": "RD",
+          "component": "emblink/resistor",
+          "params": {
+            "resistance": 0.0109,
+            "tolerance": 0
+          }
+        },
+        {
+          "id": "DB",
+          "component": "emblink/diode",
+          "params": {
+            "is": 5.09e-14,
+            "n": 1,
+            "rs": 0.2972
+          }
+        },
+        {
+          "id": "CGS",
+          "component": "emblink/capacitor",
+          "params": {
+            "capacitance": 1.65e-10,
+            "tolerance": 0
+          }
+        },
+        {
+          "id": "CGD",
+          "component": "emblink/capacitor",
+          "params": {
+            "capacitance": 1.5e-11,
+            "tolerance": 0
+          }
+        },
+        {
+          "id": "CDS",
+          "component": "emblink/capacitor",
+          "params": {
+            "capacitance": 6.6e-11,
+            "tolerance": 0
+          }
+        }
+      ],
+      "nets": {
+        "D": [
+          "RD.1",
+          "CGD.2",
+          "CDS.1",
+          "DB.K"
+        ],
+        "DI": [
+          "RD.2",
+          "M1.D"
+        ],
+        "G": [
+          "M1.G",
+          "CGS.1",
+          "CGD.1"
+        ],
+        "S": [
+          "M1.S",
+          "CGS.2",
+          "CDS.2",
+          "DB.A"
+        ]
+      },
+      "ports": {
+        "G": "M1.G",
+        "D": "RD.1",
+        "S": "M1.S"
+      }
+    }
+  },
+  "symbol": {
+    "svg": "symbol.svg",
+    "width": 40,
+    "height": 40,
+    "pins": {
+      "G": {
+        "x": 0,
+        "y": 20,
+        "side": "left"
+      },
+      "D": {
+        "x": 40,
+        "y": 0,
+        "side": "top"
+      },
+      "S": {
+        "x": 40,
+        "y": 40,
+        "side": "bottom"
+      }
+    }
+  },
+  "fidelity": {
+    "functional": null,
+    "timed": null,
+    "electrical": {
+      "claims": "A level-1 MOSFET channel (SPEC-004 nmos) whose threshold is the middle of the datasheet's VGS(th) range and whose gain makes RDS(on) equal its maximum at the datasheet's gate voltage and current while gfs meets its minimum, a drain resistance of 0.0109 ohm, the body diode (forward voltage at its VSD maximum), and Cgs, Cgd and Cds from Ciss, Crss and Coss at 25 V. Fixtures: off, RDS(on), the threshold at 250 uA, the body diode and the input capacitance's time constant.",
+      "omissions": [
+        "the capacitances' dependence on VDS (Crss grows several times below 10 V), so the gate charge (8.3 nC maximum) and the Miller plateau differ from the datasheet's curves",
+        "the transfer curve's shape beyond level 1 (subthreshold conduction, mobility reduction) and output conductance",
+        "avalanche breakdown above 100 V and the avalanche energy rating",
+        "the body diode's reverse recovery (trr, Qrr)",
+        "temperature: RDS(on) about doubles from 25 to 150 C; the thermal resistance and the 43 W dissipation limit",
+        "damage past the absolute maximum ratings (VGS +/-20 V, ID, VDS)",
+        "device-to-device spread (the threshold anywhere in 2 to 4 V)",
+        "the package inductances",
+        "the channel is symmetric (level 1): with the gate at the source and the drain past the threshold on the wrong side, the channel conducts in reverse beside the body diode, so a drop above the threshold (the datasheet's 2.5 V maximum at 5.6 A) is not reached",
+        "no manufacturer model qualification"
+      ],
+      "validation": [
+        "tests/*.json"
+      ]
+    }
+  },
+  "provenance": {
+    "author": "EmbSIM",
+    "license": "Apache-2.0",
+    "sources": [
+      {
+        "title": "Vishay Siliconix IRF510 power MOSFET datasheet (document 91015)",
+        "url": "https://www.vishay.com/docs/91015/irf510.pdf",
+        "rev": "S21-0819-Rev. D, 02-Aug-2021",
+        "date": "2026-11-03",
+        "hash": "sha256:cb34415d97792c0cbd84967dc800b545cc89268632b579fb6bcb9ed79566508c",
+        "notes": "Absolute maximum ratings (VDS, ID at 25 C); the static characteristics (VGS(th), RDS(on) maximum, gfs minimum); the dynamic ones (Ciss, Coss, Crss typical at 25 V); the body diode's VSD maximum; the ordering information. generated from catalog/families/mosfets_vishay_irf_n/family.json by tools/catalog/families.py; edit the family, not this file"
+      }
+    ]
+  },
+  "part": {
+    "manufacturer": "Vishay Siliconix",
+    "mpn": "IRF510",
+    "package": "TO-220AB",
+    "datasheet": "https://www.vishay.com/docs/91015/irf510.pdf"
+  },
+  "tests": [
+    "tests/*.json"
+  ],
+  "i18n": {
+    "fr": {
+      "source": "b3c464d9965e",
+      "description": "Vishay Siliconix IRF510 (IRF510PbF), un MOSFET de puissance canal N en TO-220AB (G1, D2, S3, languette D) : 100 V, 5.6 A à 25 °C de boîtier, RDS(on) de 0,54 ohm au maximum à 10 V et 3.4 A, VGS(th) de 2 à 4 V, Ciss de 180 pF. Le modèle : un canal de niveau 1 au seuil de 3,0 V, son gain réglé pour que RDS(on) atteigne le maximum et gfs le minimum de 1,3 S, la diode de structure au VSD maximal de la fiche technique, et les capacités de grille, de drain et de sortie.",
+      "fidelity": {
+        "electrical": {
+          "claims": "Un canal MOSFET de niveau 1 (nmos de SPEC-004) dont le seuil est le milieu de la plage VGS(th) de la fiche technique et dont le gain donne à RDS(on) son maximum à la tension de grille et au courant de la fiche tout en atteignant le minimum de gfs, une résistance de drain de 0.0109 ohm, la diode de structure (tension directe à son VSD maximal), et Cgs, Cgd et Cds tirées de Ciss, Crss et Coss à 25 V. Cas de test : bloqué, RDS(on), le seuil à 250 uA, la diode de structure et la constante de temps de la capacité d'entrée.",
+          "omissions": [
+            "la dépendance des capacités à VDS (Crss croît de plusieurs fois sous 10 V), donc la charge de grille (8.3 nC au maximum) et le plateau de Miller diffèrent des courbes de la fiche technique",
+            "la forme de la caractéristique de transfert au-delà du niveau 1 (conduction sous le seuil, réduction de mobilité) et la conductance de sortie",
+            "le claquage par avalanche au-delà de 100 V et l'énergie d'avalanche nominale",
+            "le recouvrement inverse de la diode de structure (trr, Qrr)",
+            "la température : RDS(on) double environ de 25 à 150 °C ; la résistance thermique et la limite de dissipation de 43 W",
+            "les dégâts au-delà des valeurs maximales absolues (VGS +/-20 V, ID, VDS)",
+            "la dispersion d'un exemplaire à l'autre (le seuil n'importe où entre 2 et 4 V)",
+            "les inductances du boîtier",
+            "le canal est symétrique (niveau 1) : grille à la source et drain au-delà du seuil du mauvais côté, le canal conduit en inverse à côté de la diode de structure, donc une chute au-delà du seuil (le maximum de 2,5 V de la fiche technique à 5.6 A) n'est pas atteinte",
+            "aucune qualification par un modèle du fabricant"
+          ]
+        }
+      }
+    }
+  }
+}

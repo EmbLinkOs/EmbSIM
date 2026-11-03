@@ -1,0 +1,899 @@
+{
+  "schema_version": 1,
+  "kind": "family",
+  "name": "Texas Instruments NE5532 and SA5532 low-noise dual op-amps",
+  "datasheets": {
+    "ti-ne5532": {
+      "title": "Texas Instruments NE5532, NE5532A, SA5532, SA5532A dual low-noise operational amplifiers datasheet (SLOS075K)",
+      "url": "https://www.ti.com/lit/ds/symlink/ne5532.pdf",
+      "rev": "K, December 2025",
+      "date": "2026-11-03",
+      "hash": "sha256:d9ab074bb64a1a0374f2c353f0b7854ee55e8a95e6de44c336a1084749fdbcb0",
+      "notes": "Electrical characteristics on +/-15 V (VIO 4 mV max, AVD 100 V/mV typical at VO = +/-10 V, unity-gain bandwidth 12 MHz, IOS 38 mA, ICC 6 mA); operating characteristics (SR 5 V/us, noise 5 nV/rtHz); the packaging information's orderable part numbers."
+    }
+  },
+  "evidence": [
+    "B1 Unity-gain bandwidth 12 MHz",
+    "SR Slew rate at unity gain 5 5 V/μs",
+    "RL . 2k., VO±10 V TA = Full range\\(2\\) 15",
+    "TA = 25°C 25 100",
+    "RL . 600., VO = ±10 V"
+  ],
+  "template": {
+    "schema_version": 1,
+    "kind": "component",
+    "id": "emblink/${short}",
+    "version": "1.0.0",
+    "name": "${mpn}",
+    "category": "operational_amplifiers",
+    "subcategory": "dual",
+    "description": "Texas Instruments ${mpn}, the ${device} low-noise bipolar dual operational amplifier in ${pkg} (${temp}, up to ${vmax} V across the supplies): ${aol} V/mV open-loop gain, ${gbw} MHz gain-bandwidth, ${sr} V/us slew rate, ${vos} mV maximum offset, 5 nV/rtHz noise at 1 kHz, ${note}. Both channels on the industry-standard dual pinout.",
+    "keywords": [
+      "Texas Instruments",
+      "TI",
+      "${mpn}",
+      "${device}",
+      "NE5532",
+      "op-amp",
+      "operational amplifier",
+      "dual",
+      "low noise",
+      "audio",
+      "${pkg}"
+    ],
+    "pins": [
+      {
+        "name": "1OUT",
+        "number": 1,
+        "model": {
+          "kind": "analog"
+        }
+      },
+      {
+        "name": "1IN-",
+        "number": 2,
+        "model": {
+          "kind": "analog"
+        }
+      },
+      {
+        "name": "1IN+",
+        "number": 3,
+        "model": {
+          "kind": "analog"
+        }
+      },
+      {
+        "name": "VCC-",
+        "number": 4,
+        "model": {
+          "kind": "analog"
+        },
+        "doc": "Negative supply"
+      },
+      {
+        "name": "2IN+",
+        "number": 5,
+        "model": {
+          "kind": "analog"
+        }
+      },
+      {
+        "name": "2IN-",
+        "number": 6,
+        "model": {
+          "kind": "analog"
+        }
+      },
+      {
+        "name": "2OUT",
+        "number": 7,
+        "model": {
+          "kind": "analog"
+        }
+      },
+      {
+        "name": "VCC+",
+        "number": 8,
+        "model": {
+          "kind": "analog"
+        },
+        "doc": "Positive supply"
+      }
+    ],
+    "params": {},
+    "model": {
+      "composite": {
+        "components": [
+          {
+            "id": "A1",
+            "component": "emblink/opamp",
+            "params": {
+              "gain": "${gain}",
+              "gbw": "${gbw_si}",
+              "rout": 30,
+              "headroom_high": "${hh}",
+              "headroom_low": "${hl}",
+              "slew": "${sr}"
+            }
+          },
+          {
+            "id": "A2",
+            "component": "emblink/opamp",
+            "params": {
+              "gain": "${gain}",
+              "gbw": "${gbw_si}",
+              "rout": 30,
+              "headroom_high": "${hh}",
+              "headroom_low": "${hl}",
+              "slew": "${sr}"
+            }
+          }
+        ],
+        "nets": {
+          "VCC+": [
+            "A1.V+",
+            "A2.V+"
+          ],
+          "VCC-": [
+            "A1.V-",
+            "A2.V-"
+          ]
+        },
+        "ports": {
+          "1OUT": "A1.OUT",
+          "1IN-": "A1.-",
+          "1IN+": "A1.+",
+          "2OUT": "A2.OUT",
+          "2IN-": "A2.-",
+          "2IN+": "A2.+",
+          "VCC+": "A1.V+",
+          "VCC-": "A1.V-"
+        }
+      }
+    },
+    "functional": {
+      "composite": {
+        "components": [],
+        "nets": {},
+        "ports": {}
+      }
+    },
+    "symbol": {
+      "svg": "symbol.svg",
+      "width": 100,
+      "height": 120,
+      "pins": {
+        "1IN+": {
+          "x": 0,
+          "y": 20,
+          "side": "left"
+        },
+        "1IN-": {
+          "x": 0,
+          "y": 40,
+          "side": "left"
+        },
+        "1OUT": {
+          "x": 100,
+          "y": 30,
+          "side": "right"
+        },
+        "2IN+": {
+          "x": 0,
+          "y": 80,
+          "side": "left"
+        },
+        "2IN-": {
+          "x": 0,
+          "y": 100,
+          "side": "left"
+        },
+        "2OUT": {
+          "x": 100,
+          "y": 90,
+          "side": "right"
+        },
+        "VCC+": {
+          "x": 50,
+          "y": 0,
+          "side": "top"
+        },
+        "VCC-": {
+          "x": 50,
+          "y": 120,
+          "side": "bottom"
+        }
+      }
+    },
+    "fidelity": {
+      "functional": {
+        "claims": "Pins only: the functional policy has no analog voltages.",
+        "omissions": [
+          "amplification"
+        ],
+        "validation": [
+          "tests/*.json"
+        ]
+      },
+      "timed": {
+        "claims": "As electrical.",
+        "omissions": []
+      },
+      "electrical": {
+        "claims": "Two op-amps (SPEC-004 opamp) at the datasheet's typical large-signal gain (100 V/mV), a single pole at its 12 MHz unity-gain bandwidth and its 5 V/us slew rate; fixtures on +/-15 V for a follower, the slew rate and the bandwidth. The output swing is set 5 V from each rail, the bound the datasheet's gain test guarantees (VO = +/-10 V into 600 ohm on +/-15 V); the current revision no longer gives a typical swing.",
+        "omissions": [
+          "the typical output swing (real parts reach about +/-13 V on +/-15 V; the model stops at +/-10 V, the guaranteed bound)",
+          "input offset voltage, the bias current (200 nA typical, 800 nA max) and offset current",
+          "the input protection diodes across the inputs",
+          "further poles, the phase margin and the capacitive-load stability",
+          "the output short-circuit current (38 mA)",
+          "noise (5 nV/rtHz, 0.7 pA/rtHz)",
+          "supply current (6 mA for both channels)",
+          "temperature dependence",
+          "device-to-device spread"
+        ],
+        "validation": [
+          "tests/*.json"
+        ]
+      }
+    },
+    "provenance": {
+      "author": "EmbSIM",
+      "license": "Apache-2.0",
+      "sources": []
+    },
+    "tests": [
+      "tests/*.json"
+    ],
+    "part": {
+      "manufacturer": "Texas Instruments",
+      "mpn": "${mpn}",
+      "package": "${pkg}",
+      "datasheet": "${datasheet_url}"
+    },
+    "i18n": {
+      "fr": {
+        "description": "Texas Instruments ${mpn}, l'amplificateur opérationnel double bipolaire à faible bruit ${device} en ${pkg} (${temp_fr}, jusqu'à ${vmax} V entre les alimentations) : gain en boucle ouverte de ${aol} V/mV, produit gain-bande de ${gbw_fr} MHz, vitesse de balayage de ${sr} V/us, décalage maximal de ${vos} mV, bruit de 5 nV/rtHz à 1 kHz, ${note_fr}. Les deux canaux sur le brochage double standard.",
+        "fidelity": {
+          "electrical": {
+            "claims": "Deux amplificateurs opérationnels (opamp de SPEC-004) au gain grand signal typique de la fiche technique (100 V/mV), un pôle unique à sa bande passante à gain unité de 12 MHz et sa vitesse de balayage de 5 V/us ; cas de test sur +/-15 V pour un suiveur, la vitesse de balayage et la bande passante. L'excursion de sortie est fixée à 5 V de chaque rail, la borne que garantit le test de gain de la fiche technique (VO = +/-10 V sur 600 ohm sous +/-15 V) ; la révision actuelle ne donne plus d'excursion typique.",
+            "omissions": [
+              "l'excursion de sortie typique (les composants réels atteignent environ +/-13 V sous +/-15 V ; le modèle s'arrête à +/-10 V, la borne garantie)",
+              "la tension de décalage d'entrée, le courant de polarisation (200 nA typique, 800 nA max) et le courant de décalage",
+              "les diodes de protection entre les entrées",
+              "les pôles suivants, la marge de phase et la stabilité sur charge capacitive",
+              "le courant de court-circuit de sortie (38 mA)",
+              "le bruit (5 nV/rtHz, 0,7 pA/rtHz)",
+              "le courant d'alimentation (6 mA pour les deux canaux)",
+              "la dépendance à la température",
+              "la dispersion d'un exemplaire à l'autre"
+            ]
+          }
+        }
+      }
+    }
+  },
+  "tests": {
+    "follower": {
+      "schema_version": 1,
+      "kind": "component_test",
+      "name": "follower",
+      "description": "Channel 1 as a follower at 1 V on +/-15 V: its output 1 V",
+      "policy": "electrical",
+      "until": "40us",
+      "settings": {
+        "imperfections": "ideal"
+      },
+      "circuit": {
+        "components": [
+          {
+            "id": "VI",
+            "component": "emblink/vsource",
+            "params": {
+              "kind": "dc",
+              "dc": 1
+            }
+          },
+          {
+            "id": "VP",
+            "component": "emblink/vsource",
+            "params": {
+              "kind": "dc",
+              "dc": 15
+            }
+          },
+          {
+            "id": "VN",
+            "component": "emblink/vsource",
+            "params": {
+              "kind": "dc",
+              "dc": 15
+            }
+          },
+          {
+            "id": "DUT",
+            "component": "emblink/${short}"
+          },
+          {
+            "id": "G",
+            "component": "emblink/gnd"
+          },
+          {
+            "id": "RL",
+            "component": "emblink/resistor",
+            "params": {
+              "resistance": "10k",
+              "tolerance": 0
+            }
+          }
+        ],
+        "nets": {
+          "IN": [
+            "VI.+",
+            "DUT.1IN+"
+          ],
+          "GND": [
+            "VI.-",
+            "VP.-",
+            "VN.+",
+            "G.GND",
+            "RL.2"
+          ],
+          "OUT": [
+            "DUT.1OUT",
+            "DUT.1IN-",
+            "RL.1"
+          ],
+          "VP": [
+            "VP.+",
+            "DUT.VCC+"
+          ],
+          "VN": [
+            "VN.-",
+            "DUT.VCC-"
+          ]
+        }
+      },
+      "expect": {
+        "net:OUT": {
+          "at": "20us",
+          "min_v": 0.99,
+          "max_v": 1.01
+        }
+      }
+    },
+    "slew": {
+      "schema_version": 1,
+      "kind": "component_test",
+      "name": "slew",
+      "description": "Channel 2 as a follower given a -1 to +1 V step: the output slews at the datasheet's ${sr} V/us, through 0 V two tenths of a microsecond after the step",
+      "policy": "electrical",
+      "until": "12us",
+      "settings": {
+        "imperfections": "ideal"
+      },
+      "circuit": {
+        "components": [
+          {
+            "id": "VI",
+            "component": "emblink/vsource",
+            "params": {
+              "kind": "pulse",
+              "v1": -1.0,
+              "v2": 1.0,
+              "td": "10u",
+              "tr": "10n",
+              "tf": "10n",
+              "pw": "1m",
+              "per": "2m"
+            }
+          },
+          {
+            "id": "VP",
+            "component": "emblink/vsource",
+            "params": {
+              "kind": "dc",
+              "dc": 15
+            }
+          },
+          {
+            "id": "VN",
+            "component": "emblink/vsource",
+            "params": {
+              "kind": "dc",
+              "dc": 15
+            }
+          },
+          {
+            "id": "DUT",
+            "component": "emblink/${short}"
+          },
+          {
+            "id": "G",
+            "component": "emblink/gnd"
+          },
+          {
+            "id": "RL",
+            "component": "emblink/resistor",
+            "params": {
+              "resistance": "10k",
+              "tolerance": 0
+            }
+          }
+        ],
+        "nets": {
+          "IN": [
+            "VI.+",
+            "DUT.2IN+"
+          ],
+          "GND": [
+            "VI.-",
+            "VP.-",
+            "VN.+",
+            "G.GND",
+            "RL.2"
+          ],
+          "OUT": [
+            "DUT.2OUT",
+            "DUT.2IN-",
+            "RL.1"
+          ],
+          "VP": [
+            "VP.+",
+            "DUT.VCC+"
+          ],
+          "VN": [
+            "VN.-",
+            "DUT.VCC-"
+          ]
+        }
+      },
+      "expect": {
+        "net:OUT": {
+          "at": "10.205us",
+          "min_v": -0.2,
+          "max_v": 0.2
+        }
+      }
+    },
+    "bandwidth": {
+      "schema_version": 1,
+      "kind": "component_test",
+      "name": "bandwidth",
+      "description": "Channel 2 at a gain of 11 given a 10 mV step, too small to slew: one pole, its time constant 11 / (2 pi ${gbw} MHz, the unity-gain bandwidth), 63 % of the 110 mV step then",
+      "policy": "electrical",
+      "until": "15us",
+      "settings": {
+        "imperfections": "ideal"
+      },
+      "circuit": {
+        "components": [
+          {
+            "id": "VI",
+            "component": "emblink/vsource",
+            "params": {
+              "kind": "pulse",
+              "v1": 0.1,
+              "v2": 0.11,
+              "td": "10u",
+              "tr": "10n",
+              "tf": "10n",
+              "pw": "1m",
+              "per": "2m"
+            }
+          },
+          {
+            "id": "VP",
+            "component": "emblink/vsource",
+            "params": {
+              "kind": "dc",
+              "dc": 15
+            }
+          },
+          {
+            "id": "VN",
+            "component": "emblink/vsource",
+            "params": {
+              "kind": "dc",
+              "dc": 15
+            }
+          },
+          {
+            "id": "DUT",
+            "component": "emblink/${short}"
+          },
+          {
+            "id": "G",
+            "component": "emblink/gnd"
+          },
+          {
+            "id": "RF",
+            "component": "emblink/resistor",
+            "params": {
+              "resistance": "10k",
+              "tolerance": 0
+            }
+          },
+          {
+            "id": "RG",
+            "component": "emblink/resistor",
+            "params": {
+              "resistance": "1k",
+              "tolerance": 0
+            }
+          }
+        ],
+        "nets": {
+          "IN": [
+            "VI.+",
+            "DUT.2IN+"
+          ],
+          "GND": [
+            "VI.-",
+            "VP.-",
+            "VN.+",
+            "G.GND",
+            "RG.2"
+          ],
+          "OUT": [
+            "DUT.2OUT",
+            "RF.1"
+          ],
+          "FB": [
+            "DUT.2IN-",
+            "RF.2",
+            "RG.1"
+          ],
+          "VP": [
+            "VP.+",
+            "DUT.VCC+"
+          ],
+          "VN": [
+            "VN.-",
+            "DUT.VCC-"
+          ]
+        }
+      },
+      "expect": {
+        "net:OUT": {
+          "at": "${bw_at}",
+          "min_v": "${bw_min}",
+          "max_v": "${bw_max}"
+        }
+      }
+    }
+  },
+  "rows": [
+    {
+      "mpn": "NE5532P",
+      "short": "ne5532p",
+      "device": "NE5532",
+      "pkg": "PDIP-8",
+      "temp": "0 to 70 C",
+      "temp_fr": "0 à 70 °C",
+      "vmax": 44,
+      "vos": 4,
+      "aol": 100,
+      "gain": "100k",
+      "gbw": 12,
+      "gbw_fr": "12",
+      "gbw_si": "12meg",
+      "sr": 5,
+      "hh": 5,
+      "hh_fr": "5",
+      "hl": 5,
+      "hl_fr": "5",
+      "note": "the NE version (0 to 70 C)",
+      "note_fr": "la version NE (0 à 70 °C)",
+      "bw_at": "10.1459us",
+      "bw_min": 1.1626,
+      "bw_max": 1.1765,
+      "vtop_min": 9.9,
+      "vtop_max": 10.1,
+      "vbot_min": -10.1,
+      "vbot_max": -9.9,
+      "datasheet": "ti-ne5532",
+      "evidence": [
+        "NE5532P Active Production"
+      ]
+    },
+    {
+      "mpn": "NE5532DR",
+      "short": "ne5532dr",
+      "device": "NE5532",
+      "pkg": "SOIC-8",
+      "temp": "0 to 70 C",
+      "temp_fr": "0 à 70 °C",
+      "vmax": 44,
+      "vos": 4,
+      "aol": 100,
+      "gain": "100k",
+      "gbw": 12,
+      "gbw_fr": "12",
+      "gbw_si": "12meg",
+      "sr": 5,
+      "hh": 5,
+      "hh_fr": "5",
+      "hl": 5,
+      "hl_fr": "5",
+      "note": "the NE version (0 to 70 C)",
+      "note_fr": "la version NE (0 à 70 °C)",
+      "bw_at": "10.1459us",
+      "bw_min": 1.1626,
+      "bw_max": 1.1765,
+      "vtop_min": 9.9,
+      "vtop_max": 10.1,
+      "vbot_min": -10.1,
+      "vbot_max": -9.9,
+      "datasheet": "ti-ne5532",
+      "evidence": [
+        "NE5532DR Active Production"
+      ]
+    },
+    {
+      "mpn": "NE5532PSR",
+      "short": "ne5532psr",
+      "device": "NE5532",
+      "pkg": "SO-8 (PS)",
+      "temp": "0 to 70 C",
+      "temp_fr": "0 à 70 °C",
+      "vmax": 44,
+      "vos": 4,
+      "aol": 100,
+      "gain": "100k",
+      "gbw": 12,
+      "gbw_fr": "12",
+      "gbw_si": "12meg",
+      "sr": 5,
+      "hh": 5,
+      "hh_fr": "5",
+      "hl": 5,
+      "hl_fr": "5",
+      "note": "the NE version (0 to 70 C)",
+      "note_fr": "la version NE (0 à 70 °C)",
+      "bw_at": "10.1459us",
+      "bw_min": 1.1626,
+      "bw_max": 1.1765,
+      "vtop_min": 9.9,
+      "vtop_max": 10.1,
+      "vbot_min": -10.1,
+      "vbot_max": -9.9,
+      "datasheet": "ti-ne5532",
+      "evidence": [
+        "NE5532PSR Active Production"
+      ]
+    },
+    {
+      "mpn": "NE5532AP",
+      "short": "ne5532ap",
+      "device": "NE5532A",
+      "pkg": "PDIP-8",
+      "temp": "0 to 70 C",
+      "temp_fr": "0 à 70 °C",
+      "vmax": 44,
+      "vos": 4,
+      "aol": 100,
+      "gain": "100k",
+      "gbw": 12,
+      "gbw_fr": "12",
+      "gbw_si": "12meg",
+      "sr": 5,
+      "hh": 5,
+      "hh_fr": "5",
+      "hl": 5,
+      "hl_fr": "5",
+      "note": "the NE version (0 to 70 C)",
+      "note_fr": "la version NE (0 à 70 °C)",
+      "bw_at": "10.1459us",
+      "bw_min": 1.1626,
+      "bw_max": 1.1765,
+      "vtop_min": 9.9,
+      "vtop_max": 10.1,
+      "vbot_min": -10.1,
+      "vbot_max": -9.9,
+      "datasheet": "ti-ne5532",
+      "evidence": [
+        "NE5532AP Active Production"
+      ]
+    },
+    {
+      "mpn": "NE5532ADR",
+      "short": "ne5532adr",
+      "device": "NE5532A",
+      "pkg": "SOIC-8",
+      "temp": "0 to 70 C",
+      "temp_fr": "0 à 70 °C",
+      "vmax": 44,
+      "vos": 4,
+      "aol": 100,
+      "gain": "100k",
+      "gbw": 12,
+      "gbw_fr": "12",
+      "gbw_si": "12meg",
+      "sr": 5,
+      "hh": 5,
+      "hh_fr": "5",
+      "hl": 5,
+      "hl_fr": "5",
+      "note": "the NE version (0 to 70 C)",
+      "note_fr": "la version NE (0 à 70 °C)",
+      "bw_at": "10.1459us",
+      "bw_min": 1.1626,
+      "bw_max": 1.1765,
+      "vtop_min": 9.9,
+      "vtop_max": 10.1,
+      "vbot_min": -10.1,
+      "vbot_max": -9.9,
+      "datasheet": "ti-ne5532",
+      "evidence": [
+        "NE5532ADR Active Production"
+      ]
+    },
+    {
+      "mpn": "NE5532APSR",
+      "short": "ne5532apsr",
+      "device": "NE5532A",
+      "pkg": "SO-8 (PS)",
+      "temp": "0 to 70 C",
+      "temp_fr": "0 à 70 °C",
+      "vmax": 44,
+      "vos": 4,
+      "aol": 100,
+      "gain": "100k",
+      "gbw": 12,
+      "gbw_fr": "12",
+      "gbw_si": "12meg",
+      "sr": 5,
+      "hh": 5,
+      "hh_fr": "5",
+      "hl": 5,
+      "hl_fr": "5",
+      "note": "the NE version (0 to 70 C)",
+      "note_fr": "la version NE (0 à 70 °C)",
+      "bw_at": "10.1459us",
+      "bw_min": 1.1626,
+      "bw_max": 1.1765,
+      "vtop_min": 9.9,
+      "vtop_max": 10.1,
+      "vbot_min": -10.1,
+      "vbot_max": -9.9,
+      "datasheet": "ti-ne5532",
+      "evidence": [
+        "NE5532APSR Active Production"
+      ]
+    },
+    {
+      "mpn": "SA5532P",
+      "short": "sa5532p",
+      "device": "SA5532",
+      "pkg": "PDIP-8",
+      "temp": "-40 to 85 C",
+      "temp_fr": "-40 à 85 °C",
+      "vmax": 44,
+      "vos": 4,
+      "aol": 100,
+      "gain": "100k",
+      "gbw": 12,
+      "gbw_fr": "12",
+      "gbw_si": "12meg",
+      "sr": 5,
+      "hh": 5,
+      "hh_fr": "5",
+      "hl": 5,
+      "hl_fr": "5",
+      "note": "the SA version (-40 to 85 C)",
+      "note_fr": "la version SA (-40 à 85 °C)",
+      "bw_at": "10.1459us",
+      "bw_min": 1.1626,
+      "bw_max": 1.1765,
+      "vtop_min": 9.9,
+      "vtop_max": 10.1,
+      "vbot_min": -10.1,
+      "vbot_max": -9.9,
+      "datasheet": "ti-ne5532",
+      "evidence": [
+        "SA5532P Active Production"
+      ]
+    },
+    {
+      "mpn": "SA5532DR",
+      "short": "sa5532dr",
+      "device": "SA5532",
+      "pkg": "SOIC-8",
+      "temp": "-40 to 85 C",
+      "temp_fr": "-40 à 85 °C",
+      "vmax": 44,
+      "vos": 4,
+      "aol": 100,
+      "gain": "100k",
+      "gbw": 12,
+      "gbw_fr": "12",
+      "gbw_si": "12meg",
+      "sr": 5,
+      "hh": 5,
+      "hh_fr": "5",
+      "hl": 5,
+      "hl_fr": "5",
+      "note": "the SA version (-40 to 85 C)",
+      "note_fr": "la version SA (-40 à 85 °C)",
+      "bw_at": "10.1459us",
+      "bw_min": 1.1626,
+      "bw_max": 1.1765,
+      "vtop_min": 9.9,
+      "vtop_max": 10.1,
+      "vbot_min": -10.1,
+      "vbot_max": -9.9,
+      "datasheet": "ti-ne5532",
+      "evidence": [
+        "SA5532DR Active Production"
+      ]
+    },
+    {
+      "mpn": "SA5532AP",
+      "short": "sa5532ap",
+      "device": "SA5532A",
+      "pkg": "PDIP-8",
+      "temp": "-40 to 85 C",
+      "temp_fr": "-40 à 85 °C",
+      "vmax": 44,
+      "vos": 4,
+      "aol": 100,
+      "gain": "100k",
+      "gbw": 12,
+      "gbw_fr": "12",
+      "gbw_si": "12meg",
+      "sr": 5,
+      "hh": 5,
+      "hh_fr": "5",
+      "hl": 5,
+      "hl_fr": "5",
+      "note": "the SA version (-40 to 85 C)",
+      "note_fr": "la version SA (-40 à 85 °C)",
+      "bw_at": "10.1459us",
+      "bw_min": 1.1626,
+      "bw_max": 1.1765,
+      "vtop_min": 9.9,
+      "vtop_max": 10.1,
+      "vbot_min": -10.1,
+      "vbot_max": -9.9,
+      "datasheet": "ti-ne5532",
+      "evidence": [
+        "SA5532AP Active Production"
+      ]
+    },
+    {
+      "mpn": "SA5532ADR",
+      "short": "sa5532adr",
+      "device": "SA5532A",
+      "pkg": "SOIC-8",
+      "temp": "-40 to 85 C",
+      "temp_fr": "-40 à 85 °C",
+      "vmax": 44,
+      "vos": 4,
+      "aol": 100,
+      "gain": "100k",
+      "gbw": 12,
+      "gbw_fr": "12",
+      "gbw_si": "12meg",
+      "sr": 5,
+      "hh": 5,
+      "hh_fr": "5",
+      "hl": 5,
+      "hl_fr": "5",
+      "note": "the SA version (-40 to 85 C)",
+      "note_fr": "la version SA (-40 à 85 °C)",
+      "bw_at": "10.1459us",
+      "bw_min": 1.1626,
+      "bw_max": 1.1765,
+      "vtop_min": 9.9,
+      "vtop_max": 10.1,
+      "vbot_min": -10.1,
+      "vbot_max": -9.9,
+      "datasheet": "ti-ne5532",
+      "evidence": [
+        "SA5532ADR Active Production"
+      ]
+    }
+  ]
+}

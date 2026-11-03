@@ -1,65 +1,44 @@
 {
   "schema_version": 1,
   "kind": "component",
+  "id": "emblink/lm358p",
+  "version": "1.0.0",
+  "name": "LM358P",
   "category": "operational_amplifiers",
   "subcategory": "dual",
-  "description": "LM358P dual-channel PDIP-8 behavioral approximation; both channels share explicit supply pins.",
+  "description": "Texas Instruments LM358P, the LM358 dual operational amplifier in PDIP-8 (0 to 70 C, up to 30 V): 100 V/mV open-loop gain, 0.7 MHz gain-bandwidth, 0.3 V/us slew rate, the classic version: its output 1.5 V below the positive rail with 2 kohm and within 5 mV of ground. Both channels on the industry-standard dual pinout.",
+  "keywords": [
+    "Texas Instruments",
+    "TI",
+    "LM358P",
+    "LM358",
+    "op-amp",
+    "operational amplifier",
+    "dual",
+    "PDIP-8",
+    "single supply"
+  ],
   "pins": [
     {
-      "name": "IN1+",
-      "number": 3,
+      "name": "OUT1",
+      "number": 1,
       "model": {
         "kind": "analog"
-      },
-      "doc": "IN1+"
+      }
     },
     {
       "name": "IN1-",
       "number": 2,
       "model": {
         "kind": "analog"
-      },
-      "doc": "IN1-"
+      }
     },
     {
-      "name": "OUT1",
-      "number": 1,
+      "name": "IN1+",
+      "number": 3,
       "model": {
         "kind": "analog"
-      },
-      "doc": "OUT1"
-    },
-    {
-      "name": "IN2+",
-      "number": 5,
-      "model": {
-        "kind": "analog"
-      },
-      "doc": "IN2+"
-    },
-    {
-      "name": "IN2-",
-      "number": 6,
-      "model": {
-        "kind": "analog"
-      },
-      "doc": "IN2-"
-    },
-    {
-      "name": "OUT2",
-      "number": 7,
-      "model": {
-        "kind": "analog"
-      },
-      "doc": "OUT2"
-    },
-    {
-      "name": "VCC",
-      "number": 8,
-      "model": {
-        "kind": "analog"
-      },
-      "doc": "VCC"
+      }
     },
     {
       "name": "GND",
@@ -67,150 +46,102 @@
       "model": {
         "kind": "analog"
       },
-      "doc": "GND"
+      "doc": "Negative supply"
+    },
+    {
+      "name": "IN2+",
+      "number": 5,
+      "model": {
+        "kind": "analog"
+      }
+    },
+    {
+      "name": "IN2-",
+      "number": 6,
+      "model": {
+        "kind": "analog"
+      }
+    },
+    {
+      "name": "OUT2",
+      "number": 7,
+      "model": {
+        "kind": "analog"
+      }
+    },
+    {
+      "name": "VCC",
+      "number": 8,
+      "model": {
+        "kind": "analog"
+      },
+      "doc": "Positive supply, 2.7 to 5.5 V"
     }
   ],
-  "params": {
-    "gain": {
-      "type": "number",
-      "default": "100k",
-      "unit": "",
-      "min": 1
-    },
-    "rout": {
-      "type": "number",
-      "default": 50,
-      "unit": "ohm",
-      "min": 0
-    },
-    "headroom_high": {
-      "type": "number",
-      "default": 1.5,
-      "unit": "V",
-      "min": 0
-    },
-    "headroom_low": {
-      "type": "number",
-      "default": 0.02,
-      "unit": "V",
-      "min": 0
-    }
-  },
+  "params": {},
   "model": {
     "composite": {
       "components": [
         {
-          "id": "A",
+          "id": "A1",
           "component": "emblink/opamp",
           "params": {
-            "gain": "$gain",
-            "rout": "$rout",
-            "headroom_high": "$headroom_high",
-            "headroom_low": "$headroom_low"
+            "gain": "100k",
+            "gbw": "0.7meg",
+            "rout": 30,
+            "headroom_high": 1.5,
+            "headroom_low": 0.005,
+            "slew": 0.3
           }
         },
         {
-          "id": "B",
+          "id": "A2",
           "component": "emblink/opamp",
           "params": {
-            "gain": "$gain",
-            "rout": "$rout",
-            "headroom_high": "$headroom_high",
-            "headroom_low": "$headroom_low"
+            "gain": "100k",
+            "gbw": "0.7meg",
+            "rout": 30,
+            "headroom_high": 1.5,
+            "headroom_low": 0.005,
+            "slew": 0.3
           }
         }
       ],
       "nets": {
         "VCC": [
-          "A.V+",
-          "B.V+"
+          "A1.V+",
+          "A2.V+"
         ],
         "GND": [
-          "A.V-",
-          "B.V-"
+          "A1.V-",
+          "A2.V-"
         ]
       },
       "ports": {
-        "IN1+": "A.+",
-        "IN1-": "A.-",
-        "OUT1": "A.OUT",
-        "IN2+": "B.+",
-        "IN2-": "B.-",
-        "OUT2": "B.OUT",
-        "VCC": "A.V+",
-        "GND": "A.V-"
+        "OUT1": "A1.OUT",
+        "IN1-": "A1.-",
+        "IN1+": "A1.+",
+        "OUT2": "A2.OUT",
+        "IN2-": "A2.-",
+        "IN2+": "A2.+",
+        "VCC": "A1.V+",
+        "GND": "A1.V-"
       }
     }
   },
-  "fidelity": {
-    "functional": null,
-    "timed": null,
-    "electrical": {
-      "claims": "Two independent DC op-amp channels with finite gain, output resistance and headroom.",
-      "omissions": [
-        "manufacturer tolerances",
-        "supply current",
-        "input protection",
-        "temperature effects",
-        "input common-mode violations",
-        "gain-bandwidth",
-        "slew rate",
-        "output current limit",
-        "phase reversal",
-        "no manufacturer model qualification"
-      ],
-      "validation": [
-        "tests/*.json"
-      ],
-      "range": {
-        "voltage_v": [
-          0,
-          5
-        ]
-      }
+  "functional": {
+    "composite": {
+      "components": [],
+      "nets": {},
+      "ports": {}
     }
   },
-  "id": "emblink/lm358p",
-  "name": "LM358P",
-  "version": "1.0.0",
-  "part": {
-    "manufacturer": "Texas Instruments",
-    "mpn": "LM358P",
-    "package": "PDIP-8",
-    "datasheet": "https://www.ti.com/lit/ds/symlink/lm358.pdf"
-  },
-  "keywords": [
-    "Texas Instruments",
-    "LM358P",
-    "PDIP-8"
-  ],
-  "provenance": {
-    "author": "EmbSIM",
-    "license": "Apache-2.0",
-    "sources": [
-      {
-        "title": "Texas Instruments SLOS068AB manufacturer datasheet",
-        "url": "https://www.ti.com/lit/ds/symlink/lm358.pdf",
-        "rev": "October 2024",
-        "date": "2026-10-16",
-        "hash": "sha256:8277dff7b89138c63b3582d37f378065a1dea3cae5ed1e2926ddc2779eb7e3a2",
-        "notes": "Retrieved and reviewed 2026-10-16. PDF pages 3. PDIP-8: OUT1=1, IN1-=2, IN1+=3, V-=4, IN2+=5, IN2-=6, OUT2=7, V+=8. Select legacy LM358, not LM358B electrical tables. Package/source review only; electrical model is not manufacturer-qualified."
-      },
-      {
-        "title": "KiCad family/package reference, revision 4e17d759",
-        "url": "https://github.com/KiCad/kicad-symbols/blob/4e17d7595f9691d45d97aea8ad64572652fb5bed/Amplifier_Operational.lib"
-      }
-    ]
-  },
-  "tests": [
-    "tests/*.json"
-  ],
   "symbol": {
     "svg": "symbol.svg",
-    "width": 180,
-    "height": 100,
+    "width": 100,
+    "height": 120,
     "pins": {
-      "OUT1": {
+      "IN1+": {
         "x": 0,
         "y": 20,
         "side": "left"
@@ -220,59 +151,108 @@
         "y": 40,
         "side": "left"
       },
-      "IN1+": {
-        "x": 0,
-        "y": 60,
-        "side": "left"
-      },
-      "GND": {
-        "x": 0,
-        "y": 80,
-        "side": "left"
+      "OUT1": {
+        "x": 100,
+        "y": 30,
+        "side": "right"
       },
       "IN2+": {
-        "x": 180,
+        "x": 0,
         "y": 80,
-        "side": "right"
+        "side": "left"
       },
       "IN2-": {
-        "x": 180,
-        "y": 60,
-        "side": "right"
+        "x": 0,
+        "y": 100,
+        "side": "left"
       },
       "OUT2": {
-        "x": 180,
-        "y": 40,
+        "x": 100,
+        "y": 90,
         "side": "right"
       },
       "VCC": {
-        "x": 180,
-        "y": 20,
-        "side": "right"
+        "x": 50,
+        "y": 0,
+        "side": "top"
+      },
+      "GND": {
+        "x": 50,
+        "y": 120,
+        "side": "bottom"
       }
     }
   },
-  "artwork": {
-    "svg": "artwork.svg"
+  "fidelity": {
+    "functional": {
+      "claims": "Pins only: the functional policy has no analog voltages.",
+      "omissions": [
+        "amplification"
+      ],
+      "validation": [
+        "tests/*.json"
+      ]
+    },
+    "timed": {
+      "claims": "As electrical.",
+      "omissions": []
+    },
+    "electrical": {
+      "claims": "Two op-amps (SPEC-004 opamp) at the datasheet's typical open-loop gain, a single pole at its gain-bandwidth, its slew rate, and its output headroom to each rail; fixtures for a follower, the positive headroom, the slew rate and the bandwidth from those values.",
+      "omissions": [
+        "input offset voltage, bias and offset currents, and their drift",
+        "the common-mode input range (to V+ minus 1.5 V or 2 V): inputs above it are not diagnosed",
+        "further poles, the phase margin and the capacitive-load stability",
+        "the output current limit (20 to 60 mA) and the crossover distortion",
+        "noise",
+        "supply current (0.3 to 0.7 mA per channel)",
+        "temperature dependence",
+        "device-to-device spread"
+      ],
+      "validation": [
+        "tests/*.json"
+      ]
+    }
+  },
+  "provenance": {
+    "author": "EmbSIM",
+    "license": "Apache-2.0",
+    "sources": [
+      {
+        "title": "Texas Instruments LM358, LM358A, LM258, LM2904, LM358B, LM2904B datasheet (SNOSBT3)",
+        "url": "https://www.ti.com/lit/ds/symlink/lm358.pdf",
+        "rev": "current at retrieval",
+        "date": "2026-11-03",
+        "hash": "sha256:8277dff7b89138c63b3582d37f378065a1dea3cae5ed1e2926ddc2779eb7e3a2",
+        "notes": "Family comparison (supply, offset, bias, GBW, supply current, temperature range); the electrical characteristics of the B and classic versions (AOL typical 140 and 100 V/mV, GBW 1.2 and 0.7 MHz, SR 0.5 and 0.3 V/us, the output swing from the rails); the packaging information's orderable part numbers. generated from catalog/families/opamps_ti_lm358/family.json by tools/catalog/families.py; edit the family, not this file"
+      }
+    ]
+  },
+  "tests": [
+    "tests/*.json"
+  ],
+  "part": {
+    "manufacturer": "Texas Instruments",
+    "mpn": "LM358P",
+    "package": "PDIP-8",
+    "datasheet": "https://www.ti.com/lit/ds/symlink/lm358.pdf"
   },
   "i18n": {
     "fr": {
-      "source": "73811e1e8370",
-      "description": "Approximation comportementale du LM358P double canal en PDIP-8 ; les deux canaux partagent des broches d'alimentation explicites.",
+      "source": "1d0997efbb77",
+      "description": "Texas Instruments LM358P, l'amplificateur opérationnel double LM358 en PDIP-8 (0 à 70 °C, jusqu'à 30 V) : gain en boucle ouverte de 100 V/mV, produit gain-bande de 0,7 MHz, vitesse de balayage de 0,3 V/us, la version classique : sa sortie 1,5 V sous le rail positif sur 2 kohm et à 5 mV de la masse. Les deux canaux sur le brochage double standard.",
       "fidelity": {
         "electrical": {
-          "claims": "Deux canaux d'ampli-op continus indépendants avec gain fini, résistance de sortie et marge de tension.",
+          "claims": "Deux amplificateurs opérationnels (opamp de SPEC-004) au gain en boucle ouverte typique de la fiche technique, un pôle unique à son produit gain-bande, sa vitesse de balayage et la marge de sa sortie vers chaque rail ; cas de test pour un suiveur, la marge positive, la vitesse de balayage et la bande passante tirés de ces valeurs.",
           "omissions": [
-            "les tolérances du fabricant",
-            "le courant d'alimentation",
-            "la protection des entrées",
-            "les effets de la température",
-            "les violations du mode commun en entrée",
-            "le produit gain-bande",
-            "la vitesse de balayage",
-            "la limite de courant de sortie",
-            "l'inversion de phase",
-            "aucune qualification par un modèle du fabricant"
+            "la tension de décalage d'entrée, les courants de polarisation et de décalage, et leur dérive",
+            "la plage d'entrée en mode commun (jusqu'à V+ moins 1,5 V ou 2 V) : une entrée au-delà n'est pas signalée",
+            "les pôles suivants, la marge de phase et la stabilité sur charge capacitive",
+            "la limite de courant de sortie (20 à 60 mA) et la distorsion de croisement",
+            "le bruit",
+            "le courant d'alimentation (0,3 à 0,7 mA par canal)",
+            "la dépendance à la température",
+            "la dispersion d'un exemplaire à l'autre"
           ]
         }
       }

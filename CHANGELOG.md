@@ -62,6 +62,19 @@ versions follow semantic versioning. There is no release yet.
   datasheets' no-load ratio and regulation. And 11 Vishay phototransistor
   optocouplers by CTR rank (SFH617A-1 to -4, CNY17-1 to -4, 4N35 to 4N37)
   on a generic `emblink/optocoupler`.
+- Op-amps and power MOSFETs as families. Texas Instruments' LM358, LM258
+  and LM2904 (classic and B versions), TL072 (C, AC, BC, I and H) and
+  NE5532 and SA5532 dual op-amps, every orderable package (40), each at its
+  datasheet's open-loop gain, gain-bandwidth, slew rate and output swing,
+  held to a follower, the swing, the slew and the bandwidth; the LM358P is
+  now generated, its pins named as the datasheet names them (OUT1, IN1-,
+  ...). Vishay Siliconix's IRF510 to IRF840, IRFZ14 to IRFZ48 and IRL510
+  to IRL540 N-channel and IRF9510 to IRF9640 and IRF9Z14 to IRF9Z34
+  P-channel power MOSFETs (43), from each part's own datasheet: a level-1
+  channel at the middle of VGS(th), its gain meeting RDS(on)'s maximum and
+  gfs's minimum, a drain resistance, the body diode at its VSD maximum and
+  Cgs, Cgd and Cds from Ciss, Crss and Coss; fixtures for off, RDS(on),
+  VGS(th) at 250 uA, the body diode and the input time constant.
 - An analog part with only some of its pins wired lost the open ones'
   places: an optocoupler failed to load and a transformer's free centre tap
   was grounded. Both now keep their terminals and leave the open ones

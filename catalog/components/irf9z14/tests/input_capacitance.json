@@ -1,0 +1,68 @@
+{
+  "schema_version": 1,
+  "kind": "component_test",
+  "name": "input_capacitance",
+  "description": "Drain and source grounded, the gate stepped to 10 V through 1 kohm: it charges Ciss (270 pF), reaching 63 % at one time constant",
+  "policy": "electrical",
+  "until": "1.3500us",
+  "settings": {
+    "imperfections": "ideal"
+  },
+  "circuit": {
+    "components": [
+      {
+        "id": "VG",
+        "component": "emblink/vsource",
+        "params": {
+          "kind": "pulse",
+          "v1": 0,
+          "v2": -10,
+          "td": "0",
+          "tr": "1n",
+          "tf": "1n",
+          "pw": "1",
+          "per": "2"
+        }
+      },
+      {
+        "id": "RG",
+        "component": "emblink/resistor",
+        "params": {
+          "resistance": "1k",
+          "tolerance": 0
+        }
+      },
+      {
+        "id": "DUT",
+        "component": "emblink/irf9z14"
+      },
+      {
+        "id": "G",
+        "component": "emblink/gnd"
+      }
+    ],
+    "nets": {
+      "SRC": [
+        "VG.+",
+        "RG.1"
+      ],
+      "GATE": [
+        "RG.2",
+        "DUT.G"
+      ],
+      "GND": [
+        "VG.-",
+        "DUT.D",
+        "DUT.S",
+        "G.GND"
+      ]
+    }
+  },
+  "expect": {
+    "net:GATE": {
+      "at": "0.2700us",
+      "min_v": -6.699,
+      "max_v": -5.941
+    }
+  }
+}

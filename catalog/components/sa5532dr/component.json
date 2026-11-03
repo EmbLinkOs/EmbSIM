@@ -1,0 +1,265 @@
+{
+  "schema_version": 1,
+  "kind": "component",
+  "id": "emblink/sa5532dr",
+  "version": "1.0.0",
+  "name": "SA5532DR",
+  "category": "operational_amplifiers",
+  "subcategory": "dual",
+  "description": "Texas Instruments SA5532DR, the SA5532 low-noise bipolar dual operational amplifier in SOIC-8 (-40 to 85 C, up to 44 V across the supplies): 100 V/mV open-loop gain, 12 MHz gain-bandwidth, 5 V/us slew rate, 4 mV maximum offset, 5 nV/rtHz noise at 1 kHz, the SA version (-40 to 85 C). Both channels on the industry-standard dual pinout.",
+  "keywords": [
+    "Texas Instruments",
+    "TI",
+    "SA5532DR",
+    "SA5532",
+    "NE5532",
+    "op-amp",
+    "operational amplifier",
+    "dual",
+    "low noise",
+    "audio",
+    "SOIC-8"
+  ],
+  "pins": [
+    {
+      "name": "1OUT",
+      "number": 1,
+      "model": {
+        "kind": "analog"
+      }
+    },
+    {
+      "name": "1IN-",
+      "number": 2,
+      "model": {
+        "kind": "analog"
+      }
+    },
+    {
+      "name": "1IN+",
+      "number": 3,
+      "model": {
+        "kind": "analog"
+      }
+    },
+    {
+      "name": "VCC-",
+      "number": 4,
+      "model": {
+        "kind": "analog"
+      },
+      "doc": "Negative supply"
+    },
+    {
+      "name": "2IN+",
+      "number": 5,
+      "model": {
+        "kind": "analog"
+      }
+    },
+    {
+      "name": "2IN-",
+      "number": 6,
+      "model": {
+        "kind": "analog"
+      }
+    },
+    {
+      "name": "2OUT",
+      "number": 7,
+      "model": {
+        "kind": "analog"
+      }
+    },
+    {
+      "name": "VCC+",
+      "number": 8,
+      "model": {
+        "kind": "analog"
+      },
+      "doc": "Positive supply"
+    }
+  ],
+  "params": {},
+  "model": {
+    "composite": {
+      "components": [
+        {
+          "id": "A1",
+          "component": "emblink/opamp",
+          "params": {
+            "gain": "100k",
+            "gbw": "12meg",
+            "rout": 30,
+            "headroom_high": 5,
+            "headroom_low": 5,
+            "slew": 5
+          }
+        },
+        {
+          "id": "A2",
+          "component": "emblink/opamp",
+          "params": {
+            "gain": "100k",
+            "gbw": "12meg",
+            "rout": 30,
+            "headroom_high": 5,
+            "headroom_low": 5,
+            "slew": 5
+          }
+        }
+      ],
+      "nets": {
+        "VCC+": [
+          "A1.V+",
+          "A2.V+"
+        ],
+        "VCC-": [
+          "A1.V-",
+          "A2.V-"
+        ]
+      },
+      "ports": {
+        "1OUT": "A1.OUT",
+        "1IN-": "A1.-",
+        "1IN+": "A1.+",
+        "2OUT": "A2.OUT",
+        "2IN-": "A2.-",
+        "2IN+": "A2.+",
+        "VCC+": "A1.V+",
+        "VCC-": "A1.V-"
+      }
+    }
+  },
+  "functional": {
+    "composite": {
+      "components": [],
+      "nets": {},
+      "ports": {}
+    }
+  },
+  "symbol": {
+    "svg": "symbol.svg",
+    "width": 100,
+    "height": 120,
+    "pins": {
+      "1IN+": {
+        "x": 0,
+        "y": 20,
+        "side": "left"
+      },
+      "1IN-": {
+        "x": 0,
+        "y": 40,
+        "side": "left"
+      },
+      "1OUT": {
+        "x": 100,
+        "y": 30,
+        "side": "right"
+      },
+      "2IN+": {
+        "x": 0,
+        "y": 80,
+        "side": "left"
+      },
+      "2IN-": {
+        "x": 0,
+        "y": 100,
+        "side": "left"
+      },
+      "2OUT": {
+        "x": 100,
+        "y": 90,
+        "side": "right"
+      },
+      "VCC+": {
+        "x": 50,
+        "y": 0,
+        "side": "top"
+      },
+      "VCC-": {
+        "x": 50,
+        "y": 120,
+        "side": "bottom"
+      }
+    }
+  },
+  "fidelity": {
+    "functional": {
+      "claims": "Pins only: the functional policy has no analog voltages.",
+      "omissions": [
+        "amplification"
+      ],
+      "validation": [
+        "tests/*.json"
+      ]
+    },
+    "timed": {
+      "claims": "As electrical.",
+      "omissions": []
+    },
+    "electrical": {
+      "claims": "Two op-amps (SPEC-004 opamp) at the datasheet's typical large-signal gain (100 V/mV), a single pole at its 12 MHz unity-gain bandwidth and its 5 V/us slew rate; fixtures on +/-15 V for a follower, the slew rate and the bandwidth. The output swing is set 5 V from each rail, the bound the datasheet's gain test guarantees (VO = +/-10 V into 600 ohm on +/-15 V); the current revision no longer gives a typical swing.",
+      "omissions": [
+        "the typical output swing (real parts reach about +/-13 V on +/-15 V; the model stops at +/-10 V, the guaranteed bound)",
+        "input offset voltage, the bias current (200 nA typical, 800 nA max) and offset current",
+        "the input protection diodes across the inputs",
+        "further poles, the phase margin and the capacitive-load stability",
+        "the output short-circuit current (38 mA)",
+        "noise (5 nV/rtHz, 0.7 pA/rtHz)",
+        "supply current (6 mA for both channels)",
+        "temperature dependence",
+        "device-to-device spread"
+      ],
+      "validation": [
+        "tests/*.json"
+      ]
+    }
+  },
+  "provenance": {
+    "author": "EmbSIM",
+    "license": "Apache-2.0",
+    "sources": [
+      {
+        "title": "Texas Instruments NE5532, NE5532A, SA5532, SA5532A dual low-noise operational amplifiers datasheet (SLOS075K)",
+        "url": "https://www.ti.com/lit/ds/symlink/ne5532.pdf",
+        "rev": "K, December 2025",
+        "date": "2026-11-03",
+        "hash": "sha256:d9ab074bb64a1a0374f2c353f0b7854ee55e8a95e6de44c336a1084749fdbcb0",
+        "notes": "Electrical characteristics on +/-15 V (VIO 4 mV max, AVD 100 V/mV typical at VO = +/-10 V, unity-gain bandwidth 12 MHz, IOS 38 mA, ICC 6 mA); operating characteristics (SR 5 V/us, noise 5 nV/rtHz); the packaging information's orderable part numbers. generated from catalog/families/opamps_ti_ne5532/family.json by tools/catalog/families.py; edit the family, not this file"
+      }
+    ]
+  },
+  "tests": [
+    "tests/*.json"
+  ],
+  "part": {
+    "manufacturer": "Texas Instruments",
+    "mpn": "SA5532DR",
+    "package": "SOIC-8",
+    "datasheet": "https://www.ti.com/lit/ds/symlink/ne5532.pdf"
+  },
+  "i18n": {
+    "fr": {
+      "source": "3e6d3967c469",
+      "description": "Texas Instruments SA5532DR, l'amplificateur opérationnel double bipolaire à faible bruit SA5532 en SOIC-8 (-40 à 85 °C, jusqu'à 44 V entre les alimentations) : gain en boucle ouverte de 100 V/mV, produit gain-bande de 12 MHz, vitesse de balayage de 5 V/us, décalage maximal de 4 mV, bruit de 5 nV/rtHz à 1 kHz, la version SA (-40 à 85 °C). Les deux canaux sur le brochage double standard.",
+      "fidelity": {
+        "electrical": {
+          "claims": "Deux amplificateurs opérationnels (opamp de SPEC-004) au gain grand signal typique de la fiche technique (100 V/mV), un pôle unique à sa bande passante à gain unité de 12 MHz et sa vitesse de balayage de 5 V/us ; cas de test sur +/-15 V pour un suiveur, la vitesse de balayage et la bande passante. L'excursion de sortie est fixée à 5 V de chaque rail, la borne que garantit le test de gain de la fiche technique (VO = +/-10 V sur 600 ohm sous +/-15 V) ; la révision actuelle ne donne plus d'excursion typique.",
+          "omissions": [
+            "l'excursion de sortie typique (les composants réels atteignent environ +/-13 V sous +/-15 V ; le modèle s'arrête à +/-10 V, la borne garantie)",
+            "la tension de décalage d'entrée, le courant de polarisation (200 nA typique, 800 nA max) et le courant de décalage",
+            "les diodes de protection entre les entrées",
+            "les pôles suivants, la marge de phase et la stabilité sur charge capacitive",
+            "le courant de court-circuit de sortie (38 mA)",
+            "le bruit (5 nV/rtHz, 0,7 pA/rtHz)",
+            "le courant d'alimentation (6 mA pour les deux canaux)",
+            "la dépendance à la température",
+            "la dispersion d'un exemplaire à l'autre"
+          ]
+        }
+      }
+    }
+  }
+}

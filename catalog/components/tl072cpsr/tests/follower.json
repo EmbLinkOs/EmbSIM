@@ -1,0 +1,88 @@
+{
+  "schema_version": 1,
+  "kind": "component_test",
+  "name": "follower",
+  "description": "Channel 1 as a follower at 1 V on +/-15 V: its output 1 V",
+  "policy": "electrical",
+  "until": "40us",
+  "settings": {
+    "imperfections": "ideal"
+  },
+  "circuit": {
+    "components": [
+      {
+        "id": "VI",
+        "component": "emblink/vsource",
+        "params": {
+          "kind": "dc",
+          "dc": 1
+        }
+      },
+      {
+        "id": "VP",
+        "component": "emblink/vsource",
+        "params": {
+          "kind": "dc",
+          "dc": 15
+        }
+      },
+      {
+        "id": "VN",
+        "component": "emblink/vsource",
+        "params": {
+          "kind": "dc",
+          "dc": 15
+        }
+      },
+      {
+        "id": "DUT",
+        "component": "emblink/tl072cpsr"
+      },
+      {
+        "id": "G",
+        "component": "emblink/gnd"
+      },
+      {
+        "id": "RL",
+        "component": "emblink/resistor",
+        "params": {
+          "resistance": "10k",
+          "tolerance": 0
+        }
+      }
+    ],
+    "nets": {
+      "IN": [
+        "VI.+",
+        "DUT.1IN+"
+      ],
+      "GND": [
+        "VI.-",
+        "VP.-",
+        "VN.+",
+        "G.GND",
+        "RL.2"
+      ],
+      "OUT": [
+        "DUT.1OUT",
+        "DUT.1IN-",
+        "RL.1"
+      ],
+      "VP": [
+        "VP.+",
+        "DUT.VCC+"
+      ],
+      "VN": [
+        "VN.-",
+        "DUT.VCC-"
+      ]
+    }
+  },
+  "expect": {
+    "net:OUT": {
+      "at": "20us",
+      "min_v": 0.99,
+      "max_v": 1.01
+    }
+  }
+}

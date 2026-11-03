@@ -1,0 +1,76 @@
+{
+  "schema_version": 1,
+  "kind": "component_test",
+  "name": "follower",
+  "description": "Channel 1 as a follower at 2.5 V on 5 V: its output 2.5 V (the gain's error is microvolts)",
+  "policy": "electrical",
+  "until": "40us",
+  "settings": {
+    "imperfections": "ideal"
+  },
+  "circuit": {
+    "components": [
+      {
+        "id": "VI",
+        "component": "emblink/vsource",
+        "params": {
+          "kind": "dc",
+          "dc": 2.5
+        }
+      },
+      {
+        "id": "VS",
+        "component": "emblink/vsource",
+        "params": {
+          "kind": "dc",
+          "dc": 5
+        }
+      },
+      {
+        "id": "DUT",
+        "component": "emblink/lm258adr"
+      },
+      {
+        "id": "G",
+        "component": "emblink/gnd"
+      },
+      {
+        "id": "RL",
+        "component": "emblink/resistor",
+        "params": {
+          "resistance": "10k",
+          "tolerance": 0
+        }
+      }
+    ],
+    "nets": {
+      "IN": [
+        "VI.+",
+        "DUT.IN1+"
+      ],
+      "VCC": [
+        "VS.+",
+        "DUT.VCC"
+      ],
+      "GND": [
+        "VI.-",
+        "VS.-",
+        "DUT.GND",
+        "G.GND",
+        "RL.2"
+      ],
+      "OUT": [
+        "DUT.OUT1",
+        "DUT.IN1-",
+        "RL.1"
+      ]
+    }
+  },
+  "expect": {
+    "net:OUT": {
+      "at": "20us",
+      "min_v": 2.49,
+      "max_v": 2.51
+    }
+  }
+}

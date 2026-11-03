@@ -1,0 +1,68 @@
+{
+  "schema_version": 1,
+  "kind": "component_test",
+  "name": "body_diode",
+  "description": "The datasheet's VSD condition: 11 A through the body diode from source to drain (ramped up over 20 us) with the gate off; the drop above the junction's 0.6 V and at most the 1.5 V maximum",
+  "policy": "electrical",
+  "until": "100us",
+  "settings": {
+    "imperfections": "ideal"
+  },
+  "circuit": {
+    "components": [
+      {
+        "id": "I1",
+        "component": "emblink/isource",
+        "params": {
+          "kind": "pulse",
+          "v1": 0,
+          "v2": 11.0,
+          "td": "1u",
+          "tr": "20u",
+          "tf": "1u",
+          "pw": "1",
+          "per": "2"
+        }
+      },
+      {
+        "id": "VG",
+        "component": "emblink/vsource",
+        "params": {
+          "kind": "dc",
+          "dc": 0
+        }
+      },
+      {
+        "id": "DUT",
+        "component": "emblink/irfb11n50a"
+      },
+      {
+        "id": "G",
+        "component": "emblink/gnd"
+      }
+    ],
+    "nets": {
+      "DRAIN": [
+        "I1.+",
+        "DUT.D"
+      ],
+      "GATE": [
+        "VG.+",
+        "DUT.G"
+      ],
+      "GND": [
+        "I1.-",
+        "VG.-",
+        "DUT.S",
+        "G.GND"
+      ]
+    }
+  },
+  "expect": {
+    "net:DRAIN": {
+      "at": "50us",
+      "min_v": -1.515,
+      "max_v": -0.6
+    }
+  }
+}

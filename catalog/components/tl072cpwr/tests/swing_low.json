@@ -1,0 +1,88 @@
+{
+  "schema_version": 1,
+  "kind": "component_test",
+  "name": "swing_low",
+  "description": "Channel 2 as a comparator driven low on +/-15 V into 10 kohm: its output 1.5 V above the negative rail",
+  "policy": "electrical",
+  "until": "40us",
+  "settings": {
+    "imperfections": "ideal"
+  },
+  "circuit": {
+    "components": [
+      {
+        "id": "VI",
+        "component": "emblink/vsource",
+        "params": {
+          "kind": "dc",
+          "dc": -0.1
+        }
+      },
+      {
+        "id": "VP",
+        "component": "emblink/vsource",
+        "params": {
+          "kind": "dc",
+          "dc": 15
+        }
+      },
+      {
+        "id": "VN",
+        "component": "emblink/vsource",
+        "params": {
+          "kind": "dc",
+          "dc": 15
+        }
+      },
+      {
+        "id": "DUT",
+        "component": "emblink/tl072cpwr"
+      },
+      {
+        "id": "G",
+        "component": "emblink/gnd"
+      },
+      {
+        "id": "RL",
+        "component": "emblink/resistor",
+        "params": {
+          "resistance": "10k",
+          "tolerance": 0
+        }
+      }
+    ],
+    "nets": {
+      "IN": [
+        "VI.+",
+        "DUT.2IN+"
+      ],
+      "GND": [
+        "VI.-",
+        "VP.-",
+        "VN.+",
+        "G.GND",
+        "RL.2",
+        "DUT.2IN-"
+      ],
+      "OUT": [
+        "DUT.2OUT",
+        "RL.1"
+      ],
+      "VP": [
+        "VP.+",
+        "DUT.VCC+"
+      ],
+      "VN": [
+        "VN.-",
+        "DUT.VCC-"
+      ]
+    }
+  },
+  "expect": {
+    "net:OUT": {
+      "at": "30us",
+      "min_v": -13.6,
+      "max_v": -13.4
+    }
+  }
+}
