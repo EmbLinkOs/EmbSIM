@@ -1,0 +1,80 @@
+{
+  "schema_version": 1,
+  "kind": "component_test",
+  "name": "drops_out",
+  "description": "Triggered through 22 kohm (0.55 mA, under the typical 1.5 mA holding current): off once the gate is released, its leakage at 12 V under 1 uA",
+  "policy": "electrical",
+  "until": "400us",
+  "settings": {
+    "imperfections": "ideal"
+  },
+  "circuit": {
+    "components": [
+      {
+        "id": "VD",
+        "component": "emblink/vsource",
+        "params": {
+          "kind": "dc",
+          "dc": 12
+        }
+      },
+      {
+        "id": "RL",
+        "component": "emblink/resistor",
+        "params": {
+          "resistance": "22k",
+          "tolerance": 0
+        }
+      },
+      {
+        "id": "IG",
+        "component": "emblink/isource",
+        "params": {
+          "kind": "pulse",
+          "v1": 0.005,
+          "v2": 0,
+          "td": "200u",
+          "tr": "1u",
+          "tf": "1u",
+          "pw": "1",
+          "per": "2"
+        }
+      },
+      {
+        "id": "DUT",
+        "component": "emblink/triac_mac97a8g"
+      },
+      {
+        "id": "G0",
+        "component": "emblink/gnd"
+      }
+    ],
+    "nets": {
+      "VCC": [
+        "VD.+",
+        "RL.1"
+      ],
+      "M2": [
+        "RL.2",
+        "DUT.MT2"
+      ],
+      "GATE": [
+        "IG.-",
+        "DUT.G"
+      ],
+      "GND": [
+        "VD.-",
+        "IG.+",
+        "DUT.MT1",
+        "G0.GND"
+      ]
+    }
+  },
+  "expect": {
+    "net:M2": {
+      "at": "350us",
+      "min_v": 11.978,
+      "max_v": 12.0
+    }
+  }
+}

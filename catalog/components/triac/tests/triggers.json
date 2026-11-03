@@ -1,0 +1,74 @@
+{
+  "schema_version": 1,
+  "kind": "component_test",
+  "name": "triggers",
+  "description": "12 V through 100 ohm and 10 mA into the gate (twice the default 5 mA trigger current): it turns on, under 1.6 V",
+  "policy": "electrical",
+  "until": "200us",
+  "settings": {
+    "imperfections": "ideal"
+  },
+  "circuit": {
+    "components": [
+      {
+        "id": "V1",
+        "component": "emblink/vsource",
+        "params": {
+          "kind": "dc",
+          "dc": 12
+        }
+      },
+      {
+        "id": "R1",
+        "component": "emblink/resistor",
+        "params": {
+          "resistance": 100,
+          "tolerance": 0
+        }
+      },
+      {
+        "id": "IG",
+        "component": "emblink/isource",
+        "params": {
+          "kind": "dc",
+          "dc": 0.01
+        }
+      },
+      {
+        "id": "DUT",
+        "component": "emblink/triac"
+      },
+      {
+        "id": "G0",
+        "component": "emblink/gnd"
+      }
+    ],
+    "nets": {
+      "VCC": [
+        "V1.+",
+        "R1.1"
+      ],
+      "M2": [
+        "R1.2",
+        "DUT.MT2"
+      ],
+      "GATE": [
+        "IG.-",
+        "DUT.G"
+      ],
+      "GND": [
+        "V1.-",
+        "IG.+",
+        "DUT.MT1",
+        "G0.GND"
+      ]
+    }
+  },
+  "expect": {
+    "net:M2": {
+      "at": "100us",
+      "min_v": 0.5,
+      "max_v": 1.6
+    }
+  }
+}

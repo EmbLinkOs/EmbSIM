@@ -1,0 +1,74 @@
+{
+  "schema_version": 1,
+  "kind": "component_test",
+  "name": "no_trigger",
+  "description": "12 V through 100 ohm with the gate held at 0.1 V, the datasheet's VGD: it stays off",
+  "policy": "electrical",
+  "until": "400us",
+  "settings": {
+    "imperfections": "ideal"
+  },
+  "circuit": {
+    "components": [
+      {
+        "id": "VD",
+        "component": "emblink/vsource",
+        "params": {
+          "kind": "dc",
+          "dc": 12
+        }
+      },
+      {
+        "id": "RL",
+        "component": "emblink/resistor",
+        "params": {
+          "resistance": 100,
+          "tolerance": 0
+        }
+      },
+      {
+        "id": "VG",
+        "component": "emblink/vsource",
+        "params": {
+          "kind": "dc",
+          "dc": 0.1
+        }
+      },
+      {
+        "id": "DUT",
+        "component": "emblink/triac_mac97a6g"
+      },
+      {
+        "id": "G0",
+        "component": "emblink/gnd"
+      }
+    ],
+    "nets": {
+      "VCC": [
+        "VD.+",
+        "RL.1"
+      ],
+      "M2": [
+        "RL.2",
+        "DUT.MT2"
+      ],
+      "GATE": [
+        "VG.+",
+        "DUT.G"
+      ],
+      "GND": [
+        "VD.-",
+        "VG.-",
+        "DUT.MT1",
+        "G0.GND"
+      ]
+    }
+  },
+  "expect": {
+    "net:M2": {
+      "at": "100us",
+      "min_v": 11.99,
+      "max_v": 12.0
+    }
+  }
+}

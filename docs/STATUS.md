@@ -8,29 +8,33 @@ does not mean the described behaviour exists.
 ## The library's categories (2026-11-03)
 
 Parts are filed by category and sub-category as Proteus's device picker and
-KiCad's libraries file them: `catalog/taxonomy.json` names 23 categories and
-their sub-categories in English, French and Spanish, every one of the 205
+KiCad's libraries file them: `catalog/taxonomy.json` names 24 categories and
+their sub-categories in English, French and Spanish, every one of the 207
 components has both, and the validator rejects what the taxonomy does not
 list while still loading the older names with a warning. The library browses
 the tree with counts and searches category names in the interface's
 language (`libraryFilters.test.ts`, ctest `taxonomy_ui`).
 
 Part families fill it from datasheet tables (`catalog/families`,
-`tools/catalog/families.py`): 2177 parts in 45 families so far (2383
+`tools/catalog/families.py`): 2184 parts in 47 families so far (2392
 components in all): Vishay's 1N400x and 1N540x rectifiers, 1N581x Schottky
 rectifiers, BZX55 C and B, 1N4728A to 1N4761A and 1N5221 to 1N5267 zeners; onsemi's BZX79 zeners; onsemi's
 1N914, 1N916, 1N4148 and 1N4448 switching diodes; onsemi's BC546 to BC548
 NPN and BC556 to BC558 PNP transistors; onsemi's MC7805 to MC7824
 and MC7905 to MC7918 regulators (the regulator primitive's negative polarity); Vishay's CCF55 (E96, 1 %) and CCF07 (E24, 2 % and 5 %) metal
 film resistors; Nichicon's UVR and UHE aluminium electrolytic capacitors
-(323); Vishay's K series radial MLCCs (385); Kingbright's 5 mm and 3 mm LEDs (30); Vishay's W0xG bridges; Triad's F series power transformers on the new transformer primitives (13); Vishay's SFH617A, CNY17 and 4N35 optocouplers (11); TI's LM358, LM258, LM2904, TL072 and NE5532 dual op-amps (40) and LM324, LM224 and LM2902 quad op-amps (23); Bourns' RLB radial inductors (203); onsemi's TIP31, TIP32, BD135 to BD140, 2N3055 and MJ2955 power transistors (17) and TIP120 to TIP127 Darlingtons (6); onsemi's 2N4401, 2N4403, P2N2222A, MPSA42, MPSA92 and BC327 small-signal transistors (8); Vishay's IRF, IRFZ and IRL N-channel and IRF95/96 and IRF9Z P-channel power MOSFETs (43). Every row is found in its datasheet's text by
-`families.py verify` (2177 rows, 123 datasheets, sha256 checked) and every
+(323); Vishay's K series radial MLCCs (385); Kingbright's 5 mm and 3 mm LEDs (30); Vishay's W0xG bridges; Triad's F series power transformers on the new transformer primitives (13); Vishay's SFH617A, CNY17 and 4N35 optocouplers (11); TI's LM358, LM258, LM2904, TL072 and NE5532 dual op-amps (40) and LM324, LM224 and LM2902 quad op-amps (23); Bourns' RLB radial inductors (203); onsemi's TIP31, TIP32, BD135 to BD140, 2N3055 and MJ2955 power transistors (17) and TIP120 to TIP127 Darlingtons (6); onsemi's 2N4401, 2N4403, P2N2222A, MPSA42, MPSA92 and BC327 small-signal transistors (8); Vishay's IRF, IRFZ and IRL N-channel and IRF95/96 and IRF9Z P-channel power MOSFETs (43); onsemi's 2N5060 to 2N5064 sensitive-gate SCRs (4, the thyristor's two-transistor equivalent) and MAC97A4 to MAC97A8 triacs (3, on the new triac primitive; a generic diac beside it). Every row is found in its datasheet's text by
+`families.py verify` (2184 rows, 128 datasheets, sha256 checked) and every
 part is held to its table's limits by its fixtures (ctest
-`catalog_fixtures`; `catalog validate`: 4517 fixtures).
-Not yet: comparators, film capacitors, thyristors and DIACs, and
-the 74HC and CD4000 functions as families; the transistors' Early effect,
-breakdown and capacitances; the MOSFETs' voltage-dependent capacitances (so the gate charge), avalanche and temperature; the op-amps' offset, bias, input range and noise; the zeners' soft knee and dynamic resistance
-and every diode's capacitance and recovery; a resistor's power rating
+`catalog_fixtures`; `catalog validate`: 4600 fixtures).
+The engine now has what SPEC-004 listed for the junctions: a diode's depletion
+and diffusion charge (its capacitance and reverse recovery), a zener's own
+breakdown path (soft knee and dynamic resistance apart from the forward
+series resistance), a bipolar transistor's charges (switching delays,
+storage time) and breakdown beside its Early effect, and triac and diac
+primitives. The families do not set them from their datasheets yet.
+Not yet: comparators, film capacitors, a diac family (no datasheet
+reachable), and the 74HC and CD4000 functions as families; the MOSFETs' voltage-dependent capacitances (so the gate charge), avalanche and temperature; the op-amps' offset, bias, input range and noise; a resistor's power rating
 and self-heating; an inductor's saturation, core losses and tolerance; a transformer's core (saturation, losses) and magnetising inductance (no datasheet gives it); a capacitor's leakage, its ESR's frequency dependence and an X7R's DC-bias and temperature loss.
 
 ## AI assistants: the MCP server (2026-11-02)

@@ -1,0 +1,195 @@
+{
+  "schema_version": 1,
+  "kind": "component",
+  "id": "emblink/triac",
+  "version": "1.0.0",
+  "name": "Triac",
+  "category": "thyristors",
+  "subcategory": "triacs",
+  "description": "Triac: a bidirectional thyristor that turns on in either direction when its gate current, of either sign, reaches the trigger current of the quadrant it is in, or past its breakover voltage, and stays on until its current falls under the holding current. The defaults are a generic 600 V, 5 mA gate triac; a named part (MAC97 and others) carries its datasheet's values.",
+  "keywords": [
+    "triac",
+    "thyristor",
+    "bidirectional",
+    "AC switch",
+    "phase control"
+  ],
+  "pins": [
+    {
+      "name": "MT1",
+      "number": 1,
+      "model": {
+        "kind": "passive"
+      },
+      "doc": "Main terminal 1 (the gate's reference)"
+    },
+    {
+      "name": "G",
+      "number": 2,
+      "model": {
+        "kind": "passive"
+      },
+      "doc": "Gate"
+    },
+    {
+      "name": "MT2",
+      "number": 3,
+      "model": {
+        "kind": "passive"
+      },
+      "doc": "Main terminal 2"
+    }
+  ],
+  "params": {
+    "vbo": {
+      "type": "number",
+      "unit": "V",
+      "default": 600,
+      "doc": "Breakover voltage (either direction)",
+      "min": 1,
+      "max": 10000
+    },
+    "ih": {
+      "type": "number",
+      "unit": "A",
+      "default": "5m",
+      "doc": "Holding current",
+      "min": 1e-06,
+      "max": 10
+    },
+    "vtm": {
+      "type": "number",
+      "unit": "V",
+      "default": 1.6,
+      "doc": "On-state voltage at itm",
+      "min": 0.1,
+      "max": 20
+    },
+    "itm": {
+      "type": "number",
+      "unit": "A",
+      "default": 1,
+      "doc": "Current at which vtm is given",
+      "min": 0.001,
+      "max": 1000
+    },
+    "igt": {
+      "type": "number",
+      "unit": "A",
+      "default": "5m",
+      "doc": "Gate trigger current (all quadrants unless igt1..igt4 are given; quadrant IV 1.5 times it)",
+      "min": 1e-06,
+      "max": 1
+    },
+    "vgt": {
+      "type": "number",
+      "unit": "V",
+      "default": 0.8,
+      "doc": "Gate voltage at the quadrant I trigger current",
+      "min": 0.2,
+      "max": 3
+    },
+    "rg": {
+      "type": "number",
+      "unit": "ohm",
+      "default": 10,
+      "doc": "Gate series resistance",
+      "min": 0,
+      "max": 10000.0,
+      "advanced": true
+    },
+    "n": {
+      "type": "number",
+      "unit": "",
+      "default": 2,
+      "doc": "On-state knee emission coefficient",
+      "min": 0.5,
+      "max": 10,
+      "advanced": true
+    },
+    "roff": {
+      "type": "number",
+      "unit": "ohm",
+      "default": "1G",
+      "doc": "Off-state resistance (the leakage)",
+      "min": 1000.0,
+      "advanced": true
+    }
+  },
+  "model": {
+    "primitive": "triac"
+  },
+  "symbol": {
+    "svg": "symbol.svg",
+    "width": 40,
+    "height": 40,
+    "pins": {
+      "MT2": {
+        "x": 20,
+        "y": 0,
+        "side": "top"
+      },
+      "MT1": {
+        "x": 20,
+        "y": 40,
+        "side": "bottom"
+      },
+      "G": {
+        "x": 0,
+        "y": 40,
+        "side": "left"
+      }
+    }
+  },
+  "fidelity": {
+    "functional": null,
+    "timed": {
+      "claims": "As electrical.",
+      "omissions": []
+    },
+    "electrical": {
+      "claims": "The triac primitive (SPEC-004 triac/diac): off it leaks through roff; it turns on past vbo or when its gate current reaches the trigger current of its quadrant (I MT2+ G+, II MT2+ G-, III MT2- G-, IV MT2- G+); on it conducts with a smooth knee and ron given by vtm at itm until its current falls under ih; its gate is a junction to MT1 either way (vgt at the quadrant I trigger current) behind rg. The state changes on accepted steps, where the island restarts.",
+      "omissions": [
+        "latching current distinct from holding current",
+        "dv/dt and di/dt triggering",
+        "commutation (dv/dt at turn-off)",
+        "temperature"
+      ],
+      "validation": [
+        "tests/*.json"
+      ]
+    }
+  },
+  "provenance": {
+    "author": "EmbSIM",
+    "license": "Apache-2.0",
+    "sources": [
+      {
+        "title": "SPEC-004 triac and diac primitives"
+      }
+    ]
+  },
+  "tests": [
+    "tests/*.json"
+  ],
+  "i18n": {
+    "fr": {
+      "source": "b9018d33fb17",
+      "description": "Triac : thyristor bidirectionnel qui s'amorce dans un sens ou l'autre quand son courant de gâchette, de l'un ou l'autre signe, atteint le courant de déclenchement du quadrant où il se trouve, ou au-delà de sa tension de retournement, et reste passant jusqu'à ce que son courant passe sous le courant de maintien. Les valeurs par défaut sont celles d'un triac générique de 600 V à gâchette de 5 mA ; une référence nommée (MAC97 et autres) porte les valeurs de sa fiche technique.",
+      "fidelity": {
+        "timed": {
+          "claims": "Comme en électrique."
+        },
+        "electrical": {
+          "claims": "La primitive triac (SPEC-004 triac/diac) : bloqué il fuit par roff ; il s'amorce au-delà de vbo ou quand son courant de gâchette atteint le courant de déclenchement de son quadrant (I MT2+ G+, II MT2+ G-, III MT2- G-, IV MT2- G+) ; passant il conduit avec un coude doux et ron donné par vtm sous itm jusqu'à ce que son courant passe sous ih ; sa gâchette est une jonction vers MT1 dans les deux sens (vgt au courant de déclenchement du quadrant I) derrière rg. L'état change aux pas acceptés, où l'îlot redémarre.",
+          "omissions": [
+            "un courant d'accrochage distinct du courant de maintien",
+            "l'amorçage par dv/dt et di/dt",
+            "la commutation (dv/dt au blocage)",
+            "la température"
+          ]
+        }
+      }
+    }
+  }
+}

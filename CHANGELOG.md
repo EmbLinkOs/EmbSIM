@@ -84,6 +84,31 @@ versions follow semantic versioning. There is no release yet.
   drop at its rated current and its L/R time constant; the library files
   them under new Inductors sub-categories (fixed, power) and the bench
   draws them as sleeved drum cores at their datasheet size.
+- Junction physics SPEC-004 listed and the engine ignored: a diode's charge
+  (depletion `cj0`, `vj`, `m`, `fc` and diffusion `tt`, so its capacitance
+  and its reverse recovery; the island restarts with backward Euler where
+  the stored charge empties, as trapezoidal integration would ring), a
+  bipolar transistor's (`cje`, `cjc`, `tf`, `tr`: switching delays and a
+  saturated switch's storage time) and its breakdown (`bvcbo`, `bvebo`), and
+  a zener's breakdown on its own path (`rbv`, `nbv`: its dynamic resistance
+  and soft knee apart from the forward `rs`). `test_analog`: the depletion
+  time constant, the recovery current and storage time, the zener's slope,
+  the BJT's storage time and both breakdowns.
+- Thyristors: `triac` and `diac` primitives (SPEC-004), latched switches
+  whose state changes on accepted steps: off they leak, past `vbo` they
+  break over, a triac also fires when its gate current reaches its
+  quadrant's trigger current (I to IV); on they conduct with a smooth knee
+  until the current falls under `ih`. A Thyristors category (SCRs, triacs,
+  diacs) in the taxonomy; generic `emblink/triac` and `emblink/diac`
+  (a 32 V trigger diac); onsemi's 2N5060G, 2N5061G, 2N5062G and 2N5064G
+  sensitive-gate SCRs as the thyristor's two-transistor equivalent on the
+  bipolar transistor's new breakdown, and MAC97A4G, MAC97A6G and MAC97A8G
+  triacs, from 2N5060/D and MAC97/D, each held to blocking at VDRM, its
+  trigger current (every quadrant for the triacs), the non-trigger gate
+  voltage, latching, dropping out under the holding current and the
+  on-state voltage. The bipolar transistors, diodes and zeners declare the
+  new junction parameters (`bvcbo`, `bvebo`, `cje`, `cjc`, `tf`, `tr`;
+  `cj0`, `vj`, `m`, `fc`, `tt`; `rbv`, `nbv`).
 - Negative regulators: the `regulator` primitive takes `polarity` -1, every
   voltage and current mirrored (IN and OUT below GND; `test_analog`'s
   `test_regulator_negative`), and onsemi's MC7905 to MC7918 in the B, C and

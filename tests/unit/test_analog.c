@@ -28,7 +28,7 @@ static void on_diag(void *ctx, const es_diagnostic_t *d)
 
 /* ---- circuit building ------------------------------------------------------ */
 
-#define MAX_KINDS 32
+#define MAX_KINDS 64
 static esk_model_ops model_ops[MAX_KINDS];
 static size_t nmodel_ops;
 
@@ -637,6 +637,209 @@ static void test_diode_reverse_and_series(void)
     add_dev2(&e, "resistor", "R1", "{\"r\": 100}", "k", "gnd");
     engine_run(&e);
     CHECK(v_of(&e, "k") > 4.2 && v_of(&e, "k") < 4.4);
+    CHECK_EQ(diag_errors, 0);
+    esk_engine_free(&e);
+}
+
+/* depletion capacitance: reverse biased at 4 V, a 100 mV step through 10 kohm
+ * charges C(-4 V) = cj0 / sqrt(1 + 4 / vj) = 44.7 pF with tau = 0.447 us */
+static void test_diode_capacitance(void)
+{
+    esk_engine e;
+    double tau = 1e4 * 100e-12 / sqrt(5.0);
+    engine_open(&e);
+    add_power(&e, "G", "gnd", 0.0);
+    add_dev2(&e, "vsource", "V1", "{\"kind\": \"pulse\", \"v1\": -4, \"v2\": -4.1, \"td\": \"1u\", \"tr\": \"1n\", \"tf\": \"1n\", \"pw\": \"1\", \"per\": \"2\"}", "s", "gnd");
+    add_dev2(&e, "resistor", "R1", "{\"r\": \"10k\"}", "s", "a");
+    add_dev2(&e, "diode", "D1", "{\"cj0\": 100e-12, \"vj\": 1, \"m\": 0.5}", "a", "gnd");
+    engine_run(&e);
+    CHECK(esk_engine_advance(&e, ES_PS_PER_US + (es_time_t)(tau * 1e12)) == ES_OK);
+    CHECK_NEAR(v_of(&e, "a"), -4.0 - 0.1 * (1.0 - exp(-1.0)), 3e-3);
+    CHECK(esk_engine_advance(&e, 10 * ES_PS_PER_US) == ES_OK);
+    CHECK_NEAR(v_of(&e, "a"), -4.1, 1e-3);
+    CHECK_EQ(diag_errors, 0);
+    esk_engine_free(&e);
+}
+
+/* reverse recovery: 10 mA forward, then the source swings to -5 V through
+ * 1 kohm: the stored charge tt IF keeps the junction forward and the current
+ * reversed (-5.6 mA) for the storage time tt ln(1 + IF / IR), about 110 ns,
+ * before it blocks */
+static void test_diode_recovery(void)
+{
+    esk_engine e;
+    engine_open(&e);
+    add_power(&e, "G", "gnd", 0.0);
+    add_dev2(&e, "vsource", "V1", "{\"kind\": \"pulse\", \"v1\": 10.65, \"v2\": -5, \"td\": \"1u\", \"tr\": \"1n\", \"tf\": \"1n\", \"pw\": \"1\", \"per\": \"2\"}", "s", "gnd");
+    add_dev2(&e, "resistor", "R1", "{\"r\": \"1k\"}", "s", "a");
+    add_dev2(&e, "diode", "D1", "{\"tt\": 100e-9}", "a", "gnd");
+    engine_run(&e);
+    CHECK(esk_engine_advance(&e, ES_PS_PER_US) == ES_OK);
+    CHECK_NEAR(obs_num(&e, "D1", "i"), 0.01, 3e-4);
+    CHECK(esk_engine_advance(&e, ES_PS_PER_US + 50 * ES_PS_PER_NS) == ES_OK);
+    CHECK(v_of(&e, "a") > 0.4);                    /* still forward: the stored charge */
+    CHECK(obs_num(&e, "D1", "i") < -5e-3);         /* the reverse recovery current */
+    CHECK(esk_engine_advance(&e, ES_PS_PER_US + 600 * ES_PS_PER_NS) == ES_OK);
+    CHECK(v_of(&e, "a") < -4.9);                   /* recovered: blocking */
+    CHECK(fabs(obs_num(&e, "D1", "i")) < 1e-4);
+    CHECK_EQ(diag_errors, 0);
+    esk_engine_free(&e);
+}
+
+/* a zener's breakdown on its own path: vz at izt, the slope nbv Vt / I + rbv
+ * above it, the forward drop untouched by rbv */
+static void test_zener_knee(void)
+{
+    static const double cur[3] = {0.02, 0.04, -0.01};
+    double v[3];
+    int k;
+    for (k = 0; k < 3; k++) {
+        esk_engine e;
+        char params[64];
+        engine_open(&e);
+        add_power(&e, "G", "gnd", 0.0);
+        esk_snprintf(params, sizeof params, "{\"dc\": %g}", cur[k]);
+        add_dev2(&e, "isource", "I1", params, "gnd", "k");
+        add_dev2(&e, "zener", "Z1", "{\"vz\": 5.1, \"izt\": 0.02, \"rbv\": 5, \"nbv\": 2}", "gnd", "k");
+        engine_run(&e);
+        v[k] = v_of(&e, "k");
+        CHECK_EQ(diag_errors, 0);
+        esk_engine_free(&e);
+    }
+    CHECK_NEAR(v[0], 5.1, 1e-3);
+    CHECK_NEAR(v[1] - v[0], 2.0 * 0.025852 * log(2.0) + 5.0 * 0.02, 2e-3);
+    CHECK_NEAR(v[2], -0.025852 * log(0.01 / 1e-14), 2e-3); /* forward: the plain junction */
+}
+
+/* a saturated switch's storage time: with tr the collector stays low after
+ * the base drive is removed until the base-collector charge is gone */
+static void test_bjt_storage(void)
+{
+    esk_engine e;
+    engine_open(&e);
+    add_power(&e, "G", "gnd", 0.0);
+    add_power(&e, "P", "vcc", 5.0);
+    add_dev2(&e, "vsource", "V1", "{\"kind\": \"pulse\", \"v1\": 5, \"v2\": 0, \"td\": \"2u\", \"tr\": \"1n\", \"tf\": \"1n\", \"pw\": \"1\", \"per\": \"2\"}", "s", "gnd");
+    add_dev2(&e, "resistor", "RB", "{\"r\": \"10k\"}", "s", "b");
+    add_dev2(&e, "resistor", "RC", "{\"r\": \"1k\"}", "vcc", "c");
+    {
+        const char *pins[3] = { "c", "b", "gnd" };
+        add_dev(&e, "bjt_npn", "Q1", "{\"is\": 1e-14, \"bf\": 100, \"br\": 1, \"tf\": 1e-9, \"tr\": 200e-9, \"cje\": 10e-12, \"cjc\": 5e-12}", pins, 3);
+    }
+    engine_run(&e);
+    CHECK(esk_engine_advance(&e, 2 * ES_PS_PER_US) == ES_OK);
+    CHECK(v_of(&e, "c") < 0.3);                                /* saturated */
+    CHECK(esk_engine_advance(&e, 2 * ES_PS_PER_US + 30 * ES_PS_PER_NS) == ES_OK);
+    CHECK(v_of(&e, "c") < 0.5);                                /* still: the stored charge */
+    CHECK(esk_engine_advance(&e, 6 * ES_PS_PER_US) == ES_OK);
+    CHECK(v_of(&e, "c") > 4.95);                               /* off */
+    CHECK_EQ(diag_errors, 0);
+    esk_engine_free(&e);
+    /* without charges it turns off within nanoseconds */
+    engine_open(&e);
+    add_power(&e, "G", "gnd", 0.0);
+    add_power(&e, "P", "vcc", 5.0);
+    add_dev2(&e, "vsource", "V1", "{\"kind\": \"pulse\", \"v1\": 5, \"v2\": 0, \"td\": \"2u\", \"tr\": \"1n\", \"tf\": \"1n\", \"pw\": \"1\", \"per\": \"2\"}", "s", "gnd");
+    add_dev2(&e, "resistor", "RB", "{\"r\": \"10k\"}", "s", "b");
+    add_dev2(&e, "resistor", "RC", "{\"r\": \"1k\"}", "vcc", "c");
+    {
+        const char *pins[3] = { "c", "b", "gnd" };
+        add_dev(&e, "bjt_npn", "Q1", "{\"is\": 1e-14, \"bf\": 100, \"br\": 1}", pins, 3);
+    }
+    engine_run(&e);
+    CHECK(esk_engine_advance(&e, 2 * ES_PS_PER_US + 30 * ES_PS_PER_NS) == ES_OK);
+    CHECK(v_of(&e, "c") > 4.9);
+    esk_engine_free(&e);
+}
+
+/* breakdown at V(BR)CBO (1 mA) and V(BR)EBO (10 uA) */
+static void test_bjt_breakdown(void)
+{
+    esk_engine e;
+    engine_open(&e);
+    add_power(&e, "G", "gnd", 0.0);
+    add_dev2(&e, "vsource", "V1", "{\"dc\": 100}", "s", "gnd");
+    add_dev2(&e, "resistor", "R1", "{\"r\": \"40k\"}", "s", "c");
+    add_dev2(&e, "resistor", "RE", "{\"r\": \"1meg\"}", "e", "gnd");
+    {
+        const char *pins[3] = { "c", "gnd", "e" };
+        add_dev(&e, "bjt_npn", "Q1", "{\"is\": 1e-14, \"bf\": 100, \"bvcbo\": 60, \"bvebo\": 6}", pins, 3);
+    }
+    engine_run(&e);
+    CHECK_NEAR(v_of(&e, "c"), 60.0, 0.05); /* (100 - 60) / 40k = 1 mA, the breakdown current at bvcbo */
+    CHECK_EQ(diag_errors, 0);
+    esk_engine_free(&e);
+    engine_open(&e);
+    add_power(&e, "G", "gnd", 0.0);
+    add_dev2(&e, "vsource", "V1", "{\"dc\": 7}", "s", "gnd");
+    add_dev2(&e, "resistor", "R1", "{\"r\": \"100k\"}", "s", "e");
+    {
+        const char *pins[3] = { "gnd", "gnd", "e" };
+        add_dev(&e, "bjt_npn", "Q1", "{\"is\": 1e-14, \"bf\": 100, \"bvebo\": 6}", pins, 3);
+    }
+    engine_run(&e);
+    CHECK_NEAR(v_of(&e, "e"), 6.0, 0.05); /* 10 uA through 100k: bvebo */
+    CHECK_EQ(diag_errors, 0);
+    esk_engine_free(&e);
+}
+
+/* a triac: quadrant I and III triggering, latching, the holding current */
+static void triac_case(double vs, double rl, double ig, double ig_after, double *v_on, double *v_after)
+{
+    esk_engine e;
+    char p1[64], p2[200];
+    engine_open(&e);
+    add_power(&e, "G", "gnd", 0.0);
+    esk_snprintf(p1, sizeof p1, "{\"dc\": %g}", vs);
+    add_dev2(&e, "vsource", "V1", p1, "s", "gnd");
+    esk_snprintf(p1, sizeof p1, "{\"r\": %g}", rl);
+    add_dev2(&e, "resistor", "RL", p1, "s", "mt2");
+    esk_snprintf(p2, sizeof p2, "{\"kind\": \"pulse\", \"v1\": %g, \"v2\": %g, \"td\": \"100u\", \"tr\": \"1u\", \"tf\": \"1u\", \"pw\": \"1\", \"per\": \"2\"}", ig, ig_after);
+    add_dev2(&e, "isource", "IG", p2, "gnd", "g");
+    {
+        const char *pins[3] = { "mt2", "gnd", "g" };
+        add_dev(&e, "triac", "T1", "{\"vbo\": 600, \"igt\": 5e-3, \"igt4\": 7e-3, \"ih\": 10e-3, \"vtm\": 1.9, \"itm\": 0.85, \"vgt\": 0.8}", pins, 3);
+    }
+    engine_run(&e);
+    CHECK(esk_engine_advance(&e, 90 * ES_PS_PER_US) == ES_OK);
+    *v_on = v_of(&e, "mt2");
+    CHECK(esk_engine_advance(&e, 300 * ES_PS_PER_US) == ES_OK);
+    *v_after = v_of(&e, "mt2");
+    CHECK_EQ(diag_errors, 0);
+    esk_engine_free(&e);
+}
+
+static void test_triac(void)
+{
+    double v_on, v_after;
+    triac_case(12, 100, 6e-3, 0, &v_on, &v_after);      /* quadrant I, then the gate released at 110 mA */
+    CHECK(v_on > 0.8 && v_on < 1.9);
+    CHECK(v_after > 0.8 && v_after < 1.9);               /* latched */
+    triac_case(-12, 100, -6e-3, 0, &v_on, &v_after);     /* quadrant III */
+    CHECK(v_on < -0.8 && v_on > -1.9);
+    CHECK(v_after < -0.8 && v_after > -1.9);
+    triac_case(12, 2000, 6e-3, 0, &v_on, &v_after);      /* 6 mA: under the holding current once the gate stops */
+    CHECK(v_on < 1.9);
+    CHECK(v_after > 11.9);
+    triac_case(12, 100, 1e-3, 1e-3, &v_on, &v_after);    /* under the trigger current: off */
+    CHECK(v_on > 11.9 && v_after > 11.9);
+}
+
+/* a diac: breakover at 32 V, then on at its on-state voltage */
+static void test_diac(void)
+{
+    esk_engine e;
+    engine_open(&e);
+    add_power(&e, "G", "gnd", 0.0);
+    add_dev2(&e, "vsource", "V1", "{\"kind\": \"pulse\", \"v1\": 0, \"v2\": 40, \"td\": \"0\", \"tr\": \"1m\", \"tf\": \"1n\", \"pw\": \"1\", \"per\": \"2\"}", "s", "gnd");
+    add_dev2(&e, "resistor", "R1", "{\"r\": \"10k\"}", "s", "a");
+    add_dev2(&e, "diac", "D1", "{\"vbo\": 32, \"vtm\": 26, \"itm\": 0.01, \"ih\": 1e-4}", "a", "gnd");
+    engine_run(&e);
+    CHECK(esk_engine_advance(&e, 700 * ES_PS_PER_US) == ES_OK);
+    CHECK_NEAR(v_of(&e, "a"), 28.0, 0.05);   /* 28 V: below breakover, blocking */
+    CHECK(esk_engine_advance(&e, 2 * ES_PS_PER_MS) == ES_OK);
+    CHECK(v_of(&e, "a") > 25.0 && v_of(&e, "a") < 27.0); /* broken over: (40 - 26) / 10k = 1.4 mA through it */
+    CHECK(obs_num(&e, "D1", "current") > 1e-3);
     CHECK_EQ(diag_errors, 0);
     esk_engine_free(&e);
 }
@@ -1927,6 +2130,13 @@ RUN(test_rl);
 RUN(test_rl_transient);
 RUN(test_diode_curve);
 RUN(test_diode_reverse_and_series);
+RUN(test_diode_capacitance);
+RUN(test_diode_recovery);
+RUN(test_zener_knee);
+RUN(test_bjt_storage);
+RUN(test_bjt_breakdown);
+RUN(test_triac);
+RUN(test_diac);
     RUN(test_led_resistor);
     RUN(test_led_open_return);
 RUN(test_zener);

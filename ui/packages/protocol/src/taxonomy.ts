@@ -1100,6 +1100,40 @@ export const TAXONOMY: { categories: TaxonomyCategory[]; legacy: Record<string, 
       ]
     },
     {
+      "id": "thyristors",
+      "name": {
+        "en": "Thyristors",
+        "fr": "Thyristors",
+        "es": "Tiristores"
+      },
+      "subcategories": [
+        {
+          "id": "scrs",
+          "name": {
+            "en": "SCRs",
+            "fr": "Thyristors (SCR)",
+            "es": "SCR"
+          }
+        },
+        {
+          "id": "triacs",
+          "name": {
+            "en": "Triacs",
+            "fr": "Triacs",
+            "es": "Triacs"
+          }
+        },
+        {
+          "id": "diacs",
+          "name": {
+            "en": "Diacs",
+            "fr": "Diacs",
+            "es": "Diacs"
+          }
+        }
+      ]
+    },
+    {
       "id": "ttl_74",
       "name": {
         "en": "TTL 74 series",

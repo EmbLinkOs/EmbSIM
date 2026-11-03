@@ -1,0 +1,74 @@
+{
+  "schema_version": 1,
+  "kind": "component_test",
+  "name": "triggers",
+  "description": "7 V through 100 ohm (the datasheet's test circuit) and the maximum 200 uA into the gate: it turns on, the anode under 1.7 V",
+  "policy": "electrical",
+  "until": "200us",
+  "settings": {
+    "imperfections": "ideal"
+  },
+  "circuit": {
+    "components": [
+      {
+        "id": "VA",
+        "component": "emblink/vsource",
+        "params": {
+          "kind": "dc",
+          "dc": 7
+        }
+      },
+      {
+        "id": "RL",
+        "component": "emblink/resistor",
+        "params": {
+          "resistance": 100,
+          "tolerance": 0
+        }
+      },
+      {
+        "id": "IG",
+        "component": "emblink/isource",
+        "params": {
+          "kind": "dc",
+          "dc": 0.0002
+        }
+      },
+      {
+        "id": "DUT",
+        "component": "emblink/scr_2n5061g"
+      },
+      {
+        "id": "G0",
+        "component": "emblink/gnd"
+      }
+    ],
+    "nets": {
+      "VCC": [
+        "VA.+",
+        "RL.1"
+      ],
+      "AN": [
+        "RL.2",
+        "DUT.A"
+      ],
+      "GATE": [
+        "IG.-",
+        "DUT.G"
+      ],
+      "GND": [
+        "VA.-",
+        "IG.+",
+        "DUT.K",
+        "G0.GND"
+      ]
+    }
+  },
+  "expect": {
+    "net:AN": {
+      "at": "100us",
+      "min_v": 0.5,
+      "max_v": 1.7
+    }
+  }
+}

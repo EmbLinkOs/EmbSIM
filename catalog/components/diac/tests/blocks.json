@@ -1,0 +1,61 @@
+{
+  "schema_version": 1,
+  "kind": "component_test",
+  "name": "blocks",
+  "description": "20 V through 10 kohm, under the 32 V breakover: it blocks, the full 20 V across it",
+  "policy": "electrical",
+  "until": "200us",
+  "settings": {
+    "imperfections": "ideal"
+  },
+  "circuit": {
+    "components": [
+      {
+        "id": "V1",
+        "component": "emblink/vsource",
+        "params": {
+          "kind": "dc",
+          "dc": 20
+        }
+      },
+      {
+        "id": "R1",
+        "component": "emblink/resistor",
+        "params": {
+          "resistance": "10k",
+          "tolerance": 0
+        }
+      },
+      {
+        "id": "DUT",
+        "component": "emblink/diac"
+      },
+      {
+        "id": "G0",
+        "component": "emblink/gnd"
+      }
+    ],
+    "nets": {
+      "VCC": [
+        "V1.+",
+        "R1.1"
+      ],
+      "X": [
+        "R1.2",
+        "DUT.A1"
+      ],
+      "GND": [
+        "V1.-",
+        "DUT.A2",
+        "G0.GND"
+      ]
+    }
+  },
+  "expect": {
+    "net:X": {
+      "at": "100us",
+      "min_v": 19.99,
+      "max_v": 20
+    }
+  }
+}

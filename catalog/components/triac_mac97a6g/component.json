@@ -1,0 +1,149 @@
+{
+  "schema_version": 1,
+  "kind": "component",
+  "id": "emblink/triac_mac97a6g",
+  "version": "1.0.0",
+  "name": "MAC97A6G",
+  "category": "thyristors",
+  "subcategory": "triacs",
+  "description": "onsemi MAC97A6G, a 400 V, 0.6 A RMS sensitive-gate triac in TO-92 (MT1 1, G 2, MT2 3): gate trigger current 5 mA at most in quadrants I to III and 7 mA in quadrant IV, gate trigger voltage 0.66 V typical (2.0 V at most), holding current 1.5 mA typical (10 mA at most), on-state voltage 1.9 V at most at 0.85 A. The triac primitive: it latches in either direction on a gate pulse of either sign, holds above its holding current and blocks until it breaks over.",
+  "keywords": [
+    "onsemi",
+    "MAC97A6G",
+    "MAC97A6",
+    "triac",
+    "thyristor",
+    "AC switch",
+    "sensitive gate",
+    "TO-92"
+  ],
+  "pins": [
+    {
+      "name": "MT1",
+      "number": 1,
+      "model": {
+        "kind": "passive"
+      },
+      "doc": "Main terminal 1 (the gate's reference)"
+    },
+    {
+      "name": "G",
+      "number": 2,
+      "model": {
+        "kind": "passive"
+      },
+      "doc": "Gate"
+    },
+    {
+      "name": "MT2",
+      "number": 3,
+      "model": {
+        "kind": "passive"
+      },
+      "doc": "Main terminal 2"
+    }
+  ],
+  "params": {},
+  "model": {
+    "primitive": "triac",
+    "params": {
+      "vbo": 500.0,
+      "igt1": 0.005,
+      "igt2": 0.005,
+      "igt3": 0.005,
+      "igt4": 0.007,
+      "vgt": 0.66,
+      "ih": 0.0015,
+      "vtm": 1.9,
+      "itm": 0.85,
+      "roff": 40000000.0,
+      "rg": 10
+    }
+  },
+  "symbol": {
+    "svg": "symbol.svg",
+    "width": 40,
+    "height": 40,
+    "pins": {
+      "MT2": {
+        "x": 20,
+        "y": 0,
+        "side": "top"
+      },
+      "MT1": {
+        "x": 20,
+        "y": 40,
+        "side": "bottom"
+      },
+      "G": {
+        "x": 0,
+        "y": 40,
+        "side": "left"
+      }
+    }
+  },
+  "fidelity": {
+    "functional": null,
+    "timed": null,
+    "electrical": {
+      "claims": "The triac primitive (SPEC-004): off it leaks the datasheet's maximum 10 uA at VDRM; it turns on when its gate current reaches the maximum trigger current of the quadrant it is in (5, 5, 5, 7 mA), its gate a junction to MT1 at the typical 0.66 V; on, it drops the maximum 1.9 V at 0.85 A and holds down to the typical 1.5 mA. Fixtures in the datasheet's test circuit (12 V, 100 ohm) for each quadrant's trigger, latching, dropping out below the holding current, blocking at VDRM and the 0.1 V non-trigger gate voltage.",
+      "omissions": [
+        "breakover: set 25 % above the rated VDRM (500 V); the datasheet gives only the rating",
+        "the trigger currents at their maxima: a real part triggers at less; and the latching current (above the holding current)",
+        "the commutating dV/dt (5 V/us) and the static dv/dt: neither false triggering nor failure to turn off with an inductive load",
+        "turn-on time (2 us typical) and the on-state curve beyond its 0.85 A point",
+        "temperature: the trigger currents double at -40 C",
+        "surge and I2t ratings and damage",
+        "device-to-device spread",
+        "no manufacturer model qualification"
+      ],
+      "validation": [
+        "tests/*.json"
+      ]
+    }
+  },
+  "provenance": {
+    "author": "EmbSIM",
+    "license": "Apache-2.0",
+    "sources": [
+      {
+        "title": "onsemi MAC97 series sensitive gate triacs datasheet (MAC97/D)",
+        "url": "https://www.onsemi.com/download/data-sheet/pdf/mac97-d.pdf",
+        "rev": "current at retrieval",
+        "date": "2026-11-03",
+        "hash": "sha256:f8ca324875dcd3ffb4b6e03db0e17ca2574db396ee399ae0cfdb897f3d83bbc7",
+        "notes": "Maximum ratings (VDRM by type, IT(RMS) 0.6 A); IDRM 10 uA; VTM 1.9 V at 0.85 A; IGT per quadrant (5, 5, 5, 7 mA) and VGT (0.66 to 0.88 V typical, 2.0 V maximum) at VD = 12 V, RL = 100 ohm; VGD 0.1 V; IH 1.5 mA typical, 10 mA maximum; the pin assignment (1 MT1, 2 gate, 3 MT2); the ordering information. generated from catalog/families/thyristors_onsemi_mac97/family.json by tools/catalog/families.py; edit the family, not this file"
+      }
+    ]
+  },
+  "part": {
+    "manufacturer": "onsemi",
+    "mpn": "MAC97A6G",
+    "package": "TO-92",
+    "datasheet": "https://www.onsemi.com/download/data-sheet/pdf/mac97-d.pdf"
+  },
+  "tests": [
+    "tests/*.json"
+  ],
+  "i18n": {
+    "fr": {
+      "source": "59e6213bbdaa",
+      "description": "onsemi MAC97A6G, un triac à gâchette sensible de 400 V et 0,6 A eff. en TO-92 (MT1 1, G 2, MT2 3) : courant de déclenchement de 5 mA au plus dans les quadrants I à III et 7 mA dans le quadrant IV, tension de déclenchement de 0,66 V typique (2,0 V au plus), courant de maintien de 1,5 mA typique (10 mA au plus), tension à l'état passant de 1,9 V au plus à 0,85 A. La primitive triac : il s'amorce dans l'un ou l'autre sens sur une impulsion de gâchette de l'un ou l'autre signe, se maintient au-dessus de son courant de maintien et bloque jusqu'au retournement.",
+      "fidelity": {
+        "electrical": {
+          "claims": "La primitive triac (SPEC-004) : bloqué, il fuit les 10 uA maximaux de la fiche technique à VDRM ; il s'amorce quand son courant de gâchette atteint le courant de déclenchement maximal du quadrant où il se trouve (5, 5, 5, 7 mA), sa gâchette étant une jonction vers MT1 aux 0,66 V typiques ; passant, il chute les 1,9 V maximaux à 0,85 A et se maintient jusqu'aux 1,5 mA typiques. Cas de test dans le circuit de test de la fiche technique (12 V, 100 ohm) pour l'amorçage dans chaque quadrant, le verrouillage, le désamorçage sous le courant de maintien, le blocage à VDRM et la tension de gâchette de non-amorçage de 0,1 V.",
+          "omissions": [
+            "le retournement : fixé 25 % au-dessus du VDRM nominal (500 V) ; la fiche technique ne donne que la valeur nominale",
+            "les courants de déclenchement à leurs maxima : un composant réel s'amorce plus bas ; et le courant d'accrochage (au-dessus du courant de maintien)",
+            "le dV/dt de commutation (5 V/us) et le dv/dt statique : ni faux amorçage ni défaut de blocage avec une charge inductive",
+            "le temps d'amorçage (2 us typique) et la courbe à l'état passant au-delà de son point à 0,85 A",
+            "la température : les courants de déclenchement doublent à -40 °C",
+            "les valeurs de surintensité et d'I2t et les dégâts",
+            "la dispersion d'un exemplaire à l'autre",
+            "aucune qualification par un modèle du fabricant"
+          ]
+        }
+      }
+    }
+  }
+}

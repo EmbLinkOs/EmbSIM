@@ -1,0 +1,190 @@
+{
+  "schema_version": 1,
+  "kind": "component",
+  "id": "emblink/scr_2n5062g",
+  "version": "1.0.0",
+  "name": "2N5062G",
+  "category": "thyristors",
+  "subcategory": "scrs",
+  "description": "onsemi 2N5062G, a 100 V, 0.8 A RMS sensitive-gate silicon controlled rectifier in TO-92 (K1, G2, A3): gate trigger current 200 uA and voltage 0.8 V at most, holding current 5 mA at most (with 1 kohm gate to cathode), on-state voltage 1.7 V at most at 1.2 A. The model is the thyristor's two-transistor equivalent: it latches on a gate pulse, holds above its holding current and blocks both ways until it breaks over.",
+  "keywords": [
+    "onsemi",
+    "2N5062G",
+    "2N5062",
+    "SCR",
+    "thyristor",
+    "silicon controlled rectifier",
+    "sensitive gate",
+    "TO-92"
+  ],
+  "pins": [
+    {
+      "name": "K",
+      "number": 1,
+      "model": {
+        "kind": "passive"
+      },
+      "doc": "Cathode"
+    },
+    {
+      "name": "G",
+      "number": 2,
+      "model": {
+        "kind": "passive"
+      },
+      "doc": "Gate"
+    },
+    {
+      "name": "A",
+      "number": 3,
+      "model": {
+        "kind": "passive"
+      },
+      "doc": "Anode"
+    }
+  ],
+  "params": {},
+  "model": {
+    "composite": {
+      "components": [
+        {
+          "id": "Q1",
+          "component": "emblink/bjt_pnp",
+          "params": {
+            "is": 1e-14,
+            "bf": 0.5,
+            "br": 1,
+            "re": 0.3,
+            "bvebo": 125.0
+          }
+        },
+        {
+          "id": "Q2",
+          "component": "emblink/bjt_npn",
+          "params": {
+            "is": 1e-14,
+            "bf": 100,
+            "br": 1,
+            "re": 0.1,
+            "bvcbo": 125.0
+          }
+        },
+        {
+          "id": "RSH",
+          "component": "emblink/resistor",
+          "params": {
+            "resistance": "6.8k",
+            "tolerance": 0
+          }
+        }
+      ],
+      "nets": {
+        "A": [
+          "Q1.E"
+        ],
+        "N": [
+          "Q1.B",
+          "Q2.C"
+        ],
+        "G": [
+          "Q1.C",
+          "Q2.B",
+          "RSH.1"
+        ],
+        "K": [
+          "Q2.E",
+          "RSH.2"
+        ]
+      },
+      "ports": {
+        "A": "Q1.E",
+        "G": "Q2.B",
+        "K": "Q2.E"
+      }
+    }
+  },
+  "symbol": {
+    "svg": "symbol.svg",
+    "width": 40,
+    "height": 40,
+    "pins": {
+      "A": {
+        "x": 0,
+        "y": 20,
+        "side": "left"
+      },
+      "K": {
+        "x": 40,
+        "y": 20,
+        "side": "right"
+      },
+      "G": {
+        "x": 30,
+        "y": 40,
+        "side": "bottom"
+      }
+    }
+  },
+  "fidelity": {
+    "functional": null,
+    "timed": null,
+    "electrical": {
+      "claims": "The thyristor's two-transistor equivalent (a PNP of gain 0.5 and an NPN of gain 100 in a regenerative loop) with a 6.8 kohm gate-cathode shunt for the cathode's emitter shorts: it triggers at a gate current under the datasheet's 200 uA, latches and holds above a current under its 5 mA (with 1 kohm gate to cathode), drops under 1.7 V at 1.2 A, and blocks forward and reverse until its middle (or anode) junction breaks down. Fixtures for blocking at VDRM, triggering at the maximum IGT, no trigger at VGD, latching, dropping out below the holding current and VTM.",
+      "omissions": [
+        "the breakover voltage: set 25 % above the rated VDRM (125 V); the datasheet gives only the rating",
+        "dv/dt triggering and the junction capacitances, turn-on delay (3 us typical) and the turn-off time tq",
+        "the gate's own reverse breakdown",
+        "temperature: the gate trigger and holding currents double at -40 C",
+        "the on-state voltage's curve beyond its 1.2 A point; surge and I2t ratings and damage",
+        "device-to-device spread of IGT and IH",
+        "no manufacturer model qualification"
+      ],
+      "validation": [
+        "tests/*.json"
+      ]
+    }
+  },
+  "provenance": {
+    "author": "EmbSIM",
+    "license": "Apache-2.0",
+    "sources": [
+      {
+        "title": "onsemi 2N5060 series sensitive gate silicon controlled rectifiers datasheet (2N5060/D)",
+        "url": "https://www.onsemi.com/download/data-sheet/pdf/2n5060-d.pdf",
+        "rev": "current at retrieval",
+        "date": "2026-11-03",
+        "hash": "sha256:7b33226665212be4e50f3e546ccac582f690d225d061bf48f67c518ffb3e9eeb",
+        "notes": "Maximum ratings (VDRM and VRRM by type with RGK = 1 kohm, IT(RMS) 0.8 A); IDRM and IRRM 10 uA; VTM 1.7 V at 1.2 A; IGT 200 uA and VGT 0.8 V at VAK = 7 V, RL = 100 ohm; VGD 0.1 V; IH 5 mA; the pin assignment (1 cathode, 2 gate, 3 anode); the ordering information. generated from catalog/families/thyristors_onsemi_2n5060/family.json by tools/catalog/families.py; edit the family, not this file"
+      }
+    ]
+  },
+  "part": {
+    "manufacturer": "onsemi",
+    "mpn": "2N5062G",
+    "package": "TO-92",
+    "datasheet": "https://www.onsemi.com/download/data-sheet/pdf/2n5060-d.pdf"
+  },
+  "tests": [
+    "tests/*.json"
+  ],
+  "i18n": {
+    "fr": {
+      "source": "12d24ed6dbbd",
+      "description": "onsemi 2N5062G, un thyristor (redresseur commandé au silicium) à gâchette sensible de 100 V et 0,8 A eff. en TO-92 (K1, G2, A3) : courant de déclenchement de 200 uA et tension de 0,8 V au plus, courant de maintien de 5 mA au plus (avec 1 kohm entre gâchette et cathode), tension à l'état passant de 1,7 V au plus à 1,2 A. Le modèle est l'équivalent à deux transistors du thyristor : il s'amorce sur une impulsion de gâchette, se maintient au-dessus de son courant de maintien et bloque dans les deux sens jusqu'au retournement.",
+      "fidelity": {
+        "electrical": {
+          "claims": "L'équivalent à deux transistors du thyristor (un PNP de gain 0,5 et un NPN de gain 100 en boucle régénérative) avec un shunt gâchette-cathode de 6,8 kohm pour les courts-circuits d'émetteur de la cathode : il s'amorce à un courant de gâchette sous les 200 uA de la fiche technique, se verrouille et se maintient au-dessus d'un courant sous ses 5 mA (avec 1 kohm entre gâchette et cathode), chute sous 1,7 V à 1,2 A et bloque en direct et en inverse jusqu'au claquage de sa jonction centrale (ou d'anode). Cas de test pour le blocage à VDRM, l'amorçage au IGT maximal, le non-amorçage à VGD, le verrouillage, le désamorçage sous le courant de maintien et VTM.",
+          "omissions": [
+            "la tension de retournement : fixée 25 % au-dessus du VDRM nominal (125 V) ; la fiche technique ne donne que la valeur nominale",
+            "l'amorçage par dv/dt et les capacités de jonction, le retard à l'amorçage (3 us typique) et le temps de désamorçage tq",
+            "le claquage inverse propre de la gâchette",
+            "la température : les courants de déclenchement et de maintien doublent à -40 °C",
+            "la courbe de la tension à l'état passant au-delà de son point à 1,2 A ; les valeurs de surintensité et d'I2t et les dégâts",
+            "la dispersion d'IGT et d'IH d'un exemplaire à l'autre",
+            "aucune qualification par un modèle du fabricant"
+          ]
+        }
+      }
+    }
+  }
+}

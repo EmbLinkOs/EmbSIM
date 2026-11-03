@@ -85,7 +85,7 @@
       "unit": "",
       "default": 180,
       "doc": "Forward current gain",
-      "min": 1,
+      "min": 0.1,
       "max": 2000
     },
     "br": {
@@ -129,6 +129,105 @@
       "doc": "Emitter resistance",
       "min": 0,
       "advanced": true
+    },
+    "bvcbo": {
+      "type": "number",
+      "unit": "V",
+      "default": 0,
+      "doc": "Collector-base breakdown voltage (0: none), at 1 mA",
+      "min": 0,
+      "max": 10000,
+      "advanced": true
+    },
+    "bvebo": {
+      "type": "number",
+      "unit": "V",
+      "default": 0,
+      "doc": "Emitter-base breakdown voltage (0: none), at 10 uA",
+      "min": 0,
+      "max": 10000,
+      "advanced": true
+    },
+    "cje": {
+      "type": "number",
+      "unit": "F",
+      "default": 0,
+      "doc": "Base-emitter zero-bias depletion capacitance",
+      "min": 0,
+      "max": "1u",
+      "advanced": true
+    },
+    "vje": {
+      "type": "number",
+      "unit": "V",
+      "default": 0.75,
+      "doc": "Base-emitter built-in potential",
+      "min": 0.1,
+      "max": 2,
+      "advanced": true
+    },
+    "mje": {
+      "type": "number",
+      "unit": "",
+      "default": 0.33,
+      "doc": "Base-emitter grading coefficient",
+      "min": 0.05,
+      "max": 0.95,
+      "advanced": true
+    },
+    "cjc": {
+      "type": "number",
+      "unit": "F",
+      "default": 0,
+      "doc": "Base-collector zero-bias depletion capacitance",
+      "min": 0,
+      "max": "1u",
+      "advanced": true
+    },
+    "vjc": {
+      "type": "number",
+      "unit": "V",
+      "default": 0.75,
+      "doc": "Base-collector built-in potential",
+      "min": 0.1,
+      "max": 2,
+      "advanced": true
+    },
+    "mjc": {
+      "type": "number",
+      "unit": "",
+      "default": 0.33,
+      "doc": "Base-collector grading coefficient",
+      "min": 0.05,
+      "max": 0.95,
+      "advanced": true
+    },
+    "fc": {
+      "type": "number",
+      "unit": "",
+      "default": 0.5,
+      "doc": "Forward-bias depletion capacitance coefficient",
+      "min": 0,
+      "max": 0.95,
+      "advanced": true
+    },
+    "tf": {
+      "type": "number",
+      "unit": "s",
+      "default": 0,
+      "doc": "Forward transit time",
+      "min": 0,
+      "max": "1m",
+      "advanced": true
+    },
+    "tr": {
+      "type": "number",
+      "unit": "s",
+      "default": 0,
+      "doc": "Reverse transit time (storage)",
+      "min": 0,
+      "max": "1m",
+      "advanced": true
     }
   },
   "model": {
@@ -163,12 +262,9 @@
       "omissions": []
     },
     "electrical": {
-      "claims": "Ebers-Moll with Early effect (vaf) and series rb/rc/re; charges and Gummel-Poon high-injection terms are not set by the presets (SPEC-004 §7 bjt).",
+      "claims": "Ebers-Moll with Early effect (vaf), series rb/rc/re, depletion charges (cje, cjc) and transit-time charges (tf, tr) that give storage time, and collector-base / emitter-base breakdown (bvcbo, bvebo) when set; the presets set gain and Early voltage (SPEC-004 §7 bjt).",
       "omissions": [
-        "junction capacitances",
-        "transit time",
         "temperature",
-        "breakdown",
         "quasi-saturation"
       ],
       "range": {
@@ -203,23 +299,20 @@
   ],
   "i18n": {
     "fr": {
-      "source": "0ca33cb2b7d7",
-      "description": "Transistor bipolaire PNP ; une référence nommée choisit les paramètres d'Ebers-Moll.",
+      "source": "c6afd0dbfd72",
       "fidelity": {
         "timed": {
           "claims": "Comme en électrique."
         },
         "electrical": {
-          "claims": "Ebers-Moll avec effet Early (vaf) et rb/rc/re en série ; les charges et les termes de forte injection de Gummel-Poon ne sont pas réglés par les préréglages (SPEC-004 §7 bjt).",
+          "claims": "Ebers-Moll avec effet Early (vaf), résistances série rb/rc/re, charges de déplétion (cje, cjc) et de temps de transit (tf, tr) qui donnent le temps de stockage, et claquage collecteur-base / émetteur-base (bvcbo, bvebo) quand ils sont donnés ; les préréglages fixent le gain et la tension d'Early (SPEC-004 §7 bjt).",
           "omissions": [
-            "les capacités de jonction",
-            "le temps de transit",
             "la température",
-            "le claquage",
             "la quasi-saturation"
           ]
         }
-      }
+      },
+      "description": "Transistor bipolaire PNP ; une référence nommée choisit les paramètres d'Ebers-Moll."
     }
   }
 }

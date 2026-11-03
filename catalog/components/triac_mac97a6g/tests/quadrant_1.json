@@ -1,0 +1,80 @@
+{
+  "schema_version": 1,
+  "kind": "component_test",
+  "name": "quadrant_1",
+  "description": "Quadrant 1 (MT2(+), G(+)): 12 V through 100 ohm, the gate fed its maximum trigger current 5 mA: it turns on, under the 1.9 V on-state maximum",
+  "policy": "electrical",
+  "until": "400us",
+  "settings": {
+    "imperfections": "ideal"
+  },
+  "circuit": {
+    "components": [
+      {
+        "id": "VD",
+        "component": "emblink/vsource",
+        "params": {
+          "kind": "dc",
+          "dc": 12
+        }
+      },
+      {
+        "id": "RL",
+        "component": "emblink/resistor",
+        "params": {
+          "resistance": 100,
+          "tolerance": 0
+        }
+      },
+      {
+        "id": "IG",
+        "component": "emblink/isource",
+        "params": {
+          "kind": "pulse",
+          "v1": 0.005,
+          "v2": 0.005,
+          "td": "200u",
+          "tr": "1u",
+          "tf": "1u",
+          "pw": "1",
+          "per": "2"
+        }
+      },
+      {
+        "id": "DUT",
+        "component": "emblink/triac_mac97a6g"
+      },
+      {
+        "id": "G0",
+        "component": "emblink/gnd"
+      }
+    ],
+    "nets": {
+      "VCC": [
+        "VD.+",
+        "RL.1"
+      ],
+      "M2": [
+        "RL.2",
+        "DUT.MT2"
+      ],
+      "GATE": [
+        "IG.-",
+        "DUT.G"
+      ],
+      "GND": [
+        "VD.-",
+        "IG.+",
+        "DUT.MT1",
+        "G0.GND"
+      ]
+    }
+  },
+  "expect": {
+    "net:M2": {
+      "at": "150us",
+      "min_v": 0.5,
+      "max_v": 1.9
+    }
+  }
+}

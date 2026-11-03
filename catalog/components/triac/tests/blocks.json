@@ -1,0 +1,62 @@
+{
+  "schema_version": 1,
+  "kind": "component_test",
+  "name": "blocks",
+  "description": "12 V through 100 ohm and the gate tied to MT1: it blocks",
+  "policy": "electrical",
+  "until": "200us",
+  "settings": {
+    "imperfections": "ideal"
+  },
+  "circuit": {
+    "components": [
+      {
+        "id": "V1",
+        "component": "emblink/vsource",
+        "params": {
+          "kind": "dc",
+          "dc": 12
+        }
+      },
+      {
+        "id": "R1",
+        "component": "emblink/resistor",
+        "params": {
+          "resistance": 100,
+          "tolerance": 0
+        }
+      },
+      {
+        "id": "DUT",
+        "component": "emblink/triac"
+      },
+      {
+        "id": "G0",
+        "component": "emblink/gnd"
+      }
+    ],
+    "nets": {
+      "VCC": [
+        "V1.+",
+        "R1.1"
+      ],
+      "M2": [
+        "R1.2",
+        "DUT.MT2"
+      ],
+      "GND": [
+        "V1.-",
+        "DUT.MT1",
+        "DUT.G",
+        "G0.GND"
+      ]
+    }
+  },
+  "expect": {
+    "net:M2": {
+      "at": "100us",
+      "min_v": 11.99,
+      "max_v": 12
+    }
+  }
+}

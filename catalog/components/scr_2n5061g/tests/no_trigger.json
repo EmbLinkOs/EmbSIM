@@ -1,0 +1,74 @@
+{
+  "schema_version": 1,
+  "kind": "component_test",
+  "name": "no_trigger",
+  "description": "7 V through 100 ohm with the gate held at 0.1 V, the datasheet's VGD minimum: it stays off",
+  "policy": "electrical",
+  "until": "200us",
+  "settings": {
+    "imperfections": "ideal"
+  },
+  "circuit": {
+    "components": [
+      {
+        "id": "VA",
+        "component": "emblink/vsource",
+        "params": {
+          "kind": "dc",
+          "dc": 7
+        }
+      },
+      {
+        "id": "RL",
+        "component": "emblink/resistor",
+        "params": {
+          "resistance": 100,
+          "tolerance": 0
+        }
+      },
+      {
+        "id": "VG",
+        "component": "emblink/vsource",
+        "params": {
+          "kind": "dc",
+          "dc": 0.1
+        }
+      },
+      {
+        "id": "DUT",
+        "component": "emblink/scr_2n5061g"
+      },
+      {
+        "id": "G0",
+        "component": "emblink/gnd"
+      }
+    ],
+    "nets": {
+      "VCC": [
+        "VA.+",
+        "RL.1"
+      ],
+      "AN": [
+        "RL.2",
+        "DUT.A"
+      ],
+      "GATE": [
+        "VG.+",
+        "DUT.G"
+      ],
+      "GND": [
+        "VA.-",
+        "VG.-",
+        "DUT.K",
+        "G0.GND"
+      ]
+    }
+  },
+  "expect": {
+    "net:AN": {
+      "at": "100us",
+      "min_v": 6.99,
+      "max_v": 7.0
+    }
+  }
+}
