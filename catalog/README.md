@@ -50,6 +50,7 @@ PDF's text. The fixtures then hold the model to the same table's limits.
 | `darlington_onsemi_tip120`, `darlington_onsemi_tip125` | onsemi TIP120/121/122 and TIP125/126/127 Darlingtons (6): the datasheet's circuit, two transistors, the 8 kohm and 120 ohm shunts and the diode | TIP120/D | hFE at 0.5 A and 3 A; VCE(sat) at 3 A, 12 mA; VBE(on) |
 | `bjt_onsemi_2n4401`, `bjt_onsemi_2n4403`, `bjt_onsemi_p2n2222a`, `bjt_onsemi_mpsa42`, `bjt_onsemi_mpsa92`, `bjt_onsemi_bc327` | onsemi 2N4401, 2N4403, P2N2222A, MPSA42 and MPSA92 (300 V) and BC327 by gain group, TO-92 (8) | 2N4401/D, 2N4403/D, P2N2222A/D, MPSA42/D, MPSA92/D, BC327/D | hFE at the datasheet's currents; VCE(sat); VBE(sat) or VBE(on) |
 | `regulators_mc7800` | onsemi MC7805 to MC7824 in the B, C and AC grades (21), TO-220 | MC7800/D | VO within the 25 C limits at the table's Vin and 500 mA, and at 1.0 A; the 2.0 V dropout; quiescent current under its maximum |
+| `regulators_mc7900` | onsemi MC7905 to MC7918 negative regulators in the B, C and AC grades, every TO-220 orderable (10) | MC7900/D | VO within the 25 C limits at the table's VI and 500 mA, and at 1.0 A; the 1.3 V dropout; the input bias current under its maximum |
 | `resistors_ccf55` | Vishay CCF55, 1 %, 100 ppm/K: every E96 value from 10 ohm to 3.01 Mohm (527) | 31015 | the nominal resistance (a divider read to 0.1 %) |
 | `resistors_ccf07` | Vishay CCF07, E24 from 10 ohm to 1 Mohm at 2 % and 5 %, and 1.1 to 2 Mohm at 5 % (249) | 31013 | the same |
 

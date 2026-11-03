@@ -1,0 +1,183 @@
+{
+  "schema_version": 1,
+  "kind": "component",
+  "id": "emblink/mc7918c",
+  "version": "1.0.0",
+  "name": "MC7918C",
+  "category": "analog_ics",
+  "subcategory": "regulators",
+  "description": "onsemi MC7918C, a 1.0 A fixed -18 V negative linear regulator in TO-220 (GND 1, IN 2, OUT 3; the tab is the input): -17.3 to -18.7 V at 25 C (the C grade, 4 %, 0 to 125 C), 4.5 mA typical input bias current (8 mA maximum), 1.3 V typical dropout at 1.0 A. The 79xx complement of the 78xx for split supplies; MC7918CTG is its orderable TO-220 code.",
+  "keywords": [
+    "onsemi",
+    "MC7918C",
+    "MC7918CTG",
+    "MC79xx",
+    "7918",
+    "TO-220",
+    "regulator",
+    "linear",
+    "fixed",
+    "negative",
+    "-18 V",
+    "power supply"
+  ],
+  "pins": [
+    {
+      "name": "GND",
+      "number": 1,
+      "model": {
+        "kind": "power",
+        "role": "ground"
+      },
+      "doc": "Ground"
+    },
+    {
+      "name": "IN",
+      "number": 2,
+      "model": {
+        "kind": "analog"
+      },
+      "doc": "Unregulated negative input (and the tab)"
+    },
+    {
+      "name": "OUT",
+      "number": 3,
+      "model": {
+        "kind": "analog"
+      },
+      "doc": "Regulated negative output"
+    }
+  ],
+  "params": {
+    "vout": {
+      "type": "number",
+      "unit": "V",
+      "default": 18,
+      "doc": "Output voltage magnitude (the output is this far below GND)",
+      "min": 0.5,
+      "max": 50
+    },
+    "dropout": {
+      "type": "number",
+      "unit": "V",
+      "default": 1.3,
+      "doc": "Minimum input-output difference for regulation",
+      "min": 0,
+      "max": 5
+    },
+    "imax": {
+      "type": "number",
+      "unit": "A",
+      "default": 2.0,
+      "doc": "Current limit",
+      "min": "1m",
+      "max": 20
+    },
+    "quiescent": {
+      "type": "number",
+      "unit": "A",
+      "default": 0.0045,
+      "doc": "Ground pin current",
+      "min": 0,
+      "advanced": true
+    },
+    "polarity": {
+      "type": "number",
+      "unit": "",
+      "default": -1,
+      "doc": "-1: a negative regulator, IN and OUT below GND",
+      "min": -1,
+      "max": 1,
+      "advanced": true
+    }
+  },
+  "model": {
+    "primitive": "regulator"
+  },
+  "symbol": {
+    "svg": "symbol.svg",
+    "width": 60,
+    "height": 30,
+    "pins": {
+      "IN": {
+        "x": 0,
+        "y": 10,
+        "side": "left"
+      },
+      "OUT": {
+        "x": 60,
+        "y": 10,
+        "side": "right"
+      },
+      "GND": {
+        "x": 30,
+        "y": 30,
+        "side": "bottom"
+      }
+    }
+  },
+  "fidelity": {
+    "functional": null,
+    "timed": null,
+    "electrical": {
+      "claims": "Negative fixed regulator (the regulator primitive at polarity -1) at the table's typical output voltage (inside its 25 C minimum and maximum), dropping out below the typical 1.3 V input-output difference, its ground pin carrying the typical input bias current. DC fixtures from the datasheet's table at its own test conditions.",
+      "omissions": [
+        "line and load regulation (the output does not move with input or load while regulating; the table allows tens of mV)",
+        "the current limit: set at 2.0 A, above the 1.5 A of the load regulation test (the datasheet gives the peak output current only as a curve), and the safe-area compensation",
+        "thermal shutdown and junction heating",
+        "ripple rejection (70 dB typical) and output noise (40 uV typical)",
+        "stability against the output capacitor and the start-up transient (a negative regulator needs its input and output capacitors)",
+        "the temperature coefficient (-1.0 mV/C) and the output voltage over the full temperature and line range",
+        "device-to-device spread within the grade",
+        "no manufacturer model qualification"
+      ],
+      "validation": [
+        "tests/*.json"
+      ]
+    }
+  },
+  "provenance": {
+    "author": "EmbSIM",
+    "license": "Apache-2.0",
+    "sources": [
+      {
+        "title": "onsemi MC7900 series negative voltage regulators datasheet (MC7900/D)",
+        "url": "https://www.onsemi.com/pdf/datasheet/mc7900-d.pdf",
+        "rev": "current at retrieval",
+        "date": "2026-11-03",
+        "hash": "sha256:1c69e4a310464bae135bfb64f4f185059031386fb3366cb58facea406b2b26f7",
+        "notes": "TO-220 pinout (1 ground, 2 input, 3 output; heatsink to pin 2); per voltage an electrical characteristics table for the B and C grades and one for the AC grade: VO at 25 C, input bias current, dropout 1.3 V typical at 1.0 A, load regulation to 1.5 A; ordering codes. generated from catalog/families/regulators_mc7900/family.json by tools/catalog/families.py; edit the family, not this file"
+      }
+    ]
+  },
+  "tests": [
+    "tests/*.json"
+  ],
+  "part": {
+    "manufacturer": "onsemi",
+    "mpn": "MC7918C",
+    "package": "TO-220",
+    "datasheet": "https://www.onsemi.com/pdf/datasheet/mc7900-d.pdf"
+  },
+  "i18n": {
+    "fr": {
+      "source": "deaf517b26ea",
+      "description": "onsemi MC7918C, un régulateur linéaire négatif fixe de -18 V et 1,0 A en TO-220 (GND 1, IN 2, OUT 3 ; la languette est l'entrée) : -17,3 à -18,7 V à 25 °C (la classe C, 4 %, 0 à 125 °C), 4,5 mA de courant de polarisation d'entrée typique (8 mA au plus), 1,3 V de chute typique à 1,0 A. Le complément 79xx du 78xx pour les alimentations symétriques ; MC7918CTG est son code de commande en TO-220.",
+      "fidelity": {
+        "electrical": {
+          "claims": "Régulateur fixe négatif (la primitive regulator à la polarité -1) à la tension de sortie typique du tableau (entre son minimum et son maximum à 25 °C), décrochant sous la différence entrée-sortie typique de 1,3 V, sa broche de masse portant le courant de polarisation d'entrée typique. Cas de test en continu tirés du tableau de la fiche technique, à ses propres conditions de test.",
+          "omissions": [
+            "la régulation de ligne et de charge (la sortie ne bouge pas avec l'entrée ni la charge tant qu'elle régule ; le tableau admet des dizaines de mV)",
+            "la limite de courant : fixée à 2,0 A, au-delà des 1,5 A du test de régulation de charge (la fiche technique ne donne le courant de sortie crête qu'en courbe), et la compensation de zone de sécurité",
+            "la coupure thermique et l'échauffement de la jonction",
+            "la réjection d'ondulation (70 dB typique) et le bruit de sortie (40 uV typique)",
+            "la stabilité selon le condensateur de sortie et le transitoire de démarrage (un régulateur négatif exige ses condensateurs d'entrée et de sortie)",
+            "le coefficient de température (-1,0 mV/°C) et la tension de sortie sur toute la plage de température et de ligne",
+            "la dispersion d'un exemplaire à l'autre dans la classe",
+            "aucune qualification par un modèle du fabricant"
+          ]
+        }
+      }
+    }
+  }
+}

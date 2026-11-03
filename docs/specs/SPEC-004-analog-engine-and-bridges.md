@@ -123,7 +123,7 @@ ranges, from the description (SPEC-005 §4).
 | `nmos`, `pmos` | level-1: `vto`, `kp`, `lambda`, `gamma`, `phi`, `w`, `l`, `cgs`, `cgd`, `cgb`; `rds` (none) | Shichman-Hodges with cutoff, linear, saturation; body tied to source unless a `B` pin is connected |
 | `opamp` | `gain` (1e5), `vsat` from supply pins or `vpos`/`vneg`, `gbw` (none), `slew` (V/µs, none), `rout` (0), `rin` (1e12) | behavioural with saturation; single-pole when `gbw` is given, slew-limited when `slew` is |
 | `comparator` | `vhyst` (0), `tpd` (0), output pin model from description | outputs through a digital_out pin model (a bridge) |
-| `regulator` | `vout`, `dropout`, `imax`, `quiescent` | behavioural LDO: `vout` while `vin > vout + dropout`, else tracks; current limit |
+| `regulator` | `vout`, `dropout`, `imax`, `quiescent`, `polarity` (1; -1 for a negative regulator) | behavioural LDO: `vout` while `vin > vout + dropout`, else tracks; current limit; with `polarity` -1 every voltage and current is mirrored, IN and OUT below GND (a 79xx) |
 | `adc_terminal` | `rin`, `cin`, `sample_time` | an MCU's analog input; `observe` samples the node for the peripheral model |
 | `dac_source` | `vref`, `bits`, `rout`, `settling` | an MCU's analog output or PWM filter source |
 

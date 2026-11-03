@@ -1267,6 +1267,42 @@ static void test_regulator(void)
     esk_engine_free(&e);
 }
 
+/* a negative regulator (79xx): IN and OUT below GND, the same law mirrored */
+static void test_regulator_negative(void)
+{
+    esk_engine e;
+    engine_open(&e);
+    add_power(&e, "G", "gnd", 0.0);
+    add_dev2(&e, "vsource", "V1", "{\"dc\": -12}", "vin", "gnd");
+    add_dev3(&e, "regulator", "U1", "{\"vout\": 5, \"dropout\": 1.1, \"polarity\": -1, \"quiescent\": 0.003}", "vin", "vee", "gnd");
+    add_dev2(&e, "resistor", "R1", "{\"r\": 50}", "vee", "gnd");
+    engine_run(&e);
+    CHECK_NEAR(v_of(&e, "vee"), -5.0, 1e-6);
+    CHECK_NEAR(obs_num(&e, "U1", "iout"), -0.1, 1e-6);
+    CHECK_NEAR(obs_num(&e, "V1", "i"), 0.103, 1e-6); /* the load and quiescent currents return through the input */
+    esk_engine_free(&e);
+    /* dropout: -5.5 V in gives -4.4 V out */
+    engine_open(&e);
+    add_power(&e, "G", "gnd", 0.0);
+    add_dev2(&e, "vsource", "V1", "{\"dc\": -5.5}", "vin", "gnd");
+    add_dev3(&e, "regulator", "U1", "{\"vout\": 5, \"dropout\": 1.1, \"polarity\": -1}", "vin", "vee", "gnd");
+    add_dev2(&e, "resistor", "R1", "{\"r\": 50}", "vee", "gnd");
+    engine_run(&e);
+    CHECK_NEAR(v_of(&e, "vee"), -4.4, 1e-6);
+    /* an output pulled below its setting by another supply: the pass element cannot sink */
+    esk_engine_free(&e);
+    engine_open(&e);
+    add_power(&e, "G", "gnd", 0.0);
+    add_dev2(&e, "vsource", "V1", "{\"dc\": -12}", "vin", "gnd");
+    add_dev3(&e, "regulator", "U1", "{\"vout\": 5, \"dropout\": 1.1, \"polarity\": -1}", "vin", "vee", "gnd");
+    add_dev2(&e, "vsource", "V2", "{\"dc\": -6}", "vx", "gnd");
+    add_dev2(&e, "resistor", "R2", "{\"r\": 100}", "vx", "vee");
+    engine_run(&e);
+    CHECK(v_of(&e, "vee") < -5.9);
+    CHECK_EQ(diag_errors, 0);
+    esk_engine_free(&e);
+}
+
 static void test_pull_device(void)
 {
     esk_engine e;
@@ -1910,6 +1946,7 @@ RUN(test_mixed_driver_contention);
 RUN(test_released_io_samples);
 RUN(test_opamp_inverting);
 RUN(test_regulator);
+RUN(test_regulator_negative);
 RUN(test_pull_device);
 RUN(test_bounce);
 RUN(test_grid_slices);

@@ -2260,6 +2260,7 @@ static const esk_adev_ops opamp_ops = {"opamp",       sizeof(opamp_state), opamp
 /* ---- behavioural regulator (LDO) ----------------------------------------------------- */
 
 typedef struct reg_state {
+    double pol; /* +1 a positive regulator (78xx), -1 a negative one (79xx): IN and OUT below GND */
     double vout, dropout, imax, iq, rlim;
     double vo_trial, iin_trial;
     /* thermal limiting (ADR-034), when the part gives its thermal resistances */
@@ -2278,6 +2279,7 @@ typedef struct reg_state {
 static es_status reg_setup(esk_adev *d)
 {
     reg_state *s = (reg_state *)d->state;
+    s->pol = pd(d, "polarity", 1.0) < 0.0 ? -1.0 : 1.0;
     s->vout = pd(d, "vout", 3.3);
     s->dropout = pd(d, "dropout", 0.3);
     s->imax = pd(d, "imax", 1.0);
@@ -2322,9 +2324,12 @@ static void reg_load(esk_adev *d, esk_amatrix *m)
     reg_state *s = (reg_state *)d->state;
     int nin = d->node[0], nout = d->node[1], ng = d->node[2], b = d->branch[0];
     double scale = esk_am_source_scale(m);
-    double vin = esk_am_v(m, nin, ng), ib = esk_am_x(m, b);
+    /* a negative regulator is the positive one mirrored: its voltages and
+     * currents taken with the polarity's sign (vin, vo, iout as magnitudes) */
+    double p = s->pol;
+    double vin = p * esk_am_v(m, nin, ng), ib = esk_am_x(m, b);
     double avail = vin - s->dropout, vo, dvo_dvin;
-    double iout = -ib, excess = iout - (s->thermal ? s->ilim : s->imax), rl = 0.0;
+    double iout = -p * ib, excess = iout - (s->thermal ? s->ilim : s->imax), rl = 0.0;
     if (avail < 0.0) {
         vo = 0.0;
         dvo_dvin = 0.0;
@@ -2338,7 +2343,7 @@ static void reg_load(esk_adev *d, esk_amatrix *m)
     if (excess > 0.0) {
         vo -= excess * s->rlim; /* a soft current limit */
         rl = s->rlim;
-    } else if (iout < 0.0 || (iout <= 0.0 && esk_am_v(m, nout, ng) >= vo)) {
+    } else if (iout < 0.0 || (iout <= 0.0 && p * esk_am_v(m, nout, ng) >= vo)) {
         /* the pass element cannot sink: a reverse current only flows through a
          * large leakage resistance, so a pulled-up output rises above vo. The
          * output above vo with no current yet (the first iteration against a
@@ -2347,7 +2352,8 @@ static void reg_load(esk_adev *d, esk_amatrix *m)
         vo -= iout * REG_RREV;
         rl = REG_RREV;
     }
-    /* output branch: v_out - v_gnd - vo(vin) + rl * (iout - i_knee) = 0 */
+    /* output branch: v_out - v_gnd - p vo(vin) + rl * (iout - i_knee) = 0 (the
+     * row taken times p, so its Jacobian is the same for either polarity) */
     esk_am_stamp_j(m, nout, b, 1.0);
     esk_am_stamp_j(m, ng, b, -1.0);
     esk_am_stamp_f(m, nout, ib);
@@ -2356,7 +2362,7 @@ static void reg_load(esk_adev *d, esk_amatrix *m)
     esk_am_stamp_j(m, b, ng, -1.0 + dvo_dvin);
     esk_am_stamp_j(m, b, nin, -dvo_dvin);
     esk_am_stamp_j(m, b, b, -rl);
-    esk_am_stamp_f(m, b, esk_am_v(m, nout, ng) - vo);
+    esk_am_stamp_f(m, b, esk_am_v(m, nout, ng) - p * vo);
     /* the sourced load current is drawn from IN (never pushed into it) */
     if (iout > 0.0) {
         esk_am_stamp_j(m, nin, b, -1.0);
@@ -2367,11 +2373,11 @@ static void reg_load(esk_adev *d, esk_amatrix *m)
     /* the quiescent current IN -> GND ramps in over the first volt of vin so an
      * unpowered input (held by gmin only) draws nothing */
     if (vin >= 1.0)
-        stamp_src_i(m, nin, ng, s->iq);
+        stamp_src_i(m, nin, ng, p * s->iq);
     else if (vin > 0.0)
         esk_am_stamp_g(m, nin, ng, s->iq * esk_am_source_scale(m));
     s->vo_trial = vo;
-    s->iin_trial = (iout > 0.0 ? iout : 0.0) + (vin >= 1.0 ? s->iq : vin > 0.0 ? s->iq * vin : 0.0);
+    s->iin_trial = p * ((iout > 0.0 ? iout : 0.0) + (vin >= 1.0 ? s->iq : vin > 0.0 ? s->iq * vin : 0.0));
 }
 
 /* the junction carried to t at the power held; the current limit it allows */
@@ -2431,7 +2437,7 @@ static void reg_accept(esk_adev *d, es_time_t t)
     d->i_last[1] = ib;
     d->i_last[2] = -(s->iin_trial + ib);
     if (s->thermal) {
-        double vin = acc_v(d, 0) - acc_v(d, 2), vo = acc_v(d, 1) - acc_v(d, 2), iout = -ib;
+        double vin = s->pol * (acc_v(d, 0) - acc_v(d, 2)), vo = s->pol * (acc_v(d, 1) - acc_v(d, 2)), iout = -s->pol * ib;
         s->p_last = (iout > 0.0 ? (vin - vo) * iout : 0.0) + (vin > 0.0 ? vin * s->iq : 0.0);
         s->drop = vin - vo;
         s->vin_last = vin;

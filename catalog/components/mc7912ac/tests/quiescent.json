@@ -1,0 +1,70 @@
+{
+  "schema_version": 1,
+  "kind": "component_test",
+  "name": "quiescent",
+  "description": "Input through 100 ohm with a 10 kohm load: the drop is the load current plus the ground pin's, under the table's 8 mA maximum input bias current",
+  "policy": "electrical",
+  "until": "100us",
+  "circuit": {
+    "components": [
+      {
+        "id": "V1",
+        "component": "emblink/vsource",
+        "params": {
+          "dc": -19
+        }
+      },
+      {
+        "id": "RS",
+        "component": "emblink/resistor",
+        "params": {
+          "resistance": 100,
+          "tolerance": 0
+        }
+      },
+      {
+        "id": "DUT",
+        "component": "emblink/mc7912ac"
+      },
+      {
+        "id": "RL",
+        "component": "emblink/resistor",
+        "params": {
+          "resistance": "10k",
+          "tolerance": 0
+        }
+      },
+      {
+        "id": "G",
+        "component": "emblink/gnd"
+      }
+    ],
+    "nets": {
+      "VS": [
+        "V1.+",
+        "RS.1"
+      ],
+      "VIN": [
+        "RS.2",
+        "DUT.IN"
+      ],
+      "VOUT": [
+        "DUT.OUT",
+        "RL.1"
+      ],
+      "GND": [
+        "V1.-",
+        "DUT.GND",
+        "RL.2",
+        "G.GND"
+      ]
+    }
+  },
+  "expect": {
+    "net:VIN": {
+      "at": "50us",
+      "min_v": -18.88,
+      "max_v": -18.08
+    }
+  }
+}

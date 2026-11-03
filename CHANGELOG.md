@@ -84,6 +84,12 @@ versions follow semantic versioning. There is no release yet.
   drop at its rated current and its L/R time constant; the library files
   them under new Inductors sub-categories (fixed, power) and the bench
   draws them as sleeved drum cores at their datasheet size.
+- Negative regulators: the `regulator` primitive takes `polarity` -1, every
+  voltage and current mirrored (IN and OUT below GND; `test_analog`'s
+  `test_regulator_negative`), and onsemi's MC7905 to MC7918 in the B, C and
+  AC grades (10, every TO-220 orderable) are built on it from MC7900/D's
+  tables: VO at the table's VI and 500 mA and at 1.0 A, the 1.3 V dropout,
+  the input bias current, GND 1 / IN 2 / OUT 3.
 - Power transistors: onsemi's TIP31A/B/C and TIP32A/B/C, BD135/137/139 and
   BD136/138/140 by gain group, 2N3055 and MJ2955 (17), each at a constant
   gain inside its datasheet's hFE limits with the collector and emitter
