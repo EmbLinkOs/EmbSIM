@@ -321,6 +321,8 @@ u64 rv_load(struct rv_state *rs, u64 a, int n)
         const u8 *p = r->mem + (a32 - r->base);
         for (int i = n - 1; i >= 0; i--)
             v = v << 8 | p[i];
+        if (b->trace && n <= 4)
+            esk_bus_traced(b, a32, n, 0, (u32)v, 0);
         return v;
     }
     for (int i = 0; i < n;) {
@@ -328,9 +330,11 @@ u64 rv_load(struct rv_state *rs, u64 a, int n)
         int k = n - i >= 4 && !((a32 + (u32)i) & 3) ? 4
               : n - i >= 2 && !((a32 + (u32)i) & 1) ? 2 : 1;
         if (esk_bus_read(b, a32 + (u32)i, k, &x)) {
+            esk_bus_traced(b, a32 + (u32)i, k, 0, 0, 1);
             rv_trap(rs, EXC_LOAD_ACCESS, a);
             return 0;
         }
+        esk_bus_traced(b, a32 + (u32)i, k, 0, x, 0);
         v |= (u64)x << (8 * i);
         i += k;
     }
@@ -367,6 +371,8 @@ void rv_store(struct rv_state *rs, u64 a, int n, u64 v)
             u8 *p = r->mem + (a32 - r->base);
             for (int i = 0; i < n; i++)
                 p[i] = (u8)(v >> (8 * i));
+            if (b->trace && n <= 4)
+                esk_bus_traced(b, a32, n, 1, (u32)v, 0);
         }
         return;
     }
@@ -377,9 +383,11 @@ void rv_store(struct rv_state *rs, u64 a, int n, u64 v)
         if (k < 4)
             x &= (1u << (8 * k)) - 1;
         if (esk_bus_write(b, a32 + (u32)i, k, x)) {
+            esk_bus_traced(b, a32 + (u32)i, k, 1, x, 1);
             rv_trap(rs, EXC_STORE_ACCESS, a);
             return;
         }
+        esk_bus_traced(b, a32 + (u32)i, k, 1, x, 0);
         i += k;
     }
 }

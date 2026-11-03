@@ -331,6 +331,7 @@ static int dread(struct pic24_state *ps, u32 ea, int n, u16 *v)
         xv = esk_mem_rd_le(r->mem + (ba - r->base), n);
     else if (esk_bus_read(bus(ps), ba, n, &xv))
         xv = 0;                                 /* nothing there reads 0 */
+    esk_bus_traced(bus(ps), ba, n, 0, xv & 0xffffu, 0);
     *v = (u16)xv;
     return 0;
 }
@@ -369,6 +370,7 @@ static int dwrite(struct pic24_state *ps, u32 ea, int n, u16 v)
     } else {
         (void)esk_bus_write(bus(ps), ba, n, v); /* nothing there: ignored */
     }
+    esk_bus_traced(bus(ps), ba, n, 1, v, 0);
     return 0;
 }
 

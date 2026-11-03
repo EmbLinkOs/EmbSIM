@@ -5,6 +5,20 @@ versions follow semantic versioning. There is no release yet.
 
 ## Unreleased
 
+### Loads and stores in the trace
+
+- `run --trace` records each load and store a core makes, after the
+  instruction that made it and at its cycle, with its address, size and
+  value (or `bus error`) and the register it names. Examples are
+  `USART2.DR`, `PORTB.DDRB`, and `scs+0xd04` for the core's own system
+  space. An exception's entry shows its stacked words and its vector fetch.
+  The Cortex-M, RISC-V, AVR, MIPS and PIC24 cores note their accesses on
+  their own memory paths, so a debugger's, a probe's or a DMA's are left
+  out. `--trace-accesses all|peripherals|none` chooses which are kept.
+  The `.vcd` gains `address`, `data`, `write` and an `access` event.
+  Proven in `test_analysis.py` and the FreeRTOS suite (portYIELD's store
+  of PENDSVSET to SCB.ICSR the cycle before PendSV pends).
+
 ### The Raspberry Pi Debug Probe on the Pico
 
 - `emblink/rpi_debug_probe`: Raspberry Pi's Debug Probe as its debugprobe

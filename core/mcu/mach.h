@@ -140,9 +140,17 @@ struct esk_bus {
     /* a device was written since the lazy clocks' next event was found (a
      * read never brings a device's event nearer) */
     int written;
+    /* the trace of the cores' data accesses (an analysis's, latency.c): each
+     * load and store a core makes, its value, and whether it faulted; not a
+     * debugger's, a probe's or another bus master's */
+    void (*trace)(void *ctx, u32 a, int n, int write, u32 v, int fault);
+    void *trace_ctx;
 };
 
 es_status esk_bus_add_region(struct esk_mach *m, u32 base, u32 size, int kind);
+/* the device answering at `a` (its model's name: "scs", "systick") and the
+ * offset in it, or NULL */
+const char *esk_bus_device_name(struct esk_bus *b, u32 a, u32 *off);
 /* the region as before an image: every 4 bytes its `erased` word */
 void esk_bus_erase(struct esk_region *r);
 /* code changed from outside the core (an image, a debugger's write): every
@@ -196,6 +204,13 @@ es_status esk_bus_remap_mirror(struct esk_bus *b, u32 base, u32 target, u32 size
 /* a device's read or write hook refuses the access in progress: the core
  * takes its bus fault, as when nothing answers */
 ES_INLINE void esk_bus_fault(struct esk_bus *b) { b->dev_fault = 1; }
+
+/* a core's data access, for the trace when one records */
+ES_INLINE void esk_bus_traced(struct esk_bus *b, u32 a, int n, int write, u32 v, int fault)
+{
+    if (b->trace && !b->debug && !b->dap)
+        b->trace(b->trace_ctx, a, n, write, v, fault);
+}
 /* The core's accesses: 0, or -1 with fail_addr when nothing answers. */
 /* the access kinds access_denied is asked about */
 #define ESK_ACCESS_FETCH 0

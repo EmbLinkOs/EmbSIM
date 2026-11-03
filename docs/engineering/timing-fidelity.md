@@ -373,10 +373,23 @@ PendSV request, the cycles from `pend` to `ret` equal the context-switch
 measurement's first sample (156 cycles at 16 MHz). The test also checks that
 the `.vcd` file is a value change dump.
 
+The trace also records each load and store a core makes (Cortex-M,
+RISC-V, AVR, MIPS, PIC24). Each is noted where the core makes it, on its
+own memory path and on the bus's, so a debugger's, a probe's or a DMA's
+accesses are not among them. It is recorded after the instruction that made
+it, at that instruction's cycle, with its address, size, value or bus
+error, and the register it names. An exception's entry shows its stacking
+and its vector fetch. `--trace-accesses peripherals` keeps only what plain
+memory does not answer. Validated by `test_analysis.py` (USART2.BRR and the
+banner through USART2.DR by name, SysTick's eight stacked words and its
+vector, a bus error) and by `tests/vendor/freertos/run.py` (portYIELD's
+store of PENDSVSET to SCB.ICSR the cycle before PendSV pends, its entry's
+eight words).
+
 **Not recorded:**
-- peripheral register accesses;
 - pin changes (the session's probes and the logic analyzer have those);
-- memory accesses.
+- the instruction fetches (the instructions' addresses are);
+- other bus masters' accesses (the DMAs': the RP2040's BUSCTRL counts them).
 
 ### 4.7 A reset is a fresh start
 

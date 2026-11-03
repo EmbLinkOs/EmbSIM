@@ -36,6 +36,7 @@
 #include <string.h>
 
 #include "mcu/analysis.h"
+#include "mcu/rf.h"
 
 #define PS_PER_S 1000000000000ull
 
@@ -183,18 +184,18 @@ static int same(const esk_an_bound *x, int kind, u32 v)
     return x->kind == kind && x->v == v;
 }
 
-static void trace_add(esk_an *a, int kind, u32 v, u64 c, u64 ps)
+static struct esk_an_tev *trace_add(esk_an *a, int kind, u32 v, u64 c, u64 ps)
 {
     if (!a->tracing)
-        return;
+        return NULL;
     if (!a->tstarted) {
         if (a->tstart.kind && !(a->tstart.kind == kind && a->tstart.v == v))
-            return;
+            return NULL;
         a->tstarted = 1;
     }
     if (a->ntev >= a->tlimit) {
         a->tdropped++;
-        return;
+        return NULL;
     }
     if (a->ntev == a->captev) {
         u64 cap = a->captev ? 2 * a->captev : 4096;
@@ -204,7 +205,7 @@ static void trace_add(esk_an *a, int kind, u32 v, u64 c, u64 ps)
         p = (struct esk_an_tev *)esk_realloc(a->a, a->tev, (size_t)a->captev * sizeof *p, (size_t)cap * sizeof *p);
         if (!p) {
             a->tdropped++;
-            return;
+            return NULL;
         }
         a->tev = p;
         a->captev = cap;
@@ -212,9 +213,39 @@ static void trace_add(esk_an *a, int kind, u32 v, u64 c, u64 ps)
     a->tev[a->ntev].c = c - a->cycles0;
     a->tev[a->ntev].ps = ps;
     a->tev[a->ntev].v = v;
+    a->tev[a->ntev].d = 0;
+    a->tev[a->ntev].n = 0;
     a->tev[a->ntev].kind = (u8)kind;
     a->tev[a->ntev].core = 0;
-    a->ntev++;
+    return &a->tev[a->ntev++];
+}
+
+/* a core's data access, from the bus (esk_bus_traced): stamped at the
+ * cycle of the instruction making it */
+static void access_cb(void *ctx, u32 addr, int n, int write, u32 v, int fault)
+{
+    esk_an *a = (esk_an *)ctx;
+    u64 c = a->m->cycles;
+    struct esk_an_tev *e;
+    if (!a->tracing || !a->tstarted)
+        return; /* the start boundary is an instruction's or an exception's */
+    if (a->taccess == ESK_AN_ACCESS_PERIPHERALS && !fault && esk_bus_region(&a->m->bus, addr, (u32)n))
+        return; /* plain memory */
+    if (a->in_step && a->nacc < (int)(sizeof a->acc / sizeof a->acc[0])) {
+        /* kept for after the instruction's own event */
+        a->acc[a->nacc].a = addr;
+        a->acc[a->nacc].v = v;
+        a->acc[a->nacc].n = (u8)((n & 0x7f) | (fault ? 0x80 : 0));
+        a->acc[a->nacc].write = (u8)(write != 0);
+        a->nacc++;
+        return;
+    }
+    t_sync(a, c);
+    e = trace_add(a, write ? ESK_AN_T_WRITE : ESK_AN_T_READ, addr, c, a->t_ps);
+    if (e) {
+        e->d = v;
+        e->n = (u8)((n & 0x7f) | (fault ? 0x80 : 0));
+    }
 }
 
 /* boundary (kind, v) at machine cycle c */
@@ -260,6 +291,7 @@ void esk_an_measure_before(esk_an *a, u64 c0)
 {
     t_sync(a, c0);
     a->in_step = 1;
+    a->nacc = 0;
     a->npend = 0;
 }
 
@@ -296,6 +328,17 @@ void esk_an_measure_after(esk_an *a, esk_an_core *k, int ran, u64 c0)
         }
         stamp(a, ESK_AN_B_PC, k->pc0 & ~1u, c0);
     }
+    for (i = 0; i < a->nacc; i++) {
+        struct esk_an_tev *e;
+        if (!a->tstarted)
+            break;
+        e = trace_add(a, a->acc[i].write ? ESK_AN_T_WRITE : ESK_AN_T_READ, a->acc[i].a, c0, a->t_ps);
+        if (e) {
+            e->d = a->acc[i].v;
+            e->n = a->acc[i].n;
+        }
+    }
+    a->nacc = 0;
     for (i = 0; i < a->npend; i++)
         stamp(a, ESK_AN_B_PEND, (u32)a->pend[i].n, a->pend[i].c);
     a->npend = 0;
@@ -443,6 +486,50 @@ es_status esk_an_trace(esk_an *a, const char *start, u64 limit, char *why, size_
     return ES_OK;
 }
 
+void esk_an_trace_accesses(esk_an *a, int which)
+{
+    a->taccess = which;
+    if (which != ESK_AN_ACCESS_NONE && a->tracing) {
+        a->m->bus.trace = access_cb;
+        a->m->bus.trace_ctx = a;
+    } else if (a->m->bus.trace_ctx == a) {
+        a->m->bus.trace = NULL;
+        a->m->bus.trace_ctx = NULL;
+    }
+}
+
+/* what an address names: PERIPHERAL.REGISTER (+offset), or the peripheral
+ * alone, or nothing (memory) */
+static void where(esk_an *a, u32 addr, esk_strbuf *out)
+{
+    struct esk_rf *rf = a->m->rf;
+    const char *dev;
+    u32 off = 0;
+    int i;
+    for (i = 0; rf && i < rf->np; i++) {
+        struct esk_rf_periph *p = &rf->p[i];
+        int k;
+        if (addr < p->base || addr >= p->end)
+            continue;
+        for (k = 0; k < p->nreg; k++) {
+            struct esk_rf_reg *r = p->reg[k];
+            if (addr >= r->addr && addr < r->addr + (u32)r->bytes) {
+                if (addr == r->addr)
+                    esk_strbuf_printf(out, "%s.%s", p->name, r->name);
+                else
+                    esk_strbuf_printf(out, "%s.%s+%u", p->name, r->name, (unsigned)(addr - r->addr));
+                return;
+            }
+        }
+        esk_strbuf_printf(out, "%s+0x%x", p->name, (unsigned)(addr - p->base));
+        return;
+    }
+    /* a device outside the register file (the core's own: the SCS) */
+    dev = esk_bus_device_name(&a->m->bus, addr, &off);
+    if (dev && !esk_bus_region(&a->m->bus, addr, 1))
+        esk_strbuf_printf(out, "%s+0x%x", dev, (unsigned)off);
+}
+
 static const char *exc_name(u32 n)
 {
     size_t i;
@@ -476,7 +563,8 @@ int esk_an_trace_write(esk_an *a, int vcd, esk_strbuf *out)
 {
     u64 i;
     if (!vcd) {
-        esk_strbuf_printf(out, "# simulated time; cycle\ttime_ns\tevent\tvalue\twhere\n");
+        esk_strbuf_printf(out, "# simulated time; cycle\ttime_ns\tevent\tvalue\twhere "
+                               "(a data access: its address, then its size: value and the register it names)\n");
         for (i = 0; i < a->ntev; i++) {
             const struct esk_an_tev *e = &a->tev[i];
             esk_strbuf_printf(out, "%llu\t%llu.%03llu\t", (unsigned long long)e->c, (unsigned long long)(e->ps / 1000u),
@@ -484,6 +572,16 @@ int esk_an_trace_write(esk_an *a, int vcd, esk_strbuf *out)
             if (e->kind == ESK_AN_B_PC) {
                 int f = esk_an_fn_at(a, e->v);
                 esk_strbuf_printf(out, "insn\t0x%08x\t%s\n", (unsigned)e->v, f >= 0 && a->fn[f].name ? a->fn[f].name : "?");
+            } else if (e->kind == ESK_AN_T_READ || e->kind == ESK_AN_T_WRITE) {
+                /* a data access: the address, its size and value, what it names */
+                esk_strbuf_printf(out, "%s\t0x%08x\t", e->kind == ESK_AN_T_READ ? "read" : "write", (unsigned)e->v);
+                if (e->n & 0x80)
+                    esk_strbuf_printf(out, "bus error");
+                else
+                    esk_strbuf_printf(out, "%u: 0x%0*x", (unsigned)(e->n & 0x7f), 2 * (e->n & 0x7f), (unsigned)e->d);
+                esk_strbuf_putc(out, ' ');
+                where(a, e->v, out);
+                esk_strbuf_putc(out, '\n');
             } else {
                 esk_strbuf_printf(out, "%s\t", e->kind == ESK_AN_B_EXC ? "exc" : e->kind == ESK_AN_B_PEND ? "pend" : "ret");
                 ev_name(out, e);
@@ -499,7 +597,8 @@ int esk_an_trace_write(esk_an *a, int vcd, esk_strbuf *out)
     esk_strbuf_printf(out, "$comment EmbSIM trace: simulated time, the core's own cycles at its clock $end\n"
                            "$timescale 1ps $end\n$scope module core $end\n"
                            "$var wire 32 p pc $end\n$var wire 9 x exception $end\n$var wire 9 q pending $end\n"
-                           "$var wire 64 c cycle $end\n$upscope $end\n$enddefinitions $end\n");
+                           "$var wire 64 c cycle $end\n$var wire 32 a address $end\n$var wire 32 d data $end\n"
+                           "$var wire 1 w write $end\n$var event 1 e access $end\n$upscope $end\n$enddefinitions $end\n");
     {
         u32 active[17];
         int na = 0;
@@ -520,6 +619,10 @@ int esk_an_trace_write(esk_an *a, int vcd, esk_strbuf *out)
             }
             if (e->kind == ESK_AN_B_PC) {
                 vcd_bits(out, e->v, 32, "p");
+            } else if (e->kind == ESK_AN_T_READ || e->kind == ESK_AN_T_WRITE) {
+                vcd_bits(out, e->v, 32, "a");
+                vcd_bits(out, e->d, 32, "d");
+                esk_strbuf_printf(out, "%cw\n1e\n", e->kind == ESK_AN_T_WRITE ? '1' : '0');
             } else if (e->kind == ESK_AN_B_EXC) {
                 if (na < 17)
                     active[na++] = e->v;

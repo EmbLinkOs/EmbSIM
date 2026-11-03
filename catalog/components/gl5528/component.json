@@ -184,7 +184,7 @@
       "claims": "The GL55 datasheet's light law for the GL5528: 10-20 kOhm at 10 lux (each part drawn from the seed), gamma 0.6 between 10 and 100 lux, 1 MOhm dark resistance as the cap; its response time as a first-order lag in conductance, 20 ms rising and 30 ms decaying.",
       "omissions": [
         "spectral response",
-        "the response time's dependence on the light level, and the slow tail toward the dark resistance (which the datasheet measures 10 s after the light goes): one rise and one decay constant, the datasheet's at 10 lux",
+        "the response time's dependence on the light level, and the slow tail toward the dark resistance (which the datasheet measures 10 s after the light goes): one rise and one decay constant, the datasheet's at 10 lux. The GL55 datasheet gives those single figures only, as the Hamamatsu and Luna CdS datasheets do; the dependence is published only as manufacturers' curves, which are not reproduced here without their numbers",
         "illumination history (light memory)",
         "self-heating",
         "thermal damage and destructive limits"

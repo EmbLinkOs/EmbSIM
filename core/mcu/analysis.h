@@ -122,6 +122,10 @@ esk_json *esk_an_measure_json(esk_an *a, esk_alloc *al);
  * instruction starting, exception taken, pending and returned, with its
  * cycle and simulated time. ES_EINVAL with `why` for a bad boundary */
 es_status esk_an_trace(esk_an *a, const char *start, u64 limit, char *why, size_t cap);
+/* the trace's data accesses: none, the ones no memory answers (the
+ * peripherals' registers, a bus error), or all, each with its address,
+ * size, value and the register it names */
+void esk_an_trace_accesses(esk_an *a, int which);
 /* the trace written as text (cycle, time, event, function) or, with `vcd`,
  * as a value change dump: pc, the exception active, each pending */
 int esk_an_trace_write(esk_an *a, int vcd, esk_strbuf *out);
@@ -169,6 +173,10 @@ typedef struct esk_an_frame {
 
 /* a measurement's boundary (latency.c) */
 enum { ESK_AN_B_PC = 1, ESK_AN_B_EXC, ESK_AN_B_PEND, ESK_AN_B_RET };
+/* the trace's data accesses (not boundaries): a core's load and store */
+enum { ESK_AN_T_READ = 16, ESK_AN_T_WRITE };
+/* which data accesses the trace records */
+enum { ESK_AN_ACCESS_NONE, ESK_AN_ACCESS_PERIPHERALS, ESK_AN_ACCESS_ALL };
 typedef struct esk_an_bound {
     int kind;
     u32 v; /* an address, or an exception's number */
@@ -290,11 +298,20 @@ struct esk_an {
     struct esk_an_tev {
         u64 c, ps;
         u32 v;
+        u32 d;    /* a data access's value */
+        u8 n;     /* its size, with 0x80 when it faulted */
         u8 kind, core;
     } *tev;
     u64 ntev, captev, tlimit, tdropped;
-    int tracing, tstarted;
+    int tracing, tstarted, taccess;
     esk_an_bound tstart;
+    /* the data accesses of the step under way, recorded after its
+     * instruction (or exception entry) at its start cycle */
+    struct {
+        u32 a, v;
+        u8 n, write;
+    } acc[32];
+    int nacc;
 };
 
 /* latency.c's part of the step (analysis.c): before it (the machine's

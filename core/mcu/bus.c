@@ -266,6 +266,15 @@ int esk_bus_watch_check(struct esk_bus *b, u32 a, int n, int write)
     return 0;
 }
 
+const char *esk_bus_device_name(struct esk_bus *b, u32 a, u32 *off)
+{
+    struct esk_device *d = device_of(b, a);
+    if (!d || !d->ops || !d->ops->type)
+        return NULL;
+    *off = a - d->base;
+    return d->ops->type;
+}
+
 int esk_bus_read(struct esk_bus *b, u32 a, int n, u32 *v)
 {
     return rd(b, a, n, v);

@@ -127,7 +127,7 @@ def check_timing(embsim: str, elf: Path, work: Path) -> bool:
     trace, vcd = work / "trace.txt", work / "trace.vcd"
     for out in (trace, vcd):
         subprocess.run([embsim, "run", "--target", "emblink/nucleo_f446re", "--image", str(elf), "--until", "50ms",
-                        "--quiet", "--trace", str(out), "--trace-start", "pend:PendSV", "--trace-limit", "400"],
+                        "--quiet", "--trace", str(out), "--trace-start", "pend:PendSV", "--trace-limit", "4000"],
                        capture_output=True, text=True, errors="replace")
     try:
         rows = [ln.split("\t") for ln in trace.read_text(encoding="utf-8").splitlines() if not ln.startswith("#")]
@@ -136,6 +136,22 @@ def check_timing(embsim: str, elf: Path, work: Path) -> bool:
         first = (by.get("ctxsw", {}).get("samples") or [{}])[0].get("cycles")
         if t_ret - t_pend != first:
             bad.append(f"the trace's first switch is {t_ret - t_pend} cycles, the measurement's {first}")
+        # the data accesses: portYIELD's store of PENDSVSET to SCB.ICSR just
+        # before the next request (PendSV pending from the cycle after), and
+        # PendSV's entry stacking eight words then fetching its vector (0x38)
+        pends = [i for i, r in enumerate(rows) if r[2] == "pend" and r[3] == "PendSV"]
+        later = pends[1] if len(pends) > 1 else None
+        icsr = later is not None and any(
+            r[2] == "write" and r[3] == "0xe000ed04" and int(r[4].split(": ")[1].split()[0], 16) & (1 << 28)
+            and 0 <= int(rows[later][0]) - int(r[0]) <= 2 for r in rows[max(0, later - 4):later])
+        if not icsr:
+            bad.append("the trace has no store of PENDSVSET to SCB.ICSR (0xe000ed04) at a PendSV request")
+        e = next(i for i, r in enumerate(rows) if r[2] == "exc" and r[3] == "PendSV")
+        entry = rows[e + 1:e + 10]
+        stacked = [r for r in entry if r[2] == "write"]
+        vector = [r for r in entry if r[2] == "read" and r[3] == "0x00000038"]
+        if len(stacked) != 8 or len(vector) != 1:
+            bad.append(f"PendSV's entry in the trace: {len(stacked)} stacked words, {len(vector)} vector fetch")
         if "$enddefinitions" not in vcd.read_text(encoding="utf-8"):
             bad.append("the .vcd trace is not a value change dump")
     except (OSError, StopIteration, ValueError, IndexError) as e:

@@ -161,7 +161,13 @@ modelled yet.
 
 `--trace FILE` records every boundary as it happens:
 - each instruction starting, with its address and function;
-- each exception becoming pending, being taken, and returning.
+- each exception becoming pending, being taken, and returning;
+- each load and store the core makes, right after its instruction (an
+  exception's entry: its stacking and its vector fetch). Each carries its
+  address, its size and value (or `bus error`), and the register it names
+  (`USART2.DR`, `RCC.CR`, `scs+0xd04` for the core's own system space).
+  `--trace-accesses peripherals` keeps the ones plain memory does not
+  answer, `none` none (`all` by default).
 
 Each event carries the core's cycle and the simulated time. `--trace-start
 BOUNDARY` starts recording at the first such boundary (for example
@@ -169,8 +175,9 @@ BOUNDARY` starts recording at the first such boundary (for example
 the file says how many it dropped).
 
 A file ending in `.vcd` gets a value change dump at 1 ps resolution, with
-four signals: `pc`, the exception active, the last exception pended, and the
-cycle count. GTKWave and other waveform viewers open it. Any other name gets
+`pc`, the exception active, the last exception pended, the cycle count, and
+for the data accesses their `address`, `data`, `write` (1 for a store) and
+an `access` event. GTKWave and other waveform viewers open it. Any other name gets
 a tab-separated table.
 
     embsim run --target emblink/nucleo_f446re --image freertos.elf --until 50ms \

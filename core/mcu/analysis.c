@@ -737,6 +737,10 @@ void esk_an_free(esk_an *a)
     if (!a)
         return;
     al = a->a;
+    if (a->m && a->m->bus.trace_ctx == a) {
+        a->m->bus.trace = NULL;
+        a->m->bus.trace_ctx = NULL;
+    }
     if (a->tev)
         esk_free(al, a->tev, (size_t)a->captev * sizeof *a->tev);
     if (a->fn_minsp)

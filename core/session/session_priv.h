@@ -131,7 +131,7 @@ struct es_session {
     char *an_measure[16];
     int an_nmeasure;
     /* the trace set with the analyses (latency.c): on, its start boundary, its limit */
-    int an_trace;
+    int an_trace, an_trace_access;
     char *an_trace_start;
     uint64_t an_trace_limit;
     /* statistics */
@@ -151,6 +151,8 @@ es_status esk_session_analyze(es_session *s, const char *board, unsigned what, c
 es_status esk_session_measure(es_session *s, const char *spec);
 /* the trace for the next esk_session_analyze: from `start` (NULL: from the start), at most `limit` events */
 es_status esk_session_trace(es_session *s, const char *start, uint64_t limit);
+/* the trace's data accesses: ESK_AN_ACCESS_NONE, _PERIPHERALS or _ALL */
+void esk_session_trace_accesses(es_session *s, int which);
 /* the trace of `board` (NULL: the only one) as text or a value change dump */
 es_status esk_session_trace_write(es_session *s, const char *board, int vcd, esk_strbuf *out, char *why, size_t cap);
 void esk_session_analyses_apply(es_session *s);

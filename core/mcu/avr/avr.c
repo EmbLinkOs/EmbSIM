@@ -174,12 +174,17 @@ static u8 dread(esk_avr *as, u16 a)
     case 0x5f: return as->sreg;
     }
     r = esk_bus_region(bus(as), ESK_AVR_DATA + a, 1);
-    if (r)
-        return r->mem[ESK_AVR_DATA + a - r->base];
+    if (r) {
+        u8 m = r->mem[ESK_AVR_DATA + a - r->base];
+        esk_bus_traced(bus(as), ESK_AVR_DATA + a, 1, 0, m, 0);
+        return m;
+    }
     if (esk_bus_read(bus(as), ESK_AVR_DATA + a, 1, &v)) {
+        esk_bus_traced(bus(as), ESK_AVR_DATA + a, 1, 0, 0, 1);
         esk_mach_bus_error(as->sim, ESK_AVR_DATA + a, 1, 0);
         return 0;
     }
+    esk_bus_traced(bus(as), ESK_AVR_DATA + a, 1, 0, v & 0xffu, 0);
     return (u8)v;
 }
 
@@ -204,10 +209,15 @@ static void dwrite(esk_avr *as, u16 a, u8 v)
     if (r) {
         if (!r->rom)
             r->mem[ESK_AVR_DATA + a - r->base] = v;
+        esk_bus_traced(bus(as), ESK_AVR_DATA + a, 1, 1, v, 0);
         return;
     }
-    if (esk_bus_write(bus(as), ESK_AVR_DATA + a, 1, v))
+    if (esk_bus_write(bus(as), ESK_AVR_DATA + a, 1, v)) {
+        esk_bus_traced(bus(as), ESK_AVR_DATA + a, 1, 1, v, 1);
         esk_mach_bus_error(as->sim, ESK_AVR_DATA + a, 1, 1);
+    } else {
+        esk_bus_traced(bus(as), ESK_AVR_DATA + a, 1, 1, v, 0);
+    }
 }
 
 static u8 flash_byte(esk_avr *as, u32 a)

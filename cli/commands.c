@@ -49,8 +49,9 @@ static void usage_to(FILE *out)
           "      [--stack FILE [--stack-format text|json]] [--faults FILE [--faults-format text|json]]\n"
           "      [--measure [NAME=]FROM..TO]... [--measure-out FILE|-]   cycles and simulated time between\n"
           "      boundaries (a function or 0xADDR starting, exc:N taken, pend:N pending; .json for JSON)\n"
-          "      [--trace FILE [--trace-start BOUNDARY] [--trace-limit N]]   each instruction, exception, pending\n"
-          "      and return with its cycle and simulated time (.vcd: a value change dump)\n"
+          "      [--trace FILE [--trace-start BOUNDARY] [--trace-limit N] [--trace-accesses all|peripherals|none]]\n"
+          "      each instruction, exception, pending and return, and each load and store (address, value, the\n"
+          "      register it names), with its cycle and simulated time (.vcd: a value change dump)\n"
           "      [--board ID]\n"
           "  replay RECORDING [--allow-drift] [--json]   run a recording again and compare what it observed\n"
           "  record to-scenario RECORDING [-o FILE] [--assert probes,serial|none]\n"
@@ -778,6 +779,7 @@ static int cmd_run(int argc, char **argv, const char *argv0)
     const char *dump = NULL, *circuit = NULL, *rtos = NULL, *measure_out = NULL;
     const char *measures[16], *trace = NULL, *trace_start = NULL;
     unsigned long long trace_limit = 0;
+    int trace_access = ESK_AN_ACCESS_ALL;
     int nmeasures = 0;
     const char *probes[32];
     int nprobes = 0, i, rc = 0;
@@ -818,6 +820,16 @@ static int cmd_run(int argc, char **argv, const char *argv0)
         else if (!strcmp(a, "--trace") && more) trace = argv[++i];
         else if (!strcmp(a, "--trace-start") && more) trace_start = argv[++i];
         else if (!strcmp(a, "--trace-limit") && more) trace_limit = strtoull(argv[++i], NULL, 10);
+        else if (!strcmp(a, "--trace-accesses") && more) {
+            const char *w = argv[++i];
+            trace_access = !strcmp(w, "none") ? ESK_AN_ACCESS_NONE
+                         : !strcmp(w, "peripherals") ? ESK_AN_ACCESS_PERIPHERALS
+                         : !strcmp(w, "all") ? ESK_AN_ACCESS_ALL : -1;
+            if (trace_access < 0) {
+                fprintf(stderr, "embsim: --trace-accesses takes all, peripherals or none\n");
+                return 2;
+            }
+        }
         else if ((!strcmp(a, "--coverage-format") || !strcmp(a, "--profile-format") || !strcmp(a, "--stack-format") ||
                   !strcmp(a, "--faults-format")) && more) {
             unsigned which = a[2] == 'c' ? ESK_AN_COVERAGE : a[2] == 's' ? ESK_AN_STACK : a[2] == 'f' ? ESK_AN_FAULT : ESK_AN_PROFILE;
@@ -882,8 +894,10 @@ static int cmd_run(int argc, char **argv, const char *argv0)
                         (faults ? ESK_AN_FAULT : 0u) | (nmeasures || trace ? ESK_AN_MEASURE : 0u);
         for (i = 0; i < nmeasures; i++)
             (void)esk_session_measure(s, measures[i]);
-        if (trace)
+        if (trace) {
             (void)esk_session_trace(s, trace_start, (uint64_t)trace_limit);
+            esk_session_trace_accesses(s, trace_access);
+        }
         if (esk_session_analyze(s, board, what, why, sizeof why) != ES_OK) {
             fprintf(stderr, "embsim: %s: %s\n", coverage ? "--coverage" : profile ? "--profile" : stack ? "--stack" : faults ? "--faults" : nmeasures ? "--measure" : "--trace", why);
             es_session_destroy(s);

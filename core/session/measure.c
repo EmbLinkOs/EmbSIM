@@ -58,6 +58,7 @@ es_status esk_session_analyze(es_session *s, const char *board, unsigned what, c
                 r = esk_an_trace(esk_mcu_analysis(bi->mcu), s->an_trace_start, s->an_trace_limit, why, cap);
                 if (r != ES_OK)
                     return r;
+                esk_an_trace_accesses(esk_mcu_analysis(bi->mcu), s->an_trace_access);
             }
         }
         found = 1;
@@ -90,6 +91,8 @@ es_status esk_session_trace(es_session *s, const char *start, uint64_t limit)
     s->an_trace_limit = limit;
     return ES_OK;
 }
+
+void esk_session_trace_accesses(es_session *s, int which) { s->an_trace_access = which; }
 
 es_status esk_session_trace_write(es_session *s, const char *board, int vcd, esk_strbuf *out, char *why, size_t cap)
 {

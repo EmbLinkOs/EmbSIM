@@ -186,8 +186,11 @@ u32 esk_cm_ld_bus(struct esk_cm_state *cs, u32 a, int n)
         return 0;
     ioport_note(cs, a);
     cs->sim->bus.unmapped = 0;
-    if (esk_bus_read(&cs->sim->bus, a, n, &v) == 0)
+    if (esk_bus_read(&cs->sim->bus, a, n, &v) == 0) {
+        esk_bus_traced(&cs->sim->bus, a, n, 0, v, 0);
         return v;
+    }
+    esk_bus_traced(&cs->sim->bus, a, n, 0, 0, 1);
     if (cs->sim->bus.unmapped)
         esk_mach_bus_error(cs->sim, cs->sim->bus.fail_addr, n, 0);
     bus_error(cs, cs->sim->bus.fail_addr, 0);
@@ -201,9 +204,12 @@ void esk_cm_st_bus(struct esk_cm_state *cs, u32 a, int n, u32 v)
     ioport_note(cs, a);
     cs->sim->bus.unmapped = 0;
     if (esk_bus_write(&cs->sim->bus, a, n, v)) {
+        esk_bus_traced(&cs->sim->bus, a, n, 1, v, 1);
         if (cs->sim->bus.unmapped)
             esk_mach_bus_error(cs->sim, cs->sim->bus.fail_addr, n, 1);
         bus_error(cs, cs->sim->bus.fail_addr, 0);
+    } else {
+        esk_bus_traced(&cs->sim->bus, a, n, 1, v, 0);
     }
 }
 
