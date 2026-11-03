@@ -107,7 +107,7 @@ def render(name, fam):
         where = f"{name}/{row['mpn']}"
         desc = subst(fam["template"], env, where)
         if isinstance(desc.get("keywords"), list):  # a part's number may also be its family's name
-            desc["keywords"] = list(dict.fromkeys(desc["keywords"]))
+            desc["keywords"] = list(dict.fromkeys(k for k in desc["keywords"] if k != ""))
         ds = dict(fam["datasheets"][row["datasheet"]])
         ds.pop("text_hash", None)
         notes = ds.get("notes", "")

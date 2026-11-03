@@ -1,0 +1,185 @@
+{
+  "schema_version": 1,
+  "kind": "component",
+  "id": "emblink/mc7809c",
+  "version": "1.0.0",
+  "name": "MC7809C",
+  "category": "analog_ics",
+  "subcategory": "regulators",
+  "description": "onsemi MC7809C, a 1.0 A fixed 9 V positive linear regulator in TO-220 (IN 1, GND 2, OUT 3; the tab is GND): 8.65 to 9.35 V at 25 C (the C grade, 4 %, 0 to 125 C), 3.4 mA typical quiescent current (8 mA maximum), 2.0 V typical dropout at 1.0 A, 2.2 A peak output current. The 78xx regulator of countless power supplies.",
+  "keywords": [
+    "onsemi",
+    "MC7809C",
+    "MC7809CTG",
+    "MC78xx",
+    "7809",
+    "TO-220",
+    "regulator",
+    "linear",
+    "fixed",
+    "9 V",
+    "power supply"
+  ],
+  "pins": [
+    {
+      "name": "IN",
+      "number": 1,
+      "model": {
+        "kind": "analog"
+      },
+      "doc": "Unregulated input"
+    },
+    {
+      "name": "OUT",
+      "number": 3,
+      "model": {
+        "kind": "power",
+        "role": "supply",
+        "nominal_v": "$vout"
+      },
+      "doc": "Regulated output"
+    },
+    {
+      "name": "GND",
+      "number": 2,
+      "model": {
+        "kind": "power",
+        "role": "ground"
+      },
+      "aliases": [
+        "ADJ"
+      ],
+      "doc": "Ground"
+    }
+  ],
+  "params": {
+    "vout": {
+      "type": "number",
+      "unit": "V",
+      "default": 9,
+      "doc": "Regulated output voltage",
+      "min": 0.5,
+      "max": 50
+    },
+    "dropout": {
+      "type": "number",
+      "unit": "V",
+      "default": 2.0,
+      "doc": "Minimum input-output difference for regulation",
+      "min": 0,
+      "max": 5
+    },
+    "imax": {
+      "type": "number",
+      "unit": "A",
+      "default": 2.2,
+      "doc": "Current limit",
+      "min": "1m",
+      "max": 20
+    },
+    "quiescent": {
+      "type": "number",
+      "unit": "A",
+      "default": 0.0034,
+      "doc": "Ground pin current",
+      "min": 0,
+      "advanced": true
+    }
+  },
+  "model": {
+    "primitive": "regulator"
+  },
+  "symbol": {
+    "svg": "symbol.svg",
+    "width": 60,
+    "height": 30,
+    "pins": {
+      "IN": {
+        "x": 0,
+        "y": 10,
+        "side": "left"
+      },
+      "OUT": {
+        "x": 60,
+        "y": 10,
+        "side": "right"
+      },
+      "GND": {
+        "x": 30,
+        "y": 30,
+        "side": "bottom"
+      }
+    }
+  },
+  "fidelity": {
+    "functional": null,
+    "timed": null,
+    "electrical": {
+      "claims": "Fixed regulator at the table's typical output voltage (inside its 25 C minimum and maximum), dropping out below the typical 2.0 V input-output difference, limiting at the 2.2 A peak output current, its ground pin drawing the typical quiescent current. DC fixtures from the datasheet's table at its own test conditions.",
+      "omissions": [
+        "line and load regulation (the output does not move with input or load while regulating; the table allows tens of mV)",
+        "the short-circuit current's fall at high input voltage (0.2 A at 35 V) and the safe-area compensation",
+        "thermal shutdown and junction heating (TO-220: 65 C/W; the datasheet gives no shutdown temperature)",
+        "ripple rejection, output noise and output resistance (1.0 mohm at 1 kHz)",
+        "stability against the output capacitor and the start-up transient",
+        "the temperature coefficient (-0.3 mV/C) and the output voltage over the full temperature and line range",
+        "device-to-device spread within the grade",
+        "no manufacturer model qualification"
+      ],
+      "validation": [
+        "tests/*.json"
+      ]
+    }
+  },
+  "provenance": {
+    "author": "EmbSIM",
+    "license": "Apache-2.0",
+    "sources": [
+      {
+        "title": "onsemi MC7800, MC7800A, MC7800AE, NCV7800 datasheet (MC7800/D)",
+        "url": "https://www.onsemi.com/pdf/datasheet/mc7800-d.pdf",
+        "rev": "current at retrieval",
+        "date": "2026-11-03",
+        "hash": "sha256:fa96ab9014b7867a669ac337b77112d7fa5c58897b6242ae7149482870463095",
+        "notes": "Pages 1 to 9: TO-220 pinout (1 input, 2 ground, 3 output; heatsink to pin 2), RthJA 65 C/W for TO-220; per voltage an electrical characteristics table for the B and C grades and one for the A grades: VO at 25 C, quiescent current, dropout 2.0 V typical at 1.0 A, output resistance, short-circuit current, peak output current 2.2 A; ordering codes. generated from catalog/families/regulators_mc7800/family.json by tools/catalog/families.py; edit the family, not this file"
+      },
+      {
+        "title": "KiCad family/package reference, revision 4e17d759",
+        "url": "https://github.com/KiCad/kicad-symbols/blob/4e17d7595f9691d45d97aea8ad64572652fb5bed/Regulator_Linear.lib"
+      }
+    ]
+  },
+  "tests": [
+    "tests/*.json"
+  ],
+  "part": {
+    "manufacturer": "onsemi",
+    "mpn": "MC7809C",
+    "package": "TO-220",
+    "datasheet": "https://www.onsemi.com/pdf/datasheet/mc7800-d.pdf"
+  },
+  "artwork": {
+    "svg": "artwork.svg"
+  },
+  "i18n": {
+    "fr": {
+      "source": "9821b566dce3",
+      "description": "onsemi MC7809C, un régulateur linéaire positif fixe de 9 V et 1,0 A en TO-220 (IN 1, GND 2, OUT 3 ; la languette est GND) : 8,65 à 9,35 V à 25 °C (la classe C, 4 %, 0 à 125 °C), 3,4 mA de courant de repos typique (8 mA au plus), 2,0 V de chute typique à 1,0 A, 2,2 A de courant de sortie crête. Le régulateur 78xx d'innombrables alimentations.",
+      "fidelity": {
+        "electrical": {
+          "claims": "Régulateur fixe à la tension de sortie typique du tableau (entre son minimum et son maximum à 25 °C), décrochant sous la différence entrée-sortie typique de 2,0 V, limitant au courant de sortie crête de 2,2 A, sa broche de masse consommant le courant de repos typique. Cas de test en continu tirés du tableau de la fiche technique, à ses propres conditions de test.",
+          "omissions": [
+            "la régulation de ligne et de charge (la sortie ne bouge pas avec l'entrée ni la charge tant qu'elle régule ; le tableau admet des dizaines de mV)",
+            "la baisse du courant de court-circuit à forte tension d'entrée (0,2 A à 35 V) et la compensation de zone de sécurité",
+            "la coupure thermique et l'échauffement de la jonction (TO-220 : 65 °C/W ; la fiche technique ne donne pas de température de coupure)",
+            "la réjection d'ondulation, le bruit de sortie et la résistance de sortie (1.0 mohm à 1 kHz)",
+            "la stabilité selon le condensateur de sortie et le transitoire de démarrage",
+            "le coefficient de température (-0,3 mV/°C) et la tension de sortie sur toute la plage de température et de ligne",
+            "la dispersion d'un exemplaire à l'autre dans la classe",
+            "aucune qualification par un modèle du fabricant"
+          ]
+        }
+      }
+    }
+  }
+}

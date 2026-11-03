@@ -16,17 +16,22 @@ the tree with counts and searches category names in the interface's
 language (`libraryFilters.test.ts`, ctest `taxonomy_ui`).
 
 Part families fill it from datasheet tables (`catalog/families`,
-`tools/catalog/families.py`): 146 parts in eight families so far (347
+`tools/catalog/families.py`): 943 parts in eleven families so far (1144
 components in all): Vishay's 1N400x and 1N540x rectifiers, 1N581x Schottky
 rectifiers, BZX55 C and B zeners and 1N4728A to 1N4761A zeners; onsemi's
 1N914, 1N916, 1N4148 and 1N4448 switching diodes; onsemi's BC546 to BC548
-NPN and BC556 to BC558 PNP transistors. Every row is found in its
-datasheet's text by `families.py verify` (146 rows, 7 datasheets, sha256
-checked) and every part is held to its table's limits by its fixtures
-(ctest `catalog_fixtures`, 1096 fixtures). Not yet: MOSFETs, power
-transistors, op-amps, regulators and the 74HC and CD4000 functions as
-families; the transistors' Early effect, breakdown and capacitances; the
-zeners' soft knee and dynamic resistance and every diode's capacitance and recovery.
+NPN and BC556 to BC558 PNP transistors; onsemi's MC7805 to MC7824
+regulators; Vishay's CCF55 (E96, 1 %) and CCF07 (E24, 2 % and 5 %) metal
+film resistors. Every row is found in its datasheet's text by
+`families.py verify` (943 rows, 10 datasheets, sha256 checked) and every
+part is held to its table's limits by its fixtures (ctest
+`catalog_fixtures`; `run_fixtures.py`: 1927 fixtures, 4570 assertions).
+Not yet: MOSFETs, power transistors, op-amps, negative regulators (the
+regulator primitive has no negative polarity), capacitors and the 74HC
+and CD4000 functions as families; the transistors' Early effect,
+breakdown and capacitances; the zeners' soft knee and dynamic resistance
+and every diode's capacitance and recovery; a resistor's power rating
+and self-heating.
 
 ## AI assistants: the MCP server (2026-11-02)
 

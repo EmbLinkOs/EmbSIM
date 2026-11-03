@@ -32,6 +32,14 @@ versions follow semantic versioning. There is no release yet.
   BC547B and BC557B now take their group's typical gain (290) and no
   longer have an Early voltage the datasheet does not give. The bench draws an axial part by its
   package (DO-35, DO-41, DO-201AD).
+- More families: onsemi's MC7805 to MC7824 regulators in the B, C and AC
+  grades (21), and 776 Vishay metal film resistors, the CCF55's every E96
+  value from 10 ohm to 3.01 Mohm at 1 % and the CCF07's E24 values at 2 %
+  and 5 %, each under the part number its datasheet's coding gives
+  (CCF5510K0FKE36), its tolerance drawn from the project's seed and its
+  temperature coefficient the datasheet's. The bench draws a resistor's
+  colour code from its value and tolerance (five bands at 1 %), TO-92 and
+  TO-220 bodies by package; `run_fixtures.py` runs fixtures in parallel.
 - The library's browser is the category tree: a category opens its
   sub-categories with their counts, search matches category and
   sub-category names, and `embsim catalog show` prints both.

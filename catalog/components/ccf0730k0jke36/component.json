@@ -1,0 +1,187 @@
+{
+  "schema_version": 1,
+  "kind": "component",
+  "id": "emblink/ccf0730k0jke36",
+  "version": "1.0.0",
+  "name": "CCF0730K0JKE36",
+  "category": "resistors",
+  "subcategory": "fixed",
+  "description": "Vishay CCF0730K0JKE36, a CCF07 metal film leaded resistor: 30 kohm ±5 %, 0.25 W at 70 C (0.5 W with 2 % stability), ±100 ppm/K, 250 V maximum working voltage, in a 6.22 x 2.29 mm red-brown body marked with the 4-band colour code. One of the 249 values of the CCF07 range in its datasheet's E24 series.",
+  "keywords": [
+    "Vishay",
+    "Dale",
+    "CCF0730K0JKE36",
+    "CCF07",
+    "resistor",
+    "metal film",
+    "30 kohm",
+    "E24",
+    "5 %",
+    "axial",
+    "1/4 W"
+  ],
+  "pins": [
+    {
+      "name": "1",
+      "number": 1,
+      "model": {
+        "kind": "passive"
+      }
+    },
+    {
+      "name": "2",
+      "number": 2,
+      "model": {
+        "kind": "passive"
+      }
+    }
+  ],
+  "params": {
+    "resistance": {
+      "type": "number",
+      "unit": "ohm",
+      "default": "30k",
+      "doc": "Resistance",
+      "min": "1m",
+      "max": "1G",
+      "spread": "tolerance"
+    },
+    "tolerance": {
+      "type": "number",
+      "unit": "%",
+      "default": 5,
+      "min": 0,
+      "max": 50,
+      "doc": "Tolerance: each part's resistance lies within this band of the nominal, drawn from the project's seed (ADR-034); the datasheet's grade by default"
+    },
+    "tc1": {
+      "type": "number",
+      "unit": "1/K",
+      "default": 9.999999999999999e-05,
+      "doc": "First-order temperature coefficient: the datasheet's limit by default (a real part may be anywhere within plus or minus it)",
+      "advanced": true
+    },
+    "tc2": {
+      "type": "number",
+      "unit": "1/K^2",
+      "default": 0,
+      "doc": "Second-order temperature coefficient",
+      "advanced": true
+    },
+    "temp": {
+      "type": "number",
+      "unit": "degC",
+      "default": 27,
+      "doc": "Operating temperature",
+      "min": -55,
+      "max": 175,
+      "advanced": true
+    }
+  },
+  "model": {
+    "primitive": "resistor",
+    "bind": {
+      "r": "resistance",
+      "tc1": "tc1",
+      "tc2": "tc2",
+      "temp": "temp"
+    }
+  },
+  "functional": {
+    "primitive": "wire"
+  },
+  "symbol": {
+    "svg": "symbol.svg",
+    "width": 60,
+    "height": 20,
+    "pins": {
+      "1": {
+        "x": 0,
+        "y": 10,
+        "side": "left"
+      },
+      "2": {
+        "x": 60,
+        "y": 10,
+        "side": "right"
+      }
+    }
+  },
+  "fidelity": {
+    "functional": {
+      "claims": "A wire: both pins are the same logic node.",
+      "omissions": [
+        "resistance",
+        "pulls formed with other parts"
+      ]
+    },
+    "timed": {
+      "claims": "As electrical when its nets are analog; otherwise a wire.",
+      "omissions": [
+        "noise"
+      ]
+    },
+    "electrical": {
+      "claims": "Linear resistance at the nominal value, drawn within the datasheet's tolerance from the project's seed (ADR-034; nominal under \"ideal\" imperfections), with the datasheet's temperature coefficient as tc1 (its limit, taken with its sign positive); 250 V working voltage.",
+      "omissions": [
+        "the temperature coefficient's sign and spread: the datasheet gives a limit (plus or minus), the model takes it positive",
+        "the power rating (0.25 W with 0.5 % stability, 0.5 W with 1 %) and its derating above 70 C: no self-heating and no damage",
+        "thermal noise and current noise",
+        "the load-life, moisture and solderability drifts",
+        "parasitic inductance and capacitance",
+        "the distribution inside the tolerance band (uniform: the datasheet guarantees the band only)"
+      ],
+      "range": {
+        "voltage_v": [
+          -250,
+          250
+        ]
+      },
+      "validation": [
+        "tests/*.json"
+      ]
+    }
+  },
+  "provenance": {
+    "author": "EmbSIM",
+    "license": "Apache-2.0",
+    "sources": [
+      {
+        "title": "Vishay CCF07 datasheet (document 31013)",
+        "url": "https://www.vishay.com/docs/31013/ccf07.pdf",
+        "rev": "27 April 2021",
+        "date": "2026-11-03",
+        "hash": "sha256:4b77f13acf7bf2e59186ab050d468bedd49e64fd9d4fb1ff58c93b4a7edbd918",
+        "notes": "Page 1: 0.25 or 0.5 W at 70 C, 250 V, 2 % and 5 % at 100 ppm/K from 10 ohm to 1 Mohm and 5 % at 200 ppm/K from 1.1 to 2 Mohm, E24 series; the part number's coding (CCF07 + value code + G or J + K or N + E36); 4-band colour code; page 2: the 6.22 x 2.29 mm body. generated from catalog/families/resistors_ccf07/family.json by tools/catalog/families.py; edit the family, not this file"
+      }
+    ]
+  },
+  "tests": [
+    "tests/*.json"
+  ],
+  "part": {
+    "manufacturer": "Vishay",
+    "mpn": "CCF0730K0JKE36",
+    "package": "DIN0207",
+    "datasheet": "https://www.vishay.com/docs/31013/ccf07.pdf"
+  },
+  "i18n": {
+    "fr": {
+      "source": "50911acc1f0a",
+      "description": "Vishay CCF0730K0JKE36, une résistance à couche métallique à fils CCF07 : 30 kohm ±5 %, 0,25 W à 70 °C (0,5 W avec 2 % de stabilité), ±100 ppm/K, 250 V de tension de service maximale, dans un corps rouge-brun de 6,22 x 2,29 mm marqué du code des couleurs à 4 anneaux. L'une des 249 valeurs de la gamme CCF07 dans la série E24 de sa fiche technique.",
+      "fidelity": {
+        "electrical": {
+          "claims": "Résistance linéaire à la valeur nominale, tirée dans la tolérance de la fiche technique à partir de la graine du projet (ADR-034 ; nominale avec les imperfections « ideal »), avec le coefficient de température de la fiche technique comme tc1 (sa limite, prise positive) ; 250 V de tension de service.",
+          "omissions": [
+            "le signe et la dispersion du coefficient de température : la fiche technique donne une limite (plus ou moins), le modèle la prend positive",
+            "la puissance nominale (0,25 W avec 0,5 % de stabilité, 0,5 W avec 1 %) et sa réduction au-delà de 70 °C : ni échauffement propre ni dommages",
+            "le bruit thermique et le bruit en courant",
+            "les dérives d'endurance en charge, d'humidité et de soudabilité",
+            "l'inductance et la capacité parasites",
+            "la répartition dans la bande de tolérance (uniforme : la fiche technique ne garantit que la bande)"
+          ]
+        }
+      }
+    }
+  }
+}

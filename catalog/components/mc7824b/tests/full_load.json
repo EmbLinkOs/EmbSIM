@@ -1,0 +1,57 @@
+{
+  "schema_version": 1,
+  "kind": "component_test",
+  "name": "full_load",
+  "description": "1.0 A with the typical 2.0 V dropout plus 0.5 V of headroom: still regulating inside the 25 C limits",
+  "policy": "electrical",
+  "until": "100us",
+  "circuit": {
+    "components": [
+      {
+        "id": "V1",
+        "component": "emblink/vsource",
+        "params": {
+          "dc": 26.5
+        }
+      },
+      {
+        "id": "DUT",
+        "component": "emblink/mc7824b"
+      },
+      {
+        "id": "RL",
+        "component": "emblink/resistor",
+        "params": {
+          "resistance": 24.0
+        }
+      },
+      {
+        "id": "G",
+        "component": "emblink/gnd"
+      }
+    ],
+    "nets": {
+      "VIN": [
+        "V1.+",
+        "DUT.IN"
+      ],
+      "VOUT": [
+        "DUT.OUT",
+        "RL.1"
+      ],
+      "GND": [
+        "V1.-",
+        "DUT.GND",
+        "RL.2",
+        "G.GND"
+      ]
+    }
+  },
+  "expect": {
+    "net:VOUT": {
+      "at": "50us",
+      "min_v": 23,
+      "max_v": 25
+    }
+  }
+}

@@ -36,6 +36,14 @@ PDF's text. The fixtures then hold the model to the same table's limits.
 | `switching_1n914` | onsemi 1N914, 1N914A, 1N914B, 1N916, 1N916A, 1N916B, 1N4148, 1N4448, DO-35 | 1N914/D | each grade's VF window or maximum at its test currents; IR at 20 V and 75 V; breakdown at the 100 V minimum |
 | `bjt_bc546` | onsemi BC546B, BC547A, BC547B, BC547C, BC548B, BC548C (NPN), TO-92 | BC546/D | IC within the hFE group's limits at 2 mA and VBE(on) inside 0.55 to 0.7 V; VCE(sat) at 10 mA; ICES |
 | `bjt_bc556` | onsemi BC556B, BC557A, BC557B, BC557C, BC558B (PNP), TO-92 | BC556B/D | the same, with the PNP's limits |
+| `regulators_mc7800` | onsemi MC7805 to MC7824 in the B, C and AC grades (21), TO-220 | MC7800/D | VO within the 25 C limits at the table's Vin and 500 mA, and at 1.0 A; the 2.0 V dropout; quiescent current under its maximum |
+| `resistors_ccf55` | Vishay CCF55, 1 %, 100 ppm/K: every E96 value from 10 ohm to 3.01 Mohm (527) | 31015 | the nominal resistance (a divider read to 0.1 %) |
+| `resistors_ccf07` | Vishay CCF07, E24 from 10 ohm to 1 Mohm at 2 % and 5 %, and 1.1 to 2 Mohm at 5 % (249) | 31013 | the same |
+
+The resistors' part numbers are the datasheets' own coding (`CCF55` + the value
+with R, K or M for its decimal point + the tolerance and temperature
+coefficient letters + `E36`: CCF5510K0FKE36), and the bench marks them with
+the code the datasheet names: five bands for the 1 % CCF55, four for CCF07.
 
 ## Interactive library batch
 

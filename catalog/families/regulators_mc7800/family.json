@@ -1,0 +1,1213 @@
+{
+  "schema_version": 1,
+  "kind": "family",
+  "name": "onsemi MC7800 positive voltage regulators",
+  "datasheets": {
+    "onsemi-mc7800": {
+      "title": "onsemi MC7800, MC7800A, MC7800AE, NCV7800 datasheet (MC7800/D)",
+      "url": "https://www.onsemi.com/pdf/datasheet/mc7800-d.pdf",
+      "rev": "current at retrieval",
+      "date": "2026-11-03",
+      "hash": "sha256:fa96ab9014b7867a669ac337b77112d7fa5c58897b6242ae7149482870463095",
+      "notes": "Pages 1 to 9: TO-220 pinout (1 input, 2 ground, 3 output; heatsink to pin 2), RthJA 65 C/W for TO-220; per voltage an electrical characteristics table for the B and C grades and one for the A grades: VO at 25 C, quiescent current, dropout 2.0 V typical at 1.0 A, output resistance, short-circuit current, peak output current 2.2 A; ordering codes."
+    }
+  },
+  "evidence": [
+    "MC7800, MC7800A, MC7800AE, NCV7800",
+    "Pin 1\\. Input .{0,300}2\\. Ground .{0,300}3\\. Output",
+    "Quiescent Current IB − ${iq} ",
+    "Dropout Voltage \\(IO = 1\\.0 A, TJ = 25°C\\) Vi?I [−_] VO −? ?2\\.0",
+    "Peak Output Current \\(TJ = 25°C\\) Imax − 2\\.2"
+  ],
+  "template": {
+    "schema_version": 1,
+    "kind": "component",
+    "id": "emblink/${short}",
+    "version": "1.0.0",
+    "name": "${mpn}",
+    "category": "analog_ics",
+    "subcategory": "regulators",
+    "description": "onsemi ${mpn}, a 1.0 A fixed ${vo_txt} V positive linear regulator in TO-220 (IN 1, GND 2, OUT 3; the tab is GND): ${vo_min} to ${vo_max} V at 25 C (${grade}), ${iq} mA typical quiescent current (${iq_max} mA maximum), 2.0 V typical dropout at 1.0 A, 2.2 A peak output current. The 78xx regulator of countless power supplies.",
+    "keywords": [
+      "onsemi",
+      "${mpn}",
+      "${order}",
+      "MC78xx",
+      "78${vcode}",
+      "TO-220",
+      "regulator",
+      "linear",
+      "fixed",
+      "${vo_txt} V",
+      "power supply"
+    ],
+    "pins": [
+      {
+        "name": "IN",
+        "number": 1,
+        "model": {
+          "kind": "analog"
+        },
+        "doc": "Unregulated input"
+      },
+      {
+        "name": "OUT",
+        "number": 3,
+        "model": {
+          "kind": "power",
+          "role": "supply",
+          "nominal_v": "$vout"
+        },
+        "doc": "Regulated output"
+      },
+      {
+        "name": "GND",
+        "number": 2,
+        "model": {
+          "kind": "power",
+          "role": "ground"
+        },
+        "aliases": [
+          "ADJ"
+        ],
+        "doc": "Ground"
+      }
+    ],
+    "params": {
+      "vout": {
+        "type": "number",
+        "unit": "V",
+        "default": "${vo}",
+        "doc": "Regulated output voltage",
+        "min": 0.5,
+        "max": 50
+      },
+      "dropout": {
+        "type": "number",
+        "unit": "V",
+        "default": 2.0,
+        "doc": "Minimum input-output difference for regulation",
+        "min": 0,
+        "max": 5
+      },
+      "imax": {
+        "type": "number",
+        "unit": "A",
+        "default": 2.2,
+        "doc": "Current limit",
+        "min": "1m",
+        "max": 20
+      },
+      "quiescent": {
+        "type": "number",
+        "unit": "A",
+        "default": "${iq_a}",
+        "doc": "Ground pin current",
+        "min": 0,
+        "advanced": true
+      }
+    },
+    "model": {
+      "primitive": "regulator"
+    },
+    "symbol": {
+      "svg": "symbol.svg",
+      "width": 60,
+      "height": 30,
+      "pins": {
+        "IN": {
+          "x": 0,
+          "y": 10,
+          "side": "left"
+        },
+        "OUT": {
+          "x": 60,
+          "y": 10,
+          "side": "right"
+        },
+        "GND": {
+          "x": 30,
+          "y": 30,
+          "side": "bottom"
+        }
+      }
+    },
+    "fidelity": {
+      "functional": null,
+      "timed": null,
+      "electrical": {
+        "claims": "Fixed regulator at the table's typical output voltage (inside its 25 C minimum and maximum), dropping out below the typical 2.0 V input-output difference, limiting at the 2.2 A peak output current, its ground pin drawing the typical quiescent current. DC fixtures from the datasheet's table at its own test conditions.",
+        "omissions": [
+          "line and load regulation (the output does not move with input or load while regulating; the table allows tens of mV)",
+          "the short-circuit current's fall at high input voltage (0.2 A at 35 V) and the safe-area compensation",
+          "thermal shutdown and junction heating (TO-220: 65 C/W; the datasheet gives no shutdown temperature)",
+          "ripple rejection, output noise and output resistance (${ro} mohm at 1 kHz)",
+          "stability against the output capacitor and the start-up transient",
+          "the temperature coefficient (-0.3 mV/C) and the output voltage over the full temperature and line range",
+          "device-to-device spread within the grade",
+          "no manufacturer model qualification"
+        ],
+        "validation": [
+          "tests/*.json"
+        ]
+      }
+    },
+    "provenance": {
+      "author": "EmbSIM",
+      "license": "Apache-2.0",
+      "sources": [
+        {
+          "title": "KiCad family/package reference, revision 4e17d759",
+          "url": "https://github.com/KiCad/kicad-symbols/blob/4e17d7595f9691d45d97aea8ad64572652fb5bed/Regulator_Linear.lib"
+        }
+      ]
+    },
+    "tests": [
+      "tests/*.json"
+    ],
+    "part": {
+      "manufacturer": "onsemi",
+      "mpn": "${mpn}",
+      "package": "TO-220",
+      "datasheet": "${datasheet_url}"
+    },
+    "artwork": {
+      "svg": "artwork.svg"
+    },
+    "i18n": {
+      "fr": {
+        "description": "onsemi ${mpn}, un régulateur linéaire positif fixe de ${vo_txt_fr} V et 1,0 A en TO-220 (IN 1, GND 2, OUT 3 ; la languette est GND) : ${vo_min_fr} à ${vo_max_fr} V à 25 °C (${grade_fr}), ${iq_fr} mA de courant de repos typique (${iq_max_fr} mA au plus), 2,0 V de chute typique à 1,0 A, 2,2 A de courant de sortie crête. Le régulateur 78xx d'innombrables alimentations.",
+        "fidelity": {
+          "electrical": {
+            "claims": "Régulateur fixe à la tension de sortie typique du tableau (entre son minimum et son maximum à 25 °C), décrochant sous la différence entrée-sortie typique de 2,0 V, limitant au courant de sortie crête de 2,2 A, sa broche de masse consommant le courant de repos typique. Cas de test en continu tirés du tableau de la fiche technique, à ses propres conditions de test.",
+            "omissions": [
+              "la régulation de ligne et de charge (la sortie ne bouge pas avec l'entrée ni la charge tant qu'elle régule ; le tableau admet des dizaines de mV)",
+              "la baisse du courant de court-circuit à forte tension d'entrée (0,2 A à 35 V) et la compensation de zone de sécurité",
+              "la coupure thermique et l'échauffement de la jonction (TO-220 : 65 °C/W ; la fiche technique ne donne pas de température de coupure)",
+              "la réjection d'ondulation, le bruit de sortie et la résistance de sortie (${ro} mohm à 1 kHz)",
+              "la stabilité selon le condensateur de sortie et le transitoire de démarrage",
+              "le coefficient de température (-0,3 mV/°C) et la tension de sortie sur toute la plage de température et de ligne",
+              "la dispersion d'un exemplaire à l'autre dans la classe",
+              "aucune qualification par un modèle du fabricant"
+            ]
+          }
+        }
+      }
+    }
+  },
+  "tests": {
+    "regulation": {
+      "schema_version": 1,
+      "kind": "component_test",
+      "name": "regulation",
+      "description": "The table's own conditions (Vin = ${vin} V, IO = 500 mA): VO inside its 25 C minimum and maximum",
+      "policy": "electrical",
+      "until": "100us",
+      "circuit": {
+        "components": [
+          {
+            "id": "V1",
+            "component": "emblink/vsource",
+            "params": {
+              "dc": "${vin}"
+            }
+          },
+          {
+            "id": "DUT",
+            "component": "emblink/${short}"
+          },
+          {
+            "id": "RL",
+            "component": "emblink/resistor",
+            "params": {
+              "resistance": "${rl_500}"
+            }
+          },
+          {
+            "id": "G",
+            "component": "emblink/gnd"
+          }
+        ],
+        "nets": {
+          "VIN": [
+            "V1.+",
+            "DUT.IN"
+          ],
+          "VOUT": [
+            "DUT.OUT",
+            "RL.1"
+          ],
+          "GND": [
+            "V1.-",
+            "DUT.GND",
+            "RL.2",
+            "G.GND"
+          ]
+        }
+      },
+      "expect": {
+        "net:VOUT": {
+          "at": "50us",
+          "min_v": "${vo_min}",
+          "max_v": "${vo_max}"
+        }
+      }
+    },
+    "full_load": {
+      "schema_version": 1,
+      "kind": "component_test",
+      "name": "full_load",
+      "description": "1.0 A with the typical 2.0 V dropout plus 0.5 V of headroom: still regulating inside the 25 C limits",
+      "policy": "electrical",
+      "until": "100us",
+      "circuit": {
+        "components": [
+          {
+            "id": "V1",
+            "component": "emblink/vsource",
+            "params": {
+              "dc": "${vin_hd}"
+            }
+          },
+          {
+            "id": "DUT",
+            "component": "emblink/${short}"
+          },
+          {
+            "id": "RL",
+            "component": "emblink/resistor",
+            "params": {
+              "resistance": "${rl_1a}"
+            }
+          },
+          {
+            "id": "G",
+            "component": "emblink/gnd"
+          }
+        ],
+        "nets": {
+          "VIN": [
+            "V1.+",
+            "DUT.IN"
+          ],
+          "VOUT": [
+            "DUT.OUT",
+            "RL.1"
+          ],
+          "GND": [
+            "V1.-",
+            "DUT.GND",
+            "RL.2",
+            "G.GND"
+          ]
+        }
+      },
+      "expect": {
+        "net:VOUT": {
+          "at": "50us",
+          "min_v": "${vo_min}",
+          "max_v": "${vo_max}"
+        }
+      }
+    },
+    "dropout": {
+      "schema_version": 1,
+      "kind": "component_test",
+      "name": "dropout",
+      "description": "1.0 V of headroom at 1.0 A, under the typical 2.0 V dropout: the output follows the input 2.0 V below",
+      "policy": "electrical",
+      "until": "100us",
+      "circuit": {
+        "components": [
+          {
+            "id": "V1",
+            "component": "emblink/vsource",
+            "params": {
+              "dc": "${vin_do}"
+            }
+          },
+          {
+            "id": "DUT",
+            "component": "emblink/${short}"
+          },
+          {
+            "id": "RL",
+            "component": "emblink/resistor",
+            "params": {
+              "resistance": "${rl_1a}"
+            }
+          },
+          {
+            "id": "G",
+            "component": "emblink/gnd"
+          }
+        ],
+        "nets": {
+          "VIN": [
+            "V1.+",
+            "DUT.IN"
+          ],
+          "VOUT": [
+            "DUT.OUT",
+            "RL.1"
+          ],
+          "GND": [
+            "V1.-",
+            "DUT.GND",
+            "RL.2",
+            "G.GND"
+          ]
+        }
+      },
+      "expect": {
+        "net:VOUT": {
+          "at": "50us",
+          "min_v": "${vdo_min}",
+          "max_v": "${vdo_max}"
+        }
+      }
+    },
+    "quiescent": {
+      "schema_version": 1,
+      "kind": "component_test",
+      "name": "quiescent",
+      "description": "Input through 100 ohm with a 10 kohm load: the drop is the load current plus the ground pin's, under the table's ${iq_max} mA maximum quiescent current",
+      "policy": "electrical",
+      "until": "100us",
+      "circuit": {
+        "components": [
+          {
+            "id": "V1",
+            "component": "emblink/vsource",
+            "params": {
+              "dc": "${vin_q}"
+            }
+          },
+          {
+            "id": "RS",
+            "component": "emblink/resistor",
+            "params": {
+              "resistance": 100
+            }
+          },
+          {
+            "id": "DUT",
+            "component": "emblink/${short}"
+          },
+          {
+            "id": "RL",
+            "component": "emblink/resistor",
+            "params": {
+              "resistance": "10k"
+            }
+          },
+          {
+            "id": "G",
+            "component": "emblink/gnd"
+          }
+        ],
+        "nets": {
+          "VS": [
+            "V1.+",
+            "RS.1"
+          ],
+          "VIN": [
+            "RS.2",
+            "DUT.IN"
+          ],
+          "VOUT": [
+            "DUT.OUT",
+            "RL.1"
+          ],
+          "GND": [
+            "V1.-",
+            "DUT.GND",
+            "RL.2",
+            "G.GND"
+          ]
+        }
+      },
+      "expect": {
+        "net:VIN": {
+          "at": "50us",
+          "min_v": "${vq_min}",
+          "max_v": "${vq_max}"
+        }
+      }
+    }
+  },
+  "rows": [
+    {
+      "mpn": "MC7805B",
+      "short": "mc7805b",
+      "order": "MC7805BTG",
+      "vcode": "05",
+      "vo": 5,
+      "vo_txt": 5,
+      "vo_txt_fr": "5",
+      "vo_min": 4.8,
+      "vo_max": 5.2,
+      "vo_min_fr": "4,8",
+      "vo_max_fr": "5,2",
+      "iq": 3.2,
+      "iq_fr": "3,2",
+      "iq_max": 8,
+      "iq_max_fr": "8",
+      "iq_a": 0.0032,
+      "ro": "0.9",
+      "grade": "the B grade, 4 %, -40 to 125 C",
+      "grade_fr": "la classe B, 4 %, -40 à 125 °C",
+      "vin": 10,
+      "rl_500": 10.0,
+      "rl_1a": 5.0,
+      "vin_hd": 7.5,
+      "vin_do": 6.0,
+      "vdo_min": 3.85,
+      "vdo_max": 4.15,
+      "vin_q": 10,
+      "vq_max": 9.95,
+      "vq_min": 9.15,
+      "datasheet": "onsemi-mc7800",
+      "evidence": [
+        "Vin = #{vin} V, IO = (?:500 mA|1\\.0 A)[^)]*\\), unless otherwise noted\\) [^E]*?MC7805B",
+        "Output Voltage \\(TJ = 25°C\\) VO (?:[\\d.]+ ){0,3}${vo_min} ${vo} ${vo_max} ",
+        "${order} .{0,80}TO−220"
+      ]
+    },
+    {
+      "mpn": "MC7805C",
+      "short": "mc7805c",
+      "order": "MC7805CTG",
+      "vcode": "05",
+      "vo": 5,
+      "vo_txt": 5,
+      "vo_txt_fr": "5",
+      "vo_min": 4.8,
+      "vo_max": 5.2,
+      "vo_min_fr": "4,8",
+      "vo_max_fr": "5,2",
+      "iq": 3.2,
+      "iq_fr": "3,2",
+      "iq_max": 6.5,
+      "iq_max_fr": "6,5",
+      "iq_a": 0.0032,
+      "ro": "0.9",
+      "grade": "the C grade, 4 %, 0 to 125 C",
+      "grade_fr": "la classe C, 4 %, 0 à 125 °C",
+      "vin": 10,
+      "rl_500": 10.0,
+      "rl_1a": 5.0,
+      "vin_hd": 7.5,
+      "vin_do": 6.0,
+      "vdo_min": 3.85,
+      "vdo_max": 4.15,
+      "vin_q": 10,
+      "vq_max": 9.95,
+      "vq_min": 9.3,
+      "datasheet": "onsemi-mc7800",
+      "evidence": [
+        "Vin = #{vin} V, IO = (?:500 mA|1\\.0 A)[^)]*\\), unless otherwise noted\\) [^E]*?MC7805C",
+        "Output Voltage \\(TJ = 25°C\\) VO (?:[\\d.]+ ){0,3}${vo_min} ${vo} ${vo_max} ",
+        "${order} .{0,80}TO−220"
+      ]
+    },
+    {
+      "mpn": "MC7805AC",
+      "short": "mc7805ac",
+      "order": "MC7805ACTG",
+      "vcode": "05",
+      "vo": 5,
+      "vo_txt": 5,
+      "vo_txt_fr": "5",
+      "vo_min": 4.9,
+      "vo_max": 5.1,
+      "vo_min_fr": "4,9",
+      "vo_max_fr": "5,1",
+      "iq": 3.2,
+      "iq_fr": "3,2",
+      "iq_max": 6,
+      "iq_max_fr": "6",
+      "iq_a": 0.0032,
+      "ro": "0.9",
+      "grade": "the AC grade, 2 %, 0 to 125 C",
+      "grade_fr": "la classe AC, 2 %, 0 à 125 °C",
+      "vin": 10,
+      "rl_500": 10.0,
+      "rl_1a": 5.0,
+      "vin_hd": 7.5,
+      "vin_do": 6.0,
+      "vdo_min": 3.85,
+      "vdo_max": 4.15,
+      "vin_q": 10,
+      "vq_max": 9.95,
+      "vq_min": 9.35,
+      "datasheet": "onsemi-mc7800",
+      "evidence": [
+        "Vin = #{vin} V, IO = (?:500 mA|1\\.0 A)[^)]*\\), unless otherwise noted\\) [^E]*?MC7805AC",
+        "Output Voltage \\(TJ = 25°C\\) VO (?:[\\d.]+ ){0,3}${vo_min} ${vo} ${vo_max} ",
+        "${order} .{0,80}TO−220"
+      ]
+    },
+    {
+      "mpn": "MC7808B",
+      "short": "mc7808b",
+      "order": "",
+      "vcode": "08",
+      "vo": 8,
+      "vo_txt": 8,
+      "vo_txt_fr": "8",
+      "vo_min": 7.7,
+      "vo_max": 8.3,
+      "vo_min_fr": "7,7",
+      "vo_max_fr": "8,3",
+      "iq": 3.3,
+      "iq_fr": "3,3",
+      "iq_max": 8,
+      "iq_max_fr": "8",
+      "iq_a": 0.0033,
+      "ro": "0.9",
+      "grade": "the B grade, 4 %, -40 to 125 C",
+      "grade_fr": "la classe B, 4 %, -40 à 125 °C",
+      "vin": 14,
+      "rl_500": 16.0,
+      "rl_1a": 8.0,
+      "vin_hd": 10.5,
+      "vin_do": 9.0,
+      "vdo_min": 6.85,
+      "vdo_max": 7.15,
+      "vin_q": 14,
+      "vq_max": 13.92,
+      "vq_min": 13.12,
+      "datasheet": "onsemi-mc7800",
+      "evidence": [
+        "Vin = #{vin} V, IO = (?:500 mA|1\\.0 A)[^)]*\\), unless otherwise noted\\) [^E]*?MC7808B",
+        "Output Voltage \\(TJ = 25°C\\) VO (?:[\\d.]+ ){0,3}${vo_min} ${vo} ${vo_max} "
+      ]
+    },
+    {
+      "mpn": "MC7808C",
+      "short": "mc7808c",
+      "order": "MC7808CTG",
+      "vcode": "08",
+      "vo": 8,
+      "vo_txt": 8,
+      "vo_txt_fr": "8",
+      "vo_min": 7.7,
+      "vo_max": 8.3,
+      "vo_min_fr": "7,7",
+      "vo_max_fr": "8,3",
+      "iq": 3.3,
+      "iq_fr": "3,3",
+      "iq_max": 8,
+      "iq_max_fr": "8",
+      "iq_a": 0.0033,
+      "ro": "0.9",
+      "grade": "the C grade, 4 %, 0 to 125 C",
+      "grade_fr": "la classe C, 4 %, 0 à 125 °C",
+      "vin": 14,
+      "rl_500": 16.0,
+      "rl_1a": 8.0,
+      "vin_hd": 10.5,
+      "vin_do": 9.0,
+      "vdo_min": 6.85,
+      "vdo_max": 7.15,
+      "vin_q": 14,
+      "vq_max": 13.92,
+      "vq_min": 13.12,
+      "datasheet": "onsemi-mc7800",
+      "evidence": [
+        "Vin = #{vin} V, IO = (?:500 mA|1\\.0 A)[^)]*\\), unless otherwise noted\\) [^E]*?MC7808C",
+        "Output Voltage \\(TJ = 25°C\\) VO (?:[\\d.]+ ){0,3}${vo_min} ${vo} ${vo_max} ",
+        "${order} .{0,80}TO−220"
+      ]
+    },
+    {
+      "mpn": "MC7808AC",
+      "short": "mc7808ac",
+      "order": "",
+      "vcode": "08",
+      "vo": 8,
+      "vo_txt": 8,
+      "vo_txt_fr": "8",
+      "vo_min": 7.84,
+      "vo_max": 8.16,
+      "vo_min_fr": "7,84",
+      "vo_max_fr": "8,16",
+      "iq": 3.3,
+      "iq_fr": "3,3",
+      "iq_max": 6,
+      "iq_max_fr": "6",
+      "iq_a": 0.0033,
+      "ro": "0.9",
+      "grade": "the AC grade, 2 %, 0 to 125 C",
+      "grade_fr": "la classe AC, 2 %, 0 à 125 °C",
+      "vin": 14,
+      "rl_500": 16.0,
+      "rl_1a": 8.0,
+      "vin_hd": 10.5,
+      "vin_do": 9.0,
+      "vdo_min": 6.85,
+      "vdo_max": 7.15,
+      "vin_q": 14,
+      "vq_max": 13.92,
+      "vq_min": 13.32,
+      "datasheet": "onsemi-mc7800",
+      "evidence": [
+        "Vin = #{vin} V, IO = (?:500 mA|1\\.0 A)[^)]*\\), unless otherwise noted\\) [^E]*?MC7808AC",
+        "Output Voltage \\(TJ = 25°C\\) VO (?:[\\d.]+ ){0,3}${vo_min} ${vo} ${vo_max} "
+      ]
+    },
+    {
+      "mpn": "MC7809B",
+      "short": "mc7809b",
+      "order": "",
+      "vcode": "09",
+      "vo": 9,
+      "vo_txt": 9,
+      "vo_txt_fr": "9",
+      "vo_min": 8.65,
+      "vo_max": 9.35,
+      "vo_min_fr": "8,65",
+      "vo_max_fr": "9,35",
+      "iq": 3.4,
+      "iq_fr": "3,4",
+      "iq_max": 8,
+      "iq_max_fr": "8",
+      "iq_a": 0.0034,
+      "ro": "1.0",
+      "grade": "the B grade, 4 %, -40 to 125 C",
+      "grade_fr": "la classe B, 4 %, -40 à 125 °C",
+      "vin": 15,
+      "rl_500": 18.0,
+      "rl_1a": 9.0,
+      "vin_hd": 11.5,
+      "vin_do": 10.0,
+      "vdo_min": 7.85,
+      "vdo_max": 8.15,
+      "vin_q": 15,
+      "vq_max": 14.91,
+      "vq_min": 14.11,
+      "datasheet": "onsemi-mc7800",
+      "evidence": [
+        "Vin = #{vin} V, IO = (?:500 mA|1\\.0 A)[^)]*\\), unless otherwise noted\\) [^E]*?MC7809B",
+        "Output Voltage \\(TJ = 25°C\\) VO (?:[\\d.]+ ){0,3}${vo_min} ${vo} ${vo_max} "
+      ]
+    },
+    {
+      "mpn": "MC7809C",
+      "short": "mc7809c",
+      "order": "MC7809CTG",
+      "vcode": "09",
+      "vo": 9,
+      "vo_txt": 9,
+      "vo_txt_fr": "9",
+      "vo_min": 8.65,
+      "vo_max": 9.35,
+      "vo_min_fr": "8,65",
+      "vo_max_fr": "9,35",
+      "iq": 3.4,
+      "iq_fr": "3,4",
+      "iq_max": 8,
+      "iq_max_fr": "8",
+      "iq_a": 0.0034,
+      "ro": "1.0",
+      "grade": "the C grade, 4 %, 0 to 125 C",
+      "grade_fr": "la classe C, 4 %, 0 à 125 °C",
+      "vin": 15,
+      "rl_500": 18.0,
+      "rl_1a": 9.0,
+      "vin_hd": 11.5,
+      "vin_do": 10.0,
+      "vdo_min": 7.85,
+      "vdo_max": 8.15,
+      "vin_q": 15,
+      "vq_max": 14.91,
+      "vq_min": 14.11,
+      "datasheet": "onsemi-mc7800",
+      "evidence": [
+        "Vin = #{vin} V, IO = (?:500 mA|1\\.0 A)[^)]*\\), unless otherwise noted\\) [^E]*?MC7809C",
+        "Output Voltage \\(TJ = 25°C\\) VO (?:[\\d.]+ ){0,3}${vo_min} ${vo} ${vo_max} ",
+        "${order} .{0,80}TO−220"
+      ]
+    },
+    {
+      "mpn": "MC7809AC",
+      "short": "mc7809ac",
+      "order": "",
+      "vcode": "09",
+      "vo": 9,
+      "vo_txt": 9,
+      "vo_txt_fr": "9",
+      "vo_min": 8.82,
+      "vo_max": 9.18,
+      "vo_min_fr": "8,82",
+      "vo_max_fr": "9,18",
+      "iq": 3.3,
+      "iq_fr": "3,3",
+      "iq_max": 6,
+      "iq_max_fr": "6",
+      "iq_a": 0.0033,
+      "ro": "1.0",
+      "grade": "the AC grade, 2 %, 0 to 125 C",
+      "grade_fr": "la classe AC, 2 %, 0 à 125 °C",
+      "vin": 15,
+      "rl_500": 18.0,
+      "rl_1a": 9.0,
+      "vin_hd": 11.5,
+      "vin_do": 10.0,
+      "vdo_min": 7.85,
+      "vdo_max": 8.15,
+      "vin_q": 15,
+      "vq_max": 14.91,
+      "vq_min": 14.31,
+      "datasheet": "onsemi-mc7800",
+      "evidence": [
+        "Vin = #{vin} V, IO = (?:500 mA|1\\.0 A)[^)]*\\), unless otherwise noted\\) [^E]*?MC7809AC",
+        "Output Voltage \\(TJ = 25°C\\) VO (?:[\\d.]+ ){0,3}${vo_min} ${vo} ${vo_max} "
+      ]
+    },
+    {
+      "mpn": "MC7812B",
+      "short": "mc7812b",
+      "order": "MC7812BTG",
+      "vcode": "12",
+      "vo": 12,
+      "vo_txt": 12,
+      "vo_txt_fr": "12",
+      "vo_min": 11.5,
+      "vo_max": 12.5,
+      "vo_min_fr": "11,5",
+      "vo_max_fr": "12,5",
+      "iq": 3.4,
+      "iq_fr": "3,4",
+      "iq_max": 8,
+      "iq_max_fr": "8",
+      "iq_a": 0.0034,
+      "ro": "1.1",
+      "grade": "the B grade, 4 %, -40 to 125 C",
+      "grade_fr": "la classe B, 4 %, -40 à 125 °C",
+      "vin": 19,
+      "rl_500": 24.0,
+      "rl_1a": 12.0,
+      "vin_hd": 14.5,
+      "vin_do": 13.0,
+      "vdo_min": 10.85,
+      "vdo_max": 11.15,
+      "vin_q": 19,
+      "vq_max": 18.88,
+      "vq_min": 18.08,
+      "datasheet": "onsemi-mc7800",
+      "evidence": [
+        "Vin = #{vin} V, IO = (?:500 mA|1\\.0 A)[^)]*\\), unless otherwise noted\\) [^E]*?MC7812B",
+        "Output Voltage \\(TJ = 25°C\\) VO (?:[\\d.]+ ){0,3}${vo_min} ${vo} ${vo_max} ",
+        "${order} .{0,80}TO−220"
+      ]
+    },
+    {
+      "mpn": "MC7812C",
+      "short": "mc7812c",
+      "order": "MC7812CTG",
+      "vcode": "12",
+      "vo": 12,
+      "vo_txt": 12,
+      "vo_txt_fr": "12",
+      "vo_min": 11.5,
+      "vo_max": 12.5,
+      "vo_min_fr": "11,5",
+      "vo_max_fr": "12,5",
+      "iq": 3.4,
+      "iq_fr": "3,4",
+      "iq_max": 6.5,
+      "iq_max_fr": "6,5",
+      "iq_a": 0.0034,
+      "ro": "1.1",
+      "grade": "the C grade, 4 %, 0 to 125 C",
+      "grade_fr": "la classe C, 4 %, 0 à 125 °C",
+      "vin": 19,
+      "rl_500": 24.0,
+      "rl_1a": 12.0,
+      "vin_hd": 14.5,
+      "vin_do": 13.0,
+      "vdo_min": 10.85,
+      "vdo_max": 11.15,
+      "vin_q": 19,
+      "vq_max": 18.88,
+      "vq_min": 18.23,
+      "datasheet": "onsemi-mc7800",
+      "evidence": [
+        "Vin = #{vin} V, IO = (?:500 mA|1\\.0 A)[^)]*\\), unless otherwise noted\\) [^E]*?MC7812C",
+        "Output Voltage \\(TJ = 25°C\\) VO (?:[\\d.]+ ){0,3}${vo_min} ${vo} ${vo_max} ",
+        "${order} .{0,80}TO−220"
+      ]
+    },
+    {
+      "mpn": "MC7812AC",
+      "short": "mc7812ac",
+      "order": "MC7812ACTG",
+      "vcode": "12",
+      "vo": 12,
+      "vo_txt": 12,
+      "vo_txt_fr": "12",
+      "vo_min": 11.75,
+      "vo_max": 12.25,
+      "vo_min_fr": "11,75",
+      "vo_max_fr": "12,25",
+      "iq": 3.4,
+      "iq_fr": "3,4",
+      "iq_max": 6,
+      "iq_max_fr": "6",
+      "iq_a": 0.0034,
+      "ro": "1.1",
+      "grade": "the AC grade, 2 %, 0 to 125 C",
+      "grade_fr": "la classe AC, 2 %, 0 à 125 °C",
+      "vin": 19,
+      "rl_500": 24.0,
+      "rl_1a": 12.0,
+      "vin_hd": 14.5,
+      "vin_do": 13.0,
+      "vdo_min": 10.85,
+      "vdo_max": 11.15,
+      "vin_q": 19,
+      "vq_max": 18.88,
+      "vq_min": 18.28,
+      "datasheet": "onsemi-mc7800",
+      "evidence": [
+        "Vin = #{vin} V, IO = (?:500 mA|1\\.0 A)[^)]*\\), unless otherwise noted\\) [^E]*?MC7812AC",
+        "Output Voltage \\(TJ = 25°C\\) VO (?:[\\d.]+ ){0,3}${vo_min} ${vo} ${vo_max} ",
+        "${order} .{0,80}TO−220"
+      ]
+    },
+    {
+      "mpn": "MC7815B",
+      "short": "mc7815b",
+      "order": "MC7815BTG",
+      "vcode": "15",
+      "vo": 15,
+      "vo_txt": 15,
+      "vo_txt_fr": "15",
+      "vo_min": 14.4,
+      "vo_max": 15.6,
+      "vo_min_fr": "14,4",
+      "vo_max_fr": "15,6",
+      "iq": 3.5,
+      "iq_fr": "3,5",
+      "iq_max": 8,
+      "iq_max_fr": "8",
+      "iq_a": 0.0035,
+      "ro": "1.2",
+      "grade": "the B grade, 4 %, -40 to 125 C",
+      "grade_fr": "la classe B, 4 %, -40 à 125 °C",
+      "vin": 23,
+      "rl_500": 30.0,
+      "rl_1a": 15.0,
+      "vin_hd": 17.5,
+      "vin_do": 16.0,
+      "vdo_min": 13.85,
+      "vdo_max": 14.15,
+      "vin_q": 23,
+      "vq_max": 22.85,
+      "vq_min": 22.05,
+      "datasheet": "onsemi-mc7800",
+      "evidence": [
+        "Vin = #{vin} V, IO = (?:500 mA|1\\.0 A)[^)]*\\), unless otherwise noted\\) [^E]*?MC7815B",
+        "Output Voltage \\(TJ = 25°C\\) VO (?:[\\d.]+ ){0,3}${vo_min} ${vo} ${vo_max} ",
+        "${order} .{0,80}TO−220"
+      ]
+    },
+    {
+      "mpn": "MC7815C",
+      "short": "mc7815c",
+      "order": "MC7815CTG",
+      "vcode": "15",
+      "vo": 15,
+      "vo_txt": 15,
+      "vo_txt_fr": "15",
+      "vo_min": 14.4,
+      "vo_max": 15.6,
+      "vo_min_fr": "14,4",
+      "vo_max_fr": "15,6",
+      "iq": 3.5,
+      "iq_fr": "3,5",
+      "iq_max": 6.5,
+      "iq_max_fr": "6,5",
+      "iq_a": 0.0035,
+      "ro": "1.2",
+      "grade": "the C grade, 4 %, 0 to 125 C",
+      "grade_fr": "la classe C, 4 %, 0 à 125 °C",
+      "vin": 23,
+      "rl_500": 30.0,
+      "rl_1a": 15.0,
+      "vin_hd": 17.5,
+      "vin_do": 16.0,
+      "vdo_min": 13.85,
+      "vdo_max": 14.15,
+      "vin_q": 23,
+      "vq_max": 22.85,
+      "vq_min": 22.2,
+      "datasheet": "onsemi-mc7800",
+      "evidence": [
+        "Vin = #{vin} V, IO = (?:500 mA|1\\.0 A)[^)]*\\), unless otherwise noted\\) [^E]*?MC7815C",
+        "Output Voltage \\(TJ = 25°C\\) VO (?:[\\d.]+ ){0,3}${vo_min} ${vo} ${vo_max} ",
+        "${order} .{0,80}TO−220"
+      ]
+    },
+    {
+      "mpn": "MC7815AC",
+      "short": "mc7815ac",
+      "order": "MC7815ACTG",
+      "vcode": "15",
+      "vo": 15,
+      "vo_txt": 15,
+      "vo_txt_fr": "15",
+      "vo_min": 14.7,
+      "vo_max": 15.3,
+      "vo_min_fr": "14,7",
+      "vo_max_fr": "15,3",
+      "iq": 3.5,
+      "iq_fr": "3,5",
+      "iq_max": 6,
+      "iq_max_fr": "6",
+      "iq_a": 0.0035,
+      "ro": "1.2",
+      "grade": "the AC grade, 2 %, 0 to 125 C",
+      "grade_fr": "la classe AC, 2 %, 0 à 125 °C",
+      "vin": 23,
+      "rl_500": 30.0,
+      "rl_1a": 15.0,
+      "vin_hd": 17.5,
+      "vin_do": 16.0,
+      "vdo_min": 13.85,
+      "vdo_max": 14.15,
+      "vin_q": 23,
+      "vq_max": 22.85,
+      "vq_min": 22.25,
+      "datasheet": "onsemi-mc7800",
+      "evidence": [
+        "Vin = #{vin} V, IO = (?:500 mA|1\\.0 A)[^)]*\\), unless otherwise noted\\) [^E]*?MC7815AC",
+        "Output Voltage \\(TJ = 25°C\\) VO (?:[\\d.]+ ){0,3}${vo_min} ${vo} ${vo_max} ",
+        "${order} .{0,80}TO−220"
+      ]
+    },
+    {
+      "mpn": "MC7818B",
+      "short": "mc7818b",
+      "order": "MC7818BTG",
+      "vcode": "18",
+      "vo": 18,
+      "vo_txt": 18,
+      "vo_txt_fr": "18",
+      "vo_min": 17.3,
+      "vo_max": 18.7,
+      "vo_min_fr": "17,3",
+      "vo_max_fr": "18,7",
+      "iq": 3.5,
+      "iq_fr": "3,5",
+      "iq_max": 8,
+      "iq_max_fr": "8",
+      "iq_a": 0.0035,
+      "ro": "1.3",
+      "grade": "the B grade, 4 %, -40 to 125 C",
+      "grade_fr": "la classe B, 4 %, -40 à 125 °C",
+      "vin": 27,
+      "rl_500": 36.0,
+      "rl_1a": 18.0,
+      "vin_hd": 20.5,
+      "vin_do": 19.0,
+      "vdo_min": 16.85,
+      "vdo_max": 17.15,
+      "vin_q": 27,
+      "vq_max": 26.82,
+      "vq_min": 26.02,
+      "datasheet": "onsemi-mc7800",
+      "evidence": [
+        "Vin = #{vin} V, IO = (?:500 mA|1\\.0 A)[^)]*\\), unless otherwise noted\\) [^E]*?MC7818B",
+        "Output Voltage \\(TJ = 25°C\\) VO (?:[\\d.]+ ){0,3}${vo_min} ${vo} ${vo_max} ",
+        "${order} .{0,80}TO−220"
+      ]
+    },
+    {
+      "mpn": "MC7818C",
+      "short": "mc7818c",
+      "order": "MC7818CTG",
+      "vcode": "18",
+      "vo": 18,
+      "vo_txt": 18,
+      "vo_txt_fr": "18",
+      "vo_min": 17.3,
+      "vo_max": 18.7,
+      "vo_min_fr": "17,3",
+      "vo_max_fr": "18,7",
+      "iq": 3.5,
+      "iq_fr": "3,5",
+      "iq_max": 6.5,
+      "iq_max_fr": "6,5",
+      "iq_a": 0.0035,
+      "ro": "1.3",
+      "grade": "the C grade, 4 %, 0 to 125 C",
+      "grade_fr": "la classe C, 4 %, 0 à 125 °C",
+      "vin": 27,
+      "rl_500": 36.0,
+      "rl_1a": 18.0,
+      "vin_hd": 20.5,
+      "vin_do": 19.0,
+      "vdo_min": 16.85,
+      "vdo_max": 17.15,
+      "vin_q": 27,
+      "vq_max": 26.82,
+      "vq_min": 26.17,
+      "datasheet": "onsemi-mc7800",
+      "evidence": [
+        "Vin = #{vin} V, IO = (?:500 mA|1\\.0 A)[^)]*\\), unless otherwise noted\\) [^E]*?MC7818C",
+        "Output Voltage \\(TJ = 25°C\\) VO (?:[\\d.]+ ){0,3}${vo_min} ${vo} ${vo_max} ",
+        "${order} .{0,80}TO−220"
+      ]
+    },
+    {
+      "mpn": "MC7818AC",
+      "short": "mc7818ac",
+      "order": "",
+      "vcode": "18",
+      "vo": 18,
+      "vo_txt": 18,
+      "vo_txt_fr": "18",
+      "vo_min": 17.64,
+      "vo_max": 18.36,
+      "vo_min_fr": "17,64",
+      "vo_max_fr": "18,36",
+      "iq": 3.5,
+      "iq_fr": "3,5",
+      "iq_max": 6,
+      "iq_max_fr": "6",
+      "iq_a": 0.0035,
+      "ro": "1.3",
+      "grade": "the AC grade, 2 %, 0 to 125 C",
+      "grade_fr": "la classe AC, 2 %, 0 à 125 °C",
+      "vin": 27,
+      "rl_500": 36.0,
+      "rl_1a": 18.0,
+      "vin_hd": 20.5,
+      "vin_do": 19.0,
+      "vdo_min": 16.85,
+      "vdo_max": 17.15,
+      "vin_q": 27,
+      "vq_max": 26.82,
+      "vq_min": 26.22,
+      "datasheet": "onsemi-mc7800",
+      "evidence": [
+        "Vin = #{vin} V, IO = (?:500 mA|1\\.0 A)[^)]*\\), unless otherwise noted\\) [^E]*?MC7818AC",
+        "Output Voltage \\(TJ = 25°C\\) VO (?:[\\d.]+ ){0,3}${vo_min} ${vo} ${vo_max} "
+      ]
+    },
+    {
+      "mpn": "MC7824B",
+      "short": "mc7824b",
+      "order": "MC7824BTG",
+      "vcode": "24",
+      "vo": 24,
+      "vo_txt": 24,
+      "vo_txt_fr": "24",
+      "vo_min": 23,
+      "vo_max": 25,
+      "vo_min_fr": "23",
+      "vo_max_fr": "25",
+      "iq": 3.6,
+      "iq_fr": "3,6",
+      "iq_max": 8,
+      "iq_max_fr": "8",
+      "iq_a": 0.0036,
+      "ro": "1.4",
+      "grade": "the B grade, 4 %, -40 to 125 C",
+      "grade_fr": "la classe B, 4 %, -40 à 125 °C",
+      "vin": 33,
+      "rl_500": 48.0,
+      "rl_1a": 24.0,
+      "vin_hd": 26.5,
+      "vin_do": 25.0,
+      "vdo_min": 22.85,
+      "vdo_max": 23.15,
+      "vin_q": 33,
+      "vq_max": 32.76,
+      "vq_min": 31.96,
+      "datasheet": "onsemi-mc7800",
+      "evidence": [
+        "Vin = #{vin} V, IO = (?:500 mA|1\\.0 A)[^)]*\\), unless otherwise noted\\) [^E]*?MC7824B",
+        "Output Voltage \\(TJ = 25°C\\) VO (?:[\\d.]+ ){0,3}${vo_min} ${vo} ${vo_max} ",
+        "${order} .{0,80}TO−220"
+      ]
+    },
+    {
+      "mpn": "MC7824C",
+      "short": "mc7824c",
+      "order": "MC7824CTG",
+      "vcode": "24",
+      "vo": 24,
+      "vo_txt": 24,
+      "vo_txt_fr": "24",
+      "vo_min": 23,
+      "vo_max": 25,
+      "vo_min_fr": "23",
+      "vo_max_fr": "25",
+      "iq": 3.6,
+      "iq_fr": "3,6",
+      "iq_max": 6.5,
+      "iq_max_fr": "6,5",
+      "iq_a": 0.0036,
+      "ro": "1.4",
+      "grade": "the C grade, 4 %, 0 to 125 C",
+      "grade_fr": "la classe C, 4 %, 0 à 125 °C",
+      "vin": 33,
+      "rl_500": 48.0,
+      "rl_1a": 24.0,
+      "vin_hd": 26.5,
+      "vin_do": 25.0,
+      "vdo_min": 22.85,
+      "vdo_max": 23.15,
+      "vin_q": 33,
+      "vq_max": 32.76,
+      "vq_min": 32.11,
+      "datasheet": "onsemi-mc7800",
+      "evidence": [
+        "Vin = #{vin} V, IO = (?:500 mA|1\\.0 A)[^)]*\\), unless otherwise noted\\) [^E]*?MC7824C",
+        "Output Voltage \\(TJ = 25°C\\) VO (?:[\\d.]+ ){0,3}${vo_min} ${vo} ${vo_max} ",
+        "${order} .{0,80}TO−220"
+      ]
+    },
+    {
+      "mpn": "MC7824AC",
+      "short": "mc7824ac",
+      "order": "MC7824ACTG",
+      "vcode": "24",
+      "vo": 24,
+      "vo_txt": 24,
+      "vo_txt_fr": "24",
+      "vo_min": 23.5,
+      "vo_max": 24.5,
+      "vo_min_fr": "23,5",
+      "vo_max_fr": "24,5",
+      "iq": 3.6,
+      "iq_fr": "3,6",
+      "iq_max": 6,
+      "iq_max_fr": "6",
+      "iq_a": 0.0036,
+      "ro": "1.4",
+      "grade": "the AC grade, 2 %, 0 to 125 C",
+      "grade_fr": "la classe AC, 2 %, 0 à 125 °C",
+      "vin": 33,
+      "rl_500": 48.0,
+      "rl_1a": 24.0,
+      "vin_hd": 26.5,
+      "vin_do": 25.0,
+      "vdo_min": 22.85,
+      "vdo_max": 23.15,
+      "vin_q": 33,
+      "vq_max": 32.76,
+      "vq_min": 32.16,
+      "datasheet": "onsemi-mc7800",
+      "evidence": [
+        "Vin = #{vin} V, IO = (?:500 mA|1\\.0 A)[^)]*\\), unless otherwise noted\\) [^E]*?MC7824AC",
+        "Output Voltage \\(TJ = 25°C\\) VO (?:[\\d.]+ ){0,3}${vo_min} ${vo} ${vo_max} ",
+        "${order} .{0,80}TO−220"
+      ]
+    }
+  ]
+}

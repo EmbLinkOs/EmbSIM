@@ -9,7 +9,9 @@ catalog is never modified. --named selects components with manufacturer metadata
 """
 from __future__ import annotations
 import argparse
+import concurrent.futures
 import json
+import os
 from pathlib import Path
 import subprocess
 import tempfile
@@ -55,13 +57,15 @@ def main() -> int:
     parser.add_argument('--embsim', required=True, type=Path)
     parser.add_argument('--named', action='store_true')
     parser.add_argument('--component', action='append', default=[])
+    parser.add_argument('--jobs', type=int, default=os.cpu_count() or 1,
+                        help='fixtures run at once (each its own engine process); the default is one per CPU')
     args = parser.parse_args()
     binary = args.embsim.resolve()
     if not binary.is_file():
         parser.error('embsim executable not found')
     selected = []
     for description in sorted((ROOT / 'catalog/components').glob('*/component.json')):
-        doc = json.loads(description.read_text())
+        doc = json.loads(description.read_text(encoding='utf-8'))
         if args.named and not doc.get('part'):
             continue
         if args.component and description.parent.name not in args.component:
@@ -71,31 +75,37 @@ def main() -> int:
     selected = list(dict.fromkeys(selected))
     if not selected:
         parser.error('no fixtures selected')
-    failed, count = 0, 0
-    with tempfile.TemporaryDirectory(prefix='embsim-catalog-') as temp:
-        work = Path(temp)
-        for fixture in selected:
-            project, scenario = convert(json.loads(fixture.read_text()))
-            (work / 'project.json').write_text(json.dumps(project))
-            (work / 'scenario.json').write_text(json.dumps(scenario))
+    def run(fixture: Path) -> tuple[bool, int, str]:
+        """one fixture in its own directory: whether it passed, its assertions, what to print"""
+        project, scenario = convert(json.loads(fixture.read_text(encoding='utf-8')))
+        label = str(fixture.relative_to(ROOT / 'catalog/components'))
+        with tempfile.TemporaryDirectory(prefix='embsim-catalog-') as temp:
+            work = Path(temp)
+            (work / 'project.json').write_text(json.dumps(project), encoding='utf-8')
+            (work / 'scenario.json').write_text(json.dumps(scenario), encoding='utf-8')
             try:
-                result = subprocess.run([str(binary), 'run', str(work / 'project.json'), '--scenario', str(work / 'scenario.json'), '--json'], cwd=ROOT, capture_output=True, text=True, timeout=60)
+                result = subprocess.run([str(binary), 'run', str(work / 'project.json'), '--scenario', str(work / 'scenario.json'), '--json'],
+                                        cwd=ROOT, capture_output=True, text=True, encoding='utf-8', errors='replace', timeout=60)
             except subprocess.TimeoutExpired:
-                failed += 1
-                print(f'FAIL {fixture.relative_to(ROOT)}: timed out after 60 seconds', flush=True)
-                continue
-            try:
-                report = json.loads(result.stdout)
-            except json.JSONDecodeError:
-                report = {}
-            assertions = report.get('assertions', [])
-            ok = result.returncode == 0 and len(assertions) == len(scenario['assertions']) and all(a.get('ok') for a in assertions)
-            label = str(fixture.relative_to(ROOT / 'catalog/components'))
-            print(('PASS ' if ok else 'FAIL ') + label, flush=True)
-            if not ok:
-                failed += 1
-                print(result.stderr[-3000:], result.stdout[-5000:], flush=True)
-            count += len(assertions)
+                return False, 0, f'FAIL {fixture.relative_to(ROOT)}: timed out after 60 seconds'
+        try:
+            report = json.loads(result.stdout)
+        except json.JSONDecodeError:
+            report = {}
+        assertions = report.get('assertions', [])
+        ok = result.returncode == 0 and len(assertions) == len(scenario['assertions']) and all(a.get('ok') for a in assertions)
+        text = ('PASS ' if ok else 'FAIL ') + label
+        if not ok:
+            text += '\n' + result.stderr[-3000:] + ' ' + result.stdout[-5000:]
+        return ok, len(assertions), text
+
+    failed, count = 0, 0
+    with concurrent.futures.ThreadPoolExecutor(max_workers=max(1, args.jobs)) as pool:
+        # results print in the fixtures' order, whatever order they finish in
+        for ok, n, text in pool.map(run, selected):
+            print(text, flush=True)
+            failed += 0 if ok else 1
+            count += n
     print(f'{len(selected)} fixtures, {count} assertions executed, {failed} failed')
     return int(failed != 0)
 

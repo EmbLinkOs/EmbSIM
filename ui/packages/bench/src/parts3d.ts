@@ -58,17 +58,21 @@ export function parseValue(v: unknown): number | undefined {
   return Number(m[1]) * (SI[m[2] ?? ''] ?? 1);
 }
 
-/** a resistor's four bands (two digits, the multiplier, 5 % gold) */
-export function resistorBands(ohms: number): string[] {
-  if (!(ohms > 0)) return [COLOR_CODE[0]!, COLOR_CODE[0]!, COLOR_CODE[0]!, GOLD_BAND];
-  let exp = Math.floor(Math.log10(ohms)) - 1;
+/** a resistor's colour code (IEC 60062): two digits, the multiplier and the tolerance, or
+ *  three digits for 1 % and better (the five-band code E96 values need) */
+export function resistorBands(ohms: number, tolerance = 5): string[] {
+  const tolBand = tolerance <= 0.5 ? COLOR_CODE[5]! : tolerance <= 1 ? COLOR_CODE[1]! : tolerance <= 2 ? COLOR_CODE[2]! : tolerance <= 5 ? GOLD_BAND : SILVER_BAND;
+  const n = tolerance <= 1 ? 3 : 2;
+  if (!(ohms > 0)) return [...Array<string>(n + 1).fill(COLOR_CODE[0]!), tolBand];
+  let exp = Math.floor(Math.log10(ohms)) - (n - 1);
   let digits = Math.round(ohms / 10 ** exp);
-  if (digits >= 100) {
+  if (digits >= 10 ** n) {
     digits = Math.round(digits / 10);
     exp += 1;
   }
   const mult = exp === -1 ? GOLD_BAND : exp === -2 ? SILVER_BAND : COLOR_CODE[Math.max(0, Math.min(9, exp))]!;
-  return [COLOR_CODE[Math.floor(digits / 10)]!, COLOR_CODE[digits % 10]!, mult, GOLD_BAND];
+  const ds = String(digits).padStart(n, '0').split('').map((d) => COLOR_CODE[Number(d)]!);
+  return [...ds, mult, tolBand];
 }
 
 const LED_COLORS: Record<string, string> = { red: '#ff2a2a', green: '#20e060', blue: '#3070ff', yellow: '#ffd400', white: '#f8f8ff', orange: '#ff8a00' };
@@ -156,8 +160,8 @@ function axial(shape: BenchShape, look: PartLook): THREE.Group {
   const g = new THREE.Group();
   const pins = Object.values(local(shape));
   const short = look.component.split('/').pop() ?? '';
-  const isResistor = short === 'resistor';
-  const glass = short === 'diode_1n4148' || short === 'zener' || short === 'bzx55c5v1';
+  const isResistor = shape.axial ? shape.axial === 'resistor' : short === 'resistor';
+  const glass = shape.axial ? shape.axial === 'glass' : short === 'diode_1n4148' || short === 'zener' || short === 'bzx55c5v1';
   const bodyLen = isResistor ? 6.3 : glass ? 3.8 : short === 'inductor' ? 7 : 5.2;
   const r = isResistor ? 1.2 : glass ? 0.9 : short === 'ferrite_bead' ? 1.75 : 1.35;
   const lift = 2.6;
@@ -181,8 +185,9 @@ function axial(shape: BenchShape, look: PartLook): THREE.Group {
   body.position.y = y;
   g.add(body);
   if (isResistor) {
-    const bands = resistorBands(parseValue(look.params?.resistance) ?? 1000);
-    const xs = [-1.9, -1.1, -0.3, 1.6];
+    const tol = Number(look.params?.tolerance ?? shape.tolerance ?? 5);
+    const bands = resistorBands(parseValue(look.params?.resistance) ?? shape.ohms ?? 1000, Number.isFinite(tol) ? tol : 5);
+    const xs = bands.length === 5 ? [-2.0, -1.3, -0.6, 0.1, 1.6] : [-1.9, -1.1, -0.3, 1.6];
     bands.forEach((c, i) => {
       const ring = mesh(new THREE.CylinderGeometry(r * 0.9 + 0.03, r * 0.9 + 0.03, 0.45, 20), standard(c, 0.45, c === GOLD_BAND ? 0.7 : 0));
       ring.rotation.z = Math.PI / 2;
