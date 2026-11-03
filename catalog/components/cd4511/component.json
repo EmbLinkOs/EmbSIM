@@ -4,7 +4,8 @@
   "id": "emblink/cd4511",
   "version": "1.0.0",
   "name": "CD4511 BCD to 7-segment decoder",
-  "category": "logic",
+  "category": "cmos_4000",
+  "subcategory": "decoders",
   "description": "BCD-to-7-segment latch/decoder/driver (CD4511) for common-cathode displays: SA-SG light the digit given on D-A; codes above 9 blank; LT_N lights every segment, BL_N blanks, LE high holds the input.",
   "keywords": [
     "logic",

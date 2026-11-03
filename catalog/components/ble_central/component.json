@@ -4,7 +4,8 @@
   "id": "emblink/ble_central",
   "version": "0.1.0",
   "name": "Phone with a GATT browser (BLE central)",
-  "category": "instruments",
+  "category": "networks",
+  "subcategory": "phones",
   "description": "A phone running a Bluetooth LE browser (nRF Connect, LightBlue): it scans, connects to the peripheral it is told to as the connection's central, and lists its GATT database: services, characteristics, their properties and the values it can read. It reaches the circuit only through the air.",
   "keywords": [
     "bluetooth",

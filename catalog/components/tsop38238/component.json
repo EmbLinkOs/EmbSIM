@@ -4,7 +4,8 @@
   "id": "emblink/tsop38238",
   "version": "1.0.0",
   "name": "TSOP38238 IR receiver with NEC remote",
-  "category": "sensors",
+  "category": "optoelectronics",
+  "subcategory": "ir_receivers",
   "description": "Vishay TSOP38238 38 kHz IR receiver module (OUT active low with its own 30 kOhm pull-up, the data sheet's output delay and pulse width) with the 21-key NEC remote sold with Arduino kits pointed at it: pressing a key sends its NEC frame, holding it sends repeat codes every 108 ms.",
   "keywords": [
     "IR",

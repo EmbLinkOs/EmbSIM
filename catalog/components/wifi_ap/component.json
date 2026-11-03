@@ -4,7 +4,8 @@
   "id": "emblink/wifi_ap",
   "version": "0.4.0",
   "name": "Wi-Fi access point",
-  "category": "instruments",
+  "category": "networks",
+  "subcategory": "access_points",
   "description": "A 2.4 GHz 802.11b/g access point with a router behind it, as a home router is seen from a station across the room: it beacons its SSID every beacon interval, answers probe requests, authenticates (open system) and associates stations, runs WPA2-Personal's 4-way handshake and CCMP, leases them addresses by DHCP, answers ARP and pings for its own address, relays frames between its stations and keeps frames for dozing ones; its router reaches the internet beyond (emblink/web_server) through a NAT on its WAN address and answers DNS for its stations. It reaches the circuit only through the air; its signal reaches a board at the free-space path loss over their distance on the bench.",
   "keywords": [
     "wifi",

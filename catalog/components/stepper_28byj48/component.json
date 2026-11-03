@@ -4,7 +4,8 @@
   "id": "emblink/stepper_28byj48",
   "version": "1.0.0",
   "name": "28BYJ-48 stepper motor (5 V)",
-  "category": "mechanical",
+  "category": "electromechanical",
+  "subcategory": "motors_stepper",
   "description": "28BYJ-48 5 V unipolar geared stepper motor: four 50 Ohm half windings on a red common, a permanent-magnet rotor with 32 full steps a turn geared 63.684:1 (2037.9 full steps an output turn, 64 half steps of 5.625 degrees a rotor turn), the rotor integrated as a mass with detent torque and gearbox friction so it follows up to the data sheet's pull-in rate and misses steps or stalls beyond it. Usually driven by a ULN2003 board; red open, it works bipolar from an H-bridge.",
   "keywords": [
     "stepper",

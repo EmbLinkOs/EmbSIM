@@ -5,6 +5,7 @@
   "version": "1.0.0",
   "name": "2N3906",
   "category": "transistors",
+  "subcategory": "bipolar_pnp",
   "description": "2N3906 (TO-92). Parameterized bjt_pnp approximation for low-frequency circuit development; not a vendor SPICE model.",
   "keywords": [
     "onsemi",

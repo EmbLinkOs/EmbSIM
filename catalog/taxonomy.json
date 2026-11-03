@@ -1,0 +1,1266 @@
+{
+  "schema_version": 1,
+  "kind": "taxonomy",
+  "categories": [
+    {
+      "id": "analog_ics",
+      "name": {
+        "en": "Analog ICs",
+        "fr": "Circuits intégrés analogiques",
+        "es": "Circuitos integrados analógicos"
+      },
+      "subcategories": [
+        {
+          "id": "amplifiers",
+          "name": {
+            "en": "Amplifiers",
+            "fr": "Amplificateurs",
+            "es": "Amplificadores"
+          }
+        },
+        {
+          "id": "comparators",
+          "name": {
+            "en": "Comparators",
+            "fr": "Comparateurs",
+            "es": "Comparadores"
+          }
+        },
+        {
+          "id": "regulators",
+          "name": {
+            "en": "Regulators",
+            "fr": "Régulateurs",
+            "es": "Reguladores"
+          }
+        },
+        {
+          "id": "power_switches",
+          "name": {
+            "en": "Power switches",
+            "fr": "Interrupteurs d'alimentation",
+            "es": "Interruptores de alimentación"
+          }
+        },
+        {
+          "id": "timers",
+          "name": {
+            "en": "Timers",
+            "fr": "Temporisateurs",
+            "es": "Temporizadores"
+          }
+        },
+        {
+          "id": "drivers",
+          "name": {
+            "en": "Drivers",
+            "fr": "Pilotes",
+            "es": "Controladores"
+          }
+        },
+        {
+          "id": "voltage_references",
+          "name": {
+            "en": "Voltage references",
+            "fr": "Références de tension",
+            "es": "Referencias de tensión"
+          }
+        },
+        {
+          "id": "miscellaneous",
+          "name": {
+            "en": "Miscellaneous",
+            "fr": "Divers",
+            "es": "Varios"
+          }
+        }
+      ]
+    },
+    {
+      "id": "capacitors",
+      "name": {
+        "en": "Capacitors",
+        "fr": "Condensateurs",
+        "es": "Condensadores"
+      },
+      "subcategories": [
+        {
+          "id": "generic",
+          "name": {
+            "en": "Generic",
+            "fr": "Génériques",
+            "es": "Genéricos"
+          }
+        },
+        {
+          "id": "ceramic",
+          "name": {
+            "en": "Ceramic",
+            "fr": "Céramiques",
+            "es": "Cerámicos"
+          }
+        },
+        {
+          "id": "electrolytic",
+          "name": {
+            "en": "Electrolytic",
+            "fr": "Électrolytiques",
+            "es": "Electrolíticos"
+          }
+        },
+        {
+          "id": "film",
+          "name": {
+            "en": "Film",
+            "fr": "À film",
+            "es": "De película"
+          }
+        },
+        {
+          "id": "tantalum",
+          "name": {
+            "en": "Tantalum",
+            "fr": "Au tantale",
+            "es": "De tántalo"
+          }
+        }
+      ]
+    },
+    {
+      "id": "cmos_4000",
+      "name": {
+        "en": "CMOS 4000 series",
+        "fr": "CMOS série 4000",
+        "es": "CMOS serie 4000"
+      },
+      "subcategories": [
+        {
+          "id": "gates",
+          "name": {
+            "en": "Gates and inverters",
+            "fr": "Portes et inverseurs",
+            "es": "Puertas e inversores"
+          }
+        },
+        {
+          "id": "flip_flops",
+          "name": {
+            "en": "Flip-flops and latches",
+            "fr": "Bascules et verrous",
+            "es": "Biestables y cerrojos"
+          }
+        },
+        {
+          "id": "counters",
+          "name": {
+            "en": "Counters",
+            "fr": "Compteurs",
+            "es": "Contadores"
+          }
+        },
+        {
+          "id": "decoders",
+          "name": {
+            "en": "Decoders and drivers",
+            "fr": "Décodeurs et pilotes",
+            "es": "Decodificadores y controladores"
+          }
+        },
+        {
+          "id": "multiplexers",
+          "name": {
+            "en": "Multiplexers and switches",
+            "fr": "Multiplexeurs et interrupteurs",
+            "es": "Multiplexores e interruptores"
+          }
+        },
+        {
+          "id": "registers",
+          "name": {
+            "en": "Registers",
+            "fr": "Registres",
+            "es": "Registros"
+          }
+        },
+        {
+          "id": "miscellaneous",
+          "name": {
+            "en": "Miscellaneous",
+            "fr": "Divers",
+            "es": "Varios"
+          }
+        }
+      ]
+    },
+    {
+      "id": "connectors",
+      "name": {
+        "en": "Connectors",
+        "fr": "Connecteurs",
+        "es": "Conectores"
+      },
+      "subcategories": [
+        {
+          "id": "headers",
+          "name": {
+            "en": "Headers",
+            "fr": "Connecteurs à broches",
+            "es": "Tiras de pines"
+          }
+        },
+        {
+          "id": "terminal_blocks",
+          "name": {
+            "en": "Terminal blocks",
+            "fr": "Borniers",
+            "es": "Borneras"
+          }
+        },
+        {
+          "id": "breadboards",
+          "name": {
+            "en": "Breadboards",
+            "fr": "Plaques d'essai",
+            "es": "Protoboards"
+          }
+        },
+        {
+          "id": "test_points",
+          "name": {
+            "en": "Test points",
+            "fr": "Points de test",
+            "es": "Puntos de prueba"
+          }
+        },
+        {
+          "id": "usb",
+          "name": {
+            "en": "USB",
+            "fr": "USB",
+            "es": "USB"
+          }
+        }
+      ]
+    },
+    {
+      "id": "data_converters",
+      "name": {
+        "en": "Data converters",
+        "fr": "Convertisseurs de données",
+        "es": "Convertidores de datos"
+      },
+      "subcategories": [
+        {
+          "id": "adc",
+          "name": {
+            "en": "A/D converters",
+            "fr": "Convertisseurs A/N",
+            "es": "Convertidores A/D"
+          }
+        },
+        {
+          "id": "dac",
+          "name": {
+            "en": "D/A converters",
+            "fr": "Convertisseurs N/A",
+            "es": "Convertidores D/A"
+          }
+        }
+      ]
+    },
+    {
+      "id": "diodes",
+      "name": {
+        "en": "Diodes",
+        "fr": "Diodes",
+        "es": "Diodos"
+      },
+      "subcategories": [
+        {
+          "id": "generic",
+          "name": {
+            "en": "Generic",
+            "fr": "Génériques",
+            "es": "Genéricos"
+          }
+        },
+        {
+          "id": "rectifiers",
+          "name": {
+            "en": "Rectifiers",
+            "fr": "Redresseurs",
+            "es": "Rectificadores"
+          }
+        },
+        {
+          "id": "switching",
+          "name": {
+            "en": "Switching",
+            "fr": "De commutation",
+            "es": "De conmutación"
+          }
+        },
+        {
+          "id": "schottky",
+          "name": {
+            "en": "Schottky",
+            "fr": "Schottky",
+            "es": "Schottky"
+          }
+        },
+        {
+          "id": "zener",
+          "name": {
+            "en": "Zener",
+            "fr": "Zener",
+            "es": "Zener"
+          }
+        },
+        {
+          "id": "bridge_rectifiers",
+          "name": {
+            "en": "Bridge rectifiers",
+            "fr": "Ponts redresseurs",
+            "es": "Puentes rectificadores"
+          }
+        },
+        {
+          "id": "tvs",
+          "name": {
+            "en": "TVS",
+            "fr": "TVS",
+            "es": "TVS"
+          }
+        }
+      ]
+    },
+    {
+      "id": "electromechanical",
+      "name": {
+        "en": "Electromechanical",
+        "fr": "Électromécanique",
+        "es": "Electromecánica"
+      },
+      "subcategories": [
+        {
+          "id": "motors_stepper",
+          "name": {
+            "en": "Stepper motors",
+            "fr": "Moteurs pas à pas",
+            "es": "Motores paso a paso"
+          }
+        },
+        {
+          "id": "motors_dc",
+          "name": {
+            "en": "DC motors",
+            "fr": "Moteurs à courant continu",
+            "es": "Motores de corriente continua"
+          }
+        },
+        {
+          "id": "servos",
+          "name": {
+            "en": "Servos",
+            "fr": "Servomoteurs",
+            "es": "Servomotores"
+          }
+        }
+      ]
+    },
+    {
+      "id": "inductors",
+      "name": {
+        "en": "Inductors",
+        "fr": "Inductances",
+        "es": "Inductores"
+      },
+      "subcategories": [
+        {
+          "id": "generic",
+          "name": {
+            "en": "Generic",
+            "fr": "Génériques",
+            "es": "Genéricos"
+          }
+        },
+        {
+          "id": "ferrite_beads",
+          "name": {
+            "en": "Ferrite beads",
+            "fr": "Ferrites",
+            "es": "Ferritas"
+          }
+        },
+        {
+          "id": "transformers",
+          "name": {
+            "en": "Transformers",
+            "fr": "Transformateurs",
+            "es": "Transformadores"
+          }
+        }
+      ]
+    },
+    {
+      "id": "memory_ics",
+      "name": {
+        "en": "Memory ICs",
+        "fr": "Circuits mémoire",
+        "es": "Circuitos de memoria"
+      },
+      "subcategories": [
+        {
+          "id": "eeprom_i2c",
+          "name": {
+            "en": "I2C EEPROMs",
+            "fr": "EEPROM I2C",
+            "es": "EEPROM I2C"
+          }
+        },
+        {
+          "id": "eeprom_spi",
+          "name": {
+            "en": "SPI EEPROMs",
+            "fr": "EEPROM SPI",
+            "es": "EEPROM SPI"
+          }
+        },
+        {
+          "id": "flash",
+          "name": {
+            "en": "Flash",
+            "fr": "Flash",
+            "es": "Flash"
+          }
+        }
+      ]
+    },
+    {
+      "id": "microprocessor_ics",
+      "name": {
+        "en": "Microprocessor ICs",
+        "fr": "Circuits microprocesseurs",
+        "es": "Circuitos microprocesadores"
+      },
+      "subcategories": [
+        {
+          "id": "microcontrollers",
+          "name": {
+            "en": "Microcontrollers",
+            "fr": "Microcontrôleurs",
+            "es": "Microcontroladores"
+          }
+        },
+        {
+          "id": "rtc",
+          "name": {
+            "en": "Real-time clocks",
+            "fr": "Horloges temps réel",
+            "es": "Relojes de tiempo real"
+          }
+        },
+        {
+          "id": "io_expanders",
+          "name": {
+            "en": "I/O expanders",
+            "fr": "Extensions d'E/S",
+            "es": "Expansores de E/S"
+          }
+        },
+        {
+          "id": "peripherals",
+          "name": {
+            "en": "Peripherals",
+            "fr": "Périphériques",
+            "es": "Periféricos"
+          }
+        }
+      ]
+    },
+    {
+      "id": "boards",
+      "name": {
+        "en": "Development boards",
+        "fr": "Cartes de développement",
+        "es": "Placas de desarrollo"
+      },
+      "subcategories": [
+        {
+          "id": "arduino",
+          "name": {
+            "en": "Arduino",
+            "fr": "Arduino",
+            "es": "Arduino"
+          }
+        },
+        {
+          "id": "stm32",
+          "name": {
+            "en": "STM32",
+            "fr": "STM32",
+            "es": "STM32"
+          }
+        },
+        {
+          "id": "raspberry_pi",
+          "name": {
+            "en": "Raspberry Pi",
+            "fr": "Raspberry Pi",
+            "es": "Raspberry Pi"
+          }
+        },
+        {
+          "id": "espressif",
+          "name": {
+            "en": "Espressif",
+            "fr": "Espressif",
+            "es": "Espressif"
+          }
+        },
+        {
+          "id": "nordic",
+          "name": {
+            "en": "Nordic",
+            "fr": "Nordic",
+            "es": "Nordic"
+          }
+        },
+        {
+          "id": "risc_v",
+          "name": {
+            "en": "RISC-V",
+            "fr": "RISC-V",
+            "es": "RISC-V"
+          }
+        },
+        {
+          "id": "microchip",
+          "name": {
+            "en": "Microchip",
+            "fr": "Microchip",
+            "es": "Microchip"
+          }
+        }
+      ]
+    },
+    {
+      "id": "miscellaneous",
+      "name": {
+        "en": "Miscellaneous",
+        "fr": "Divers",
+        "es": "Varios"
+      },
+      "subcategories": [
+        {
+          "id": "batteries",
+          "name": {
+            "en": "Batteries",
+            "fr": "Piles et batteries",
+            "es": "Pilas y baterías"
+          }
+        },
+        {
+          "id": "crystals",
+          "name": {
+            "en": "Crystals",
+            "fr": "Quartz",
+            "es": "Cristales"
+          }
+        },
+        {
+          "id": "fuses",
+          "name": {
+            "en": "Fuses",
+            "fr": "Fusibles",
+            "es": "Fusibles"
+          }
+        },
+        {
+          "id": "faults",
+          "name": {
+            "en": "Fault injection",
+            "fr": "Injection de défauts",
+            "es": "Inyección de fallos"
+          }
+        }
+      ]
+    },
+    {
+      "id": "operational_amplifiers",
+      "name": {
+        "en": "Operational amplifiers",
+        "fr": "Amplificateurs opérationnels",
+        "es": "Amplificadores operacionales"
+      },
+      "subcategories": [
+        {
+          "id": "single",
+          "name": {
+            "en": "Single",
+            "fr": "Simples",
+            "es": "Simples"
+          }
+        },
+        {
+          "id": "dual",
+          "name": {
+            "en": "Dual",
+            "fr": "Doubles",
+            "es": "Dobles"
+          }
+        },
+        {
+          "id": "quad",
+          "name": {
+            "en": "Quad",
+            "fr": "Quadruples",
+            "es": "Cuádruples"
+          }
+        },
+        {
+          "id": "ideal",
+          "name": {
+            "en": "Ideal",
+            "fr": "Idéaux",
+            "es": "Ideales"
+          }
+        }
+      ]
+    },
+    {
+      "id": "optoelectronics",
+      "name": {
+        "en": "Optoelectronics",
+        "fr": "Optoélectronique",
+        "es": "Optoelectrónica"
+      },
+      "subcategories": [
+        {
+          "id": "leds",
+          "name": {
+            "en": "LEDs",
+            "fr": "LED",
+            "es": "LED"
+          }
+        },
+        {
+          "id": "addressable_leds",
+          "name": {
+            "en": "Addressable LEDs",
+            "fr": "LED adressables",
+            "es": "LED direccionables"
+          }
+        },
+        {
+          "id": "seven_segment",
+          "name": {
+            "en": "7-segment displays",
+            "fr": "Afficheurs 7 segments",
+            "es": "Displays de 7 segmentos"
+          }
+        },
+        {
+          "id": "bargraphs",
+          "name": {
+            "en": "Bar graphs",
+            "fr": "Bargraphes",
+            "es": "Barras de LED"
+          }
+        },
+        {
+          "id": "dot_matrix",
+          "name": {
+            "en": "Dot matrices",
+            "fr": "Matrices de points",
+            "es": "Matrices de puntos"
+          }
+        },
+        {
+          "id": "lcd",
+          "name": {
+            "en": "Character LCDs",
+            "fr": "Écrans LCD à caractères",
+            "es": "LCD de caracteres"
+          }
+        },
+        {
+          "id": "oled",
+          "name": {
+            "en": "Graphic displays",
+            "fr": "Écrans graphiques",
+            "es": "Pantallas gráficas"
+          }
+        },
+        {
+          "id": "optocouplers",
+          "name": {
+            "en": "Optocouplers",
+            "fr": "Optocoupleurs",
+            "es": "Optoacopladores"
+          }
+        },
+        {
+          "id": "photodiodes",
+          "name": {
+            "en": "Photodiodes",
+            "fr": "Photodiodes",
+            "es": "Fotodiodos"
+          }
+        },
+        {
+          "id": "ir_receivers",
+          "name": {
+            "en": "IR receivers",
+            "fr": "Récepteurs IR",
+            "es": "Receptores IR"
+          }
+        },
+        {
+          "id": "indicators",
+          "name": {
+            "en": "Logic indicators",
+            "fr": "Indicateurs logiques",
+            "es": "Indicadores lógicos"
+          }
+        }
+      ]
+    },
+    {
+      "id": "resistors",
+      "name": {
+        "en": "Resistors",
+        "fr": "Résistances",
+        "es": "Resistencias"
+      },
+      "subcategories": [
+        {
+          "id": "fixed",
+          "name": {
+            "en": "Fixed",
+            "fr": "Fixes",
+            "es": "Fijas"
+          }
+        },
+        {
+          "id": "variable",
+          "name": {
+            "en": "Potentiometers and trimmers",
+            "fr": "Potentiomètres et ajustables",
+            "es": "Potenciómetros y trimmers"
+          }
+        },
+        {
+          "id": "thermistors",
+          "name": {
+            "en": "Thermistors",
+            "fr": "Thermistances",
+            "es": "Termistores"
+          }
+        },
+        {
+          "id": "pulls",
+          "name": {
+            "en": "Pull-ups and pull-downs",
+            "fr": "Rappels haut et bas",
+            "es": "Resistencias de pull-up y pull-down"
+          }
+        },
+        {
+          "id": "networks",
+          "name": {
+            "en": "Resistor networks",
+            "fr": "Réseaux de résistances",
+            "es": "Redes de resistencias"
+          }
+        }
+      ]
+    },
+    {
+      "id": "simulator_primitives",
+      "name": {
+        "en": "Simulator primitives",
+        "fr": "Primitives de simulation",
+        "es": "Primitivas de simulación"
+      },
+      "subcategories": [
+        {
+          "id": "sources",
+          "name": {
+            "en": "Sources",
+            "fr": "Sources",
+            "es": "Fuentes"
+          }
+        },
+        {
+          "id": "supplies",
+          "name": {
+            "en": "Supplies and ground",
+            "fr": "Alimentations et masse",
+            "es": "Alimentaciones y masa"
+          }
+        },
+        {
+          "id": "gates",
+          "name": {
+            "en": "Gates",
+            "fr": "Portes",
+            "es": "Puertas"
+          }
+        },
+        {
+          "id": "flip_flops",
+          "name": {
+            "en": "Flip-flops and latches",
+            "fr": "Bascules et verrous",
+            "es": "Biestables y cerrojos"
+          }
+        },
+        {
+          "id": "analog",
+          "name": {
+            "en": "Analog blocks",
+            "fr": "Blocs analogiques",
+            "es": "Bloques analógicos"
+          }
+        },
+        {
+          "id": "stimuli",
+          "name": {
+            "en": "Stimuli",
+            "fr": "Stimuli",
+            "es": "Estímulos"
+          }
+        }
+      ]
+    },
+    {
+      "id": "speakers_sounders",
+      "name": {
+        "en": "Speakers and sounders",
+        "fr": "Haut-parleurs et sonneurs",
+        "es": "Altavoces y zumbadores"
+      },
+      "subcategories": [
+        {
+          "id": "buzzers",
+          "name": {
+            "en": "Buzzers",
+            "fr": "Buzzers",
+            "es": "Zumbadores"
+          }
+        }
+      ]
+    },
+    {
+      "id": "switches_relays",
+      "name": {
+        "en": "Switches and relays",
+        "fr": "Interrupteurs et relais",
+        "es": "Interruptores y relés"
+      },
+      "subcategories": [
+        {
+          "id": "push_buttons",
+          "name": {
+            "en": "Push buttons",
+            "fr": "Boutons-poussoirs",
+            "es": "Pulsadores"
+          }
+        },
+        {
+          "id": "switches",
+          "name": {
+            "en": "Switches",
+            "fr": "Interrupteurs",
+            "es": "Interruptores"
+          }
+        },
+        {
+          "id": "keypads",
+          "name": {
+            "en": "Keypads",
+            "fr": "Claviers",
+            "es": "Teclados"
+          }
+        },
+        {
+          "id": "encoders",
+          "name": {
+            "en": "Rotary encoders",
+            "fr": "Codeurs rotatifs",
+            "es": "Codificadores rotatorios"
+          }
+        },
+        {
+          "id": "relays",
+          "name": {
+            "en": "Relays",
+            "fr": "Relais",
+            "es": "Relés"
+          }
+        }
+      ]
+    },
+    {
+      "id": "transducers",
+      "name": {
+        "en": "Transducers",
+        "fr": "Transducteurs",
+        "es": "Transductores"
+      },
+      "subcategories": [
+        {
+          "id": "temperature",
+          "name": {
+            "en": "Temperature",
+            "fr": "Température",
+            "es": "Temperatura"
+          }
+        },
+        {
+          "id": "humidity",
+          "name": {
+            "en": "Humidity",
+            "fr": "Humidité",
+            "es": "Humedad"
+          }
+        },
+        {
+          "id": "pressure",
+          "name": {
+            "en": "Pressure",
+            "fr": "Pression",
+            "es": "Presión"
+          }
+        },
+        {
+          "id": "light",
+          "name": {
+            "en": "Light",
+            "fr": "Lumière",
+            "es": "Luz"
+          }
+        },
+        {
+          "id": "distance",
+          "name": {
+            "en": "Distance",
+            "fr": "Distance",
+            "es": "Distancia"
+          }
+        },
+        {
+          "id": "motion",
+          "name": {
+            "en": "Motion",
+            "fr": "Mouvement",
+            "es": "Movimiento"
+          }
+        },
+        {
+          "id": "force",
+          "name": {
+            "en": "Force and weight",
+            "fr": "Force et poids",
+            "es": "Fuerza y peso"
+          }
+        },
+        {
+          "id": "position",
+          "name": {
+            "en": "Position (GPS)",
+            "fr": "Position (GPS)",
+            "es": "Posición (GPS)"
+          }
+        },
+        {
+          "id": "rfid",
+          "name": {
+            "en": "RFID",
+            "fr": "RFID",
+            "es": "RFID"
+          }
+        }
+      ]
+    },
+    {
+      "id": "transistors",
+      "name": {
+        "en": "Transistors",
+        "fr": "Transistors",
+        "es": "Transistores"
+      },
+      "subcategories": [
+        {
+          "id": "bipolar_npn",
+          "name": {
+            "en": "Bipolar NPN",
+            "fr": "Bipolaires NPN",
+            "es": "Bipolares NPN"
+          }
+        },
+        {
+          "id": "bipolar_pnp",
+          "name": {
+            "en": "Bipolar PNP",
+            "fr": "Bipolaires PNP",
+            "es": "Bipolares PNP"
+          }
+        },
+        {
+          "id": "darlington_arrays",
+          "name": {
+            "en": "Darlington arrays",
+            "fr": "Réseaux Darlington",
+            "es": "Matrices Darlington"
+          }
+        },
+        {
+          "id": "mosfet_n",
+          "name": {
+            "en": "MOSFET N-channel",
+            "fr": "MOSFET canal N",
+            "es": "MOSFET canal N"
+          }
+        },
+        {
+          "id": "mosfet_p",
+          "name": {
+            "en": "MOSFET P-channel",
+            "fr": "MOSFET canal P",
+            "es": "MOSFET canal P"
+          }
+        },
+        {
+          "id": "jfet",
+          "name": {
+            "en": "JFET",
+            "fr": "JFET",
+            "es": "JFET"
+          }
+        }
+      ]
+    },
+    {
+      "id": "ttl_74",
+      "name": {
+        "en": "TTL 74 series",
+        "fr": "TTL série 74",
+        "es": "TTL serie 74"
+      },
+      "subcategories": [
+        {
+          "id": "gates",
+          "name": {
+            "en": "Gates and inverters",
+            "fr": "Portes et inverseurs",
+            "es": "Puertas e inversores"
+          }
+        },
+        {
+          "id": "buffers",
+          "name": {
+            "en": "Buffers and line drivers",
+            "fr": "Tampons et pilotes de ligne",
+            "es": "Búferes y controladores de línea"
+          }
+        },
+        {
+          "id": "flip_flops",
+          "name": {
+            "en": "Flip-flops and latches",
+            "fr": "Bascules et verrous",
+            "es": "Biestables y cerrojos"
+          }
+        },
+        {
+          "id": "counters",
+          "name": {
+            "en": "Counters",
+            "fr": "Compteurs",
+            "es": "Contadores"
+          }
+        },
+        {
+          "id": "decoders",
+          "name": {
+            "en": "Decoders and demultiplexers",
+            "fr": "Décodeurs et démultiplexeurs",
+            "es": "Decodificadores y demultiplexores"
+          }
+        },
+        {
+          "id": "multiplexers",
+          "name": {
+            "en": "Multiplexers",
+            "fr": "Multiplexeurs",
+            "es": "Multiplexores"
+          }
+        },
+        {
+          "id": "registers",
+          "name": {
+            "en": "Shift registers",
+            "fr": "Registres à décalage",
+            "es": "Registros de desplazamiento"
+          }
+        },
+        {
+          "id": "arithmetic",
+          "name": {
+            "en": "Adders and comparators",
+            "fr": "Additionneurs et comparateurs",
+            "es": "Sumadores y comparadores"
+          }
+        },
+        {
+          "id": "monostables",
+          "name": {
+            "en": "Monostables",
+            "fr": "Monostables",
+            "es": "Monoestables"
+          }
+        }
+      ]
+    },
+    {
+      "id": "instruments",
+      "name": {
+        "en": "Instruments",
+        "fr": "Instruments",
+        "es": "Instrumentos"
+      },
+      "subcategories": [
+        {
+          "id": "meters",
+          "name": {
+            "en": "Meters",
+            "fr": "Appareils de mesure",
+            "es": "Medidores"
+          }
+        },
+        {
+          "id": "oscilloscopes",
+          "name": {
+            "en": "Oscilloscopes",
+            "fr": "Oscilloscopes",
+            "es": "Osciloscopios"
+          }
+        },
+        {
+          "id": "logic_analyzers",
+          "name": {
+            "en": "Logic analyzers",
+            "fr": "Analyseurs logiques",
+            "es": "Analizadores lógicos"
+          }
+        },
+        {
+          "id": "generators",
+          "name": {
+            "en": "Generators",
+            "fr": "Générateurs",
+            "es": "Generadores"
+          }
+        },
+        {
+          "id": "power_analyzers",
+          "name": {
+            "en": "Power analyzers",
+            "fr": "Analyseurs de puissance",
+            "es": "Analizadores de potencia"
+          }
+        },
+        {
+          "id": "debug_probes",
+          "name": {
+            "en": "Debug probes",
+            "fr": "Sondes de débogage",
+            "es": "Sondas de depuración"
+          }
+        },
+        {
+          "id": "probes",
+          "name": {
+            "en": "Probes and terminals",
+            "fr": "Sondes et terminaux",
+            "es": "Sondas y terminales"
+          }
+        },
+        {
+          "id": "usb_hosts",
+          "name": {
+            "en": "USB hosts",
+            "fr": "Hôtes USB",
+            "es": "Anfitriones USB"
+          }
+        }
+      ]
+    },
+    {
+      "id": "networks",
+      "name": {
+        "en": "Networks and radio",
+        "fr": "Réseaux et radio",
+        "es": "Redes y radio"
+      },
+      "subcategories": [
+        {
+          "id": "access_points",
+          "name": {
+            "en": "Access points",
+            "fr": "Points d'accès",
+            "es": "Puntos de acceso"
+          }
+        },
+        {
+          "id": "servers",
+          "name": {
+            "en": "Servers",
+            "fr": "Serveurs",
+            "es": "Servidores"
+          }
+        },
+        {
+          "id": "phones",
+          "name": {
+            "en": "Phones and scanners",
+            "fr": "Téléphones et scanners",
+            "es": "Teléfonos y escáneres"
+          }
+        },
+        {
+          "id": "sniffers",
+          "name": {
+            "en": "Sniffers",
+            "fr": "Renifleurs",
+            "es": "Rastreadores"
+          }
+        }
+      ]
+    }
+  ],
+  "legacy": {
+    "passives": "resistors",
+    "sources": "simulator_primitives",
+    "switches": "switches_relays",
+    "inputs": "switches_relays",
+    "indicators": "optoelectronics",
+    "logic": "simulator_primitives",
+    "analog": "analog_ics",
+    "power": "analog_ics",
+    "displays": "optoelectronics",
+    "sensors": "transducers",
+    "mechanical": "electromechanical",
+    "misc": "miscellaneous",
+    "amplifiers": "operational_amplifiers",
+    "comparators": "analog_ics",
+    "timers": "analog_ics",
+    "semiconductors": "transistors",
+    "memory": "memory_ics",
+    "interfaces": "microprocessor_ics",
+    "mcu": "microprocessor_ics",
+    "actuators": "electromechanical"
+  }
+}

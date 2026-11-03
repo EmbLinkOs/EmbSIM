@@ -4,7 +4,8 @@
   "id": "emblink/mpu6050",
   "version": "1.0.0",
   "name": "MPU-6050 six-axis motion sensor",
-  "category": "sensors",
+  "category": "transducers",
+  "subcategory": "motion",
   "description": "InvenSense MPU-6050 accelerometer and gyroscope on I2C (0x68/0x69 from AD0): asleep after power-on, the sample rate from SMPLRT_DIV and the digital low-pass filter, four full-scale ranges for each sensor, the die temperature and the data-ready interrupt. Acceleration (g), rotation rate (deg/s) and temperature are interactive inputs.",
   "keywords": [
     "sensor",

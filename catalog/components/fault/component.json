@@ -4,7 +4,8 @@
   "id": "emblink/fault",
   "version": "0.1.0",
   "name": "Injected fault",
-  "category": "misc",
+  "category": "miscellaneous",
+  "subcategory": "faults",
   "description": "A fault put into a circuit on purpose (ADR-034's fault mode): a cut (a broken wire, a cracked joint, a pin lifted from its pad) that conducts until it is made active, or a short (a solder bridge, a crushed cable, a failed part) that conducts only while active. The loader wires one in for each of a project's faults; its active input turns it on and off at any time.",
   "keywords": [
     "fault",

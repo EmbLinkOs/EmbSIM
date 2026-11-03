@@ -4,7 +4,8 @@
   "id": "emblink/lmv358",
   "version": "1.0.0",
   "name": "LMV358 dual op-amp",
-  "category": "amplifiers",
+  "category": "operational_amplifiers",
+  "subcategory": "dual",
   "description": "TI LMV358, a dual low-voltage (2.7 to 5.5 V) op-amp with rail-to-rail output: the Arduino Uno's U5, one half comparing VIN/2 with 3.3 V to switch USB power, the other buffering the L LED.",
   "keywords": [
     "opamp",

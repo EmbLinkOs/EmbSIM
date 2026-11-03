@@ -4,7 +4,8 @@
   "id": "emblink/mcp3008",
   "version": "1.0.0",
   "name": "MCP3008 8-channel ADC",
-  "category": "analog",
+  "category": "data_converters",
+  "subcategory": "adc",
   "description": "10-bit, 8-channel successive-approximation ADC with SPI (MCP3008): start bit, single-ended or differential channel select, a null bit and the result MSB first. Inputs read the node voltage of their pin, or an interactive voltage when unconnected.",
   "keywords": [
     "adc",

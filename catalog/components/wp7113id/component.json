@@ -4,7 +4,8 @@
   "id": "emblink/wp7113id",
   "version": "1.0.0",
   "name": "WP7113ID",
-  "category": "indicators",
+  "category": "optoelectronics",
+  "subcategory": "leds",
   "description": "WP7113ID, Kingbright 5 mm red diffused LED. Source-checked package and nominal DC curve at 25 C, 2–20 mA. No manufacturer corner, optical, thermal or damage qualification.",
   "keywords": [
     "Kingbright",

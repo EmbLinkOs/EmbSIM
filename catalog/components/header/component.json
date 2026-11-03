@@ -5,6 +5,7 @@
   "version": "1.1.0",
   "name": "Pin header",
   "category": "connectors",
+  "subcategory": "headers",
   "description": "Pin header of up to 80 positions (single or double row: an ST morpho header is 2 x 35); the pins are isolated attachment points with no behaviour.",
   "keywords": [
     "header",

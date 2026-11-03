@@ -4,7 +4,8 @@
   "id": "emblink/gnd",
   "version": "1.0.0",
   "name": "Ground",
-  "category": "power",
+  "category": "simulator_primitives",
+  "subcategory": "supplies",
   "description": "Ground reference symbol.",
   "keywords": [
     "gnd",

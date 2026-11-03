@@ -4,7 +4,8 @@
   "id": "emblink/mcp4921",
   "version": "1.0.0",
   "name": "MCP4921 12-bit DAC",
-  "category": "analog",
+  "category": "data_converters",
+  "subcategory": "dac",
   "description": "12-bit voltage-output DAC with SPI (MCP4921): 16-bit command words with gain and shutdown bits, latched on CS rising (or LDAC_N falling). The output voltage is reported as an output value.",
   "keywords": [
     "dac",

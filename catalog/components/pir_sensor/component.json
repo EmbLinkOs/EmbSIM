@@ -4,7 +4,8 @@
   "id": "emblink/pir_sensor",
   "version": "1.0.0",
   "name": "PIR motion sensor",
-  "category": "sensors",
+  "category": "transducers",
+  "subcategory": "motion",
   "description": "Passive-infrared motion sensor module (HC-SR501, BISS0001): about a minute's warm-up after power-up; motion raises OUT (3.3 V) for the hold time Tx; with the jumper at H (default) motion during Tx restarts it, at L OUT falls Tx after it rose; after OUT falls the controller blocks for about 2.5 s. Motion is an interactive input or, left unset, a warm body (a person, an animal) moving within the lens's 110-degree field of view and its 3 to 7 m range.",
   "keywords": [
     "sensor",

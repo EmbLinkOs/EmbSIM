@@ -4,7 +4,8 @@
   "id": "emblink/toggle_switch",
   "version": "1.0.0",
   "name": "Toggle switch",
-  "category": "switches",
+  "category": "switches_relays",
+  "subcategory": "switches",
   "description": "Single-pole single-throw latching switch (slide or toggle).",
   "keywords": [
     "switch",

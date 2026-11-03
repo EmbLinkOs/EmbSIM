@@ -4,7 +4,8 @@
   "id": "emblink/pattern_generator",
   "version": "1.0.0",
   "name": "Digital pattern generator",
-  "category": "instruments",
+  "category": "simulator_primitives",
+  "subcategory": "stimuli",
   "description": "Plays a list of 16-bit words onto OUT0..OUT15, one word per period: a stimulus for buses, protocols and fixtures. Push-pull, or open-drain (a 1 releases the pin) for I2C and other wired-AND lines.",
   "keywords": [
     "pattern",

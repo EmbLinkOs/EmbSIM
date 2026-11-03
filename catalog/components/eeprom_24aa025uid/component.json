@@ -4,7 +4,8 @@
   "id": "emblink/eeprom_24aa025uid",
   "version": "1.0.0",
   "name": "24AA025UID I2C EEPROM with a serial number",
-  "category": "misc",
+  "category": "memory_ics",
+  "subcategory": "eeprom_i2c",
   "description": "Microchip 24AA025UID 2-Kbit (256 x 8) serial EEPROM on I2C: the lower half writable in 16-byte pages with a self-timed write cycle (no ACK while it runs), the upper half write-protected with the manufacturer and device codes and a 32-bit serial number.",
   "keywords": [
     "memory",

@@ -4,7 +4,8 @@
   "id": "emblink/electrolytic_capacitor",
   "version": "1.0.0",
   "name": "Electrolytic capacitor",
-  "category": "passives",
+  "category": "capacitors",
+  "subcategory": "electrolytic",
   "description": "Polarised aluminium electrolytic capacitor: bulk decoupling and supply filtering.",
   "keywords": [
     "capacitor",

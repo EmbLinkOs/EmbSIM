@@ -4,7 +4,8 @@
   "id": "emblink/ws2812b_strip",
   "version": "1.0.0",
   "name": "WS2812B LED strip or ring",
-  "category": "displays",
+  "category": "optoelectronics",
+  "subcategory": "addressable_leds",
   "description": "A strip or ring of WS2812B LEDs (NeoPixels) chained DOUT to DIN: `count` LEDs take 24 bits each, in order from DIN, and pass the rest on at the end's DOUT; a 50 us low latches the frame.",
   "keywords": [
     "led strip",

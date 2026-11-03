@@ -5,6 +5,7 @@
   "version": "0.1.0",
   "name": "Logic analyzer, 8 channels (Saleae Logic 8)",
   "category": "instruments",
+  "subcategory": "logic_analyzers",
   "description": "Saleae's Logic 8 USB logic analyzer: eight channel leads and ground, each input 1 MOhm in parallel with 10 pF, high above 1.2 V and low below 0.6 V. It samples the eight inputs at its chosen rate (1 to 100 MS/s; 100 MS/s on up to 3 channels, 25 MS/s on all 8), from Start for a set duration or around a trigger on one channel's edge, and streams the capture to the workbench, where it is read as Saleae's Logic 2 software shows it: channel rows, protocol decoders, measurements.",
   "keywords": [
     "logic analyzer",

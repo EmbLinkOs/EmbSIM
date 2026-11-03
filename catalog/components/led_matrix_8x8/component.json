@@ -4,7 +4,8 @@
   "id": "emblink/led_matrix_8x8",
   "version": "1.0.0",
   "name": "LED matrix \u00b7 8 \u00d7 8 row-anode",
-  "category": "displays",
+  "category": "optoelectronics",
+  "subcategory": "dot_matrix",
   "description": "64 independent red LED junctions with eight shared row anodes and eight column cathodes. Every pixel follows junction current, including ghost currents from circuit wiring. External per-column or per-row current limiting is required. Generic logical terminal map R1\u2013R8/C1\u2013C8; not a manufacturer pinout.",
   "keywords": [
     "LED",

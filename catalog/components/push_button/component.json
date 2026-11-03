@@ -4,7 +4,8 @@
   "id": "emblink/push_button",
   "version": "1.0.0",
   "name": "Push button",
-  "category": "switches",
+  "category": "switches_relays",
+  "subcategory": "push_buttons",
   "description": "Momentary tactile switch, normally open; closed while pressed.",
   "keywords": [
     "button",

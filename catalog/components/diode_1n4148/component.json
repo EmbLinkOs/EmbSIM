@@ -5,6 +5,7 @@
   "version": "1.0.0",
   "name": "1N4148",
   "category": "diodes",
+  "subcategory": "switching",
   "description": "1N4148 (DO-35). Parameterized diode approximation for low-frequency circuit development; not a vendor SPICE model.",
   "keywords": [
     "Vishay",

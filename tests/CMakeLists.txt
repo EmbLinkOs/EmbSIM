@@ -67,6 +67,9 @@ if(Python3_Interpreter_FOUND)
   # every diagnostic format the engine raises has its French (core/util/diag_fr.c)
   add_test(NAME diagnostics_fr COMMAND ${Python3_EXECUTABLE} ${CMAKE_SOURCE_DIR}/tools/i18n/diagnostics.py
            WORKING_DIRECTORY ${CMAKE_SOURCE_DIR})
+  # the workbench's copy of the catalog's taxonomy is current
+  add_test(NAME taxonomy_ui COMMAND ${Python3_EXECUTABLE} ${CMAKE_SOURCE_DIR}/tools/catalog/gen_taxonomy.py --check
+           WORKING_DIRECTORY ${CMAKE_SOURCE_DIR})
   # every catalog entry's text in French, made from its English as it now stands
   add_test(NAME catalog_fr COMMAND ${Python3_EXECUTABLE} ${CMAKE_SOURCE_DIR}/tools/i18n/catalog_text.py check
            WORKING_DIRECTORY ${CMAKE_SOURCE_DIR})

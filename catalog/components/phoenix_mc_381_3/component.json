@@ -5,6 +5,7 @@
   "version": "1.0.0",
   "name": "MC 1,5/3-ST-3,81",
   "category": "connectors",
+  "subcategory": "terminal_blocks",
   "description": "Independent numbered terminals for a Phoenix Contact 3.81 mm PCB plug. Connect nets to each terminal; adjacent terminals are never shorted.",
   "keywords": [
     "connectors",

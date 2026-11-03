@@ -4,7 +4,8 @@
   "id": "emblink/ic_74hc86",
   "version": "1.0.0",
   "name": "74HC86 quad 2-input XOR",
-  "category": "logic",
+  "category": "ttl_74",
+  "subcategory": "gates",
   "description": "74HC86 quad 2-input XOR in its 14-pin package: 4 independent XOR gates (emblink/xor2) sharing VCC (14) and GND (7).",
   "keywords": [
     "logic",

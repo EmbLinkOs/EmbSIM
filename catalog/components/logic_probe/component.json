@@ -4,7 +4,8 @@
   "id": "emblink/logic_probe",
   "version": "1.0.0",
   "name": "Logic probe",
-  "category": "instruments",
+  "category": "optoelectronics",
+  "subcategory": "indicators",
   "description": "Shows the resolved logic value of a net; drives nothing.",
   "keywords": [
     "probe",

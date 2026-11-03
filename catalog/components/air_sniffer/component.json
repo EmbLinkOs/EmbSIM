@@ -4,7 +4,8 @@
   "id": "emblink/air_sniffer",
   "version": "0.1.0",
   "name": "Radio sniffer (Wi-Fi monitor or BLE)",
-  "category": "instruments",
+  "category": "networks",
+  "subcategory": "sniffers",
   "description": "A sniffer for Wireshark: a Wi-Fi adapter in monitor mode on one channel, or a Bluetooth LE sniffer dongle (as Nordic's nRF Sniffer) on one advertising channel. It takes every frame it hears, whoever it is for, with its FCS or CRC; the workbench's Air panel lists them and saves them as a pcap file.",
   "keywords": [
     "sniffer",

@@ -5,6 +5,7 @@
   "version": "1.0.0",
   "name": "1N4007",
   "category": "diodes",
+  "subcategory": "rectifiers",
   "description": "1N4007 (DO-41). Parameterized diode approximation for low-frequency circuit development; not a vendor SPICE model. The nominal forward curve uses an illustrative 7 nA / n=1.8 fit; reverse recovery and rectifier surge ratings are not simulated.",
   "keywords": [
     "Vishay",

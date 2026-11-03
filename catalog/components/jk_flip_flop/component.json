@@ -4,7 +4,8 @@
   "id": "emblink/jk_flip_flop",
   "version": "1.0.0",
   "name": "JK flip-flop",
-  "category": "logic",
+  "category": "simulator_primitives",
+  "subcategory": "flip_flops",
   "description": "Positive-edge JK flip-flop with active-low asynchronous preset and clear (one half of a 74HC109 with K true): J=K=1 toggles.",
   "keywords": [
     "logic",

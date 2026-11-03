@@ -4,7 +4,8 @@
   "id": "emblink/ic_74hc244",
   "version": "1.0.0",
   "name": "74HC244 octal buffer",
-  "category": "logic",
+  "category": "ttl_74",
+  "subcategory": "buffers",
   "description": "Octal buffer/line driver with three-state outputs in two banks of four (74HC244): Y follows A while the bank's OE_N is low and is released while it is high; bus drivers and level isolation.",
   "keywords": [
     "logic",

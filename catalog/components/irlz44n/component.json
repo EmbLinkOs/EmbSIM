@@ -5,6 +5,7 @@
   "version": "1.0.0",
   "name": "IRLZ44N",
   "category": "transistors",
+  "subcategory": "mosfet_n",
   "description": "IRLZ44N (TO-220-3). Parameterized nmos approximation for low-frequency circuit development; not a vendor SPICE model.",
   "keywords": [
     "Infineon",

@@ -4,7 +4,8 @@
   "id": "emblink/nor3",
   "version": "1.0.0",
   "name": "3-input NOR",
-  "category": "logic",
+  "category": "simulator_primitives",
+  "subcategory": "gates",
   "description": "3-input NOR, CMOS 3.3 V family; propagation delay from the timed section.",
   "keywords": [
     "logic",

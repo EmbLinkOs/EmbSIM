@@ -4,7 +4,8 @@
   "id": "emblink/logic_level",
   "version": "1.0.0",
   "name": "Logic level",
-  "category": "sources",
+  "category": "simulator_primitives",
+  "subcategory": "stimuli",
   "description": "Constant logic level driver (0 or 1).",
   "keywords": [
     "logic",

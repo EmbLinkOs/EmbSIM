@@ -4,7 +4,8 @@
   "id": "emblink/ic_74hc00",
   "version": "1.0.0",
   "name": "74HC00 quad 2-input NAND",
-  "category": "logic",
+  "category": "ttl_74",
+  "subcategory": "gates",
   "description": "74HC00 quad 2-input NAND in its 14-pin package: 4 independent NAND gates (emblink/nand2) sharing VCC (14) and GND (7).",
   "keywords": [
     "logic",

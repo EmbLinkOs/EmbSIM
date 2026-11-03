@@ -4,7 +4,8 @@
   "id": "emblink/ws2812b",
   "version": "1.0.0",
   "name": "WS2812B addressable RGB LED",
-  "category": "displays",
+  "category": "optoelectronics",
+  "subcategory": "addressable_leds",
   "description": "Worldsemi WS2812B RGB LED with its driver inside (a NeoPixel): 24-bit colour received on DIN at 800 kbit/s, the rest passed on at DOUT to chain more LEDs, latched by a 50 us low.",
   "keywords": [
     "led",

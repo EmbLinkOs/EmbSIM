@@ -5,6 +5,7 @@
   "version": "1.0.0",
   "name": "FDN340P P-channel MOSFET",
   "category": "transistors",
+  "subcategory": "mosfet_p",
   "description": "onsemi FDN340P, a -20 V P-channel logic-level trench MOSFET in SOT-23 (60 mOhm at -4.5 V): the Arduino Uno's T1, which connects USB's 5 V to the board when no supply is on VIN.",
   "keywords": [
     "mosfet",

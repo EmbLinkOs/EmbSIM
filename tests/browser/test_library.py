@@ -83,11 +83,11 @@ def main() -> None:
                 page.get_by_role("region", name="Component preview")
             ).to_contain_text("Source reviewed")
             page.screenshot(path=str(out / "library-light.png"), full_page=True)
-            page.get_by_role("button", name="pins", exact=True).click()
+            page.get_by_role("button", name="Pins", exact=True).click()
             expect(
                 page.get_by_role("region", name="Component preview")
             ).to_contain_text("Terminal")
-            page.get_by_role("button", name="models", exact=True).click()
+            page.get_by_role("button", name="Models", exact=True).click()
             expect(
                 page.get_by_role("region", name="Component preview")
             ).to_contain_text("Not provided")
@@ -100,14 +100,25 @@ def main() -> None:
             expect(
                 page.get_by_role("button", name="Preview 1N4007", exact=True)
             ).to_have_count(0)
-            page.locator("summary").filter(has_text="Optoelectronics").click()
+            # a category opens its sub-categories, as an EDA's device picker does
+            page.get_by_role("button", name=re.compile(r"^Diodes")).click()
+            subs = page.get_by_role("group", name="Sub-categories of Diodes")
+            subs.get_by_role("button", name=re.compile(r"^Rectifiers")).click()
+            expect(
+                page.get_by_role("button", name="Preview 1N4007", exact=True)
+            ).to_be_visible()
+            expect(
+                page.get_by_role("button", name="Preview 1N4148", exact=True)
+            ).to_have_count(0)
+            page.screenshot(path=str(out / "library-categories.png"), full_page=True)
+            page.locator("summary").filter(has_text="Diodes").click()
             page.get_by_role("button", name="Clear filters", exact=True).click()
             page.get_by_label("Search components", exact=True).fill("B3F-1000")
             page.get_by_role("button", name="Place B3F-1000", exact=True).click()
             expect(
                 page.get_by_role("button", name="Preview B3F-1000", exact=True)
             ).to_be_visible()
-            page.get_by_role("button", name="Switch to dark theme").click()
+            page.emulate_media(color_scheme="dark")  # the theme follows the system by default
             page.get_by_role("button", name="Preview B3F-1000", exact=True).click()
             page.screenshot(path=str(out / "library-dark.png"), full_page=True)
             page.set_viewport_size({"width": 1024, "height": 700})

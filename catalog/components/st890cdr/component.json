@@ -4,7 +4,8 @@
   "id": "emblink/st890cdr",
   "version": "1.0.0",
   "name": "ST890CDR power distribution switch",
-  "category": "power",
+  "category": "analog_ics",
+  "subcategory": "power_switches",
   "description": "STMicroelectronics ST890CDR, a P-channel high-side power distribution switch with an active-low ON input, a programmable current limit (SET) and a fault output, in SO-8: the NUCLEO-144's (MB1137) U4, which joins the ST-LINK's USB 5 V to the board once the ST-LINK pulls ON low.",
   "keywords": [
     "power switch",

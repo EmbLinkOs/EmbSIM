@@ -4,7 +4,8 @@
   "id": "emblink/mf_msmf050",
   "version": "1.0.0",
   "name": "MF-MSMF050-2 resettable fuse",
-  "category": "power",
+  "category": "miscellaneous",
+  "subcategory": "fuses",
   "description": "Bourns MF-MSMF050-2 polymeric PTC resettable fuse (1812): holds 0.5 A, trips at 1.0 A at 23 C; the Arduino Uno's USB fuse F1. It heats with the power it passes, trips when the heat runs away and resets when the fault is removed and it cools.",
   "keywords": [
     "fuse",

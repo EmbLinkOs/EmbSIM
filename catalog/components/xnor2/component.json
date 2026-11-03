@@ -4,7 +4,8 @@
   "id": "emblink/xnor2",
   "version": "1.0.0",
   "name": "2-input XNOR",
-  "category": "logic",
+  "category": "simulator_primitives",
+  "subcategory": "gates",
   "description": "2-input XNOR, CMOS 3.3 V family; propagation delay from the timed section.",
   "keywords": [
     "logic",

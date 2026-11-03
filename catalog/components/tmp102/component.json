@@ -4,7 +4,8 @@
   "id": "emblink/tmp102",
   "version": "1.0.0",
   "name": "TMP102 temperature sensor",
-  "category": "sensors",
+  "category": "transducers",
+  "subcategory": "temperature",
   "description": "Digital temperature sensor on I2C (TMP102): 12-bit readings at 0.0625 °C, configuration, T(low) and T(high) registers and an open-drain ALERT output in comparator mode. The temperature is an interactive input.",
   "keywords": [
     "sensor",

@@ -4,7 +4,8 @@
   "id": "emblink/and4",
   "version": "1.0.0",
   "name": "4-input AND",
-  "category": "logic",
+  "category": "simulator_primitives",
+  "subcategory": "gates",
   "description": "4-input AND, CMOS 3.3 V family; propagation delay from the timed section.",
   "keywords": [
     "logic",

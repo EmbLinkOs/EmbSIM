@@ -1,7 +1,8 @@
 {
   "schema_version": 1,
   "kind": "component",
-  "category": "sensors",
+  "category": "transducers",
+  "subcategory": "temperature",
   "description": "TMP36GT9Z: externally controlled ambient temperature converted to voltage. No thermal dynamics.",
   "pins": [
     {

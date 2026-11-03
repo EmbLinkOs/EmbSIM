@@ -4,7 +4,8 @@
   "id": "emblink/inductor",
   "version": "1.0.0",
   "name": "Inductor",
-  "category": "passives",
+  "category": "inductors",
+  "subcategory": "generic",
   "description": "Ideal inductor with optional winding resistance and initial current.",
   "keywords": [
     "inductor",

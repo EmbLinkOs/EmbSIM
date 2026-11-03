@@ -5,6 +5,19 @@ maintained by hand until evidence tooling exists. It is not a generated
 support matrix. Specifications define target contracts; their acceptance
 does not mean the described behaviour exists.
 
+## The library's categories (2026-11-03)
+
+Parts are filed by category and sub-category as Proteus's device picker and
+KiCad's libraries file them: `catalog/taxonomy.json` names 23 categories and
+their sub-categories in English, French and Spanish, every one of the 205
+components has both, and the validator rejects what the taxonomy does not
+list while still loading the older names with a warning. The library browses
+the tree with counts and searches category names in the interface's
+language (`libraryFilters.test.ts`, ctest `taxonomy_ui`). Not yet: most of
+the taxonomy's sub-categories are empty; the families of real parts that
+fill them (rectifier and zener diodes, small-signal transistors, MOSFETs,
+op-amps, regulators, 74HC and CD4000 functions) come next.
+
 ## AI assistants: the MCP server (2026-11-02)
 
 `embsim-mcp` gives an AI assistant the session a person has (ADR-035):

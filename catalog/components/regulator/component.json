@@ -4,7 +4,8 @@
   "id": "emblink/regulator",
   "version": "1.0.0",
   "name": "Linear regulator (LDO)",
-  "category": "power",
+  "category": "analog_ics",
+  "subcategory": "regulators",
   "description": "Behavioural linear voltage regulator in the LM1117 style; the OUT pin is a supply for the nets it feeds.",
   "keywords": [
     "regulator",

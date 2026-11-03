@@ -4,7 +4,8 @@
   "id": "emblink/opamp",
   "version": "1.0.0",
   "name": "Operational amplifier",
-  "category": "analog",
+  "category": "operational_amplifiers",
+  "subcategory": "ideal",
   "description": "Behavioural op-amp with open-loop gain, a dominant pole, slew rate and output saturation at the supplies.",
   "keywords": [
     "opamp",

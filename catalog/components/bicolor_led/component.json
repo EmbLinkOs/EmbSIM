@@ -4,7 +4,8 @@
   "id": "emblink/bicolor_led",
   "version": "1.0.0",
   "name": "Bicolor LED \u00b7 red/green, two leads",
-  "category": "indicators",
+  "category": "optoelectronics",
+  "subcategory": "leds",
   "description": "Two antiparallel red and green junctions. Reversing current selects the die; each die reports current and normalized light. External current limiting is required. Generic topology, not a named package.",
   "keywords": [
     "LED",

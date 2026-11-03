@@ -359,6 +359,8 @@ esk_json *esk_catalog_list(const es_catalog *c, const char *kind, const char *ca
         esk_json_set_string(c->a, o, "version", it->version);
         esk_json_set_string(c->a, o, "name", name);
         esk_json_set_string(c->a, o, "category", cat);
+        if (esk_json_get_str(it->desc, "subcategory", NULL))
+            esk_json_set_string(c->a, o, "subcategory", esk_json_get_str(it->desc, "subcategory", ""));
         esk_json_set_string(c->a, o, "description", esk_json_get_str(it->desc, "description", ""));
         esk_json_set_string(c->a, o, "library", it->library);
         tiers = esk_json_new_array(c->a);

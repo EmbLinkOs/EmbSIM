@@ -5,6 +5,7 @@
   "version": "1.0.0",
   "name": "Virtual terminal",
   "category": "instruments",
+  "subcategory": "probes",
   "description": "UART encoder/decoder on two nets: text sent through tx_text (or bytes through tx_hex) is serialised on TX; frames on RX are decoded into rx_text and rx_hex.",
   "keywords": [
     "uart",

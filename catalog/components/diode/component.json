@@ -5,6 +5,7 @@
   "version": "1.0.0",
   "name": "Diode",
   "category": "diodes",
+  "subcategory": "generic",
   "description": "Silicon junction diode (1N4148/1N4007 class) with the Shockley model.",
   "keywords": [
     "diode",

@@ -4,7 +4,8 @@
   "id": "emblink/cd4017",
   "version": "1.0.0",
   "name": "CD4017 decade counter",
-  "category": "logic",
+  "category": "cmos_4000",
+  "subcategory": "counters",
   "description": "Decade counter with ten decoded outputs (CD4017): each CP0 rising edge (CP1_N low) moves the high output from Q0 to Q9 and round; MR resets to Q0; CO is high for counts 0-4. The classic LED chaser.",
   "keywords": [
     "logic",

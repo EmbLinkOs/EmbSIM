@@ -5,6 +5,7 @@
   "version": "1.0.0",
   "name": "N-channel MOSFET",
   "category": "transistors",
+  "subcategory": "mosfet_n",
   "description": "N-channel enhancement MOSFET (SPICE level 1); a named part selects vto, kp and lambda.",
   "keywords": [
     "transistor",

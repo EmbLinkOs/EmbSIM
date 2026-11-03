@@ -4,7 +4,8 @@
   "id": "emblink/crystal",
   "version": "1.0.0",
   "name": "Quartz crystal",
-  "category": "passives",
+  "category": "miscellaneous",
+  "subcategory": "crystals",
   "description": "Two-terminal quartz crystal as a Butterworth-Van Dyke equivalent circuit; the MCU oscillator is modelled by the board's oscillators block.",
   "keywords": [
     "crystal",

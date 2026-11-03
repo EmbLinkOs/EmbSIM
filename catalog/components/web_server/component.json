@@ -4,7 +4,8 @@
   "id": "emblink/web_server",
   "version": "0.1.0",
   "name": "Web server",
-  "category": "instruments",
+  "category": "networks",
+  "subcategory": "servers",
   "description": "A web server on the internet beyond the bench's routers, as a board's HTTP client finds it: its DNS name resolves (through a router's DNS forwarder) to its public address, a TCP connection to its port is accepted, and a GET of its path is answered with its content, then the connection closed. It reaches the circuit only through a router's WAN side (emblink/wifi_ap), the latency it is set at away.",
   "keywords": [
     "web",

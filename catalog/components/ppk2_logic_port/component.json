@@ -5,6 +5,7 @@
   "version": "0.1.0",
   "name": "PPK2 logic port (inside the Power Profiler Kit II)",
   "category": "instruments",
+  "subcategory": "power_analyzers",
   "description": "The Power Profiler Kit II's 10-pin logic port, as the emblink/nordic_ppk2 part uses it: D0 to D7 sampled at 100 kHz with the current, referenced to the board's VCC. Place emblink/nordic_ppk2 rather than this.",
   "keywords": [
     "ppk2",

@@ -4,7 +4,8 @@
   "id": "emblink/rotary_encoder",
   "version": "1.0.0",
   "name": "Rotary encoder module (KY-040)",
-  "category": "inputs",
+  "category": "switches_relays",
+  "subcategory": "encoders",
   "description": "KY-040 rotary encoder module (an EC11-type mechanical encoder with a push switch): 20 detents a revolution, each one full quadrature cycle on CLK (A) and DT (B) with A leading clockwise, contacts to GND with the module's 10 kOhm pull-ups to +, contact bounce on every change, SW to GND with no pull-up. The shaft's position and the press are interactive inputs.",
   "keywords": [
     "encoder",

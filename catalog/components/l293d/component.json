@@ -4,7 +4,8 @@
   "id": "emblink/l293d",
   "version": "1.0.0",
   "name": "L293D dual H-bridge",
-  "category": "power",
+  "category": "analog_ics",
+  "subcategory": "drivers",
   "description": "Quadruple half-H driver (L293D) for two DC motors or one stepper: each output follows its input while the pair's enable is high and is released while low; motor1/motor2 report forward, reverse, brake or coast.",
   "keywords": [
     "motor driver",

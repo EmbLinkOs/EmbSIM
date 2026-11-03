@@ -4,7 +4,8 @@
   "id": "emblink/d_latch",
   "version": "1.0.0",
   "name": "D latch",
-  "category": "logic",
+  "category": "simulator_primitives",
+  "subcategory": "flip_flops",
   "description": "Transparent D latch (one bit of a 74HC75/373): Q follows D while LE is high and holds when LE falls.",
   "keywords": [
     "logic",

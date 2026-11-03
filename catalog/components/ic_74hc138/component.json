@@ -4,7 +4,8 @@
   "id": "emblink/ic_74hc138",
   "version": "1.0.0",
   "name": "74HC138 3-to-8 decoder",
-  "category": "logic",
+  "category": "ttl_74",
+  "subcategory": "decoders",
   "description": "3-to-8 line decoder/demultiplexer with active-low outputs (74HC138): with E1_N and E2_N low and E3 high, the output selected by A2-A0 goes low; address decoding and chip selects.",
   "keywords": [
     "logic",

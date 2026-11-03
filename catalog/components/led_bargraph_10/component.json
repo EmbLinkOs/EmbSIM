@@ -4,7 +4,8 @@
   "id": "emblink/led_bargraph_10",
   "version": "1.0.0",
   "name": "LED bar graph · 10 segments",
-  "category": "displays",
+  "category": "optoelectronics",
+  "subcategory": "bargraphs",
   "description": "A 10-segment LED bar graph in the common 20-pin DIP package (the Kingbright DC-10 pinout): ten independent red LED junctions, segment n's anode on pin n and its cathode on pin 21 - n. Each segment follows its own junction current and needs its own series resistor.",
   "keywords": [
     "LED",

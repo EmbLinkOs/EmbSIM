@@ -4,7 +4,8 @@
   "id": "emblink/vsource",
   "version": "1.0.0",
   "name": "Voltage source",
-  "category": "sources",
+  "category": "simulator_primitives",
+  "subcategory": "sources",
   "description": "Independent voltage source: dc, pulse, sine or piecewise-linear.",
   "keywords": [
     "source",

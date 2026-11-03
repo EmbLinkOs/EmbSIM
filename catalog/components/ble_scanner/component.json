@@ -4,7 +4,8 @@
   "id": "emblink/ble_scanner",
   "version": "0.1.0",
   "name": "Bluetooth LE scanner",
-  "category": "instruments",
+  "category": "networks",
+  "subcategory": "phones",
   "description": "A Bluetooth LE scanner, as a phone's scanner app sees the devices around it: it listens on the advertising channels and lists each advertiser it hears, its address, PDU type, name and RSSI. It reaches the circuit only through the air.",
   "keywords": [
     "bluetooth",

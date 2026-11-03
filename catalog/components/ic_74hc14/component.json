@@ -4,7 +4,8 @@
   "id": "emblink/ic_74hc14",
   "version": "1.0.0",
   "name": "74HC14 hex Schmitt-trigger inverter",
-  "category": "logic",
+  "category": "ttl_74",
+  "subcategory": "gates",
   "description": "74HC14 hex Schmitt-trigger inverter in its 14-pin package: 6 independent Schmitt inverter gates (emblink/schmitt_inverter) sharing VCC (14) and GND (7).",
   "keywords": [
     "logic",

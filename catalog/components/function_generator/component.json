@@ -5,6 +5,7 @@
   "version": "0.1.0",
   "name": "Function generator (50 \u03a9 output)",
   "category": "instruments",
+  "subcategory": "generators",
   "description": "DC, sine, pulse or PWL generator with finite series output resistance. Waveform values specify the open-circuit voltage; a matched 50 \u03a9 load receives half the voltage.",
   "keywords": [
     "instrument",

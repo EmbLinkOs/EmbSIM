@@ -452,6 +452,8 @@ export interface ComponentDescription {
   version: string;
   name: string;
   category: string;
+  /** the category's sub-category (catalog/taxonomy.json) */
+  subcategory?: string;
   part?: ManufacturerPart;
   qualification?: IndicatorQualification;
   description?: string;
@@ -487,6 +489,7 @@ export interface CatalogItem {
   version: string;
   name: string;
   category: string;
+  subcategory?: string;
   fidelity_tiers: FidelityTier[];
   broken?: boolean;
   kind?: string;

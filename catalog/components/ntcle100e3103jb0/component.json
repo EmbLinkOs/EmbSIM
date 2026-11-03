@@ -4,7 +4,8 @@
   "id": "emblink/ntcle100e3103jb0",
   "version": "1.0.0",
   "name": "NTCLE100E3103JB0",
-  "category": "sensors",
+  "category": "transducers",
+  "subcategory": "temperature",
   "description": "NTC beta-law temperature-dependent resistor; R25 and B25/85 from the selected family ordering row.",
   "keywords": [
     "sensors",

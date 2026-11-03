@@ -4,7 +4,8 @@
   "id": "emblink/indicator",
   "version": "1.0.0",
   "name": "Indicator",
-  "category": "indicators",
+  "category": "optoelectronics",
+  "subcategory": "indicators",
   "description": "Functional LED-like probe: lit when its anode net is 1 and its cathode net is 0. No electrical model.",
   "keywords": [
     "indicator",

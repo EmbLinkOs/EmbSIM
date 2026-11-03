@@ -1,7 +1,8 @@
 {
   "schema_version": 1,
   "kind": "component",
-  "category": "comparators",
+  "category": "analog_ics",
+  "subcategory": "comparators",
   "description": "LM393P dual-channel PDIP-8 behavioral approximation; both channels share explicit supply pins.",
   "pins": [
     {

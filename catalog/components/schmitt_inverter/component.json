@@ -4,7 +4,8 @@
   "id": "emblink/schmitt_inverter",
   "version": "1.0.0",
   "name": "Schmitt-trigger inverter",
-  "category": "logic",
+  "category": "simulator_primitives",
+  "subcategory": "gates",
   "description": "Inverter with hysteresis on its input (one gate of a 74HC14): slow or noisy edges give one clean output transition.",
   "keywords": [
     "logic",

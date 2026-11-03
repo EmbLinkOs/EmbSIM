@@ -1,7 +1,8 @@
 {
   "schema_version": 1,
   "kind": "component",
-  "category": "logic",
+  "category": "ttl_74",
+  "subcategory": "gates",
   "description": "SN74HC86N: 4 independent 2-input XOR gates in a complete 14-pin DIP package. Nominal 5 V model.",
   "pins": [
     {

@@ -4,7 +4,8 @@
   "id": "emblink/sr_latch",
   "version": "1.0.0",
   "name": "SR latch",
-  "category": "logic",
+  "category": "simulator_primitives",
+  "subcategory": "flip_flops",
   "description": "Set-reset latch with active-low inputs (NAND latch, as in a 74HC279): S_N sets Q, R_N resets it; both low drive Q and QN high.",
   "keywords": [
     "logic",

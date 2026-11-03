@@ -5,6 +5,7 @@
   "version": "0.1.0",
   "name": "USB power meter (inline tester)",
   "category": "instruments",
+  "subcategory": "meters",
   "description": "An inline USB power meter, the tester plugged between a computer's port and a board's cable: it shows VBUS's voltage, the current the board draws and its power, refreshed twice a second, and counts the charge and energy since it was plugged in. Its shunt is in VBUS; it powers itself from the host's side, so its own draw is not in what it shows.",
   "keywords": [
     "usb",

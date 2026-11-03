@@ -5,6 +5,7 @@
   "version": "0.1.0",
   "name": "Digital multimeter (Fluke 87V)",
   "category": "instruments",
+  "subcategory": "meters",
   "description": "Fluke's 87V handheld true-rms multimeter, used as on the bench: the rotary switch sets what it measures (AC and DC volts, millivolts, ohms, diode test, AC and DC currents in µA, mA and A), the leads go in its jacks (COM, V Ω, mA/µA, A) and it loads the circuit as the meter does: 10 MΩ on volts, a test current on ohms, its shunts on the current jacks. The current jacks are fused (440 mA and 11 A, fast): measure a supply's voltage with the lead left in A and the fuse blows. The display shows 6000 counts, four times a second, ranging itself.",
   "keywords": [
     "multimeter",

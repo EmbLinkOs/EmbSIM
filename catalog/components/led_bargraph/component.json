@@ -4,7 +4,8 @@
   "id": "emblink/led_bargraph",
   "version": "1.0.0",
   "name": "8-segment LED bar graph",
-  "category": "indicators",
+  "category": "optoelectronics",
+  "subcategory": "bargraphs",
   "description": "Eight LEDs in a row with a common cathode: a bar lights when its anode is high and K low. A level meter on the board view.",
   "keywords": [
     "led",

@@ -5,6 +5,22 @@ versions follow semantic versioning. There is no release yet.
 
 ## Unreleased
 
+### A library sorted the way an EDA sorts it
+
+- Parts are filed by category and sub-category as Proteus's device picker
+  and KiCad's libraries file them: 23 categories (Resistors, Capacitors,
+  Diodes, Transistors, Operational Amplifiers, TTL 74 Series, CMOS 4000
+  Series, Analog ICs, Data Converters, Memory ICs, Microprocessor ICs,
+  Optoelectronics, Transducers, Switches & Relays, Connectors, ...) and
+  their sub-categories, named in English, French and Spanish in
+  `catalog/taxonomy.json` (SPEC-005 §2). All 205 components are filed
+  under it; the validator rejects a category or sub-category it does not
+  list and warns on the names used before (`passives`, `logic`, ...),
+  which still load.
+- The library's browser is the category tree: a category opens its
+  sub-categories with their counts, search matches category and
+  sub-category names, and `embsim catalog show` prints both.
+
 ### The workbench in Spanish
 
 - Español is the third interface language: all 1008 messages of the

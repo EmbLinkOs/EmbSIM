@@ -4,7 +4,8 @@
   "id": "emblink/dff",
   "version": "1.0.0",
   "name": "D flip-flop",
-  "category": "logic",
+  "category": "simulator_primitives",
+  "subcategory": "flip_flops",
   "description": "Positive-edge-triggered D flip-flop with active-high asynchronous set and reset.",
   "keywords": [
     "logic",

@@ -1582,6 +1582,9 @@
 .wb-library__categories button { display:flex; justify-content:space-between; width:100%; padding:5px 8px; border:0; border-radius:4px; background:transparent; color:var(--text); text-align:left; cursor:pointer; font-size:var(--text-xs); }
 .wb-library__categories button[aria-pressed=true] { background:var(--surface-hover); color:var(--accent); font-weight:650; }
 .wb-library__categories button span { color:var(--text-muted); font-variant-numeric:tabular-nums; }
+.wb-library__categories { max-height:320px; }
+.wb-library__subcategories { margin:2px 0 4px 10px; padding-left:6px; border-left:1px solid var(--line); }
+.wb-library__subcategories button { padding:4px 8px; color:var(--text-muted); }
 .wb-library__advanced { display:grid; grid-template-columns:1fr 1fr; gap:8px; }
 .wb-library__advanced label { min-width:0; display:flex; flex-direction:column; gap:4px; color:var(--text-muted); font-size:10px; }
 .wb-library__advanced select { width:100%; padding:5px; border:1px solid var(--line); border-radius:4px; background:var(--surface); color:var(--text); font:inherit; font-size:var(--text-xs); }

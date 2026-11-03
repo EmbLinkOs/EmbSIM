@@ -4,7 +4,8 @@
   "id": "emblink/resistor",
   "version": "1.0.0",
   "name": "Resistor",
-  "category": "passives",
+  "category": "resistors",
+  "subcategory": "fixed",
   "description": "Ideal linear resistor with optional temperature coefficients.",
   "keywords": [
     "resistor",

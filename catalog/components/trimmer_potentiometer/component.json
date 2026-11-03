@@ -4,7 +4,8 @@
   "id": "emblink/trimmer_potentiometer",
   "version": "1.0.0",
   "name": "Trimmer potentiometer",
-  "category": "passives",
+  "category": "resistors",
+  "subcategory": "variable",
   "description": "Multi-turn trimmer (3296 style): a potentiometer set once with a screwdriver to calibrate a divider.",
   "keywords": [
     "trimmer",

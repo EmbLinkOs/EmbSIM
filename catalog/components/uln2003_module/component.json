@@ -4,7 +4,8 @@
   "id": "emblink/uln2003_module",
   "version": "1.0.0",
   "name": "ULN2003 stepper driver board",
-  "category": "power",
+  "category": "electromechanical",
+  "subcategory": "motors_stepper",
   "description": "The common ULN2003 stepper motor driver board sold with the 28BYJ-48: IN1 to IN4 to a ULN2003A, its outputs on the 5-pin motor connector (pin 5 to + through the ON/OFF jumper), and an LED (A to D) on each output that lights while the channel sinks, showing the stepping sequence.",
   "keywords": [
     "ULN2003",

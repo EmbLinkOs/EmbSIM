@@ -4,7 +4,8 @@
   "id": "emblink/ic_74hc85",
   "version": "1.0.0",
   "name": "74HC85 4-bit magnitude comparator",
-  "category": "logic",
+  "category": "ttl_74",
+  "subcategory": "arithmetic",
   "description": "4-bit magnitude comparator (74HC85): AGTB, AEQB and ALTB compare A3-A0 with B3-B0; when they are equal the cascade inputs IGT, IEQ and ILT decide, so stages chain for wider words.",
   "keywords": [
     "logic",

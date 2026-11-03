@@ -4,7 +4,8 @@
   "id": "emblink/tm1637_display",
   "version": "1.1.0",
   "name": "TM1637 4-digit display module",
-  "category": "displays",
+  "category": "optoelectronics",
+  "subcategory": "seven_segment",
   "description": "The common 4-digit 7-segment LED display module on a Titan Micro TM1637: its two-wire interface (not I2C: no address, LSB first, ACK on the 9th clock), the data, address and display-control commands with the eight pulse widths, the colon (clock variant) or decimal points on SEG8, and 10 kOhm pull-ups on CLK and DIO.",
   "keywords": [
     "TM1637",

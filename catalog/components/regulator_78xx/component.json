@@ -4,7 +4,8 @@
   "id": "emblink/regulator_78xx",
   "version": "1.0.0",
   "name": "78xx linear regulator",
-  "category": "power",
+  "category": "analog_ics",
+  "subcategory": "regulators",
   "description": "Fixed positive linear regulator of the 78xx family (TO-220, pins IN-GND-OUT): 7805, 7809, 7812, 78L05.",
   "keywords": [
     "regulator",

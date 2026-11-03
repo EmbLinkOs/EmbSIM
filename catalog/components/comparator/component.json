@@ -1,7 +1,8 @@
 {
   "schema_version": 1,
   "kind": "component",
-  "category": "comparators",
+  "category": "analog_ics",
+  "subcategory": "comparators",
   "description": "Smooth DC open-collector comparator; external pull-up required.",
   "pins": [
     {

@@ -5,6 +5,7 @@
   "version": "1.0.0",
   "name": "BAT54",
   "category": "diodes",
+  "subcategory": "schottky",
   "description": "BAT54 (SOT-23). Parameterized diode approximation for low-frequency circuit development; not a vendor SPICE model.",
   "keywords": [
     "Nexperia",

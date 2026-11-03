@@ -4,7 +4,8 @@
   "id": "emblink/timer_555",
   "version": "1.0.0",
   "name": "555 timer",
-  "category": "analog",
+  "category": "analog_ics",
+  "subcategory": "timers",
   "description": "NE555 timer as a behavioural block: astable at f = 1.44 / ((R1 + 2 R2) C) with the datasheet's high and low times, or a monostable pulse of 1.1 R1 C started by TRIG falling. The timing comes from the r1, r2 and c parameters rather than from the parts wired to THR and TRIG.",
   "keywords": [
     "timer",

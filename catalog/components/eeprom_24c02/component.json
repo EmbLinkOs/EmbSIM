@@ -4,7 +4,8 @@
   "id": "emblink/eeprom_24c02",
   "version": "1.0.0",
   "name": "24C02 I2C EEPROM",
-  "category": "misc",
+  "category": "memory_ics",
+  "subcategory": "eeprom_i2c",
   "description": "2-kbit (256 x 8) serial EEPROM on I2C (24C02 / AT24C02): byte and 8-byte page writes with a write cycle during which it does not acknowledge, sequential reads, write protect.",
   "keywords": [
     "memory",

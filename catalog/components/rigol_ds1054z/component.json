@@ -5,6 +5,7 @@
   "version": "0.1.0",
   "name": "Oscilloscope, 4 channels (Rigol DS1054Z)",
   "category": "instruments",
+  "subcategory": "oscilloscopes",
   "description": "Rigol's DS1054Z digital storage oscilloscope: four channels at 50 MHz, 1 GSa/s with one channel on (500 MSa/s with two, 250 MSa/s with three or four), 8 bits, 1 mV/div to 10 V/div, its inputs 1 MOhm || 15 pF (10 MOhm through the 10x probes it ships with). It acquires around an edge trigger in Auto, Normal or Single, and the workbench draws its screen and controls live as the circuit runs.",
   "keywords": [
     "oscilloscope",

@@ -4,7 +4,8 @@
   "id": "emblink/wifi_scanner",
   "version": "0.1.0",
   "name": "Wi-Fi analyzer (phone)",
-  "category": "instruments",
+  "category": "networks",
+  "subcategory": "phones",
   "description": "A phone's Wi-Fi list, or a Wi-Fi analyzer app on it: it scans the 2.4 GHz channels as a phone does and lists each network it hears, its SSID, BSSID, channel, security and RSSI, the strongest first. It reaches the circuit only through the air.",
   "keywords": [
     "wifi",

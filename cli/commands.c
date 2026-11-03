@@ -1638,8 +1638,12 @@ static void print_component_summary(const esk_json *d)
     char a[64], b[64], c[64];
     size_t i, k;
     printf("%s  %s  %s\n", esk_json_get_str(d, "id", ""), esk_json_get_str(d, "version", ""), esk_json_get_str(d, "name", ""));
-    if (esk_json_get_str(d, "category", NULL))
-        printf("category: %s\n", esk_json_get_str(d, "category", ""));
+    if (esk_json_get_str(d, "category", NULL)) {
+        if (esk_json_get_str(d, "subcategory", NULL))
+            printf("category: %s / %s\n", esk_json_get_str(d, "category", ""), esk_json_get_str(d, "subcategory", ""));
+        else
+            printf("category: %s\n", esk_json_get_str(d, "category", ""));
+    }
     if (esk_json_get_str(d, "description", NULL))
         printf("%s\n", esk_json_get_str(d, "description", ""));
     if (esk_json_len(pins)) {
@@ -1727,7 +1731,7 @@ static int cmd_catalog(int argc, char **argv, const char *argv0)
                 const esk_json *it = esk_json_at(items, k);
                 const esk_json *tiers = esk_json_get(it, "fidelity_tiers");
                 size_t t;
-                printf("%-32s %-10s %-24s", esk_json_get_str(it, "id", ""), esk_json_get_str(it, "category", ""), esk_json_get_str(it, "name", ""));
+                printf("%-32s %-22s %-24s", esk_json_get_str(it, "id", ""), esk_json_get_str(it, "category", ""), esk_json_get_str(it, "name", ""));
                 for (t = 0; t < esk_json_len(tiers); t++)
                     printf(" %s", esk_json_str(esk_json_at(tiers, t)));
                 printf("\n");

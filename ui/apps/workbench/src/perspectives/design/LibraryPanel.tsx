@@ -7,7 +7,7 @@ import { ArrowUpRight, BookOpen, Check, Layers, Plus, Search, SlidersHorizontal,
 import { useMemo, useState } from 'react';
 import { useProject, type CatalogEntry } from '../../stores/project';
 import { IndicatorEvidence } from './IndicatorEvidence';
-import { categoryGroups, categoryName, filterLibrary } from './libraryFilters';
+import { categoryName, categoryOf, categoryTree, filterLibrary, subcategoryName } from './libraryFilters';
 import { t as tr, type MessageKey } from '../../i18n';
 import { catalogDescription, catalogFidelity } from '../../i18n/catalogText';
 import { useSettings } from '../../stores/settings';
@@ -39,23 +39,25 @@ export function LibraryPanel({ onPlace }: LibraryPanelProps) {
   const policy = useProject((s) => s.project?.policy ?? 'electrical');
   const [query, setQuery] = useState('');
   const [category, setCategory] = useState('');
+  const [subcategory, setSubcategory] = useState('');
+  const lang = useSettings((s) => s.language);
   const [manufacturer, setManufacturer] = useState('');
   const [pack, setPack] = useState('');
   const [tier, setTier] = useState('');
   const [named, setNamed] = useState(false);
   const [selected, setSelected] = useState<string | null>(null);
   const [advanced, setAdvanced] = useState(false);
-  const reset = () => { setQuery(''); setCategory(''); setManufacturer(''); setPack(''); setTier(''); setNamed(false); };
+  const reset = () => { setQuery(''); setCategory(''); setSubcategory(''); setManufacturer(''); setPack(''); setTier(''); setNamed(false); };
   const options = useMemo(() => {
     const descriptions = items.map((i) => catalog[i.id]?.description);
     return {
       manufacturers: [...new Set(descriptions.flatMap((d) => d?.part ? [d.part.manufacturer] : []))].sort(),
       packages: [...new Set(descriptions.flatMap((d) => d?.part ? [d.part.package] : []))].sort(),
-      categories: [...new Set(items.map((i) => i.category))].sort(),
+      tree: categoryTree(items, catalog, lang),
     };
-  }, [catalog, items]);
-  const visible = useMemo(() => filterLibrary(items, catalog, { query, category, manufacturer, pack, tier, named }), [items, catalog, query, category, manufacturer, pack, tier, named]);
-  const active = Boolean(query || category || manufacturer || pack || tier || named);
+  }, [catalog, items, lang]);
+  const visible = useMemo(() => filterLibrary(items, catalog, { query, category, subcategory, manufacturer, pack, tier, named }), [items, catalog, query, category, subcategory, manufacturer, pack, tier, named]);
+  const active = Boolean(query || category || subcategory || manufacturer || pack || tier || named);
   const preview = selected && visible.find((i) => i.id === selected);
   return (
     <div className="wb-library">
@@ -64,13 +66,17 @@ export function LibraryPanel({ onPlace }: LibraryPanelProps) {
         <Input aria-label={tr('library.search')} placeholder={tr('library.searchPlaceholder')} icon={<Search />} value={query} onChange={(e) => setQuery(e.target.value)} />
         <div className="wb-library__filterbar">
           <details className="wb-library__browse">
-            <summary>{category ? categoryName(category) : tr('library.browse')}</summary>
+            <summary>{category ? (subcategory ? `${categoryName(category, lang)} · ${subcategoryName(category, subcategory, lang)}` : categoryName(category, lang)) : tr('library.browse')}</summary>
             <nav aria-label={tr('library.categories')} className="wb-library__categories">
-              <button type="button" aria-pressed={!category} onClick={() => setCategory('')}>{tr('library.allComponents')} <span>{items.length}</span></button>
-              {categoryGroups(options.categories).map((group) => (
-                <div key={group.name}>
-                  <h4>{group.name}</h4>
-                  {group.categories.map((c) => <button type="button" key={c} aria-pressed={category === c} onClick={() => setCategory(c)}>{categoryName(c)} <span>{items.filter((i) => i.category === c).length}</span></button>)}
+              <button type="button" aria-pressed={!category} onClick={() => { setCategory(''); setSubcategory(''); }}>{tr('library.allComponents')} <span>{items.length}</span></button>
+              {options.tree.map((c) => (
+                <div key={c.id} className="wb-library__category">
+                  <button type="button" aria-pressed={category === c.id && !subcategory} aria-expanded={category === c.id} onClick={() => { setCategory(c.id); setSubcategory(''); }}>{c.name} <span>{c.count}</span></button>
+                  {category === c.id && c.subcategories.length > 0 && (
+                    <div className="wb-library__subcategories" role="group" aria-label={tr('library.subcategories', { name: c.name })}>
+                      {c.subcategories.map((s) => <button type="button" key={s.id} aria-pressed={subcategory === s.id} onClick={() => setSubcategory(s.id)}>{s.name} <span>{s.count}</span></button>)}
+                    </div>
+                  )}
                 </div>
               ))}
             </nav>
@@ -101,7 +107,7 @@ function LibraryItem({ item, entry, policy, selected, onPreview, onPlace }: { it
     <li className={cx('wb-library__item', selected && 'wb-library__item--selected')} draggable={!item.broken && item.fidelity_tiers.includes(policy)} onDragStart={(e) => { e.dataTransfer.setData('text/x-embsim-component', item.id); e.dataTransfer.effectAllowed = 'copy'; }}>
       <button type="button" className="wb-library__part" aria-label={tr('library.previewOf', { name: item.name })} aria-pressed={selected} onClick={onPreview} title={catalogDescription(entry?.description, lang) ?? item.name}>
         <span className="wb-library__thumb">{entry && <SymbolThumbnail svg={entry.files.symbol ?? ''} symbol={entry.description.symbol} size={30} />}</span>
-        <span className="wb-library__identity"><strong className="wb-library__name">{item.name}</strong><span className="wb-library__subtitle">{entry?.description.part ? `${entry.description.part.manufacturer} · ${entry.description.part.package}` : categoryName(item.category)}</span><span className="wb-library__meta"><FidelityBadges tiers={item.fidelity_tiers} />{item.broken ? <span className="es-badge es-badge--danger">{tr('library.broken')}</span> : entry?.description.inputs?.length ? <span className="wb-library__interactive">{tr('library.interactive')}</span> : null}</span></span>
+        <span className="wb-library__identity"><strong className="wb-library__name">{item.name}</strong><span className="wb-library__subtitle">{entry?.description.part ? `${entry.description.part.manufacturer} · ${entry.description.part.package}` : categoryName(categoryOf(item), lang)}</span><span className="wb-library__meta"><FidelityBadges tiers={item.fidelity_tiers} />{item.broken ? <span className="es-badge es-badge--danger">{tr('library.broken')}</span> : entry?.description.inputs?.length ? <span className="wb-library__interactive">{tr('library.interactive')}</span> : null}</span></span>
       </button>
       <Button size="sm" variant="ghost" icon={<Plus />} aria-label={tr('design.place', { name: item.name })} disabled={unavailable || item.broken || !item.fidelity_tiers.includes(policy)} title={item.fidelity_tiers.includes(policy) ? tr('library.placeIn', { policy: tr(`policy.${policy}` as MessageKey) }) : tr('library.noModel', { policy: tr(`policy.${policy}` as MessageKey) })} onClick={() => onPlace(item.id)}><span className="wb-library__place-label">{tr('library.place')}</span></Button>
     </li>
@@ -116,7 +122,7 @@ function LibraryPreview({ item, entry, policy, onClose, onPlace }: { item: Catal
   const reviewed = d.provenance.sources?.some((s) => s.hash && s.url === d.part?.datasheet);
   return <section className="wb-library__preview" aria-label={tr('library.preview')}>
     <header><span className="wb-library__eyebrow">{tr('library.details')}</span><Button size="sm" variant="ghost" icon={<X />} aria-label={tr('library.closePreview')} onClick={onClose} /></header>
-    <div className="wb-library__hero"><SymbolThumbnail svg={entry.files.symbol ?? ''} symbol={d.symbol} size={76} /><div><h3>{d.name}</h3><span>{d.part?.manufacturer ?? tr('library.generic')}</span><small>{d.part?.package ?? categoryName(item.category)} · {tr('library.terminals', { n: d.pins.length })}</small></div></div>
+    <div className="wb-library__hero"><SymbolThumbnail svg={entry.files.symbol ?? ''} symbol={d.symbol} size={76} /><div><h3>{d.name}</h3><span>{d.part?.manufacturer ?? tr('library.generic')}</span><small>{d.part?.package ?? categoryName(categoryOf(item), lang)} · {tr('library.terminals', { n: d.pins.length })}</small></div></div>
     <div className="wb-library__tabs" role="group" aria-label={tr('library.previewSections')}>{(['overview', 'pins', 'models'] as const).map((t) => <button type="button" key={t} aria-pressed={tab === t} onClick={() => setTab(t)}>{tr(`library.tab.${t}` as MessageKey)}</button>)}</div>
     <div className="wb-library__detailbody">
       {tab === 'overview' && <><p>{catalogDescription(d, lang)}</p>{d.part && <><span className="wb-library__source"><Check size={12} />{reviewed ? tr('library.sourceReviewed') : tr('library.sourceReference')}</span><a className="wb-library__datasheet" href={d.part.datasheet} target="_blank" rel="noopener noreferrer"><BookOpen size={13} /> {tr('library.datasheet')} <ArrowUpRight size={12} /></a></>}{Boolean(d.inputs?.length) && <p className="wb-library__hint">{tr('library.liveControls', { list: d.inputs?.map((i) => `${i.name}${i.unit ? ` (${i.unit})` : ''}`).join(', ') ?? '' })}</p>}<code>{item.id}</code></>}

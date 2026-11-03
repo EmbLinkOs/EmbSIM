@@ -4,7 +4,8 @@
   "id": "emblink/ds1307",
   "version": "1.0.0",
   "name": "DS1307 real-time clock",
-  "category": "misc",
+  "category": "microprocessor_ics",
+  "subcategory": "rtc",
   "description": "Maxim DS1307 I2C real-time clock with its 32.768 kHz crystal: time and date in BCD with 12/24-hour modes, the clock-halt bit (set on a new part: the time stands until it is cleared), a square-wave output (1 Hz, 4.096, 8.192, 32.768 kHz) or OUT level on SQW/OUT, and 56 bytes of battery-backed RAM.",
   "keywords": [
     "rtc",

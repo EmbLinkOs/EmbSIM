@@ -5,6 +5,7 @@
   "version": "1.0.0",
   "name": "S9013 NPN transistor",
   "category": "transistors",
+  "subcategory": "bipolar_npn",
   "description": "An S9013 (marked J3), a general-purpose 25 V, 500 mA NPN transistor in SOT-23: the NUCLEO-144's (MB1137) T2, which lights LD8 while VBUS is on CN13. Several makers produce it; MB1137's schematic names none.",
   "keywords": [
     "bjt",

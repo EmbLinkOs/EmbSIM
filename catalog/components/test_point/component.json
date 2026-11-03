@@ -5,6 +5,7 @@
   "version": "1.0.0",
   "name": "Test point",
   "category": "connectors",
+  "subcategory": "test_points",
   "description": "A labelled probe point on a net: no behaviour, a place to clip a probe or a scope ground.",
   "keywords": [
     "test point",

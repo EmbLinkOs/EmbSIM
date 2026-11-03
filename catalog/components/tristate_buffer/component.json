@@ -4,7 +4,8 @@
   "id": "emblink/tristate_buffer",
   "version": "1.0.0",
   "name": "Tri-state buffer",
-  "category": "logic",
+  "category": "simulator_primitives",
+  "subcategory": "gates",
   "description": "Non-inverting buffer with an active-high output enable: Y follows A while OE is 1 and is released (Z) while OE is 0, as one gate of a 74HC125 with the enable inverted.",
   "keywords": [
     "logic",

@@ -4,7 +4,8 @@
   "id": "emblink/ds3231",
   "version": "1.0.0",
   "name": "DS3231 precision real-time clock",
-  "category": "misc",
+  "category": "microprocessor_ics",
+  "subcategory": "rtc",
   "description": "Maxim DS3231 I2C real-time clock with its temperature-compensated crystal: time and date in BCD with 12/24-hour modes and the century, two alarms driving INT#, a square-wave and a 32 kHz output, the die temperature, the aging offset, and the oscillator-stop flag set at power-up.",
   "keywords": [
     "rtc",

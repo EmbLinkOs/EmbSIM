@@ -5,6 +5,7 @@
   "version": "0.1.0",
   "name": "Oscilloscope input (R \u2225 C)",
   "category": "instruments",
+  "subcategory": "oscilloscopes",
   "description": "A wired differential scope-input equivalent: resistance and capacitance in parallel across + and -. It changes both DC loading and transient response.",
   "keywords": [
     "instrument",

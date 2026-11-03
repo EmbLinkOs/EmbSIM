@@ -5,6 +5,7 @@
   "version": "0.1.0",
   "name": "Voltmeter (loaded input)",
   "category": "instruments",
+  "subcategory": "meters",
   "description": "Wired differential DC voltage meter. Its finite input resistance draws current between + and -; reversing the leads reverses the reading.",
   "keywords": [
     "instrument",

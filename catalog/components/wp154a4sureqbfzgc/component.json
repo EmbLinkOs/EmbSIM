@@ -4,7 +4,8 @@
   "id": "emblink/wp154a4sureqbfzgc",
   "version": "1.0.0",
   "name": "WP154A4SUREQBFZGC",
-  "category": "indicators",
+  "category": "optoelectronics",
+  "subcategory": "leds",
   "description": "WP154A4SUREQBFZGC, Kingbright 5 mm water-clear common-cathode RGB LED. Source-checked package and nominal DC curve at 25 C, 2–20 mA. No manufacturer corner, optical, thermal or damage qualification.",
   "keywords": [
     "Kingbright",

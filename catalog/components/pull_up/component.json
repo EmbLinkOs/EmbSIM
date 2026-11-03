@@ -4,7 +4,8 @@
   "id": "emblink/pull_up",
   "version": "1.0.0",
   "name": "Pull-up resistor",
-  "category": "passives",
+  "category": "resistors",
+  "subcategory": "pulls",
   "description": "Resistor to the supply rail; a weak 1 driver on digital nets.",
   "keywords": [
     "pull",

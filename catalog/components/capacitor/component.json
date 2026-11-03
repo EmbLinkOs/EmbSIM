@@ -4,7 +4,8 @@
   "id": "emblink/capacitor",
   "version": "1.0.0",
   "name": "Capacitor",
-  "category": "passives",
+  "category": "capacitors",
+  "subcategory": "generic",
   "description": "Ideal capacitor with optional ESR and initial voltage.",
   "keywords": [
     "capacitor",

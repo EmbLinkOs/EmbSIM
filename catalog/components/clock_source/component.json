@@ -4,7 +4,8 @@
   "id": "emblink/clock_source",
   "version": "1.0.0",
   "name": "Clock source",
-  "category": "sources",
+  "category": "simulator_primitives",
+  "subcategory": "stimuli",
   "description": "Digital clock generator with frequency, duty cycle and start delay.",
   "keywords": [
     "clock",

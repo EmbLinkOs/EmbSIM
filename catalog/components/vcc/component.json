@@ -4,7 +4,8 @@
   "id": "emblink/vcc",
   "version": "1.0.0",
   "name": "Supply (VCC)",
-  "category": "power",
+  "category": "simulator_primitives",
+  "subcategory": "supplies",
   "description": "Ideal supply rail symbol; the net it touches is held at the configured voltage.",
   "keywords": [
     "vcc",

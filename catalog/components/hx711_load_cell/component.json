@@ -4,7 +4,8 @@
   "id": "emblink/hx711_load_cell",
   "version": "1.0.0",
   "name": "HX711 load cell amplifier with load cell",
-  "category": "sensors",
+  "category": "transducers",
+  "subcategory": "force",
   "description": "The common HX711 24-bit ADC module with a bar strain-gauge load cell on channel A (5 kg, 1 mV/V): DOUT low when a conversion is ready (10 Hz with the module's RATE low), 24 bits clocked out MSB first by PD_SCK, 25 to 27 pulses selecting the next channel and gain, power-down by holding PD_SCK high, the settling time, the data sheet's noise. The load on the cell is an interactive input.",
   "keywords": [
     "HX711",

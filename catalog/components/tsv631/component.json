@@ -4,7 +4,8 @@
   "id": "emblink/tsv631",
   "version": "1.0.0",
   "name": "TSV631 rail-to-rail op-amp",
-  "category": "analog",
+  "category": "operational_amplifiers",
+  "subcategory": "single",
   "description": "STMicroelectronics TSV631, a single micropower rail-to-rail input and output CMOS op-amp (880 kHz, 1.5 to 5.5 V) in SOT23-5: the NUCLEO-144's (MB1137) U7, a voltage follower that drives LD1 from PB0.",
   "keywords": [
     "op-amp",

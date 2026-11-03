@@ -4,7 +4,8 @@
   "id": "emblink/ic_74hc283",
   "version": "1.0.0",
   "name": "74HC283 4-bit adder",
-  "category": "logic",
+  "category": "ttl_74",
+  "subcategory": "arithmetic",
   "description": "4-bit binary full adder with fast carry (74HC283): S3-S0 and COUT are A + B + CIN.",
   "keywords": [
     "logic",

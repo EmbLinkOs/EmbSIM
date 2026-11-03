@@ -4,7 +4,8 @@
   "id": "emblink/pull_down",
   "version": "1.0.0",
   "name": "Pull-down resistor",
-  "category": "passives",
+  "category": "resistors",
+  "subcategory": "pulls",
   "description": "Resistor to the ground rail; a weak 0 driver on digital nets.",
   "keywords": [
     "pull",

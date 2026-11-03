@@ -5,6 +5,7 @@
   "version": "1.0.0",
   "name": "BC547B",
   "category": "transistors",
+  "subcategory": "bipolar_npn",
   "description": "BC547B (TO-92). Parameterized bjt_npn approximation for low-frequency circuit development; not a vendor SPICE model.",
   "keywords": [
     "onsemi",

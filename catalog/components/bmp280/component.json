@@ -4,7 +4,8 @@
   "id": "emblink/bmp280",
   "version": "1.0.0",
   "name": "BMP280 pressure and temperature sensor",
-  "category": "sensors",
+  "category": "transducers",
+  "subcategory": "pressure",
   "description": "Bosch BMP280 barometric pressure and temperature sensor on I2C (0x76/0x77 from SDO) or SPI: chip ID 0x58, sleep, forced and normal modes, oversampling x1 to x16, the IIR filter and standby times up to 4 s, trimming parameters that Bosch's compensation formulas turn into degrees and pascals; no humidity. Temperature and pressure are interactive inputs.",
   "keywords": [
     "BMP280",

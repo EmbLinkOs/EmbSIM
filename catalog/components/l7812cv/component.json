@@ -4,7 +4,8 @@
   "id": "emblink/l7812cv",
   "version": "1.0.0",
   "name": "L7812CV",
-  "category": "power",
+  "category": "analog_ics",
+  "subcategory": "regulators",
   "description": "L7812CV (TO-220-3). Parameterized regulator approximation for low-frequency circuit development; not a vendor SPICE model.",
   "keywords": [
     "STMicroelectronics",

@@ -4,7 +4,8 @@
   "id": "emblink/sk6812mini_hs",
   "version": "1.0.0",
   "name": "SK6812MINI-HS addressable RGB LED",
-  "category": "displays",
+  "category": "optoelectronics",
+  "subcategory": "addressable_leds",
   "description": "OPSCO SK6812MINI-HS, a 3.5 x 3.7 mm RGB LED with its driver inside (the ESP32-C3-DevKitM-1's): 24-bit colour received on DIN in the WS2812's single-wire code, 0 and 1 told apart by the high's length, the rest passed on at DOUT, latched by a low of more than 80 us.",
   "keywords": [
     "led",

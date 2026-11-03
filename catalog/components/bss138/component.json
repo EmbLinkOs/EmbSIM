@@ -5,6 +5,7 @@
   "version": "1.0.0",
   "name": "BSS138",
   "category": "transistors",
+  "subcategory": "mosfet_n",
   "description": "BSS138 (SOT-23). Parameterized nmos approximation for low-frequency circuit development; not a vendor SPICE model.",
   "keywords": [
     "onsemi",

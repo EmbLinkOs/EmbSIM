@@ -4,7 +4,8 @@
   "id": "emblink/rgb_led",
   "version": "1.0.0",
   "name": "RGB LED",
-  "category": "indicators",
+  "category": "optoelectronics",
+  "subcategory": "leds",
   "description": "Four-lead RGB LED: three independent diode junctions sharing a cathode or anode. Electrical policy reports channel current, brightness and mixed color; other policies use explicitly ideal logic.",
   "keywords": [
     "led",

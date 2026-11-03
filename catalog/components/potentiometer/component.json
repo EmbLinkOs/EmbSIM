@@ -4,7 +4,8 @@
   "id": "emblink/potentiometer",
   "version": "1.0.0",
   "name": "Potentiometer",
-  "category": "inputs",
+  "category": "resistors",
+  "subcategory": "variable",
   "description": "Three-terminal variable resistor with a wiper driven by the position input.",
   "keywords": [
     "potentiometer",

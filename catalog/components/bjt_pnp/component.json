@@ -5,6 +5,7 @@
   "version": "1.0.0",
   "name": "PNP transistor",
   "category": "transistors",
+  "subcategory": "bipolar_pnp",
   "description": "PNP bipolar junction transistor; a named part selects Ebers-Moll parameters.",
   "keywords": [
     "transistor",

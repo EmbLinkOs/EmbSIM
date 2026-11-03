@@ -5,6 +5,7 @@
   "version": "0.1.0",
   "name": "Ammeter (shunt burden)",
   "category": "instruments",
+  "subcategory": "meters",
   "description": "Insert in series. The shunt resistance develops a burden voltage and reduces the current being measured; + to - is positive current.",
   "keywords": [
     "instrument",

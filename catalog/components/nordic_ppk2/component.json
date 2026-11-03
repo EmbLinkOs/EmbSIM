@@ -5,6 +5,7 @@
   "version": "0.1.0",
   "name": "Power profiler (Nordic Power Profiler Kit II)",
   "category": "instruments",
+  "subcategory": "power_analyzers",
   "description": "Nordic's Power Profiler Kit II, which follows a board's current as it runs: as a source meter it powers the board (0.8 to 5.0 V, at most 600 mA), as an ampere meter it sits in series with the board's own supply (up to 1 A). It samples the current at 100 kS/s from 200 nA to 1 A, switching between its five ranges by itself, with D0 to D7 of its logic port sampled alongside; the workbench shows it as Nordic's Power Profiler app does.",
   "keywords": [
     "ppk2",

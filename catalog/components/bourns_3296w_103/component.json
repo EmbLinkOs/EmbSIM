@@ -4,7 +4,8 @@
   "id": "emblink/bourns_3296w_103",
   "version": "1.0.0",
   "name": "3296W-1-103LF",
-  "category": "inputs",
+  "category": "resistors",
+  "subcategory": "variable",
   "description": "Bourns 3296W linear trimmer; interactive wiper position from 0 to 1.",
   "keywords": [
     "inputs",

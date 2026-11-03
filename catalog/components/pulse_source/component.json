@@ -4,7 +4,8 @@
   "id": "emblink/pulse_source",
   "version": "1.0.0",
   "name": "Pulse source",
-  "category": "sources",
+  "category": "simulator_primitives",
+  "subcategory": "stimuli",
   "description": "Voltage source preset to a periodic pulse (vsource kind pulse); a digital pulse source under the functional policy.",
   "keywords": [
     "source",

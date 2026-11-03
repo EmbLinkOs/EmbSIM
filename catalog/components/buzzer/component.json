@@ -4,7 +4,8 @@
   "id": "emblink/buzzer",
   "version": "1.0.0",
   "name": "Buzzer",
-  "category": "indicators",
+  "category": "speakers_sounders",
+  "subcategory": "buzzers",
   "description": "Piezo buzzer: an active one sounds while + is high and - low; a passive one sounds at the frequency of the square wave on + (tone_hz, from the period between rising edges), silent once two periods pass without an edge; below 20 Hz the edges are clicks, not a tone.",
   "keywords": [
     "buzzer",

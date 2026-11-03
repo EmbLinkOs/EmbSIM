@@ -4,7 +4,8 @@
   "id": "emblink/hc_sr04",
   "version": "1.0.0",
   "name": "HC-SR04 ultrasonic sensor",
-  "category": "sensors",
+  "category": "transducers",
+  "subcategory": "distance",
   "description": "Ultrasonic distance sensor module (HC-SR04): a TRIG pulse of at least 10 us starts a measurement; after the burst ECHO stays high for the sound's round trip, 58.24 us per centimetre at 20 C (the speed of sound follows the air's temperature), from 2 to 400 cm, else a 38 ms timeout. Distance and temperature are interactive inputs.",
   "keywords": [
     "sensor",

@@ -4,7 +4,8 @@
   "id": "emblink/uln2003",
   "version": "1.0.0",
   "name": "ULN2003A Darlington array",
-  "category": "power",
+  "category": "transistors",
+  "subcategory": "darlington_arrays",
   "description": "ULN2003A seven-channel Darlington transistor array: each output sinks to GND while its input is high (2.4 V or more through the part's 2.7 kOhm base resistor), with the data sheet's saturation voltage (0.9 V at 100 mA) and 0.25 us propagation delay; outputs only sink. Drives relays, lamps and the 28BYJ-48 stepper.",
   "keywords": [
     "ULN2003",

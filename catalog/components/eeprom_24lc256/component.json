@@ -4,7 +4,8 @@
   "id": "emblink/eeprom_24lc256",
   "version": "1.0.0",
   "name": "24LC256 I2C EEPROM",
-  "category": "misc",
+  "category": "memory_ics",
+  "subcategory": "eeprom_i2c",
   "description": "256-kbit (32768 x 8) serial EEPROM on I2C (Microchip 24LC256): two address bytes, byte and 64-byte page writes with a self-timed write cycle during which it does not acknowledge, sequential reads, address from A0-A2, write protect.",
   "keywords": [
     "memory",

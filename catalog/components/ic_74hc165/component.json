@@ -4,7 +4,8 @@
   "id": "emblink/ic_74hc165",
   "version": "1.0.0",
   "name": "74HC165 shift register",
-  "category": "logic",
+  "category": "ttl_74",
+  "subcategory": "registers",
   "description": "8-bit parallel-in, serial-out shift register (74HC165): PL_N low loads D0-D7, then each CP rising (CE_N low) shifts toward Q7 with DS entering at D0; reads buttons and switches with three pins.",
   "keywords": [
     "logic",

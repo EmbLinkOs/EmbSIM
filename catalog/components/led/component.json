@@ -4,7 +4,8 @@
   "id": "emblink/led",
   "version": "1.0.0",
   "name": "LED",
-  "category": "indicators",
+  "category": "optoelectronics",
+  "subcategory": "leds",
   "description": "Light-emitting diode; colour selects the forward characteristic. Reports current and luminance.",
   "keywords": [
     "led",

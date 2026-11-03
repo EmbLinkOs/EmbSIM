@@ -5,6 +5,7 @@
   "version": "0.1.0",
   "name": "ST-LINK/V2-1 debug probe",
   "category": "instruments",
+  "subcategory": "debug_probes",
   "description": "ST's ST-LINK/V2-1, the debugger and programmer on a NUCLEO-64 (UM1724 6.2), firmware V2J37M26 (0483:374B). Its SWD lines and NRST go to the target, T_VCC senses the target's supply. A debugger on the computer reaches it through the session's stlink-server (stlink.serve, the TCP service STM32CubeIDE and OpenOCD's `st-link backend tcp` use): its commands, as OpenOCD 0.12 sends them, halt, step and run the target's core, read and write its registers and memory and program its flash, all through the target's debug port.",
   "keywords": [
     "st-link",

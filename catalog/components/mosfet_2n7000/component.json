@@ -5,6 +5,7 @@
   "version": "1.0.0",
   "name": "2N7000",
   "category": "transistors",
+  "subcategory": "mosfet_n",
   "description": "2N7000 (TO-92). Parameterized nmos approximation for low-frequency circuit development; not a vendor SPICE model.",
   "keywords": [
     "onsemi",

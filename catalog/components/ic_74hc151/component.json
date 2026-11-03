@@ -4,7 +4,8 @@
   "id": "emblink/ic_74hc151",
   "version": "1.0.0",
   "name": "74HC151 8-input multiplexer",
-  "category": "logic",
+  "category": "ttl_74",
+  "subcategory": "multiplexers",
   "description": "8-input multiplexer with complementary outputs (74HC151): Y is the input chosen by S2-S0 while E_N is low.",
   "keywords": [
     "logic",

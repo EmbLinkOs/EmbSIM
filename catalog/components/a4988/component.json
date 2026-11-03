@@ -4,7 +4,8 @@
   "id": "emblink/a4988",
   "version": "1.0.0",
   "name": "A4988 stepper driver",
-  "category": "power",
+  "category": "analog_ics",
+  "subcategory": "drivers",
   "description": "Microstepping bipolar stepper driver module (A4988 carrier): each STEP rising edge moves one full step or a 1/2, 1/4, 1/8 or 1/16 microstep set by MS1-MS3, in the direction of DIR, while enabled and awake; the shaft position and angle are outputs.",
   "keywords": [
     "stepper",

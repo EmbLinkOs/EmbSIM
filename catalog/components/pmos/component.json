@@ -5,6 +5,7 @@
   "version": "1.0.0",
   "name": "P-channel MOSFET",
   "category": "transistors",
+  "subcategory": "mosfet_p",
   "description": "P-channel enhancement MOSFET (SPICE level 1); a named part selects vto, kp and lambda.",
   "keywords": [
     "transistor",

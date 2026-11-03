@@ -5,6 +5,7 @@
   "version": "0.1.0",
   "name": "PPK2 measurement core (inside the Power Profiler Kit II)",
   "category": "instruments",
+  "subcategory": "power_analyzers",
   "description": "The measurement core of Nordic's Power Profiler Kit II, as the emblink/nordic_ppk2 part uses it: a source (0.8 to 5.0 V, at most 600 mA) or a series meter, the current into the board sampled at 100 kS/s at the resolution of its range. Place emblink/nordic_ppk2 rather than this.",
   "keywords": [
     "ppk2",

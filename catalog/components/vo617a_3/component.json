@@ -5,6 +5,7 @@
   "version": "1.0.0",
   "name": "VO617A-3",
   "category": "optoelectronics",
+  "subcategory": "optocouplers",
   "description": "DIP-4 phototransistor optocoupler: input LED knee, nominal selected-bin CTR, finite saturation resistance, no galvanic path between input and output.",
   "keywords": [
     "optoelectronics",

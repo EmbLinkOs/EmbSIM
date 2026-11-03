@@ -5,6 +5,7 @@
   "version": "1.0.0",
   "name": "BPW34",
   "category": "optoelectronics",
+  "subcategory": "photodiodes",
   "description": "Silicon PIN photodiode: nominal 50 uA at 10 W/m2 and 950 nm, reverse-biased; simple forward knee.",
   "keywords": [
     "optoelectronics",

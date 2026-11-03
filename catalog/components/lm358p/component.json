@@ -1,7 +1,8 @@
 {
   "schema_version": 1,
   "kind": "component",
-  "category": "amplifiers",
+  "category": "operational_amplifiers",
+  "subcategory": "dual",
   "description": "LM358P dual-channel PDIP-8 behavioral approximation; both channels share explicit supply pins.",
   "pins": [
     {

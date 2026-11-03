@@ -4,7 +4,8 @@
   "id": "emblink/bme280",
   "version": "1.0.0",
   "name": "BME280 humidity, pressure and temperature sensor",
-  "category": "sensors",
+  "category": "transducers",
+  "subcategory": "pressure",
   "description": "Bosch BME280 combined sensor on I2C (0x76/0x77 from SDO) or SPI: chip ID 0x60, sleep, forced and normal modes, oversampling x1 to x16, the IIR filter and standby times, trimming parameters that Bosch's compensation formulas turn into degrees, pascals and %RH. Temperature, pressure and humidity are interactive inputs.",
   "keywords": [
     "sensor",

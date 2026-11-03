@@ -5,6 +5,7 @@
   "version": "1.0.0",
   "name": "BC557B",
   "category": "transistors",
+  "subcategory": "bipolar_pnp",
   "description": "BC557B (TO-92). Parameterized bjt_pnp approximation for low-frequency circuit development; not a vendor SPICE model.",
   "keywords": [
     "onsemi",

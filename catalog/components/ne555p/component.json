@@ -1,7 +1,8 @@
 {
   "schema_version": 1,
   "kind": "component",
-  "category": "timers",
+  "category": "analog_ics",
+  "subcategory": "timers",
   "description": "NE555P PDIP-8 behavioral timer: resistor divider, SR memory, active-low reset, discharge switch and finite output drive.",
   "pins": [
     {

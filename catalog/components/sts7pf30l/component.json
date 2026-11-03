@@ -5,6 +5,7 @@
   "version": "1.0.0",
   "name": "STS7PF30L P-channel MOSFET",
   "category": "transistors",
+  "subcategory": "mosfet_p",
   "description": "STMicroelectronics STS7PF30L, a -30 V, -7 A P-channel STripFET II MOSFET in SO-8 (16 mOhm typical): the NUCLEO-64's T2, which joins the ST-LINK's USB 5 V to the board once the ST-LINK enables it.",
   "keywords": [
     "mosfet",

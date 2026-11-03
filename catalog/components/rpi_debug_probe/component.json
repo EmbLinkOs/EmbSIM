@@ -5,6 +5,7 @@
   "version": "0.1.0",
   "name": "Raspberry Pi Debug Probe",
   "category": "instruments",
+  "subcategory": "debug_probes",
   "description": "Raspberry Pi's Debug Probe: an RP2040 running the debugprobe firmware (CMSIS-DAP v2), one USB cable to the computer (2e8a:000c). Its D port (SC, SD, GND) drives a target's serial wire, its U port (TX, RX, GND) is a UART bridged to the computer's serial port. OpenOCD, pyOCD and probe-rs drive it as they drive the real probe: over the session's USB/IP server (usbip.serve), the computer's own USB stack opens it.",
   "keywords": [
     "debug probe",

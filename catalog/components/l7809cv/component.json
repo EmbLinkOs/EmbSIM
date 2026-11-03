@@ -4,7 +4,8 @@
   "id": "emblink/l7809cv",
   "version": "1.0.0",
   "name": "L7809CV",
-  "category": "power",
+  "category": "analog_ics",
+  "subcategory": "regulators",
   "description": "L7809CV (TO-220-3). Parameterized regulator approximation for low-frequency circuit development; not a vendor SPICE model.",
   "keywords": [
     "STMicroelectronics",

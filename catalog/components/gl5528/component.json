@@ -4,7 +4,8 @@
   "id": "emblink/gl5528",
   "version": "1.0.0",
   "name": "GL5528",
-  "category": "sensors",
+  "category": "transducers",
+  "subcategory": "light",
   "description": "GL5528 CdS photoresistor (Senba GL55 series): R = 15 kOhm x (E / 10 lx)^-0.6, each part's 10-lux resistance drawn inside the datasheet's 10-20 kOhm, at least 1 MOhm in darkness, following a change of light in 20 ms rising and 30 ms decaying; reads the world's illuminance while its own is not set.",
   "keywords": [
     "sensors",

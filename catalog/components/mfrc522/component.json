@@ -4,7 +4,8 @@
   "id": "emblink/mfrc522",
   "version": "1.0.0",
   "name": "MFRC522 RFID reader with a MIFARE Classic card",
-  "category": "sensors",
+  "category": "transducers",
+  "subcategory": "rfid",
   "description": "NXP MFRC522 13.56 MHz reader on the common RC522 module, on SPI, with a MIFARE Classic 1K card that can be held to its antenna: REQA, anticollision and SELECT of the card's UID, authentication with its keys and reading and writing its 64 blocks. The card's presence is an interactive input.",
   "keywords": [
     "rfid",

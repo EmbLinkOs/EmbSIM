@@ -4,7 +4,8 @@
   "id": "emblink/d2f_01l",
   "version": "1.0.0",
   "name": "D2F-01L",
-  "category": "switches",
+  "category": "switches_relays",
+  "subcategory": "switches",
   "description": "Omron D2F-01L SPDT lever microswitch; resting COM-NC and pressed COM-NO.",
   "keywords": [
     "switches",

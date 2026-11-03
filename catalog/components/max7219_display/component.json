@@ -4,7 +4,8 @@
   "id": "emblink/max7219_display",
   "version": "1.1.0",
   "name": "MAX7219 8-digit display",
-  "category": "displays",
+  "category": "optoelectronics",
+  "subcategory": "seven_segment",
   "description": "An 8-digit 7-segment display module driven by a MAX7219: 16-bit frames shifted in on CLK's rising edge (MSB first) and latched when LOAD (CS) rises set the digits, the code-B decode mode, intensity, scan limit, shutdown and display test; DOUT shifts each bit out on CLK's falling edge, 16 clocks later, for a chained device. The display shows on the board view.",
   "keywords": [
     "display",

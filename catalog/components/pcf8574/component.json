@@ -4,7 +4,8 @@
   "id": "emblink/pcf8574",
   "version": "1.0.0",
   "name": "PCF8574 / PCF8574A I2C I/O expander",
-  "category": "misc",
+  "category": "microprocessor_ics",
+  "subcategory": "io_expanders",
   "description": "8-bit quasi-bidirectional I/O expander on I2C (NXP PCF8574, address 0x20 + A2..A0; PCF8574A 0x38): a written 1 is a weak pull-up the pin can read through, with a strong pull-up during the acknowledge; a 0 a strong low; reads return the pin levels; INT_N goes low when a pin changes. The chip on the common I2C LCD backpacks (0x27).",
   "keywords": [
     "io expander",

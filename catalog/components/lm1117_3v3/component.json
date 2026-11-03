@@ -4,7 +4,8 @@
   "id": "emblink/lm1117_3v3",
   "version": "1.0.0",
   "name": "LM1117IMP-3.3",
-  "category": "power",
+  "category": "analog_ics",
+  "subcategory": "regulators",
   "description": "LM1117IMP-3.3 (SOT-223). Parameterized regulator approximation for low-frequency circuit development; not a vendor SPICE model.",
   "keywords": [
     "Texas Instruments",

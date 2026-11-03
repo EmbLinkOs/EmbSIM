@@ -4,7 +4,8 @@
   "id": "emblink/dht22",
   "version": "1.0.0",
   "name": "DHT22 temperature and humidity sensor",
-  "category": "sensors",
+  "category": "transducers",
+  "subcategory": "humidity",
   "description": "Temperature and relative-humidity sensor with a single-wire protocol (DHT22 / AM2302): after the host holds DATA low for 1 ms and releases it, the sensor answers with 80 us low, 80 us high and 40 bits (50 us low, then 26 us high for 0 or 70 us for 1): humidity x10, temperature x10 and a checksum. Temperature and humidity are interactive inputs.",
   "keywords": [
     "sensor",

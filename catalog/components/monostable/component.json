@@ -4,7 +4,8 @@
   "id": "emblink/monostable",
   "version": "1.0.0",
   "name": "Monostable multivibrator",
-  "category": "logic",
+  "category": "simulator_primitives",
+  "subcategory": "flip_flops",
   "description": "Retriggerable monostable (one half of a 74HC123): a falling edge on A_N with B high, or a rising edge on B with A_N low, starts a pulse of K x Rext x Cext on Q; a new trigger restarts it; CLR_N low ends it.",
   "keywords": [
     "logic",

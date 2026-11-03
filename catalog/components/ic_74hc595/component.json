@@ -4,7 +4,8 @@
   "id": "emblink/ic_74hc595",
   "version": "1.0.0",
   "name": "74HC595 shift register",
-  "category": "logic",
+  "category": "ttl_74",
+  "subcategory": "registers",
   "description": "8-bit serial-in, parallel-out shift register with output latches (74HC595): DS shifts in on SHCP rising, STCP rising copies the register to Q0-Q7, OE_N high releases the outputs; Q7S chains to the next device.",
   "keywords": [
     "logic",

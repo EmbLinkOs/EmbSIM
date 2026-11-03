@@ -4,7 +4,8 @@
   "id": "emblink/seven_segment",
   "version": "1.0.0",
   "name": "7-segment display",
-  "category": "displays",
+  "category": "optoelectronics",
+  "subcategory": "seven_segment",
   "description": "One-digit 7-segment LED display with decimal point, common cathode or common anode: a segment lights when its pin and COM are at opposite levels. Shows the digit on the board view.",
   "keywords": [
     "display",

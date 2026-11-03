@@ -5,6 +5,7 @@
   "version": "1.0.0",
   "name": "BZX55C5V1",
   "category": "diodes",
+  "subcategory": "zener",
   "description": "BZX55C5V1 (DO-35). Parameterized zener approximation for low-frequency circuit development; not a vendor SPICE model.",
   "keywords": [
     "Vishay",

@@ -4,7 +4,8 @@
   "id": "emblink/r2r_dac_4bit",
   "version": "1.0.0",
   "name": "4-bit R-2R DAC",
-  "category": "analog",
+  "category": "data_converters",
+  "subcategory": "dac",
   "description": "A 4-bit R-2R resistor ladder: OUT = Vref x (D3/2 + D2/4 + D1/8 + D0/16) when the inputs switch between Vref and ground and OUT is lightly loaded.",
   "keywords": [
     "dac",

@@ -5,6 +5,7 @@
   "version": "1.0.0",
   "name": "STPS2L30A",
   "category": "diodes",
+  "subcategory": "schottky",
   "description": "STMicroelectronics STPS2L30A, a 30 V, 2 A low-drop power Schottky rectifier in SMA (0.45 V maximum at 2 A): the NUCLEO-64's D4, between VIN's regulator and E5V.",
   "keywords": [
     "schottky",

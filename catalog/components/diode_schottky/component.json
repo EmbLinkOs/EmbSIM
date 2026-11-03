@@ -5,6 +5,7 @@
   "version": "1.0.0",
   "name": "Schottky diode",
   "category": "diodes",
+  "subcategory": "schottky",
   "description": "Schottky rectifier: low forward voltage and fast recovery (1N5817, 1N5819).",
   "keywords": [
     "diode",

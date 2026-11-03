@@ -5,6 +5,7 @@
   "version": "0.1.0",
   "name": "USB 2.0 host controller (a computer port's protocol side)",
   "category": "instruments",
+  "subcategory": "usb_hosts",
   "description": "The host controller behind a computer's USB 2.0 port, its protocol side: it enumerates the full-speed device on its D+ and D- the way Windows and Linux do (debounce, port reset, the device descriptor at address 0, a second reset, SET_ADDRESS, the descriptors and strings, SET_CONFIGURATION), then polls its HID interfaces' interrupt endpoints. emblink/usb_host is the port with its VBUS; use this part alone where VBUS comes from elsewhere.",
   "keywords": [
     "usb",
