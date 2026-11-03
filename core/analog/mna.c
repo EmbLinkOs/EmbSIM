@@ -21,6 +21,7 @@
 #define MNA_TOUCH_STEP_PS ES_PS_PER_NS
 #define MNA_START_STEP_PS ES_PS_PER_NS
 #define MNA_PS_TO_S       1e-12
+#define MNA_HOLD_GAP_PS   16 /* a gap this short is not stepped (see esk_island_step) */
 
 enum { INTEG_TRAP = 0, INTEG_BE = 1 };
 
@@ -1449,6 +1450,20 @@ static es_status island_step(esk_island *isl, es_time_t until, es_time_t *reache
                     report_no_convergence(isl, tn, "transient step");
                 return fail_step(isl, tn, "analog.step_failure", ES_SEV_FATAL,
                                  "too many consecutive step rejections");
+            }
+            if (r != 0 && tn == until && until - t <= MNA_HOLD_GAP_PS && !p->bracket_hi) {
+                /* the rest of the call is a gap of a few picoseconds (an
+                 * event just after the last step) and Newton cannot settle
+                 * in it: a step that short has nowhere smaller to go when
+                 * round-off is all that moves (a nearly singular inductance
+                 * matrix, a floating centre tap), and the solution cannot
+                 * change in it, so the accepted one holds to `until` */
+                p->consecutive_rej = 0;
+                isl->t_accepted = until;
+                t = until;
+                if (reached)
+                    *reached = t;
+                break;
             }
             if (h <= isl->p.h_min_ps || h_new < (double)isl->p.h_min_ps) {
                 char msg[200];

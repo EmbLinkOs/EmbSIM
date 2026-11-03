@@ -84,6 +84,18 @@ versions follow semantic versioning. There is no release yet.
   drop at its rated current and its L/R time constant; the library files
   them under new Inductors sub-categories (fixed, power) and the bench
   draws them as sleeved drum cores at their datasheet size.
+- An analog island asked to advance a picosecond past its last step (the
+  scheduler's minimum) solved a step already at h_min; a centre-tapped
+  transformer with its tap open, whose nearly singular inductance matrix
+  leaves the floating tap's voltage to round-off, could fail to converge
+  there and end the run (`analog.timestep_too_small` on macOS and Windows
+  for the F-40X and F-45X). When the rest of a call is a gap of 16 ps or
+  less and Newton cannot settle in it, the accepted solution now holds to
+  its end; every other step is solved as before. The Triad families gain
+  low-line and high-line fixtures (the mains 10 % low and high), which
+  caught it on Linux too. `catalog_fixture_assertions` runs in four shards
+  (`run_fixtures.py --shard K/N`) so no test nears CTest's timeout as the
+  catalog grows.
 - An analog part with only some of its pins wired lost the open ones'
   places: an optocoupler failed to load and a transformer's free centre tap
   was grounded. Both now keep their terminals and leave the open ones

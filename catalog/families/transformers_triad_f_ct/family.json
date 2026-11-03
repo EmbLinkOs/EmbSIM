@@ -346,6 +346,136 @@
           "max_v": "${vpk_max}"
         }
       }
+    },
+    "low_line": {
+      "schema_version": 1,
+      "kind": "component_test",
+      "name": "low_line",
+      "description": "The mains 10 % low (103.5 V rms), the rated load on the secondary: the secondary's peak follows the line, 0.9 times the full-load peak (within 5 %)",
+      "policy": "electrical",
+      "until": "75ms",
+      "settings": {
+        "imperfections": "ideal"
+      },
+      "circuit": {
+        "components": [
+          {
+            "id": "V1",
+            "component": "emblink/vsource",
+            "params": {
+              "kind": "sine",
+              "vo": 0,
+              "va": 146.367,
+              "freq": 60
+            }
+          },
+          {
+            "id": "DUT",
+            "component": "emblink/${short}"
+          },
+          {
+            "id": "RL",
+            "component": "emblink/resistor",
+            "params": {
+              "resistance": "${rl}",
+              "tolerance": 0
+            }
+          },
+          {
+            "id": "G",
+            "component": "emblink/gnd"
+          }
+        ],
+        "nets": {
+          "MAINS": [
+            "V1.+",
+            "DUT.P1"
+          ],
+          "SEC": [
+            "DUT.S1",
+            "RL.1"
+          ],
+          "GND": [
+            "V1.-",
+            "DUT.P2",
+            "RL.2",
+            "DUT.S2",
+            "G.GND"
+          ]
+        }
+      },
+      "expect": {
+        "net:SEC": {
+          "at": "70.833ms",
+          "min_v": "${vpk_low_min}",
+          "max_v": "${vpk_low_max}"
+        }
+      }
+    },
+    "high_line": {
+      "schema_version": 1,
+      "kind": "component_test",
+      "name": "high_line",
+      "description": "The mains 10 % high (126.5 V rms), the rated load on the secondary: the secondary's peak follows the line, 1.1 times the full-load peak (within 5 %)",
+      "policy": "electrical",
+      "until": "75ms",
+      "settings": {
+        "imperfections": "ideal"
+      },
+      "circuit": {
+        "components": [
+          {
+            "id": "V1",
+            "component": "emblink/vsource",
+            "params": {
+              "kind": "sine",
+              "vo": 0,
+              "va": 178.893,
+              "freq": 60
+            }
+          },
+          {
+            "id": "DUT",
+            "component": "emblink/${short}"
+          },
+          {
+            "id": "RL",
+            "component": "emblink/resistor",
+            "params": {
+              "resistance": "${rl}",
+              "tolerance": 0
+            }
+          },
+          {
+            "id": "G",
+            "component": "emblink/gnd"
+          }
+        ],
+        "nets": {
+          "MAINS": [
+            "V1.+",
+            "DUT.P1"
+          ],
+          "SEC": [
+            "DUT.S1",
+            "RL.1"
+          ],
+          "GND": [
+            "V1.-",
+            "DUT.P2",
+            "RL.2",
+            "DUT.S2",
+            "G.GND"
+          ]
+        }
+      },
+      "expect": {
+        "net:SEC": {
+          "at": "70.833ms",
+          "min_v": "${vpk_high_min}",
+          "max_v": "${vpk_high_max}"
+        }
+      }
     }
   },
   "rows": [
@@ -375,7 +505,11 @@
         "Primary: 115V (?:50/60|60) Hz",
         "Secondary: ${vfl}VCT @ ${ifl} Amps?",
         "Voltage Regulation: ${reg} ?%"
-      ]
+      ],
+      "vpk_low_min": 6.0457,
+      "vpk_low_max": 6.6821,
+      "vpk_high_min": 7.3893,
+      "vpk_high_max": 8.1671
     },
     {
       "mpn": "F-14X",
@@ -403,7 +537,11 @@
         "Primary: 115V (?:50/60|60) Hz",
         "Secondary: ${vfl}VCT @ ${ifl} Amps?",
         "Voltage Regulation: ${reg} ?%"
-      ]
+      ],
+      "vpk_low_min": 7.6177,
+      "vpk_low_max": 8.4195,
+      "vpk_high_min": 9.3105,
+      "vpk_high_max": 10.2905
     },
     {
       "mpn": "F-16X",
@@ -431,7 +569,11 @@
         "Primary: 115V (?:50/60|60) Hz",
         "Secondary: ${vfl}VCT @ ${ifl} Amps?",
         "Voltage Regulation: ${reg} ?%"
-      ]
+      ],
+      "vpk_low_min": 7.6177,
+      "vpk_low_max": 8.4195,
+      "vpk_high_min": 9.3105,
+      "vpk_high_max": 10.2905
     },
     {
       "mpn": "F-18X",
@@ -459,7 +601,11 @@
         "Primary: 115V (?:50/60|60) Hz",
         "Secondary: ${vfl}VCT @ ${ifl} Amps?",
         "Voltage Regulation: ${reg} ?%"
-      ]
+      ],
+      "vpk_low_min": 7.6177,
+      "vpk_low_max": 8.4195,
+      "vpk_high_min": 9.3105,
+      "vpk_high_max": 10.2905
     },
     {
       "mpn": "F-25X",
@@ -487,7 +633,11 @@
         "Primary: 115V (?:50/60|60) Hz",
         "Secondary: ${vfl}VCT @ ${ifl} Amps?",
         "Voltage Regulation: ${reg} ?%"
-      ]
+      ],
+      "vpk_low_min": 15.2353,
+      "vpk_low_max": 16.839,
+      "vpk_high_min": 18.6209,
+      "vpk_high_max": 20.581
     },
     {
       "mpn": "F-26X",
@@ -515,7 +665,11 @@
         "Primary: 115V (?:50/60|60) Hz",
         "Secondary: ${vfl}VCT @ ${ifl} Amps?",
         "Voltage Regulation: ${reg} ?%"
-      ]
+      ],
+      "vpk_low_min": 15.2353,
+      "vpk_low_max": 16.839,
+      "vpk_high_min": 18.6209,
+      "vpk_high_max": 20.581
     },
     {
       "mpn": "F-40X",
@@ -543,7 +697,11 @@
         "Primary: 115V (?:50/60|60) Hz",
         "Secondary: ${vfl}VCT @ ${ifl} Amps?",
         "Voltage Regulation: ${reg} ?%"
-      ]
+      ],
+      "vpk_low_min": 32.4053,
+      "vpk_low_max": 35.8164,
+      "vpk_high_min": 39.6065,
+      "vpk_high_max": 43.7756
     },
     {
       "mpn": "F-41X",
@@ -571,7 +729,11 @@
         "Primary: 115V (?:50/60|60) Hz",
         "Secondary: ${vfl}VCT @ ${ifl} Amps?",
         "Voltage Regulation: ${reg} ?%"
-      ]
+      ],
+      "vpk_low_min": 30.4707,
+      "vpk_low_max": 33.6781,
+      "vpk_high_min": 37.2419,
+      "vpk_high_max": 41.1621
     },
     {
       "mpn": "F-44X",
@@ -599,7 +761,11 @@
         "Primary: 115V (?:50/60|60) Hz",
         "Secondary: ${vfl}VCT @ ${ifl} Amps?",
         "Voltage Regulation: ${reg} ?%"
-      ]
+      ],
+      "vpk_low_min": 15.2353,
+      "vpk_low_max": 16.839,
+      "vpk_high_min": 18.6209,
+      "vpk_high_max": 20.581
     },
     {
       "mpn": "F-45X",
@@ -627,7 +793,11 @@
         "Primary: 115V (?:50/60|60) Hz",
         "Secondary: ${vfl}VCT @ ${ifl} Amps?",
         "Voltage Regulation: ${reg} ?%"
-      ]
+      ],
+      "vpk_low_min": 29.0197,
+      "vpk_low_max": 32.0744,
+      "vpk_high_min": 35.4685,
+      "vpk_high_max": 39.202
     }
   ]
 }

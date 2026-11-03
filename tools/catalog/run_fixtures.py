@@ -59,7 +59,15 @@ def main() -> int:
     parser.add_argument('--component', action='append', default=[])
     parser.add_argument('--jobs', type=int, default=os.cpu_count() or 1,
                         help='fixtures run at once (each its own engine process); the default is one per CPU')
+    parser.add_argument('--shard', default='0/1',
+                        help='K/N runs every Nth fixture from the Kth, so N processes (CTest\'s shards) share the catalog')
     args = parser.parse_args()
+    try:
+        shard, shards = (int(x) for x in args.shard.split('/'))
+        if not 0 <= shard < shards:
+            raise ValueError
+    except ValueError:
+        parser.error('--shard takes K/N with 0 <= K < N')
     binary = args.embsim.resolve()
     if not binary.is_file():
         parser.error('embsim executable not found')
@@ -75,6 +83,7 @@ def main() -> int:
     selected = list(dict.fromkeys(selected))
     if not selected:
         parser.error('no fixtures selected')
+    selected = selected[shard::shards]
     def run(fixture: Path) -> tuple[bool, int, str]:
         """one fixture in its own directory: whether it passed, its assertions, what to print"""
         project, scenario = convert(json.loads(fixture.read_text(encoding='utf-8')))

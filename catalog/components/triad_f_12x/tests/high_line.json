@@ -1,0 +1,65 @@
+{
+  "schema_version": 1,
+  "kind": "component_test",
+  "name": "high_line",
+  "description": "The mains 10 % high (126.5 V rms), the rated load on the secondary: the secondary's peak follows the line, 1.1 times the full-load peak (within 5 %)",
+  "policy": "electrical",
+  "until": "75ms",
+  "settings": {
+    "imperfections": "ideal"
+  },
+  "circuit": {
+    "components": [
+      {
+        "id": "V1",
+        "component": "emblink/vsource",
+        "params": {
+          "kind": "sine",
+          "vo": 0,
+          "va": 178.893,
+          "freq": 60
+        }
+      },
+      {
+        "id": "DUT",
+        "component": "emblink/triad_f_12x"
+      },
+      {
+        "id": "RL",
+        "component": "emblink/resistor",
+        "params": {
+          "resistance": 0.625,
+          "tolerance": 0
+        }
+      },
+      {
+        "id": "G",
+        "component": "emblink/gnd"
+      }
+    ],
+    "nets": {
+      "MAINS": [
+        "V1.+",
+        "DUT.P1"
+      ],
+      "SEC": [
+        "DUT.S1",
+        "RL.1"
+      ],
+      "GND": [
+        "V1.-",
+        "DUT.P2",
+        "RL.2",
+        "DUT.S2",
+        "G.GND"
+      ]
+    }
+  },
+  "expect": {
+    "net:SEC": {
+      "at": "70.833ms",
+      "min_v": 7.3893,
+      "max_v": 8.1671
+    }
+  }
+}

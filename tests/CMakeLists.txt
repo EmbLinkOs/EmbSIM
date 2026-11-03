@@ -114,8 +114,12 @@ if(Python3_Interpreter_FOUND)
   add_test(NAME docs_integrity COMMAND ${Python3_EXECUTABLE} ${CMAKE_SOURCE_DIR}/tools/docs/check_docs.py)
   add_test(NAME coverage_tables COMMAND ${Python3_EXECUTABLE} ${CMAKE_SOURCE_DIR}/tools/catalog/coverage.py --check)
   add_test(NAME banned_constructs COMMAND ${Python3_EXECUTABLE} ${CMAKE_SOURCE_DIR}/tools/repository/check_banned.py)
-  add_test(NAME catalog_fixture_assertions COMMAND ${Python3_EXECUTABLE} ${CMAKE_SOURCE_DIR}/tools/catalog/run_fixtures.py
-           --embsim $<TARGET_FILE:embsim_cli> WORKING_DIRECTORY ${CMAKE_SOURCE_DIR})
+  # four shards, so CTest runs the catalog's thousands of fixtures side by
+  # side and no one test nears its timeout as the catalog grows
+  foreach(shard RANGE 3)
+    add_test(NAME catalog_fixture_assertions_${shard} COMMAND ${Python3_EXECUTABLE} ${CMAKE_SOURCE_DIR}/tools/catalog/run_fixtures.py
+             --embsim $<TARGET_FILE:embsim_cli> --shard ${shard}/4 WORKING_DIRECTORY ${CMAKE_SOURCE_DIR})
+  endforeach()
   if(EXISTS ${CMAKE_SOURCE_DIR}/examples/button-led/project.json)
     add_test(NAME http_assets COMMAND ${Python3_EXECUTABLE} ${CMAKE_SOURCE_DIR}/tests/protocol/test_http_assets.py
              --embsim $<TARGET_FILE:embsim_cli> WORKING_DIRECTORY ${CMAKE_SOURCE_DIR})
