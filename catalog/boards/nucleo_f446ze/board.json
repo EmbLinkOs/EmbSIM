@@ -267,6 +267,11 @@
    "doc": "R35: CN13's VBUS to PA9 (OTG_FS_VBUS), through SB127 (closed)"
   },
   {
+   "id": "U12",
+   "component": "emblink/stmps2151str",
+   "doc": "U12 (STMPS2151STR): +5V to CN13's VBUS while PG6 (USB_PowerSwitchOn) is high, for a device plugged into CN13 when the OTG core is a host; its FAULT to USB_OVCR (PG7 through JP4, LD7)"
+  },
+  {
    "id": "R72",
    "component": "emblink/resistor",
    "params": {
@@ -431,7 +436,8 @@
    "U6.IN",
    "R29.1",
    "CN8.9",
-   "CN11.18"
+   "CN11.18",
+   "U12.IN"
   ],
   "LD6_A": [
    "R29.2",
@@ -515,7 +521,8 @@
    "CN12.63",
    "CN12.71",
    "CN12.72",
-   "CN13.5"
+   "CN13.5",
+   "U12.GND"
   ],
   "NRST": [
    "U8.NRST",
@@ -596,7 +603,8 @@
   "USB_VBUS": [
    "R35.1",
    "R68.1",
-   "CN13.1"
+   "CN13.1",
+   "U12.OUT"
   ],
   "PA9": [
    "U8.PA9",
@@ -606,7 +614,8 @@
   "PG6": [
    "U8.PG6",
    "R72.1",
-   "CN12.70"
+   "CN12.70",
+   "U12.EN"
   ],
   "PG7": [
    "U8.PG7",
@@ -616,7 +625,8 @@
   "USB_OVCR": [
    "JP4.2",
    "R71.2",
-   "LD7.K"
+   "LD7.K",
+   "U12.FAULT"
   ],
   "LD7_A": [
    "R61.2",
@@ -3716,12 +3726,11 @@
  },
  "fidelity": {
   "functional": {
-   "claims": "Nets, ports, LD1 to LD3 and LD6 to LD8, B1, B2 and the jumpers as parts, as MB1137 B-01's schematic draws them; the STM32F446ZE runs its firmware (see its description), its HSE an 8 MHz clock on PH0 (the ST-LINK's MCO through SB149: HSEBYP needed, as on the real board) and its LSE the X2 crystal. The ST Zio connectors CN7 to CN10 carry the NUCLEO-F446ZE's assignment (D0 to D72, A0 to A8, the solder bridges in their factory state) and the morpho headers CN11 and CN12 (2 x 36) every one of the part's 114 I/Os. CN13's VBUS reaches PA9 through R35 and lights LD8; its D-, D+ and ID are PA11, PA12 and PA10, and a USB host on them (emblink/usb_host) enumerates the OTG FS controller in device mode (STM32CubeF4's HID_Standalone runs on it unmodified); PG6 and PG7 carry U12's enable and fault lines (R72's pull-down, R71's pull-up through JP4). The ST-LINK/V2-1's virtual COM port is the session's console on USART3 (PD8/PD9, through SB5 and SB6) and a serial port on the host.",
+   "claims": "Nets, ports, LD1 to LD3 and LD6 to LD8, B1, B2 and the jumpers as parts, as MB1137 B-01's schematic draws them; the STM32F446ZE runs its firmware (see its description), its HSE an 8 MHz clock on PH0 (the ST-LINK's MCO through SB149: HSEBYP needed, as on the real board) and its LSE the X2 crystal. The ST Zio connectors CN7 to CN10 carry the NUCLEO-F446ZE's assignment (D0 to D72, A0 to A8, the solder bridges in their factory state) and the morpho headers CN11 and CN12 (2 x 36) every one of the part's 114 I/Os. CN13's VBUS reaches PA9 through R35 and lights LD8; its D-, D+ and ID are PA11, PA12 and PA10, and a USB host on them (emblink/usb_host) enumerates the OTG FS controller in device mode (STM32CubeF4's USB_Device HID_Standalone runs on it unmodified), and as a host the controller enumerates a device on CN13, U12 powering its VBUS (USB_Host HID_Standalone, with Adafruit's 1.8\" TFT shield, runs on it unmodified with a USB mouse, MSC_Standalone with a USB flash drive); U12 (STMPS2151STR) powers CN13's VBUS from 5V while PG6 is high (R72 pulls it down), for a device on CN13 when the OTG core is a host; its fault line reaches PG7 through JP4 (R71's pull-up) and never asserts. The ST-LINK/V2-1's virtual COM port is the session's console on USART3 (PD8/PD9, through SB5 and SB6) and a serial port on the host.",
    "omissions": [
     "the ST-LINK/V2-1 itself: its USB enumeration, the mass-storage drag-and-drop programming, SWD and its NRST drive (the session programs and debugs the board, ADR-031)",
     "the VCP's bytes reach USART3 directly, not as frames on PD9",
     "LD4 (COM), the ST-LINK's tricolour LED",
-    "U12 (STMPS2151STR), the switch that would power VBUS from +5V for a USB host (the OTG core's host mode is not modelled either): VBUS comes only from what is plugged into CN13, and U12's fault output never asserts (LD7 stays dark)",
     "the Ethernet PHY and RJ45 of sheet 5, which the NUCLEO-F446ZE does not carry (the STM32F446 has no Ethernet MAC)",
     "the solder bridges are fixed in their factory state (SB120 on PB0, SB121 on PA7, SB144/SB145/SB148 open, SB163 closed, SB143/SB138 open, the F303ZE, F412ZG and L476ZG alternatives open)",
     "one JP3 shunt sits on one position only; the three switches here can all be closed",
@@ -3784,16 +3793,15 @@
  ],
   "i18n": {
     "fr": {
-      "source": "6e62a77cf774",
+      "source": "23bb18ce466b",
       "description": "La NUCLEO-F446ZE de ST (MB1137) : un STM32F446ZET6 cadencé par le MCO 8 MHz du ST-LINK, avec un quartz de 32,768 kHz, les LED utilisateur LD1 (verte, PB0), LD2 (bleue, PB7) et LD3 (rouge, PB14), le bouton bleu USER B1 sur PC13 (actif à l'état haut), le bouton noir RESET B2, la LED d'alimentation verte LD6, JP3 choisissant la source 5 V (U5V par l'interrupteur d'alimentation ST890, VIN ou E5V), JP5 (IDD) pour mesurer le courant du MCU, les connecteurs ST Zio CN7 à CN10 (Arduino Uno V3 et plus), les deux connecteurs morpho ST CN11 et CN12 atteignant chaque E/S, et le connecteur USB OTG FS CN13 avec sa LED VBUS LD8 et sa LED de surintensité LD7. Le port COM virtuel du ST-LINK/V2-1 est la console série de la session sur l'USART3 (PD8/PD9), et un port série sur l'hôte (embsim serve --serial).",
       "fidelity": {
         "functional": {
-          "claims": "Réseaux, ports, LD1 à LD3 et LD6 à LD8, B1, B2 et les cavaliers comme composants, tels que les dessine le schéma de la MB1137 B-01 ; le STM32F446ZE exécute son micrologiciel (voir sa description), son HSE une horloge de 8 MHz sur PH0 (le MCO du ST-LINK par SB149 : HSEBYP nécessaire, comme sur la vraie carte) et son LSE le quartz X2. Les connecteurs ST Zio CN7 à CN10 portent l'affectation de la NUCLEO-F446ZE (D0 à D72, A0 à A8, les ponts de soudure dans leur état d'usine) et les connecteurs morpho CN11 et CN12 (2 x 36) chacune des 114 E/S de la puce. Le VBUS de CN13 atteint PA9 par R35 et allume LD8 ; ses D-, D+ et ID sont PA11, PA12 et PA10, et un hôte USB dessus (emblink/usb_host) énumère le contrôleur OTG FS en mode périphérique (HID_Standalone de STM32CubeF4 y tourne sans modification) ; PG6 et PG7 portent les lignes d'activation et de défaut de U12 (le rappel au niveau bas de R72, le rappel au niveau haut de R71 par JP4). Le port COM virtuel du ST-LINK/V2-1 est la console de la session sur l'USART3 (PD8/PD9, par SB5 et SB6) et un port série sur l'hôte.",
+          "claims": "Réseaux, ports, LD1 à LD3 et LD6 à LD8, B1, B2 et les cavaliers comme composants, tels que les dessine le schéma de la MB1137 B-01 ; le STM32F446ZE exécute son micrologiciel (voir sa description), son HSE une horloge de 8 MHz sur PH0 (le MCO du ST-LINK par SB149 : HSEBYP nécessaire, comme sur la vraie carte) et son LSE le quartz X2. Les connecteurs ST Zio CN7 à CN10 portent l'affectation de la NUCLEO-F446ZE (D0 à D72, A0 à A8, les ponts de soudure dans leur état d'usine) et les connecteurs morpho CN11 et CN12 (2 x 36) chacune des 114 E/S de la puce. Le VBUS de CN13 atteint PA9 par R35 et allume LD8 ; ses D-, D+ et ID sont PA11, PA12 et PA10, et un hôte USB dessus (emblink/usb_host) énumère le contrôleur OTG FS en mode périphérique (USB_Device HID_Standalone de STM32CubeF4 y tourne sans modification), et en hôte le contrôleur énumère un périphérique sur CN13, U12 alimentant son VBUS (USB_Host HID_Standalone, avec le shield TFT 1,8\" d'Adafruit, y tourne sans modification avec une souris USB, MSC_Standalone avec une clé USB) ; U12 (STMPS2151STR) alimente le VBUS de CN13 depuis le 5V tant que PG6 est au niveau haut (R72 le tire au niveau bas), pour un périphérique sur CN13 quand le cœur OTG est hôte ; sa ligne de défaut atteint PG7 par JP4 (le rappel au niveau haut de R71) et ne s'active jamais. Le port COM virtuel du ST-LINK/V2-1 est la console de la session sur l'USART3 (PD8/PD9, par SB5 et SB6) et un port série sur l'hôte.",
           "omissions": [
             "le ST-LINK/V2-1 lui-même : son énumération USB, la programmation par glisser-déposer en stockage de masse, le SWD et sa commande de NRST (la session programme et débogue la carte, ADR-031)",
             "les octets du VCP arrivent directement à l'USART3, pas en trames sur PD9",
             "LD4 (COM), la LED tricolore du ST-LINK",
-            "U12 (STMPS2151STR), l'interrupteur qui alimenterait VBUS depuis +5V pour un hôte USB (le mode hôte du cœur OTG n'est pas modélisé non plus) : VBUS ne vient que de ce qui est branché sur CN13, et la sortie de défaut de U12 ne s'active jamais (LD7 reste éteinte)",
             "le PHY Ethernet et le RJ45 de la feuille 5, que la NUCLEO-F446ZE ne porte pas (le STM32F446 n'a pas de MAC Ethernet)",
             "les ponts de soudure sont figés dans leur état d'usine (SB120 sur PB0, SB121 sur PA7, SB144/SB145/SB148 ouverts, SB163 fermé, SB143/SB138 ouverts, les variantes F303ZE, F412ZG et L476ZG ouvertes)",
             "un cavalier JP3 n'occupe qu'une position ; les trois interrupteurs ici peuvent tous être fermés",

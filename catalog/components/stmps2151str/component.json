@@ -1,0 +1,259 @@
+{
+  "schema_version": 1,
+  "kind": "component",
+  "id": "emblink/stmps2151str",
+  "version": "1.0.0",
+  "name": "STMPS2151STR power distribution switch",
+  "category": "analog_ics",
+  "subcategory": "power_switches",
+  "description": "STMicroelectronics STMPS2151STR, a 500 mA P-channel high-side power distribution switch for USB with an active-high enable and an open-drain fault output, in SOT23-5: the NUCLEO-144's (MB1137) U12, which powers CN13's VBUS from +5V when the MCU drives PG6 (USB_PowerSwitchOn) high, for the OTG core's host mode.",
+  "keywords": [
+    "power switch",
+    "load switch",
+    "high-side",
+    "usb",
+    "vbus",
+    "stmps2151",
+    "stmps2151str",
+    "stmicroelectronics",
+    "sot23-5",
+    "nucleo"
+  ],
+  "pins": [
+    {
+      "name": "OUT",
+      "number": 1,
+      "model": {
+        "kind": "analog"
+      },
+      "doc": "Output of the power switch (SOT23-5L pin 1): VBUS"
+    },
+    {
+      "name": "GND",
+      "number": 2,
+      "model": {
+        "kind": "analog"
+      },
+      "doc": "Ground (SOT23-5L pin 2)"
+    },
+    {
+      "name": "FAULT",
+      "number": 3,
+      "model": {
+        "kind": "passive"
+      },
+      "doc": "Open-drain FAULT indicator, active low (SOT23-5L pin 3): never asserted here; its off current a 1 GOhm path to GND (the datasheet's IOFF is at most 1 uA)",
+      "required": false
+    },
+    {
+      "name": "EN",
+      "number": 4,
+      "model": {
+        "kind": "analog"
+      },
+      "doc": "Enable for the power switch, active high on the STMPS2151 (SOT23-5L pin 4): VIH 2.0 V, VIL 0.8 V with 4.5 to 5.5 V on IN"
+    },
+    {
+      "name": "IN",
+      "number": 5,
+      "model": {
+        "kind": "analog"
+      },
+      "doc": "Input, 2.7 to 5.5 V (SOT23-5L pin 5)"
+    }
+  ],
+  "params": {},
+  "model": {
+    "composite": {
+      "components": [
+        {
+          "id": "M",
+          "component": "emblink/pmos",
+          "params": {
+            "part": "generic",
+            "vto": -1.0,
+            "kp": 2.8,
+            "lambda": 0.005
+          }
+        },
+        {
+          "id": "Q",
+          "component": "emblink/nmos",
+          "params": {
+            "part": "generic",
+            "vto": 1.4,
+            "kp": "0.05",
+            "lambda": 0.01
+          }
+        },
+        {
+          "id": "RG",
+          "component": "emblink/resistor",
+          "params": {
+            "resistance": "100k"
+          }
+        },
+        {
+          "id": "RF",
+          "component": "emblink/resistor",
+          "params": {
+            "resistance": "1G"
+          }
+        }
+      ],
+      "nets": {
+        "GATE": [
+          "M.G",
+          "Q.D",
+          "RG.2"
+        ],
+        "IN": [
+          "M.S",
+          "RG.1"
+        ],
+        "GND": [
+          "Q.S",
+          "RF.2"
+        ]
+      },
+      "ports": {
+        "IN": "M.S",
+        "OUT": "M.D",
+        "EN": "Q.G",
+        "GND": "Q.S",
+        "FAULT": "RF.1"
+      }
+    }
+  },
+  "functional": {
+    "composite": {
+      "components": [],
+      "nets": {},
+      "ports": {}
+    }
+  },
+  "symbol": {
+    "svg": "symbol.svg",
+    "width": 80,
+    "height": 60,
+    "pins": {
+      "IN": {
+        "x": 0,
+        "y": 20,
+        "side": "left"
+      },
+      "EN": {
+        "x": 0,
+        "y": 40,
+        "side": "left"
+      },
+      "GND": {
+        "x": 40,
+        "y": 60,
+        "side": "bottom"
+      },
+      "OUT": {
+        "x": 80,
+        "y": 20,
+        "side": "right"
+      },
+      "FAULT": {
+        "x": 80,
+        "y": 40,
+        "side": "right"
+      }
+    }
+  },
+  "fidelity": {
+    "functional": {
+      "claims": "Pins only: the functional policy has no supply voltages.",
+      "omissions": [
+        "switching"
+      ],
+      "validation": [
+        "tests/*.json"
+      ]
+    },
+    "timed": {
+      "claims": "As electrical.",
+      "omissions": []
+    },
+    "electrical": {
+      "claims": "The switch between IN and OUT, on while EN is high and off while EN is low, its threshold at 1.4 V between the datasheet's VIL (0.8 V) and VIH (2.0 V); on, about 90 mOhm with 5 V on IN (the datasheet's 90 mOhm typical, 110 mOhm maximum, SOT23-5L at 25 C); off, high impedance both ways (section 3.4's reverse-current blocking); EN draws no current (at most 0.5 uA). Inside: a P-channel stand-in for the part's N-channel switch and its charge pump, with the same resistance and the same outside.",
+      "omissions": [
+        "the current limit (0.6 to 1.0 A, 0.8 A typical, about 120 % of the rated 500 mA) and the short-circuit current (0.9 A): the switch passes what the load draws",
+        "FAULT: the over-current flag after its 4 to 15 ms blanking, the immediate flag on over-temperature and under-voltage; it never asserts",
+        "the thermal shutdown (145 C, recovery at 120 C) and the on-resistance's rise with temperature (to 135 mOhm at 125 C)",
+        "the under-voltage lock-out (2.0 to 2.5 V, 75 mV hysteresis): the switch's resistance only grows as IN falls",
+        "the output's rise time (0.05 to 2 ms), the turn-on and turn-off times (up to 5 and 10 ms) and the supply current (40 uA on, 6 uA off)",
+        "damage"
+      ],
+      "range": {
+        "voltage_v": [
+          -0.3,
+          6
+        ],
+        "current_a": [
+          -1,
+          1
+        ]
+      },
+      "validation": [
+        "tests/*.json"
+      ]
+    }
+  },
+  "provenance": {
+    "author": "EmbSIM",
+    "license": "Apache-2.0",
+    "sources": [
+      {
+        "title": "STMicroelectronics STMPS2141, STMPS2151, STMPS2161, STMPS2171 datasheet, Rev 3 (January 2008): pin connections (figure 2, table 2), functional description (section 3), electrical characteristics (tables 9, 11 to 16)",
+        "url": "https://www.st.com/resource/en/datasheet/stmps2141.pdf",
+        "date": "2026-10-31"
+      },
+      {
+        "title": "MB1137 B-01 electrical schematics (NUCLEO-XXXXZX), USB OTG sheet: U12 STMPS2151STR from +5V to USB_VBUS, EN on PG6 (USB_PowerSwitchOn) with R72's pull-down, FAULT to PG7 (USB_OverCurrent) through JP4 with R71's pull-up and LD7",
+        "url": "https://www.st.com/en/evaluation-tools/nucleo-f446ze.html#cad-resources",
+        "date": "2026-10-31"
+      }
+    ]
+  },
+  "tests": [
+    "tests/*.json"
+  ],
+  "part": {
+    "mpn": "STMPS2151STR",
+    "manufacturer": "STMicroelectronics",
+    "package": "SOT23-5",
+    "datasheet": "https://www.st.com/resource/en/datasheet/stmps2141.pdf"
+  },
+  "i18n": {
+    "fr": {
+      "source": "94ad88e4e27c",
+      "description": "STMicroelectronics STMPS2151STR, un interrupteur de distribution d'alimentation côté haut à canal P de 500 mA pour l'USB, avec une activation au niveau haut et une sortie de défaut à drain ouvert, en SOT23-5 : le U12 des NUCLEO-144 (MB1137), qui alimente le VBUS de CN13 depuis le +5V quand le MCU met PG6 (USB_PowerSwitchOn) au niveau haut, pour le mode hôte du cœur OTG.",
+      "fidelity": {
+        "functional": {
+          "claims": "Les broches seulement : la politique fonctionnelle n'a pas de tensions d'alimentation.",
+          "omissions": [
+            "la commutation"
+          ]
+        },
+        "timed": {
+          "claims": "Comme en électrique."
+        },
+        "electrical": {
+          "claims": "L'interrupteur entre IN et OUT, fermé tant que EN est au niveau haut et ouvert tant qu'il est au niveau bas, son seuil à 1,4 V entre la VIL (0,8 V) et la VIH (2,0 V) de la fiche technique ; fermé, environ 90 mOhm avec 5 V sur IN (les 90 mOhm typiques et 110 mOhm maximum de la fiche technique, SOT23-5L à 25 °C) ; ouvert, haute impédance dans les deux sens (le blocage du courant inverse de la section 3.4) ; EN ne consomme aucun courant (au plus 0,5 uA). À l'intérieur : un canal P en remplacement de l'interrupteur à canal N et de la pompe de charge du composant, avec la même résistance et le même comportement vu de l'extérieur.",
+          "omissions": [
+            "la limitation de courant (0,6 à 1,0 A, 0,8 A typique, environ 120 % des 500 mA nominaux) et le courant de court-circuit (0,9 A) : l'interrupteur laisse passer ce que tire la charge",
+            "FAULT : le signalement de surintensité après son masquage de 4 à 15 ms, le signalement immédiat de surchauffe et de sous-tension ; il ne s'active jamais",
+            "la coupure thermique (145 °C, reprise à 120 °C) et la hausse de la résistance à l'état passant avec la température (jusqu'à 135 mOhm à 125 °C)",
+            "le verrouillage en sous-tension (2,0 à 2,5 V, 75 mV d'hystérésis) : la résistance de l'interrupteur ne fait que croître quand IN baisse",
+            "le temps de montée de la sortie (0,05 à 2 ms), les temps d'enclenchement et de déclenchement (jusqu'à 5 et 10 ms) et le courant d'alimentation (40 uA fermé, 6 uA ouvert)",
+            "les dommages"
+          ]
+        }
+      }
+    }
+  }
+}

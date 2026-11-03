@@ -1,0 +1,108 @@
+{
+  "schema_version": 1,
+  "kind": "component_test",
+  "name": "usb-host-vbus",
+  "description": "Powered from the ST-LINK's USB, PG6 (USB_PowerSwitchOn) driven high as the OTG core's host firmware does (USBH_LL_DriverVBUS): U12 (STMPS2151) joins 5V to CN13's VBUS, which feeds a 100 mA device (a 50 ohm load), lights LD8 and reaches PA9; U12's fault line stays high (LD7 dark).",
+  "policy": "electrical",
+  "until": "10ms",
+  "circuit": {
+    "boards": [
+      {
+        "id": "B1",
+        "board": "emblink/nucleo_f446ze"
+      }
+    ],
+    "components": [
+      {
+        "id": "HOST",
+        "component": "emblink/vsource",
+        "params": {
+          "kind": "dc",
+          "dc": 5.0
+        }
+      },
+      {
+        "id": "CABLE",
+        "component": "emblink/resistor",
+        "params": {
+          "resistance": 0.25
+        }
+      },
+      {
+        "id": "G",
+        "component": "emblink/gnd"
+      },
+      {
+        "id": "EN",
+        "component": "emblink/vsource",
+        "params": {
+          "kind": "dc",
+          "dc": 3.3
+        }
+      },
+      {
+        "id": "DEV",
+        "component": "emblink/resistor",
+        "params": {
+          "resistance": 50.0
+        }
+      }
+    ],
+    "nets": {
+      "HOSTV": [
+        "HOST.+",
+        "CABLE.1"
+      ],
+      "VBUS": [
+        "CABLE.2",
+        "B1.U5V"
+      ],
+      "GND": [
+        "HOST.-",
+        "G.GND",
+        "B1.GND",
+        "EN.-",
+        "DEV.2"
+      ],
+      "PA9": [
+        "B1.CN12_21"
+      ],
+      "CN13VBUS": [
+        "B1.USB_VBUS",
+        "DEV.1"
+      ],
+      "PG6": [
+        "EN.+",
+        "B1.CN12_70"
+      ],
+      "PG7": [
+        "B1.CN12_67"
+      ]
+    }
+  },
+  "inputs": [],
+  "expect": {
+    "net:CN13VBUS": {
+      "at": "9ms",
+      "min_v": 4.6,
+      "max_v": 5.05
+    },
+    "net:PA9": {
+      "at": "9ms",
+      "min_v": 4.6,
+      "max_v": 5.05
+    },
+    "output:B1.LD8.luminance": {
+      "at": "9ms",
+      "min": 0.05
+    },
+    "output:B1.LD7.luminance": {
+      "at": "9ms",
+      "max": 0.001
+    },
+    "net:PG7": {
+      "at": "9ms",
+      "min_v": 3.0
+    }
+  }
+}
