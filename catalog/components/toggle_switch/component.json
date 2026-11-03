@@ -194,5 +194,32 @@
   },
   "tests": [
     "tests/*.json"
-  ]
+  ],
+  "i18n": {
+    "fr": {
+      "source": "e1eada9a6a5a",
+      "description": "Interrupteur unipolaire à une position à maintien (à glissière ou à levier).",
+      "fidelity": {
+        "functional": {
+          "claims": "Ouvert ou fermé selon l'entrée closed (SPEC-003 §5 switch).",
+          "omissions": [
+            "le rebond"
+          ]
+        },
+        "timed": {
+          "claims": "Rebond (actif par défaut, ADR-034) à chaque transition.",
+          "omissions": [
+            "l'usure"
+          ]
+        },
+        "electrical": {
+          "claims": "Résistance ron fermé, roff ouvert (SPEC-004 §7 switch).",
+          "omissions": [
+            "la capacité de contact",
+            "l'usure"
+          ]
+        }
+      }
+    }
+  }
 }

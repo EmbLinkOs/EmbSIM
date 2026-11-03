@@ -116,5 +116,29 @@
   },
   "tests": [
     "tests/*.json"
-  ]
+  ],
+  "i18n": {
+    "fr": {
+      "source": "c853f6bbac9c",
+      "description": "Un scanner Bluetooth LE, tel que l'application de scan d'un téléphone voit les appareils autour d'elle : il écoute les canaux d'annonce et liste chaque annonceur qu'il entend, son adresse, son type de PDU, son nom et son RSSI. Il n'atteint le circuit que par l'air.",
+      "fidelity": {
+        "functional": {
+          "claims": "Balayage passif sur les canaux d'annonce primaires en 1M : ADV_IND, ADV_DIRECT_IND, ADV_NONCONN_IND et ADV_SCAN_IND entendus sur le canal où sa fenêtre est ouverte, la fenêtre et l'intervalle de balayage tels que réglés (Bluetooth Core 5.4 Vol 6 Part B 2.3, 4.4.3) ; balayage actif : un SCAN_REQ T_IFS après ADV_IND et ADV_SCAN_IND depuis son adresse statique aléatoire, la procédure de recul (4.4.3.2), le SCAN_RSP pris ; l'adresse et le type de chaque annonceur, son nom local tiré des structures AD, l'UUID de proximité, le major, le minor et la puissance mesurée d'un iBeacon (les données fabricant d'Apple), le RSSI que donne l'affaiblissement en espace libre sur la distance du banc (engine/air.h).",
+          "omissions": [
+            "la connexion",
+            "les annonces étendues sur les canaux secondaires",
+            "les PHY 2M et Coded",
+            "les politiques de filtrage",
+            "plus de 16 annonceurs"
+          ]
+        },
+        "timed": {
+          "claims": "Comme en fonctionnel."
+        },
+        "electrical": {
+          "claims": "Comme en fonctionnel : il n'a pas de broches."
+        }
+      }
+    }
+  }
 }

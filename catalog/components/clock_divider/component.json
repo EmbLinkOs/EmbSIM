@@ -143,5 +143,33 @@
   },
   "tests": [
     "tests/*.json"
-  ]
+  ],
+  "i18n": {
+    "fr": {
+      "source": "bdc175c5c3c3",
+      "description": "Divise la fréquence de CLK par n (fronts montants), avec un rapport cyclique de 50 % pour n pair : un prédiviseur ou un tic lent à partir d'une horloge à quartz.",
+      "fidelity": {
+        "functional": {
+          "claims": "OUT accomplit une période tous les n fronts montants de CLK.",
+          "omissions": [
+            "les temps d'établissement et de maintien"
+          ]
+        },
+        "timed": {
+          "claims": "Comme en fonctionnel ; délais tels qu'indiqués.",
+          "omissions": [
+            "les temps d'établissement et de maintien"
+          ]
+        },
+        "electrical": {
+          "claims": "Les broches se relient aux réseaux analogiques avec les modèles de broche par défaut de la famille ; le comportement est celui du modèle Lua.",
+          "omissions": [
+            "les temps d'établissement et de maintien",
+            "le courant d'alimentation",
+            "les limites de courant de sortie"
+          ]
+        }
+      }
+    }
+  }
 }

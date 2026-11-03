@@ -192,5 +192,31 @@
   },
   "tests": [
     "tests/*.json"
-  ]
+  ],
+  "i18n": {
+    "fr": {
+      "source": "5a7ada687db0",
+      "description": "Le cœur de mesure du Power Profiler Kit II de Nordic, tel que l'utilise le composant emblink/nordic_ppk2 : une source (0,8 à 5,0 V, 600 mA au plus) ou un appareil de mesure en série, le courant entrant dans la carte échantillonné à 100 kéch/s à la résolution de son calibre. Placez emblink/nordic_ppk2 plutôt que celui-ci.",
+      "fidelity": {
+        "timed": {
+          "claims": "Comme en électrique.",
+          "omissions": [
+            "les valeurs des résistances de mesure et la tension qu'elles font chuter (non publiées : r_series est une hypothèse)",
+            "la précision en tant qu'erreur (+-10 %, +-15 % sur le calibre le plus haut) : les lectures sont exactes à leur résolution près",
+            "les transitoires au changement de calibre",
+            "l'absorption de courant en mode source-mètre"
+          ]
+        },
+        "electrical": {
+          "claims": "Source-mètre (0,8 à 5,0 V derrière r_out, 600 mA au plus, puis 600 mA constants) ou ampèremètre (r_series en série) ; le courant entrant dans la carte moyenné sur chaque intervalle de 10 us (100 kéch/s), chaque échantillon à la résolution de son calibre (0,2, 0,5, 5, 50 ou 1000 uA), les courants négatifs se lisent 0, au-delà de 1 A se lisent 1 A.",
+          "omissions": [
+            "les valeurs des résistances de mesure et la tension qu'elles font chuter (non publiées : r_series est une hypothèse)",
+            "la précision en tant qu'erreur (+-10 %, +-15 % sur le calibre le plus haut) : les lectures sont exactes à leur résolution près",
+            "les transitoires au changement de calibre",
+            "l'absorption de courant en mode source-mètre"
+          ]
+        }
+      }
+    }
+  }
 }

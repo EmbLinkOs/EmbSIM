@@ -389,5 +389,48 @@
       }
     ],
     "notes": "The register description is written for EmbSIM from RM0008 and checked against ST's SVD on a developer's machine; no vendor file is shipped (ADR-020)."
+  },
+  "i18n": {
+    "fr": {
+      "source": "dd1ee3a425d2",
+      "description": "STMicroelectronics STM32F103C8 : Arm Cortex-M3 jusqu'à 72 MHz, 64 Kio de flash, 20 Kio de SRAM, gamme performance moyenne densité.",
+      "fidelity": {
+        "functional": {
+          "claims": "Exécution Cortex-M3 (Thumb-2, NVIC, SCB, SysTick, DWT, semihosting) extraite d'EmbCC ; chaque registre de la description de RM0008 avec sa valeur de réinitialisation et son type d'accès ; des modèles de comportement du RCC (HSI, HSE, PLL, prédiviseurs de bus et portes d'horloge), du GPIO (modes, ODR/BSRR/BRR, IDR tiré du réseau de la broche), de l'AFIO (routage EXTI, remappage de l'USART1), de l'EXTI (fronts, attente, interruptions), de l'USART (8 ou 9 bits de données avec parité et 0,5 à 2 bits d'arrêt au débit sur TX et depuis RX, les drapeaux d'erreur et IDLE, les breaks et le LIN, le mode muet, le contrôle de flux nCTS/nRTS et CK sur leurs broches AFIO, le semi-duplex, le mode maître synchrone, les interruptions), de TIM1 à TIM4 (comptage montant, descendant et centré, le compteur de répétition, la comparaison de sortie et la MLI, la capture d'entrée avec son filtre et son prédiviseur, MOE, OSSR et OSSI de TIM1, le break logiciel (BG) et LOCK, les modes esclaves et le mode codeur, les horloges externes, TRGO entre les timers) avec leurs canaux sur leurs broches AFIO, la référence HCLK/8 de SysTick et son CALIB de 9000 (RM0008), le groupe régulier de l'ADC1 et de l'ADC2 (démarrage logiciel, balayage, continu, temps d'échantillonnage, l'horloge de l'ADC tirée d'ADCPRE, les tensions des broches, l'alignement, EOC et son interruption, la durée de l'étalonnage), le SPI1 et le SPI2 sur leurs broches AFIO en maîtres ou esclaves (modes 0 à 3, 8 et 16 bits, MSB ou LSB en premier, le prédiviseur de débit, TXE, RXNE, OVR et son effacement, BSY, les modes réception seule et bidirectionnel avec le maître cadençant de lui-même, NSS par SSM/SSI, SSOE ou la broche, MODF, la sélection d'un esclave et son compte de bits gardé à travers NSS, le CRC avec CRCNEXT et CRCERR, les interruptions), l'I2C1 et l'I2C2 en maîtres et esclaves sur leurs broches à drain ouvert : START, START répété (une fois le bus libre), STOP, adressage sur 7 et 10 bits (ADD10), ACK et POS, les drapeaux de SR1 et SR2 avec leurs séquences d'effacement, le maintien d'horloge par BTF, les temporisations standard et rapide de CCR avec l'étirement d'horloge d'un esclave respecté, la perte d'arbitrage (ARLO), BUSY et BERR tirés du bus tel que le montrent les broches ; l'OAR1 de l'esclave (7 ou 10 bits), la double adresse d'OAR2, l'appel général, les adresses SMBus par défaut, d'hôte et de réponse d'alerte, l'étirement sur ADDR, BTF et TXE ou l'OVR de NOSTRETCH, STOPF (pas après le NACK du maître), le NACK du maître (AF), un octet reçu par-dessus ce que le programme a écrit dans DR ; le PEC avec CR1.PEC et PECERR ; TIMEOUT et SMBALERT du SMBus ; SWRST ; les interruptions d'événement et d'erreur, l'IWDG et le WWDG (les clés, PVU/RVU, la fenêtre, EWI, leurs réinitialisations), les drapeaux de réinitialisation de RCC_CSR gardés jusqu'à RMVF, les registres du PWR ; l'interface de la flash (FPEC, PM0075) : le déverrouillage par KEYR et son erreur de bus sur une mauvaise clé, la programmation par demi-mot (PGERR sur un emplacement non effacé sauf pour 0x0000, une erreur de bus pour une autre taille), l'effacement de page et l'effacement global, WRPRTERR sur les pages que protège WRPR, EOP et l'interruption FLASH, les octets d'option (OPTKEYR, OPTWRE, OPTER, OPTPG écrivant le complément de chaque octet) chargés dans OBR et WRPR à chaque réinitialisation, BSY pour les durées de DS5319 (un demi-mot 52,5 us, une page ou l'effacement global 20 ms) avec un programme en flash bloqué jusqu'à la fin de l'opération. Les autres périphériques gardent leurs valeurs de registres et lèvent mcu.unsupported_access au premier accès. L'unité CRC : le CRC-32 (0x04C11DB7, MSB en premier, depuis 0xFFFFFFFF) des mots écrits dans DR, RESET de CR, IDR. Le débogage avec arrêt du cœur tel qu'une sonde le pilote par le port de débogage (ARM DDI 0419E C1 / DDI 0403E C1) : l'arrêt, le pas à pas et la relance de DHCSR avec C_MASKINTS, DCRSR et DCRDR pour chaque registre du cœur, la capture du vecteur de réinitialisation et les captures de fautes de DEMCR, DFSR, BKPT arrêtant un cœur débogué, les six comparateurs de code du FPB et les quatre comparateurs du DWT comme points d'observation ; un cœur arrêté n'exécute rien pendant que les horloges et les périphériques continuent, et une réinitialisation système garde le domaine de débogage (une mise sous tension l'efface).",
+          "omissions": [
+            "l'exception de moniteur de débogage (bits MON_ de DEMCR), C_SNAPSTALL, le remappage de la flash par le FPB (FP_REMAP), les compteurs du DWT autres que CYCCNT, l'échantillonnage du PC, la comparaison de valeurs de données et les comparateurs liés, la broche de trace : l'ITM et le TPIU sont là (cortexm/itm.c) mais aucun composant de débogage ne donne de broche TRACESWO (TRACE_IOEN de DBGMCU_CR du F1 et TRACECONFIG du nRF52840 ne sont pas modélisés), donc aucun SWO ne sort de la puce ; l'horodatage de l'ITM et les paquets du DWT ; un cœur arrêté consomme son courant de veille",
+            "le groupe injecté, le chien de garde analogique, les déclencheurs externes, le mode double et le DMA de l'ADC",
+            "l'I2S ; le filtrage du bruit de l'I2C, les prolongations cumulées de l'horloge à l'état bas du SMBus, la synchronisation d'horloge entre deux maîtres",
+            "le DMA",
+            "le CAN",
+            "l'USB",
+            "la RTC et le domaine de sauvegarde",
+            "les sorties complémentaires, le break et l'ETR des timers sur les broches (CHxN, BKIN et ETR de TIM1 ne passent pas par l'AFIO), leurs requêtes DMA",
+            "les bits de gel en débogage des chiens de garde et la dispersion du LSI (40 kHz typiques sur le F1, 32 kHz ici)",
+            "la protection en lecture de la flash (RDPRT est chargé et rapporté, rien n'est refusé), l'obligation que le HSI tourne pendant son écriture, la dispersion des temps (la durée de programmation typique de DS5319 ; son minimum d'effacement, faute de valeur typique), une réinitialisation pendant une opération",
+            "les modes basse consommation au-delà de WFI"
+          ]
+        },
+        "timed": {
+          "claims": "La durée des instructions est estimée à partir de la table de coûts par classe d'EmbCC avec le remplissage après un branchement pris (ADR-015), sans exactitude au cycle ; les périphériques comptent exactement les cycles de leur horloge de bus à partir de l'arbre d'horloges (ADR-019). L'entrée en exception (12 cycles), le retour (12), l'enchaînement (6) et l'arrivée tardive sont temporisés comme le TRM du Cortex-M4 (ARM DDI 0439B 3.9.1) les donne sans état d'attente. Le TRM du Cortex-M3 (ARM DDI 0337E 5.5, 5.6) donne la même entrée (12) et le même enchaînement (6) ; il ne donne pas de chiffre pour le retour, donc les 12 du retour sont ceux du TRM du M4.",
+          "omissions": [
+            "les états d'attente de la flash",
+            "l'arbitrage de bus",
+            "les effets de pipeline au-delà du remplissage après un branchement",
+            "les cycles de la trame étendue (FP) et de l'empilement paresseux",
+            "une interruption pendant le dépilement (prise après le retour)"
+          ]
+        },
+        "electrical": {
+          "claims": "Modèles de broche GPIO par défaut tirés de la fiche technique : voh/vol, rout selon la vitesse configurée, vih/vil avec hystérésis, rappels de 40 k, liste des broches tolérantes au 5 V (SPEC-003 §2). Le modèle GPIO applique aux broches le sens, la commande push-pull ou à drain ouvert et les rappels faibles tels que le micrologiciel les configure.",
+          "omissions": [
+            "les structures de protection ESD",
+            "le courant d'alimentation",
+            "l'impédance d'entrée de l'ADC",
+            "le courant d'injection"
+          ]
+        }
+      }
+    }
   }
 }

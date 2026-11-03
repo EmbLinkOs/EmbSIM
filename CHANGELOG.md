@@ -5,6 +5,31 @@ versions follow semantic versioning. There is no release yet.
 
 ## Unreleased
 
+### The engine's diagnostics and the catalog's text in French
+
+- Every diagnostic the engine raises carries its French in JSON
+  (`messages.fr`, SPEC-001 §7): `core/util/diag_fr.c` gives each of the 149
+  formats the engine raises, and the fixed phrases messages are built from,
+  a French format with the same conversions; a raised message is matched
+  against its code's English formats and its values carried over unchanged,
+  including messages a wrapper formatted first, the MCU runtime's component
+  prefix and messages cut at the record's length. The workbench's
+  diagnostics panel and toasts show it when the language is French.
+  `tools/i18n/diagnostics.py` (ctest `diagnostics_fr`) finds every format
+  raised in `core/` and `cli/` and fails on one with no French or with
+  different conversions. Omitted: messages built elsewhere and passed
+  through whole (a JSON parser's error, a project validation's reason, a
+  Lua model's own text) stay English.
+- The catalog in French: all 225 entries (205 components, 10 boards, 10
+  MCUs) carry `i18n.fr`, their description and their fidelity's claims and
+  omissions (about 276,000 characters of English), with a fingerprint of
+  the English each was made from (SPEC-005 §6). `tools/validate.py` checks
+  each translated tier exists and lists as many omissions as the English;
+  `tools/i18n/catalog_text.py check` (ctest `catalog_fr`) fails on an entry
+  without French or whose English changed after its French was made. The
+  library and inspector show the settings' language and fall back to
+  English.
+
 ### Loads and stores in the trace
 
 - `run --trace` records each load and store a core makes, after the

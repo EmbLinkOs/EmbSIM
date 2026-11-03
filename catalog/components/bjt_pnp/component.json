@@ -199,5 +199,26 @@
   },
   "tests": [
     "tests/*.json"
-  ]
+  ],
+  "i18n": {
+    "fr": {
+      "source": "0ca33cb2b7d7",
+      "description": "Transistor bipolaire PNP ; une référence nommée choisit les paramètres d'Ebers-Moll.",
+      "fidelity": {
+        "timed": {
+          "claims": "Comme en électrique."
+        },
+        "electrical": {
+          "claims": "Ebers-Moll avec effet Early (vaf) et rb/rc/re en série ; les charges et les termes de forte injection de Gummel-Poon ne sont pas réglés par les préréglages (SPEC-004 §7 bjt).",
+          "omissions": [
+            "les capacités de jonction",
+            "le temps de transit",
+            "la température",
+            "le claquage",
+            "la quasi-saturation"
+          ]
+        }
+      }
+    }
+  }
 }

@@ -228,5 +228,31 @@
     "manufacturer": "Bourns",
     "package": "1812",
     "datasheet": "https://www.bourns.com/docs/Product-Datasheets/mf-msmf.pdf"
+  },
+  "i18n": {
+    "fr": {
+      "source": "6e747691b17d",
+      "description": "Fusible réarmable CTP polymère Bourns MF-MSMF050-2 (1812) : tient 0,5 A, se déclenche à 1,0 A à 23 C ; le fusible USB F1 de l'Arduino Uno. Il chauffe avec la puissance qu'il laisse passer, se déclenche quand la chaleur s'emballe et se réarme quand le défaut est retiré et qu'il refroidit.",
+      "fidelity": {
+        "functional": {
+          "claims": "Un conducteur entre ses broches : la politique fonctionnelle n'a pas de courants pour le déclencher.",
+          "omissions": [
+            "l'échauffement et le déclenchement"
+          ]
+        },
+        "timed": {
+          "claims": "Comme en électrique."
+        },
+        "electrical": {
+          "claims": "Une résistance issue d'un modèle thermique à deux nœuds (cœur en polymère et boîtier) chauffé par la puissance qu'il laisse passer : montant doucement sous la bascule et fortement au-dessus, de sorte que la chaleur s'emballe au-delà d'un courant. Ajustée à la courbe typique de temps de déclenchement de la fiche technique à 23 C (1,08 A en environ 70 s, 1,6 A en 15 s, 2,4 A en 1 s, 3,5 A en 0,1 s, 9 A en 10 ms) avec 0,8 W une fois déclenchée ; elle tient 0,5 A, se déclenche à 1,0 A et à 8 A en moins des 0,15 s maximum, et son seuil suit la table de déclassement de la fiche technique avec la température de la pièce (l'entrée, ou celle du monde) sans y être ajusté. Se réarme en refroidissant une fois le défaut retiré.",
+          "omissions": [
+            "la résistance après un déclenchement (jusqu'à R1max 1,0 ohm une heure plus tard) et son lent rétablissement : elle revient à r0",
+            "la dispersion entre exemplaires (R entre 0,15 et 1,0 ohm ; les temps de déclenchement sont typiques, pas des limites)",
+            "les valeurs nominales de 15 V et 100 A ne sont pas imposées : aucun dommage",
+            "la chaleur des composants voisins et du cuivre de la carte au-delà du boîtier ajusté"
+          ]
+        }
+      }
+    }
   }
 }

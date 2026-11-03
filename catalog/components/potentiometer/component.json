@@ -207,5 +207,24 @@
   },
   "tests": [
     "tests/*.json"
-  ]
+  ],
+  "i18n": {
+    "fr": {
+      "source": "bbdbf773d346",
+      "description": "Résistance variable à trois bornes dont le curseur suit l'entrée position.",
+      "fidelity": {
+        "timed": {
+          "claims": "Comme en électrique."
+        },
+        "electrical": {
+          "claims": "Deux résistances r*position et r*(1-position) (la loi logarithmique applique une loi à 10 % au point milieu) ; les changements de position sont des points d'arrêt (SPEC-004 §7 potentiometer).",
+          "omissions": [
+            "la résistance du curseur",
+            "le bruit pendant la rotation",
+            "la résistance en butée"
+          ]
+        }
+      }
+    }
+  }
 }

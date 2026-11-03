@@ -140,5 +140,30 @@
   },
   "tests": [
     "tests/*.json"
-  ]
+  ],
+  "i18n": {
+    "fr": {
+      "source": "b9ec358b2209",
+      "description": "Un S9013 (marqué J3), un transistor NPN d'usage général de 25 V, 500 mA en SOT-23 : le T2 de la NUCLEO-144 (MB1137), qui allume LD8 tant que VBUS est présent sur CN13. Plusieurs fabricants le produisent ; le schéma de la MB1137 n'en nomme aucun.",
+      "fidelity": {
+        "functional": {
+          "claims": "Broches seulement : la politique fonctionnelle n'a pas de courants de base.",
+          "omissions": [
+            "la commutation"
+          ]
+        },
+        "timed": {
+          "claims": "Comme en électrique."
+        },
+        "electrical": {
+          "claims": "Un NPN de Gummel-Poon de gain en courant 200 (les classes de hFE du S9013 vont d'environ 64 à 300), en interrupteur saturé ou dans sa région linéaire.",
+          "omissions": [
+            "la fiche technique n'était pas disponible : le gain est une valeur moyenne et les autres paramètres sont ceux du NPN générique",
+            "les capacités et les temps de commutation",
+            "la température, les dommages"
+          ]
+        }
+      }
+    }
+  }
 }

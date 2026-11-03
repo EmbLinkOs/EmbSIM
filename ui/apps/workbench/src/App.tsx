@@ -19,6 +19,7 @@ import { ConnectionScreen } from './shell/ConnectionScreen';
 import { SettingsPage } from './shell/SettingsPage';
 import { useLayout } from './stores/layout';
 import { useSettings } from './stores/settings';
+import { diagnosticMessage } from './i18n/catalogText';
 import { useSession } from './stores/session';
 
 export function isGalleryRoute(loc: Pick<Location, 'pathname' | 'hash'> = window.location): boolean {
@@ -110,7 +111,7 @@ function Workbench({ connect }: AppProps) {
     return useSession.subscribe((s) => {
       if (s.diagnostics.length > seen) {
         for (const r of s.diagnostics.slice(seen)) {
-          toast({ kind: r.severity === 'warning' ? 'warning' : r.severity === 'info' ? 'info' : 'error', title: r.code, description: r.message, duration: 6000 });
+          toast({ kind: r.severity === 'warning' ? 'warning' : r.severity === 'info' ? 'info' : 'error', title: r.code, description: diagnosticMessage(r, useSettings.getState().language), duration: 6000 });
         }
       }
       seen = s.diagnostics.length;

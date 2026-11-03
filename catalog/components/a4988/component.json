@@ -329,5 +329,39 @@
   },
   "tests": [
     "tests/*.json"
-  ]
+  ],
+  "i18n": {
+    "fr": {
+      "source": "baa4e63290ed",
+      "description": "Module pilote de moteur pas à pas bipolaire à micropas (carte A4988) : chaque front montant de STEP avance d'un pas entier ou d'un micropas de 1/2, 1/4, 1/8 ou 1/16 réglé par MS1-MS3, dans le sens de DIR, tant qu'il est activé et éveillé ; la position et l'angle de l'axe sont des sorties.",
+      "fidelity": {
+        "functional": {
+          "claims": "Comptage STEP/DIR avec la table de résolution MS1-MS3, ENABLE_N, RESET_N (position d'origine) et SLEEP_N ; RESET_N et SLEEP_N non connectées comptent comme inactives.",
+          "omissions": [
+            "les courants de bobine et le moteur (les broches de bobine ne sont pas pilotées)",
+            "les pas perdus et les limites d'accélération",
+            "la limitation de courant et les modes de décroissance"
+          ]
+        },
+        "timed": {
+          "claims": "Comme en fonctionnel ; délais tels qu'indiqués.",
+          "omissions": [
+            "les courants de bobine et le moteur (les broches de bobine ne sont pas pilotées)",
+            "les pas perdus et les limites d'accélération",
+            "la limitation de courant et les modes de décroissance"
+          ]
+        },
+        "electrical": {
+          "claims": "Les broches se relient aux réseaux analogiques avec les modèles de broche par défaut de la famille ; le comportement est celui du modèle Lua.",
+          "omissions": [
+            "les courants de bobine et le moteur (les broches de bobine ne sont pas pilotées)",
+            "les pas perdus et les limites d'accélération",
+            "la limitation de courant et les modes de décroissance",
+            "le courant d'alimentation",
+            "les limites de courant de sortie"
+          ]
+        }
+      }
+    }
+  }
 }

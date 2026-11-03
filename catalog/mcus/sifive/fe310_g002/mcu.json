@@ -271,5 +271,40 @@
       }
     ],
     "notes": "The register description is written for EmbSIM from SiFive's manual; no vendor file is shipped."
+  },
+  "i18n": {
+    "fr": {
+      "source": "e2469a081d15",
+      "description": "SiFive Freedom E310-G002 : un cœur E31 RV32IMAC jusqu'à 320 MHz, 16 Kio de SRAM de données (DTIM), 8 Kio de SRAM d'instructions, flash exécutée sur place par QSPI ; le MCU de la HiFive1 Rev B.",
+      "fidelity": {
+        "functional": {
+          "claims": "Exécution des instructions RV32IMAC avec Zicsr, traps et interruptions en mode machine, extraite d'EmbCC (validée là-bas face à QEMU) ; chaque registre des périphériques du manuel avec sa valeur de réinitialisation ; des modèles de comportement du CLINT (msip, mtimecmp, mtime à la RTC de 32,768 kHz), du PLIC (priorités, seuil, réclamation et achèvement), du GPIO (sens, rappels au niveau haut, out_xor, les quatre types d'interruption, cession aux IOF), de l'UART0 et de l'UART1 (FIFO, seuils, trames au débit du diviseur sur leurs broches), des horloges du PRCI (HFROSC, HFXOSC, la PLL), et du chien de garde du domaine toujours alimenté (sa clé, son échelle, son comparateur, zerocmp, son interruption persistante et la réinitialisation de la puce, à laquelle le domaine survit avec le resetcause de pmucause) et de la RTC (compte sur 48 bits, échelle, comparaison, interruption) sur l'horloge de 32,768 kHz ; les 8 entrées PMP du cœur (OFF, TOR, NA4, NAPOT, verrous, mode utilisateur et MPRV). PWM0-2 (le compte et pwms, les comparateurs avec center, gang, deglitch et sticky, zerocmp, enalways et enoneshot, leurs sources PLIC, les canaux sur leurs broches IOF1), SPI1 et SPI2 en mode un fil (les FIFO de 8 entrées, trames de 8 bits au plus en modes 0 à 3, MSB ou LSB en premier, csmode AUTO, HOLD et OFF, les quatre délais, les interruptions de seuil, SPI1 sur ses broches IOF0). QSPI0 et I2C0 gardent leurs valeurs de registres et lèvent mcu.unsupported_access au premier accès.",
+          "omissions": [
+            "la ROM masquée et le chargeur d'amorçage",
+            "le PMU du domaine toujours alimenté (veille, réveil) et l'ajustement de l'oscillateur basse fréquence : l'horloge basse fréquence vaut 32,768 kHz",
+            "l'I2C",
+            "le cache d'instructions",
+            "le module de débogage : son espace se lit à zéro",
+            "le mode programmé de QSPI0 et les protocoles double et quadruple",
+            "les registres fantômes des comparateurs de la MLI"
+          ]
+        },
+        "timed": {
+          "claims": "Durée des instructions estimée à partir de la table de coûts par classe d'EmbCC (ADR-015) : 1 cycle, 2 pour un chargement, 16 pour une division, 2 de plus pour un branchement pris ; les états d'attente de la flash et le cache d'instructions ne sont pas modélisés. mtime compte la RTC exactement par rapport à l'horloge du cœur.",
+          "omissions": [
+            "les défauts de cache",
+            "la latence de la flash",
+            "la latence variable du diviseur"
+          ]
+        },
+        "electrical": {
+          "claims": "Modèles de broche GPIO par défaut à 3,3 V tirés de la fiche technique.",
+          "omissions": [
+            "l'intensité de commande (ds)",
+            "les structures de protection ESD"
+          ]
+        }
+      }
+    }
   }
 }

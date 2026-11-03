@@ -179,5 +179,32 @@
     "manufacturer": "onsemi",
     "package": "SOT-23",
     "datasheet": "https://www.onsemi.com/download/data-sheet/pdf/fdn340p-d.pdf"
+  },
+  "i18n": {
+    "fr": {
+      "source": "8ebf12106f18",
+      "description": "onsemi FDN340P, un MOSFET à tranchée canal P de -20 V à niveau logique en SOT-23 (60 mOhms à -4,5 V) : le T1 de l'Arduino Uno, qui relie le 5 V de l'USB à la carte quand aucune alimentation n'est sur VIN.",
+      "fidelity": {
+        "functional": {
+          "claims": "Broches seulement : la politique fonctionnelle n'a pas de tensions de grille.",
+          "omissions": [
+            "la commutation"
+          ]
+        },
+        "timed": {
+          "claims": "Comme en électrique."
+        },
+        "electrical": {
+          "claims": "Un MOSFET canal P de niveau 1 (seuil -0,8 V, kp 4,5 A/V^2 : 61 mOhms à -4,5 V et 2 A, les 60 typiques et 70 maximum de la fiche technique) avec sa diode intrinsèque (0,7 V à 0,42 A) et des capacités de grille proches de Ciss (779 pF).",
+          "omissions": [
+            "la résistance à l'état passant à -2,5 V ressort à 130 mOhms contre 82 typiques (le niveau 1 n'a pas de dégradation de mobilité)",
+            "la température (résistance à l'état passant en hausse de 30 % à 125 C)",
+            "la dispersion des seuils (-0,4 à -1,5 V)",
+            "la non-linéarité de la charge de grille",
+            "l'avalanche et la SOA : aucun dommage"
+          ]
+        }
+      }
+    }
   }
 }

@@ -240,5 +240,22 @@
   },
   "tests": [
     "tests/*.json"
-  ]
+  ],
+  "i18n": {
+    "fr": {
+      "source": "55656ebb3b5d",
+      "description": "Le ST-LINK/V2-1 de ST, le débogueur et programmateur d'une NUCLEO-64 (UM1724 6.2), micrologiciel V2J37M26 (0483:374B). Ses lignes SWD et NRST vont à la cible, T_VCC mesure l'alimentation de la cible. Un débogueur sur l'ordinateur l'atteint par le stlink-server de la session (stlink.serve, le service TCP qu'utilisent STM32CubeIDE et `st-link backend tcp` d'OpenOCD) : ses commandes, telles qu'OpenOCD 0.12 les envoie, arrêtent, font avancer pas à pas et relancent le cœur de la cible, lisent et écrivent ses registres et sa mémoire et programment sa flash, le tout par le port de débogage de la cible.",
+      "fidelity": {
+        "functional": {
+          "claims": "L'interface de commande du ST-LINK/V2-1 telle que le micrologiciel V2J37M26 y répond et que la lit le stlink_usb.c d'OpenOCD 0.12 : GET_VERSION, GET_CURRENT_MODE, DFU_EXIT, GET_TARGET_VOLTAGE (T_VCC par rapport à sa référence de 1,2 V) ; en mode DEBUG APIV2_ENTER (SWD), EXIT, READ_IDCODES (l'IDCODE du SW-DP de la cible), SWD_SET_FREQ, DRIVE_NRST (bas, haut, une impulsion de 2 ms sur son NRST à drain ouvert), RESETSYS (AIRCR.SYSRESETREQ), GETSTATUS, FORCEDEBUG, RUNCORE, STEPCORE, READREG et WRITEREG par DCRSR et DCRDR, READALLREGS, READDEBUGREG et WRITEDEBUGREG, les lectures et écritures mémoire de 8, 16 et 32 bits et de 32 bits sans incrément, GETLASTRWSTATUS(2) avec l'adresse en faute, READ_DAP_REG et WRITE_DAP_REG (DP : DPIDR, CTRL/STAT, SELECT, RDBUFF ; MEM-AP : CSW, TAR, DRW, BASE, IDR), INIT_AP et CLOSE_AP_DBG ; la trace SWO : START_TRACE_RX (le débit, 2 MHz au plus), STOP_TRACE_RX, GET_TRACE_NB et la lecture du point de terminaison de trace (READ_SWO du stlink-server), son récepteur UART sur la broche SWO prenant la sortie série de la cible dans un tampon de 4 Kio, NRZ seulement et à 3 % près de son débit (sinon des données incohérentes, comptées et non gardées) ; état 0x80, 0x81, 0x09 quand aucune cible ne répond, 0x11 pour une faute d'AP. Sa cible est le MCU sur le réseau de SWDIO, atteint par le MEM-AP de ce MCU. Partagé avec l'hôte par le stlink-server de la session (stlink.serve). Son propre périphérique USB sur ses broches USB_DP et USB_DM (le CN1 de la NUCLEO) : composite pleine vitesse 0483:374B, « STMicroelectronics » / « STM32 STLink » avec son numéro de série, l'interface de débogage (0x01 commandes OUT, 0x81 réponses IN, 0x82 trace IN), le lecteur de stockage de masse et les interfaces du port COM virtuel ; le lecteur est un volume FAT16 nommé `drive` (NODE_F446RE) avec MBED.HTM et DETAILS.TXT, et un .bin copié dessus est programmé par l'interface de flash de la cible (le cœur arrêté, KEYR déverrouillé, chaque secteur effacé avec SER et STRT, les mots programmés en PSIZE x32 en scrutant BSY, verrouillé, la puce réinitialisée), aux temps propres de la flash ; la sonde quitte alors le bus et revient avec le fichier disparu, ou avec FAIL.TXT quand elle n'a pas pu le programmer. Avec CN1 libre, le serveur USB/IP de la session (usbip.serve) place ce périphérique USB sur la pile USB propre d'un ordinateur, pour les outils qui l'ouvrent eux-mêmes (st-flash, STM32CubeProgrammer).",
+          "omissions": [
+            "le SWD en transactions, pas en fronts de SWDIO et SWCLK ; une commande ne prend pas de temps simulé",
+            "le SWO en Manchester (le V2-1 ne lit que le NRZ : une sortie Manchester arrive comme des données incohérentes) ; le JTAG, le SWIM, la mise à jour de son propre micrologiciel (DFU)",
+            "les données du port COM virtuel sur l'USB (ses points de terminaison répondent NAK ; le pont de console de la carte remplace le port, son codage de ligne est gardé)",
+            "la géométrie du lecteur et le texte de MBED.HTM, DETAILS.TXT et FAIL.TXT (ceux d'EmbSIM) ; les fichiers .hex ; les cibles autres que le STM32F446 (leur copie échoue avec FAIL.TXT) ; le mode MAINTENANCE du micrologiciel ; la suspension USB"
+          ]
+        }
+      }
+    }
+  }
 }

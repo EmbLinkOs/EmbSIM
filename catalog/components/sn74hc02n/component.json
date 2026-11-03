@@ -319,5 +319,40 @@
   },
   "artwork": {
     "svg": "artwork.svg"
+  },
+  "i18n": {
+    "fr": {
+      "source": "79ed6d2f3c12",
+      "description": "SN74HC02N : 4 portes NON-OU indépendantes à 2 entrées dans un boîtier DIP complet à 14 broches. Modèle nominal 5 V.",
+      "fidelity": {
+        "functional": {
+          "claims": "Tous les canaux appliquent leur table de vérité à quatre valeurs ; VCC bas libère les sorties ; des rails invalides ou flottants produisent X.",
+          "omissions": [
+            "le comportement pendant la montée de l'alimentation analogique",
+            "les diodes d'écrêtage des entrées",
+            "le courant d'alimentation"
+          ]
+        },
+        "timed": {
+          "claims": "Délai inertiel nominal fixe de 12 ns ; pas une garantie de pire cas de la fiche technique.",
+          "omissions": [
+            "le comportement pendant la montée de l'alimentation analogique",
+            "les diodes d'écrêtage des entrées",
+            "le courant d'alimentation"
+          ]
+        },
+        "electrical": {
+          "claims": "Seuils d'entrée CMOS 5 V nominaux et sorties en générateurs de Thévenin (5/0 V, 25 ohms) avec le comportement numérique des canaux. Le suivi de la tension d'alimentation n'est pas modélisé.",
+          "omissions": [
+            "le comportement pendant la montée de l'alimentation analogique",
+            "les diodes d'écrêtage des entrées",
+            "le courant d'alimentation",
+            "la variation des délais avec la tension",
+            "les limites de courant de sortie",
+            "le suivi de l'alimentation sous la valeur nominale"
+          ]
+        }
+      }
+    }
   }
 }

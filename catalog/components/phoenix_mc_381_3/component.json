@@ -133,5 +133,46 @@
     "manufacturer": "Phoenix Contact",
     "package": "3-way 3.81 mm",
     "datasheet": "https://www.phoenixcontact.com/en-us/products/pcb-plug-mc-15-3-st-381-1803581"
+  },
+  "i18n": {
+    "fr": {
+      "source": "69dca59a201f",
+      "description": "Bornes numérotées indépendantes pour un connecteur enfichable Phoenix Contact au pas de 3,81 mm. Reliez un réseau à chaque borne ; des bornes voisines ne sont jamais court-circuitées.",
+      "fidelity": {
+        "functional": {
+          "claims": "Bornes numérotées indépendantes pour un connecteur enfichable Phoenix Contact au pas de 3,81 mm. Reliez un réseau à chaque borne ; des bornes voisines ne sont jamais court-circuitées.",
+          "omissions": [
+            "la vérification du plan mécanique du fabricant reste à faire",
+            "la mécanique d'accouplement",
+            "la résistance de contact",
+            "les lignes de fuite et le courant nominal",
+            "les cas extrêmes des paramètres du fabricant",
+            "les dommages thermiques et les limites destructives"
+          ]
+        },
+        "timed": {
+          "claims": "Bornes numérotées indépendantes pour un connecteur enfichable Phoenix Contact au pas de 3,81 mm. Reliez un réseau à chaque borne ; des bornes voisines ne sont jamais court-circuitées.",
+          "omissions": [
+            "la vérification du plan mécanique du fabricant reste à faire",
+            "la mécanique d'accouplement",
+            "la résistance de contact",
+            "les lignes de fuite et le courant nominal",
+            "les cas extrêmes des paramètres du fabricant",
+            "les dommages thermiques et les limites destructives"
+          ]
+        },
+        "electrical": {
+          "claims": "Bornes numérotées indépendantes pour un connecteur enfichable Phoenix Contact au pas de 3,81 mm. Reliez un réseau à chaque borne ; des bornes voisines ne sont jamais court-circuitées.",
+          "omissions": [
+            "la vérification du plan mécanique du fabricant reste à faire",
+            "la mécanique d'accouplement",
+            "la résistance de contact",
+            "les lignes de fuite et le courant nominal",
+            "les cas extrêmes des paramètres du fabricant",
+            "les dommages thermiques et les limites destructives"
+          ]
+        }
+      }
+    }
   }
 }

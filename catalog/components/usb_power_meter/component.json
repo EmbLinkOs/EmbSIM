@@ -195,5 +195,34 @@
   },
   "tests": [
     "tests/*.json"
-  ]
+  ],
+  "i18n": {
+    "fr": {
+      "source": "4c2c19439924",
+      "description": "Un wattmètre USB en ligne, le testeur branché entre le port d'un ordinateur et le câble d'une carte : il affiche la tension de VBUS, le courant que tire la carte et sa puissance, rafraîchis deux fois par seconde, et compte la charge et l'énergie depuis son branchement. Son shunt est dans VBUS ; il s'alimente côté hôte, donc sa propre consommation n'apparaît pas dans ce qu'il affiche.",
+      "fidelity": {
+        "functional": {
+          "claims": "VBUS transmise telle quelle.",
+          "omissions": [
+            "les lectures (elles demandent la politique électrique)"
+          ]
+        },
+        "timed": {
+          "claims": "Comme en fonctionnel.",
+          "omissions": [
+            "les lectures"
+          ]
+        },
+        "electrical": {
+          "claims": "Sa résistance d'insertion dans VBUS, sa propre consommation sur IN (non affichée), l'affichage rafraîchi à chaque période avec la tension sur OUT et le courant et la puissance moyennés sur la période à sa résolution, la charge et l'énergie comptées tant qu'il est allumé, éteint sous v_min ; les lectures intègrent les solutions acceptées du circuit (ADR-036 : le courant d'alimentation d'un composant, comme les salves radio d'un ESP32-C3, apparaît comme il le ferait).",
+          "omissions": [
+            "les lignes de données D+ et D- et leurs tensions (les données du câble passent comme la console de la carte)",
+            "l'échauffement du shunt",
+            "les protocoles de charge rapide et leurs déclencheurs",
+            "un enregistrement des lectures dans le temps (l'oscilloscope ou un scénario s'en charge)"
+          ]
+        }
+      }
+    }
+  }
 }

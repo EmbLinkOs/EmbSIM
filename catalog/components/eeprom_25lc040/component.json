@@ -215,5 +215,39 @@
   },
   "tests": [
     "tests/*.json"
-  ]
+  ],
+  "i18n": {
+    "fr": {
+      "source": "443bc69faefd",
+      "description": "EEPROM SPI de 4 kbit (512 x 8) (25LC040) : READ, WRITE avec pages de 16 octets, WREN, WRDI et RDSR avec les bits d'écriture en cours et d'autorisation d'écriture ; le neuvième bit d'adresse est dans l'instruction.",
+      "fidelity": {
+        "functional": {
+          "claims": "Jeu d'instructions, bouclage de page, verrou d'autorisation d'écriture, cycle d'écriture avec WIP, WP_N.",
+          "omissions": [
+            "les bits de protection de blocs (WRSR est ignoré)",
+            "HOLD_N",
+            "le contenu n'est pas conservé d'une session à l'autre"
+          ]
+        },
+        "timed": {
+          "claims": "Comme en fonctionnel ; délais tels qu'indiqués.",
+          "omissions": [
+            "les bits de protection de blocs (WRSR est ignoré)",
+            "HOLD_N",
+            "le contenu n'est pas conservé d'une session à l'autre"
+          ]
+        },
+        "electrical": {
+          "claims": "Les broches se relient aux réseaux analogiques avec les modèles de broche par défaut de la famille ; le comportement est celui du modèle Lua.",
+          "omissions": [
+            "les bits de protection de blocs (WRSR est ignoré)",
+            "HOLD_N",
+            "le contenu n'est pas conservé d'une session à l'autre",
+            "le courant d'alimentation",
+            "les limites de courant de sortie"
+          ]
+        }
+      }
+    }
+  }
 }

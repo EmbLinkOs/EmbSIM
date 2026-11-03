@@ -433,5 +433,37 @@
   },
   "tests": [
     "tests/*.json"
-  ]
+  ],
+  "i18n": {
+    "fr": {
+      "source": "6cd1c0c786ee",
+      "description": "L'oscilloscope numérique à mémoire DS1054Z de Rigol : quatre voies à 50 MHz, 1 Géch/s avec une voie active (500 Méch/s avec deux, 250 Méch/s avec trois ou quatre), 8 bits, 1 mV/div à 10 V/div, ses entrées 1 MOhm || 15 pF (10 MOhms à travers les sondes 10x fournies). Il acquiert autour d'un déclenchement sur front en Auto, Normal ou Single, et l'atelier dessine son écran et ses commandes en direct pendant que le circuit tourne.",
+      "fidelity": {
+        "timed": {
+          "claims": "Comme en électrique.",
+          "omissions": [
+            "les autres types de déclenchement (impulsion, runt, fenêtre, n-ième front, pente, vidéo, motif, retard, délai d'attente, durée, établissement/maintien) et les options RS232, I2C et SPI",
+            "les fonctions math, FFT, XY et Roll",
+            "les acquisitions en moyenne, détection de crête et haute résolution",
+            "la compensation de la sonde et sa propre bande passante",
+            "les erreurs de gain et de décalage en continu et le bruit : les lectures sont exactes sur leurs 8 bits",
+            "l'attente du mode Auto avant de forcer un déclenchement (supposée : la durée de l'écran, au moins 10 ms)",
+            "le fréquencemètre matériel (Measure, Counter) : les mesures sont les mesures automatiques, faites comme l'oscilloscope les fait sur les 1200 points par voie de l'écran"
+          ]
+        },
+        "electrical": {
+          "claims": "Ses entrées chargent le circuit (1 MOhm ou, à travers la sonde 10x, 10 MOhms, chacune || 15 pF) ; acquisitions à la fréquence d'échantillonnage que permettent les voies actives et la mémoire, à travers une bande passante du premier ordre de 50 MHz (ou 20 MHz), en couplage DC, AC ou GND, quantifiées sur 8 bits sur 10 divisions ; le déclenchement sur front avec son niveau, sa pente et son holdoff en Auto, Normal ou Single.",
+          "omissions": [
+            "les autres types de déclenchement (impulsion, runt, fenêtre, n-ième front, pente, vidéo, motif, retard, délai d'attente, durée, établissement/maintien) et les options RS232, I2C et SPI",
+            "les fonctions math, FFT, XY et Roll",
+            "les acquisitions en moyenne, détection de crête et haute résolution",
+            "la compensation de la sonde et sa propre bande passante",
+            "les erreurs de gain et de décalage en continu et le bruit : les lectures sont exactes sur leurs 8 bits",
+            "l'attente du mode Auto avant de forcer un déclenchement (supposée : la durée de l'écran, au moins 10 ms)",
+            "le fréquencemètre matériel (Measure, Counter) : les mesures sont les mesures automatiques, faites comme l'oscilloscope les fait sur les 1200 points par voie de l'écran"
+          ]
+        }
+      }
+    }
+  }
 }

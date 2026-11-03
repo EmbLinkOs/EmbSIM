@@ -149,5 +149,29 @@
   },
   "tests": [
     "tests/*.json"
-  ]
+  ],
+  "i18n": {
+    "fr": {
+      "source": "f96ba43b23ba",
+      "description": "Source de tension préréglée sur une impulsion périodique (vsource de type pulse) ; une source d'impulsions numérique sous la politique fonctionnelle.",
+      "fidelity": {
+        "functional": {
+          "claims": "Un train d'impulsions numérique avec td, pw et per ; v1/v2 correspondent à 0/1 (SPEC-003 §5 pulse_source).",
+          "omissions": [
+            "les temps de montée et de descente"
+          ]
+        },
+        "timed": {
+          "claims": "Comme en fonctionnel sur les réseaux numériques, comme en électrique sur les réseaux analogiques."
+        },
+        "electrical": {
+          "claims": "vsource de type pulse avec v1, v2, td, tr, tf, pw, per (SPEC-004 §7 vsource).",
+          "omissions": [
+            "l'impédance de source",
+            "la gigue"
+          ]
+        }
+      }
+    }
+  }
 }

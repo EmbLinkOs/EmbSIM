@@ -317,5 +317,26 @@
   },
   "tests": [
     "tests/*.json"
-  ]
+  ],
+  "i18n": {
+    "fr": {
+      "source": "74227d40a04d",
+      "description": "Le port USB 2.0 d'un ordinateur au bout d'un câble : son VBUS 5 V à travers la résistance du câble et le câble lui-même (le membre CABLE, un interrupteur : son entrée closed débranche et rebranche le câble), et son contrôleur hôte (emblink/usb_host_controller, le membre HOST), qui énumère le périphérique pleine vitesse branché comme le font Windows et Linux, interroge ses interfaces HID et télécharge une image de micrologiciel vers un périphérique DFU. Les sorties de HOST montrent l'identité du périphérique, ses descripteurs et ses rapports HID (le curseur d'une souris d'amorçage compris) et un journal qui se lit comme celui du noyau.",
+      "fidelity": {
+        "functional": {
+          "claims": "Le VBUS du port (vbus volts derrière cable_resistance), le câble (CABLE : VBUS et les lignes de données vont ensemble) et son contrôleur hôte, HOST : la fidélité d'emblink/usb_host_controller.",
+          "omissions": [
+            "la limite de 500 mA de VBUS et la coupure du port en surintensité",
+            "l'ordre dans lequel les contacts du câble s'établissent et se coupent (VBUS et GND longs, D+ et D- courts) : tous à la fois ici"
+          ]
+        },
+        "timed": {
+          "claims": "Comme en fonctionnel."
+        },
+        "electrical": {
+          "claims": "Comme en fonctionnel."
+        }
+      }
+    }
+  }
 }

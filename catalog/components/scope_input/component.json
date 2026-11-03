@@ -117,5 +117,22 @@
   },
   "tests": [
     "tests/*.json"
-  ]
+  ],
+  "i18n": {
+    "fr": {
+      "source": "ef7dea7e460b",
+      "description": "Un équivalent câblé d'entrée différentielle d'oscilloscope : résistance et capacité en parallèle entre + et -. Il modifie à la fois la charge en continu et la réponse transitoire.",
+      "fidelity": {
+        "electrical": {
+          "claims": "Résistance linéaire finie en parallèle avec une capacité, avec intégration transitoire adaptative.",
+          "omissions": [
+            "Les calibres, la précision, le bruit et l'étalonnage propres au fabricant",
+            "La protection contre les surcharges, la fusion du fusible, l'échauffement et les dommages",
+            "Les limites de bande passante et la quantification de l'échantillonnage et de l'ADC",
+            "Les limites de mode commun et une liaison à la terre ou au châssis ; le cordon de référence doit être câblé explicitement"
+          ]
+        }
+      }
+    }
+  }
 }

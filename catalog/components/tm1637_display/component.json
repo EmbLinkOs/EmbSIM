@@ -855,5 +855,47 @@
   },
   "tests": [
     "tests/*.json"
-  ]
+  ],
+  "i18n": {
+    "fr": {
+      "source": "08c17ddd8cb9",
+      "description": "Le module afficheur LED 7 segments à 4 chiffres courant sur un Titan Micro TM1637 : son interface à deux fils (pas de l'I2C : pas d'adresse, LSB en premier, ACK au 9e coup d'horloge), les commandes de données, d'adresse et de contrôle d'affichage avec les huit largeurs d'impulsion, les deux-points (variante horloge) ou les points décimaux sur SEG8, et des rappels de 10 kOhms sur CLK et DIO.",
+      "fidelity": {
+        "functional": {
+          "claims": "L'interface à deux fils du TM1637 (START et STOP avec CLK haut, LSB en premier sur les fronts montants de CLK, ACK du front descendant du 8e coup d'horloge à la fin du 9e) ; la commande de données (écriture, adresse auto-incrémentée ou fixe, lecture des touches renvoyant 0xFF), la commande d'adresse (C0H..C5H, données abandonnées à partir de C6H) et le contrôle d'affichage (marche/arrêt, largeur d'impulsion de 1/16 à 14/16) ; un STOP gardant les octets acquittés ; chiffres 1 à 4 sur GRID1..4, SEG8 les deux-points ou les points décimaux ; éteint à la mise sous tension avec l'adresse en C0H.",
+          "omissions": [
+            "le multiplexage des grilles sur les LED du module (chaque chiffre s'allume à la largeur d'impulsion réglée)",
+            "les condensateurs de 100 pF sur CLK et DIO",
+            "le contenu de la RAM d'affichage à la mise sous tension (pris à zéro)",
+            "le mode test (commande de données B3)",
+            "le balayage des touches (le module ne câble aucune touche : se lit 0xFF)",
+            "la dispersion du courant et de la luminosité des LED"
+          ]
+        },
+        "timed": {
+          "claims": "L'interface à deux fils du TM1637 (START et STOP avec CLK haut, LSB en premier sur les fronts montants de CLK, ACK du front descendant du 8e coup d'horloge à la fin du 9e) ; la commande de données (écriture, adresse auto-incrémentée ou fixe, lecture des touches renvoyant 0xFF), la commande d'adresse (C0H..C5H, données abandonnées à partir de C6H) et le contrôle d'affichage (marche/arrêt, largeur d'impulsion de 1/16 à 14/16) ; un STOP gardant les octets acquittés ; chiffres 1 à 4 sur GRID1..4, SEG8 les deux-points ou les points décimaux ; éteint à la mise sous tension avec l'adresse en C0H. ACK en moins de 100 ns, libération en moins de 300 ns ; les impulsions d'horloge de moins de 400 ns sont signalées.",
+          "omissions": [
+            "le multiplexage des grilles sur les LED du module (chaque chiffre s'allume à la largeur d'impulsion réglée)",
+            "les condensateurs de 100 pF sur CLK et DIO",
+            "le contenu de la RAM d'affichage à la mise sous tension (pris à zéro)",
+            "le mode test (commande de données B3)",
+            "le balayage des touches (le module ne câble aucune touche : se lit 0xFF)",
+            "la dispersion du courant et de la luminosité des LED"
+          ]
+        },
+        "electrical": {
+          "claims": "CLK et DIO basculent aux seuils de la famille avec les rappels de 10 kOhms du module ; DIO tire vers le bas pour l'ACK ; le comportement est celui du modèle Lua.",
+          "omissions": [
+            "le multiplexage des grilles sur les LED du module (chaque chiffre s'allume à la largeur d'impulsion réglée)",
+            "les condensateurs de 100 pF sur CLK et DIO",
+            "le contenu de la RAM d'affichage à la mise sous tension (pris à zéro)",
+            "le mode test (commande de données B3)",
+            "le balayage des touches (le module ne câble aucune touche : se lit 0xFF)",
+            "la dispersion du courant et de la luminosité des LED",
+            "le courant d'alimentation"
+          ]
+        }
+      }
+    }
+  }
 }

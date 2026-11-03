@@ -357,5 +357,36 @@
   },
   "tests": [
     "tests/*.json"
-  ]
+  ],
+  "i18n": {
+    "fr": {
+      "source": "e17fd9572eef",
+      "description": "Octuple tampon/pilote de ligne à sorties trois états en deux bancs de quatre (74HC244) : Y suit A tant que l'OE_N du banc est bas et est libérée tant qu'il est haut ; pilotes de bus et isolement de niveaux.",
+      "fidelity": {
+        "functional": {
+          "claims": "Table de fonctions du 74HC244.",
+          "omissions": [
+            "les temps d'activation et de désactivation des sorties",
+            "le maintien de bus (bus-hold)"
+          ]
+        },
+        "timed": {
+          "claims": "Comme en fonctionnel ; délais tels qu'indiqués.",
+          "omissions": [
+            "les temps d'activation et de désactivation des sorties",
+            "le maintien de bus (bus-hold)"
+          ]
+        },
+        "electrical": {
+          "claims": "Les broches se relient aux réseaux analogiques avec les modèles de broche par défaut de la famille ; le comportement est celui du modèle Lua.",
+          "omissions": [
+            "les temps d'activation et de désactivation des sorties",
+            "le maintien de bus (bus-hold)",
+            "le courant d'alimentation",
+            "les limites de courant de sortie"
+          ]
+        }
+      }
+    }
+  }
 }

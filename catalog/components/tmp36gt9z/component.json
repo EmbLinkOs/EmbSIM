@@ -162,5 +162,25 @@
   },
   "artwork": {
     "svg": "artwork.svg"
+  },
+  "i18n": {
+    "fr": {
+      "source": "c2ba0af28438",
+      "description": "TMP36GT9Z : température ambiante pilotée de l'extérieur convertie en tension. Pas de dynamique thermique.",
+      "fidelity": {
+        "electrical": {
+          "claims": "Vout nominale = 0,5 V + 10 mV/degC * température ; résistance de sortie finie ; écrêtage à l'alimentation.",
+          "omissions": [
+            "la classe de précision",
+            "l'auto-échauffement",
+            "la constante de temps thermique",
+            "le courant d'alimentation",
+            "le bruit",
+            "aucune qualification par un modèle du fabricant",
+            "la précision selon l'alimentation et le fonctionnement hors plage"
+          ]
+        }
+      }
+    }
   }
 }

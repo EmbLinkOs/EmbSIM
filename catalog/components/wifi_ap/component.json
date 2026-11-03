@@ -169,5 +169,34 @@
   },
   "tests": [
     "tests/*.json"
-  ]
+  ],
+  "i18n": {
+    "fr": {
+      "source": "8ee2c2422586",
+      "description": "Un point d'accès 802.11b/g à 2,4 GHz avec un routeur derrière, tel qu'un routeur domestique est vu depuis une station à l'autre bout de la pièce : il émet une balise avec son SSID à chaque intervalle de balise, répond aux requêtes de sondage, authentifie (système ouvert) et associe les stations, exécute la négociation en 4 temps et le CCMP du WPA2-Personnel, leur attribue des adresses par DHCP, répond à l'ARP et aux pings pour sa propre adresse, relaie les trames entre ses stations et garde les trames de celles en veille ; son routeur atteint l'internet au-delà (emblink/web_server) par un NAT sur son adresse WAN et répond au DNS pour ses stations. Il n'atteint le circuit que par l'air ; son signal atteint une carte avec l'affaiblissement en espace libre sur leur distance sur le banc.",
+      "fidelity": {
+        "functional": {
+          "claims": "Des balises (horodatage TSF, intervalle, capacités ESS et confidentialité, SSID, débits, DS parameter set, TIM avec les AID pour lesquels il garde des trames, ERP, l'élément RSN du WPA2-Personnel avec un mot de passe) à chaque intervalle de balise à 1 Mbit/s, chacune étant un DTIM ; des réponses de sondage aux requêtes joker et correspondantes ; l'authentification en système ouvert ; l'association et la réassociation avec des AID à partir de 1 ; la désauthentification et la dissociation (IEEE 802.11-2020 9.3.3, 11.3) ; WPA2-Personnel : la PSK tirée de la phrase secrète et du SSID, la négociation en 4 temps (la PTK tirée des deux nonces et des deux adresses, les MIC, la GTK enveloppée sous la KEK dans le message 3, le message 1 ou 3 renvoyé après une seconde sans réponse, quatre fois), puis le CCMP sur chaque trame de données, par paire vers une station et de groupe (identifiant de clé 1) vers toutes, le PN vérifié contre le rejeu (12.7.6, 12.5.3) ; des trames de données avec LLC/SNAP 802.2 vers et depuis ses stations (unicast à 54 Mbit/s, groupe à 1 Mbit/s) ; la gestion d'énergie de ses stations : trames gardées pour une station en veille, annoncées dans le TIM, envoyées sur un PS-Poll avec More Data ou à son réveil, trames de groupe après la balise DTIM (11.2.3) ; le routeur derrière lui : l'ARP pour son adresse, l'écho ICMP, un serveur DHCP (RFC 2131, 2132 : DISCOVER, OFFER, REQUEST, ACK, NAK, DECLINE, RELEASE ; masque, routeur, serveur DNS, adresse de diffusion, un bail d'une journée) attribuant à partir de .100 ; le relais des trames entre ses stations ; un NAT vers l'internet au-delà (RFC 3022 : ports TCP et UDP et identifiants d'écho ICMP traduits vers les siens à partir de 49152, son adresse WAN comme source, le TTL décrémenté, les réponses renvoyées à la station ; 64 correspondances, la plus ancienne réutilisée) et un relais DNS (RFC 1035 : requêtes A répondues à partir des noms de l'internet après deux fois sa latence WAN, TTL 300 s, ou NXDOMAIN). Les trames portent leur temps d'antenne et atteignent les stations avec l'affaiblissement en espace libre sur la distance du banc (engine/air.h). wifi/getting_started/station d'ESP-IDF s'y connecte, ouvert ou en WPA2-PSK, et obtient son adresse ; son protocols/http_request résout example.com et récupère sa page à travers lui.",
+          "omissions": [
+            "le renouvellement de la clé de groupe, le cache PMKSA, le WPA2-Entreprise, le TKIP et les trames de gestion protégées",
+            "le 802.11n (capacités et fonctionnement HT), le WMM et la QoS",
+            "le WPA3 (SAE)",
+            "les SSID masqués",
+            "les retransmissions et la contention",
+            "plus de 8 stations, plus de 32 trames gardées pour celles en veille (la plus ancienne est abandonnée)",
+            "le DNS au-delà des enregistrements A (réponses AAAA, CNAME, MX) et sur TCP ; les délais d'expiration du NAT, la redirection de ports et l'UPnP ; le réseau propre de l'hôte"
+          ]
+        },
+        "timed": {
+          "claims": "Comme en fonctionnel.",
+          "omissions": [
+            "la temporisation entre trames du micrologiciel d'un vrai point d'accès : les réponses suivent une trame reçue après son ACK et un DIFS"
+          ]
+        },
+        "electrical": {
+          "claims": "Comme en fonctionnel : il n'a pas de broches."
+        }
+      }
+    }
+  }
 }

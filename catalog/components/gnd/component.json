@@ -78,5 +78,25 @@
   },
   "tests": [
     "tests/*.json"
-  ]
+  ],
+  "i18n": {
+    "fr": {
+      "source": "09c2427cacf1",
+      "description": "Symbole de référence de masse.",
+      "fidelity": {
+        "functional": {
+          "claims": "Impose (0, alimentation) sur son réseau (SPEC-003 §3)."
+        },
+        "timed": {
+          "claims": "Comme en fonctionnel sur les réseaux numériques, nœud de référence sur les réseaux analogiques."
+        },
+        "electrical": {
+          "claims": "Le nœud de référence de l'îlot (0 V).",
+          "omissions": [
+            "l'impédance de masse"
+          ]
+        }
+      }
+    }
+  }
 }

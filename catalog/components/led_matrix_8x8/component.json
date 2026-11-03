@@ -1878,5 +1878,40 @@
         }
       }
     ]
+  },
+  "i18n": {
+    "fr": {
+      "source": "cdf208df7973",
+      "description": "64 jonctions de LED rouges indépendantes avec huit anodes de ligne et huit cathodes de colonne partagées. Chaque pixel suit le courant de sa jonction, courants fantômes dus au câblage du circuit compris. Une limitation de courant externe par colonne ou par ligne est nécessaire. Brochage logique générique R1–R8/C1–C8 ; pas un brochage de fabricant.",
+      "fidelity": {
+        "functional": {
+          "claims": "Chaque puce s'allume pour une anode haute connue et une cathode basse connue, avec l'indication idéale d'emblink/led.",
+          "omissions": [
+            "la qualification par le fabricant",
+            "l'étalonnage optique",
+            "les effets thermiques et les dommages",
+            "la capacité de jonction et le claquage inverse"
+          ]
+        },
+        "timed": {
+          "claims": "Chaque puce s'allume pour une anode haute connue et une cathode basse connue, avec l'indication idéale d'emblink/led.",
+          "omissions": [
+            "la qualification par le fabricant",
+            "l'étalonnage optique",
+            "les effets thermiques et les dommages",
+            "la capacité de jonction et le claquage inverse"
+          ]
+        },
+        "electrical": {
+          "claims": "Jonctions de LED indépendantes suivant les modèles statiques courant-tension d'emblink/led ; les liaisons internes des lignes et des colonnes conservent le courant.",
+          "omissions": [
+            "la qualification par le fabricant",
+            "l'étalonnage optique",
+            "les effets thermiques et les dommages",
+            "la capacité de jonction et le claquage inverse"
+          ]
+        }
+      }
+    }
   }
 }

@@ -147,5 +147,32 @@
   },
   "tests": [
     "tests/*.json"
-  ]
+  ],
+  "i18n": {
+    "fr": {
+      "source": "a973123d67b9",
+      "description": "Tampon non inverseur avec activation de sortie active à l'état haut : Y suit A tant que OE vaut 1 et est libérée (Z) tant que OE vaut 0, comme une porte d'un 74HC125 avec l'activation inversée.",
+      "fidelity": {
+        "functional": {
+          "claims": "Y = A tant que OE = 1, Z tant que OE = 0, X tant que OE est inconnu.",
+          "omissions": [
+            "les temps d'activation et de désactivation"
+          ]
+        },
+        "timed": {
+          "claims": "Délai de propagation inertiel tpd.",
+          "omissions": [
+            "des temps d'activation et de désactivation distincts"
+          ]
+        },
+        "electrical": {
+          "claims": "Les broches se relient avec les valeurs par défaut cmos_3v3 ; une sortie libérée est ouverte.",
+          "omissions": [
+            "la fuite",
+            "les limites de courant de sortie"
+          ]
+        }
+      }
+    }
+  }
 }

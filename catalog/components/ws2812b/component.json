@@ -191,5 +191,43 @@
   },
   "tests": [
     "tests/*.json"
-  ]
+  ],
+  "i18n": {
+    "fr": {
+      "source": "7d93b034042d",
+      "description": "LED RVB Worldsemi WS2812B avec son pilote intégré (une NeoPixel) : couleur sur 24 bits reçue sur DIN à 800 kbit/s, le reste transmis sur DOUT pour chaîner d'autres LED, verrouillée par un état bas de 50 us.",
+      "fidelity": {
+        "functional": {
+          "claims": "NRZ à 800 kbit/s sur DIN, distingué à 0,6 us (entre le 0 le plus long et le 1 le plus court de la fiche technique) ; chaque LED garde les 24 premiers bits après une réinitialisation (GRB, MSB en premier) et transmet le reste sur DOUT remis en forme en états hauts de 0,4 / 0,8 us ; un état bas de t_reset verrouille les couleurs ; éteinte à la mise sous tension ; éteinte et sourde sous 3,5 V.",
+          "omissions": [
+            "la lumière elle-même (couleurs rapportées comme niveaux MLI sur 8 bits, sans intensité par canal)",
+            "le scintillement de la MLI à 400 Hz",
+            "le courant d'alimentation (jusqu'à 60 mA par LED en blanc maximal) et la chute de tension le long d'un ruban",
+            "la dépendance du seuil d'entrée à VDD au-delà des niveaux du modèle de broche",
+            "le délai de 0,2 us de la remise en forme"
+          ]
+        },
+        "timed": {
+          "claims": "Comme en fonctionnel.",
+          "omissions": [
+            "la lumière elle-même (couleurs rapportées comme niveaux MLI sur 8 bits, sans intensité par canal)",
+            "le scintillement de la MLI à 400 Hz",
+            "le courant d'alimentation (jusqu'à 60 mA par LED en blanc maximal) et la chute de tension le long d'un ruban",
+            "la dépendance du seuil d'entrée à VDD au-delà des niveaux du modèle de broche",
+            "le délai de 0,2 us de la remise en forme"
+          ]
+        },
+        "electrical": {
+          "claims": "DIN et DOUT se relient aux réseaux analogiques avec les modèles de broche par défaut de la famille ; la tension de VDD conditionne les LED ; le comportement est celui du modèle Lua.",
+          "omissions": [
+            "la lumière elle-même (couleurs rapportées comme niveaux MLI sur 8 bits, sans intensité par canal)",
+            "le scintillement de la MLI à 400 Hz",
+            "le courant d'alimentation (jusqu'à 60 mA par LED en blanc maximal) et la chute de tension le long d'un ruban",
+            "la dépendance du seuil d'entrée à VDD au-delà des niveaux du modèle de broche",
+            "le délai de 0,2 us de la remise en forme"
+          ]
+        }
+      }
+    }
+  }
 }

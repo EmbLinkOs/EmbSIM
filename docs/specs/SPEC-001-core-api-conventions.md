@@ -116,6 +116,16 @@ stable identifiers documented in `docs/user/diagnostics.md` (e.g.
 `net.contention`, `net.floating_input`, `sched.delta_overflow`,
 `mcu.unsupported_access`, `analog.no_convergence`, `schema.unknown_field`).
 
+The message is English. In its JSON form (the protocol's notifications and
+records, `embsim run --json`, reports) a record also carries `messages`, the
+message in other languages keyed by language code (`{"fr": "..."}`), when the
+engine has its translation (`core/util/diag_fr.c`): the same values in the
+same places, matched against the English format the engine raised. A message
+built elsewhere and passed through whole (a JSON parser's error, a project
+validation's reason, a Lua model's own text) has none; clients show
+`message` then. `tools/i18n/diagnostics.py` (ctest `diagnostics_fr`) fails
+when a format the engine raises has no French or its conversions differ.
+
 ## 8. Versioning
 
 `es_version()` is the semantic version of the library; `es_abi_version()` is

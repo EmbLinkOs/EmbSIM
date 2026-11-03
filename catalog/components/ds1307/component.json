@@ -220,5 +220,40 @@
         "side": "left"
       }
     }
+  },
+  "i18n": {
+    "fr": {
+      "source": "0fd661c5acdf",
+      "description": "Horloge temps réel I2C Maxim DS1307 avec son quartz de 32,768 kHz : heure et date en BCD avec modes 12/24 heures, le bit d'arrêt d'horloge (positionné sur une puce neuve : l'heure reste figée jusqu'à son effacement), une sortie signal carré (1 Hz, 4,096, 8,192, 32,768 kHz) ou le niveau OUT sur SQW/OUT, et 56 octets de RAM sauvegardée par pile.",
+      "fidelity": {
+        "functional": {
+          "claims": "I2C en 0x68 avec tampons utilisateur rafraîchis à chaque START et au bouclage du pointeur ; 64 registres bouclant après 3Fh ; heure et date en BCD avec modes 12/24 heures et un jour de la semaine utilisateur ; CH arrêtant l'oscillateur (positionné sur une puce neuve) ; la chaîne de décompte remise à zéro par une écriture des secondes ; la cadence décalée de drift_ppm ; le signal carré (1 Hz à 32,768 kHz) ou OUT sur SQW/OUT quand il est câblé ; 56 octets de RAM ; aucune réponse sous VPF (3,75 V).",
+          "omissions": [
+            "le basculement sur pile (VBAT) et le maintien de l'heure sur pile",
+            "la fréquence du quartz en fonction de la température et de la capacité de charge (la dérive est un paramètre)",
+            "la phase du signal carré à 1 Hz par rapport aux secondes",
+            "le courant d'alimentation"
+          ]
+        },
+        "timed": {
+          "claims": "Comme en fonctionnel.",
+          "omissions": [
+            "le basculement sur pile (VBAT) et le maintien de l'heure sur pile",
+            "la fréquence du quartz en fonction de la température et de la capacité de charge (la dérive est un paramètre)",
+            "la phase du signal carré à 1 Hz par rapport aux secondes",
+            "le courant d'alimentation"
+          ]
+        },
+        "electrical": {
+          "claims": "Les broches se relient aux réseaux analogiques avec les modèles de broche par défaut de la famille ; la tension de VCC conditionne l'interface ; le comportement est celui du modèle Lua.",
+          "omissions": [
+            "le basculement sur pile (VBAT) et le maintien de l'heure sur pile",
+            "la fréquence du quartz en fonction de la température et de la capacité de charge (la dérive est un paramètre)",
+            "la phase du signal carré à 1 Hz par rapport aux secondes",
+            "le courant d'alimentation"
+          ]
+        }
+      }
+    }
   }
 }

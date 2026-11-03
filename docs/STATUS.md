@@ -163,8 +163,14 @@ in French without overflow, back to English) and `workspace-layout.spec.ts`
 at 1440, 900 and 768 px; twelve workflows captured before, after and in
 French (docs/gallery/visual-benchmark-v0.1).
 
-Not yet: catalog descriptions, fidelity notes and engine diagnostics in
-French (they are data); compact density on the canvas and plots; panels
+Since then: the engine's diagnostics carry their French (`messages.fr`,
+every format the engine raises, checked by ctest `diagnostics_fr`; messages
+passed through whole from a parser, a validation or a Lua model stay
+English), and every catalog entry carries its text in French under
+`i18n.fr` (225 entries, checked against their English by ctest
+`catalog_fr`; the library and inspector show it).
+
+Not yet: compact density on the canvas and plots; panels
 moving between perspectives; languages beyond English and French.
 
 ## Imperfections on by default: bounce and tolerances (2026-11-01)

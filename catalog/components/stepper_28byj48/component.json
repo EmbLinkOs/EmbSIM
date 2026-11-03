@@ -244,5 +244,50 @@
   },
   "tests": [
     "tests/*.json"
-  ]
+  ],
+  "i18n": {
+    "fr": {
+      "source": "970d9a71d199",
+      "description": "Moteur pas à pas unipolaire à réducteur 28BYJ-48 5 V : quatre demi-enroulements de 50 ohms sur un commun rouge, un rotor à aimant permanent de 32 pas entiers par tour avec une réduction de 63,684:1 (2037,9 pas entiers par tour de sortie, 64 demi-pas de 5,625 degrés par tour de rotor), le rotor intégré comme une masse avec couple de détente et frottement du réducteur, de sorte qu'il suit jusqu'à la cadence de démarrage de la fiche technique et perd des pas ou cale au-delà. Généralement piloté par une carte ULN2003 ; fil rouge ouvert, il fonctionne en bipolaire depuis un pont en H.",
+      "fidelity": {
+        "functional": {
+          "claims": "Quatre demi-enroulements de 50 ohms et 3 mH sur le fil rouge, alimentés tant qu'un fil est sous le rouge (bipolaire avec le rouge ouvert) ; un rotor à aimant permanent de 8 paires de pôles, 32 pas entiers par tour, avec couple de détente, inertie, frottement du réducteur et amortissement intégrés par pas de 20 us, de sorte qu'il suit jusqu'à environ 650 pas entiers par seconde depuis l'arrêt (le démarrage au-delà de 600 Hz de la fiche technique) et environ 1200 avec une rampe (le décrochage au-delà de 1000 Hz), et perd des pas ou cale au-delà ; réduction 63,684:1, 2037,9 pas entiers par tour de sortie ; deux moitiés opposées ensemble s'annulent ; les tensions des fils sont des niveaux logiques à `supply`.",
+          "omissions": [
+            "le jeu des engrenages",
+            "l'irréversibilité des engrenages face à une charge qui entraîne l'axe (le couple de frottement de 600 à 1200 gf.cm de la fiche technique)",
+            "le rappel des enroulements sur les fils va au rail 5 V, pas à la tension propre du fil rouge",
+            "le couplage entre les deux moitiés d'un enroulement (chacune décroît seule)",
+            "le courant d'alimentation tiré sur les réseaux",
+            "l'échauffement (l'élévation sous 40 K de la fiche technique)",
+            "le son qu'il émet"
+          ]
+        },
+        "timed": {
+          "claims": "Quatre demi-enroulements de 50 ohms et 3 mH sur le fil rouge, alimentés tant qu'un fil est sous le rouge (bipolaire avec le rouge ouvert) ; un rotor à aimant permanent de 8 paires de pôles, 32 pas entiers par tour, avec couple de détente, inertie, frottement du réducteur et amortissement intégrés par pas de 20 us, de sorte qu'il suit jusqu'à environ 650 pas entiers par seconde depuis l'arrêt (le démarrage au-delà de 600 Hz de la fiche technique) et environ 1200 avec une rampe (le décrochage au-delà de 1000 Hz), et perd des pas ou cale au-delà ; réduction 63,684:1, 2037,9 pas entiers par tour de sortie ; deux moitiés opposées ensemble s'annulent ; les tensions des fils sont des niveaux logiques à `supply`.",
+          "omissions": [
+            "le jeu des engrenages",
+            "l'irréversibilité des engrenages face à une charge qui entraîne l'axe (le couple de frottement de 600 à 1200 gf.cm de la fiche technique)",
+            "le rappel des enroulements sur les fils va au rail 5 V, pas à la tension propre du fil rouge",
+            "le couplage entre les deux moitiés d'un enroulement (chacune décroît seule)",
+            "le courant d'alimentation tiré sur les réseaux",
+            "l'échauffement (l'élévation sous 40 K de la fiche technique)",
+            "le son qu'il émet"
+          ]
+        },
+        "electrical": {
+          "claims": "Chaque fil est rappelé au niveau haut par son demi-enroulement de 50 ohms (vers le rail 5 V), de sorte que la tension de saturation d'un pilote apparaît ; les tensions aux bornes des moitiés sont celles des réseaux analogiques, échantillonnées 5 us après un changement de fil et chaque milliseconde tant que le rotor bouge ; le comportement est celui du modèle Lua.",
+          "omissions": [
+            "le jeu des engrenages",
+            "l'irréversibilité des engrenages face à une charge qui entraîne l'axe (le couple de frottement de 600 à 1200 gf.cm de la fiche technique)",
+            "le rappel des enroulements sur les fils va au rail 5 V, pas à la tension propre du fil rouge",
+            "le couplage entre les deux moitiés d'un enroulement (chacune décroît seule)",
+            "le courant d'alimentation tiré sur les réseaux",
+            "l'échauffement (l'élévation sous 40 K de la fiche technique)",
+            "le son qu'il émet",
+            "l'inductance des enroulements sur les réseaux (pas de surtension inductive)"
+          ]
+        }
+      }
+    }
+  }
 }

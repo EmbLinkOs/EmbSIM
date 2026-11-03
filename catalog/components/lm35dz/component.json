@@ -161,5 +161,26 @@
   },
   "artwork": {
     "svg": "artwork.svg"
+  },
+  "i18n": {
+    "fr": {
+      "source": "66da111999e7",
+      "description": "LM35DZ : température ambiante pilotée de l'extérieur convertie en tension. Pas de dynamique thermique.",
+      "fidelity": {
+        "electrical": {
+          "claims": "Vout nominale = 0 V + 10 mV/degC * température ; résistance de sortie finie ; écrêtage à l'alimentation.",
+          "omissions": [
+            "la classe de précision",
+            "l'auto-échauffement",
+            "la constante de temps thermique",
+            "le courant d'alimentation",
+            "le bruit",
+            "le circuit de polarisation du LM35 pour les températures négatives",
+            "aucune qualification par un modèle du fabricant",
+            "la précision selon l'alimentation et le fonctionnement hors plage"
+          ]
+        }
+      }
+    }
   }
 }

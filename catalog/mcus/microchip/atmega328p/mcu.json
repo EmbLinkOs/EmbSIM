@@ -272,5 +272,46 @@
       }
     ],
     "notes": "The register description is written for EmbSIM from the datasheet; no vendor file is shipped (ADR-020)."
+  },
+  "i18n": {
+    "fr": {
+      "source": "2b39e86a8eb7",
+      "description": "Microchip (Atmel) ATmega328P : AVR 8 bits jusqu'à 20 MHz, 32 Kio de flash, 2 Kio de SRAM, 1 Kio d'EEPROM ; le MCU de l'Arduino Uno.",
+      "fidelity": {
+        "functional": {
+          "claims": "Exécution des instructions AVR5 extraite d'EmbCC (chaque instruction de l'ATmega328P avec les drapeaux de SREG, validée là-bas face à QEMU), interruptions par la table des vecteurs avec leurs priorités, SLEEP ; chaque registre de l'espace d'E/S de la fiche technique avec sa valeur de réinitialisation et son accès ; des modèles de comportement de PORTB/C/D (DDR, PORT, PIN avec les rappels au niveau haut et PUD), d'INT0/INT1 et des interruptions sur changement de broche, des Timer/Counter0, 1 et 2 (tous les modes de forme d'onde, registres de comparaison à double tampon, les six broches OC basculant à leur horloge), de la capture d'entrée du Timer/Counter1 (ICP1 ou le comparateur, l'un ou l'autre front, le réducteur de bruit, ICR1 à l'horloge du front), de l'USART0 (trames au débit sur PD1, depuis PD0 et l'entrée série de la session ; la FIFO de réception à deux niveaux et le registre à décalage, DOR0 sur un débordement des octets d'un port hôte), de l'ADC 10 bits à partir des tensions des broches, du SPI en maître (modes 0 à 3, DORD, SPR et SPI2X, WCOL, SPIF effacé par SPSR puis SPDR ou par son vecteur, la faute de mode de SS) sur PB2 à PB5, du TWI en maître (les états maître émetteur et récepteur de la fiche technique, START répété, STOP avec START, TWWC, TWBR et le SCL du prédiviseur) en drain ouvert sur PC4 et PC5, de l'EEPROM de 1 Kio, du prédiviseur d'horloge, et du chien de garde (les délais de WDP sur son oscillateur de 128 kHz, WDR, modes interruption et réinitialisation système, la séquence temporisée du niveau de sûreté 1, WDRF dans MCUSR à travers sa réinitialisation), des drapeaux de réinitialisation de MCUSR (PORF à la mise sous tension ; EXTRF par la broche RESET, les autres gardés), de la prise en charge du chargeur d'amorçage (les fusibles tels que la carte les programme : la section d'amorçage de BOOTSZ, le vecteur de réinitialisation de BOOTRST, CKDIV8 ; IVSEL de MCUCR avec la séquence temporisée d'IVCE ; SPM depuis la section d'amorçage : le tampon de page temporaire, l'effacement et l'écriture d'une page en 4,1 ms, la section RWW continuant avec RWWSB jusqu'à RWWSRE, la section NRWW arrêtant le cœur, les bits de verrouillage d'amorçage refusant les écritures, l'interruption SPM Ready, la ligne de signature et les bits de fusibles et de verrouillage lus par LPM ; une flash effacée parcourue jusqu'à l'adresse 0 ; ce que le programme a écrit gardé à travers une coupure d'alimentation), et des valeurs maximales absolues des broches d'E/S (un avertissement pin.over_current au-delà de 40 mA dans une broche, un pin.over_voltage hors de -0,5 V à VCC + 0,5 V, section 28.1 de la fiche technique) et de leurs diodes de protection (une broche maintenue à environ une chute de diode au-delà de son rail, comme le suppose l'AVR182 de Microchip), et du comparateur analogique (AIN0 ou la référence de bande interdite face à AIN1 ou à la broche du multiplexeur de l'ADC avec ACME, ACO, ACI sur son basculement, son front descendant ou montant, son vecteur, ACD ; sur un réseau analogique chaque broche d'entrée est un seuil à la tension de l'autre, franchi dans le solveur analogique à son instant).",
+          "omissions": [
+            "les dommages au-delà des valeurs maximales absolues (la fiche technique ne dit pas où ils surviennent : avertissements seulement), la limite de 200 mA sur VCC et GND, et le courant des diodes de protection allant dans VCC (elles écrêtent à l'alimentation nominale : une puce non alimentée ne l'est pas par ses broches)",
+            "le mode SPI esclave",
+            "le mode TWI esclave, l'arbitrage et les erreurs de bus",
+            "la dispersion de l'oscillateur du chien de garde (exactement 128 kHz) et le niveau de sûreté 2 (WDTON)",
+            "le délai de synchronisation, le décalage et l'hystérésis du comparateur analogique",
+            "le délai constant du synchroniseur de capture d'entrée",
+            "les entrées d'horloge externe T0 et T1",
+            "l'horloge asynchrone du timer 2",
+            "la protection en lecture de LPM par les bits de verrouillage d'amorçage et les interruptions qu'ils retiennent ; la lecture ou l'exécution de la section RWW tant que RWWSB est positionné (indéfini sur la puce : LPM se lit 0xff avec un avertissement, le code s'exécute tel que la flash le contient)",
+            "le choix d'horloge du fusible bas (CKSEL, SUT : la description de la carte donne l'horloge) et les bits de verrouillage LB1 et LB2 (ils protègent la programmation externe, non modélisée)",
+            "les erreurs de trame et de parité sur les octets venant de l'entrée de la session",
+            "la détection de baisse de tension"
+          ]
+        },
+        "timed": {
+          "claims": "Durée des instructions exacte au cycle tirée du résumé du jeu d'instructions de la fiche technique (ADR-015) : un branchement pris et les sauts coûtent leurs cycles supplémentaires, l'entrée d'une interruption 4 (8 depuis SLEEP) ; les timers, l'USART, l'ADC, le SCK du SPI et le SCL du TWI comptent ces cycles à travers leurs prédiviseurs.",
+          "omissions": [
+            "la latence du synchroniseur d'entrée",
+            "l'arrêt du cœur pendant une lecture de l'EEPROM",
+            "la temporisation de l'échantillonneur-bloqueur de l'ADC"
+          ]
+        },
+        "electrical": {
+          "claims": "Modèles de broche GPIO par défaut à 5 V tirés de la fiche technique : voh/vol à 20 mA, seuils d'entrée 0,3/0,6 Vcc avec hystérésis, rappels de 35 k.",
+          "omissions": [
+            "les structures de protection ESD",
+            "le courant d'alimentation",
+            "l'impédance d'entrée de l'ADC"
+          ]
+        }
+      }
+    }
   }
 }

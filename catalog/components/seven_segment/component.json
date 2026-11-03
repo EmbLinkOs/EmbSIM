@@ -367,5 +367,39 @@
   },
   "tests": [
     "tests/*.json"
-  ]
+  ],
+  "i18n": {
+    "fr": {
+      "source": "ba403aac42c3",
+      "description": "Afficheur LED 7 segments à un chiffre avec point décimal, cathode commune ou anode commune : un segment s'allume quand sa broche et COM sont à des niveaux opposés. Montre le chiffre sur la vue de la carte.",
+      "fidelity": {
+        "functional": {
+          "claims": "Un segment est allumé quand sa broche et COM sont à des niveaux logiques opposés (un COM non connecté compte comme le bon).",
+          "omissions": [
+            "la tension et le courant directs (utilisez des résistances en série dans les sessions électriques)",
+            "la luminosité",
+            "la persistance du multiplexage"
+          ]
+        },
+        "timed": {
+          "claims": "Comme en fonctionnel ; délais tels qu'indiqués.",
+          "omissions": [
+            "la tension et le courant directs (utilisez des résistances en série dans les sessions électriques)",
+            "la luminosité",
+            "la persistance du multiplexage"
+          ]
+        },
+        "electrical": {
+          "claims": "Les broches se relient aux réseaux analogiques avec les modèles de broche par défaut de la famille ; le comportement est celui du modèle Lua.",
+          "omissions": [
+            "la tension et le courant directs (utilisez des résistances en série dans les sessions électriques)",
+            "la luminosité",
+            "la persistance du multiplexage",
+            "le courant d'alimentation",
+            "les limites de courant de sortie"
+          ]
+        }
+      }
+    }
+  }
 }

@@ -4,6 +4,7 @@
 #include "harness.h"
 #include "util/match.h"
 #include "util/json.h"
+#include "util/diag.h"
 #include "util/num.h"
 
 static esk_alloc A;
@@ -107,6 +108,44 @@ static void test_match(void)
     CHECK(esk_match_last("[abc", t, strlen(t), &m) == -1);
 }
 
+static void test_french(void)
+{
+    char fr[512];
+    /* a format's conversions carried into the French */
+    CHECK(esk_diag_french("net.floating_input", "U1.PA0", "U1.PA0 sampled net N3 with no driver and no pull", fr,
+                          sizeof fr));
+    CHECK(!strcmp(fr, "U1.PA0 a échantillonné le réseau N3 sans pilote ni rappel"));
+    /* the MCU runtime's component prefix, and a fragment translated */
+    CHECK(esk_diag_french("mcu.clock_gated", "U1", "U1: a write at pc 0x08000124: USART2.CR1 is ignored while its clock is off (RCC.APB1ENR.USART2EN is 0)",
+                          fr, sizeof fr));
+    CHECK(!strcmp(fr, "U1 : une écriture à pc 0x08000124 : USART2.CR1 ignore l'écriture tant que son horloge est coupée (RCC.APB1ENR.USART2EN vaut 0)"));
+    /* %% and floating conversions */
+    CHECK(esk_diag_french("perf.hot_net", "N1", "N1 takes 93% of the analog steps: each of its 120 edges (1000 Hz) re-solves its 4-node island of N1 (embsim run --circuit-profile shows the rest)",
+                          fr, sizeof fr));
+    CHECK(!strncmp(fr, "N1 prend 93% des pas analogiques : chacun de ses 120 fronts (1000 Hz)", 69));
+    /* a message with text appended after its format */
+    CHECK(esk_diag_french("analog.no_convergence", "isl0", "transient did not converge; worst residuals: N1 (0.1, via R1)", fr,
+                          sizeof fr));
+    CHECK(!strcmp(fr, "transient n'a pas convergé ; pires résidus : N1 (0.1, via R1)"));
+    /* a message passed through whole has no translation */
+    CHECK(!esk_diag_french("schema.parse", NULL, "unexpected character", fr, sizeof fr));
+    CHECK(!esk_diag_french("catalog.model_unsupported", NULL, "lib: why", fr, sizeof fr));
+    CHECK(!esk_diag_french("no.such_code", NULL, "anything", fr, sizeof fr));
+    /* a message cut at the record's length still finds its format */
+    {
+        char cutmsg[240];
+        memset(cutmsg, 'x', sizeof cutmsg);
+        memcpy(cutmsg, "B1.U1: no behavioural model yet for ", 36);
+        cutmsg[239] = 0;
+        CHECK(esk_diag_french("mcu.model_missing", "B1.U1", cutmsg, fr, sizeof fr));
+        CHECK(!strncmp(fr, "B1.U1 : pas encore de modèle de comportement pour xxx", 54));
+        cutmsg[100] = 0; /* a short one that does not reach its end is another message */
+        CHECK(!esk_diag_french("mcu.model_missing", "B1.U1", cutmsg, fr, sizeof fr));
+    }
+    /* a short buffer is cut, never overrun */
+    CHECK(esk_diag_french("io.read", NULL, "cannot read /a/very/long/path", fr, 8) && strlen(fr) == 7);
+}
+
 TEST_MAIN_BEGIN
 esk_alloc_init(&A, NULL);
 RUN(test_roundtrip);
@@ -114,5 +153,6 @@ RUN(test_match);
 RUN(test_errors);
 RUN(test_build);
 RUN(test_numbers);
+RUN(test_french);
 CHECK_EQ(A.allocations, 0);
 TEST_MAIN_END

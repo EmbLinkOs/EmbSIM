@@ -233,5 +233,46 @@
   },
   "tests": [
     "tests/*.json"
-  ]
+  ],
+  "i18n": {
+    "fr": {
+      "source": "f090ec713d7b",
+      "description": "OPSCO SK6812MINI-HS, une LED RVB de 3,5 x 3,7 mm avec son pilote intégré (celle de l'ESP32-C3-DevKitM-1) : couleur sur 24 bits reçue sur DIN dans le code à un fil du WS2812, 0 et 1 distingués par la durée de l'état haut, le reste transmis sur DOUT, verrouillée par un état bas de plus de 80 us.",
+      "fidelity": {
+        "functional": {
+          "claims": "Le code à un fil du WS2812 sur DIN, distingué à 0,49 us (entre le 0 le plus long, 0,4 us, et le 1 le plus court, 0,58 us, de la fiche technique) ; les 24 premiers bits après une réinitialisation gardés (GRB, MSB en premier), le reste transmis sur DOUT remis en forme en états hauts de 0,32 / 0,64 us ; un état bas de plus de 80 us verrouille la couleur ; éteinte à la mise sous tension ; éteinte et sourde sous 3,0 V.",
+          "omissions": [
+            "la lumière elle-même (couleurs rapportées comme niveaux MLI sur 8 bits, sans intensité par canal ni baisse sous l'alimentation nominale)",
+            "le scintillement de la MLI",
+            "le courant d'alimentation (jusqu'à 12 mA par couleur) et sa chute de tension",
+            "la dépendance du seuil d'entrée à VDD (VIH 0,7 VDD, VIL 0,3 VDD) au-delà des niveaux du modèle de broche",
+            "le délai de la remise en forme (TPLH, TPHL jusqu'à 500 ns)",
+            "l'alimentation sous laquelle elle s'arrête : la fiche technique donne 3,7 à 5,5 V sans limite basse de fonctionnement ; Espressif l'alimente en 3,3 V sur l'ESP32-C3-DevKitM-1, où elle s'allume, donc le modèle accepte des données jusqu'à 3,0 V, une hypothèse"
+          ]
+        },
+        "timed": {
+          "claims": "Comme en fonctionnel.",
+          "omissions": [
+            "la lumière elle-même (couleurs rapportées comme niveaux MLI sur 8 bits, sans intensité par canal ni baisse sous l'alimentation nominale)",
+            "le scintillement de la MLI",
+            "le courant d'alimentation (jusqu'à 12 mA par couleur) et sa chute de tension",
+            "la dépendance du seuil d'entrée à VDD (VIH 0,7 VDD, VIL 0,3 VDD) au-delà des niveaux du modèle de broche",
+            "le délai de la remise en forme (TPLH, TPHL jusqu'à 500 ns)",
+            "l'alimentation sous laquelle elle s'arrête : la fiche technique donne 3,7 à 5,5 V sans limite basse de fonctionnement ; Espressif l'alimente en 3,3 V sur l'ESP32-C3-DevKitM-1, où elle s'allume, donc le modèle accepte des données jusqu'à 3,0 V, une hypothèse"
+          ]
+        },
+        "electrical": {
+          "claims": "DIN et DOUT se relient aux réseaux analogiques avec les modèles de broche par défaut de la famille ; la tension de VDD conditionne la LED ; le comportement est celui du modèle Lua.",
+          "omissions": [
+            "la lumière elle-même (couleurs rapportées comme niveaux MLI sur 8 bits, sans intensité par canal ni baisse sous l'alimentation nominale)",
+            "le scintillement de la MLI",
+            "le courant d'alimentation (jusqu'à 12 mA par couleur) et sa chute de tension",
+            "la dépendance du seuil d'entrée à VDD (VIH 0,7 VDD, VIL 0,3 VDD) au-delà des niveaux du modèle de broche",
+            "le délai de la remise en forme (TPLH, TPHL jusqu'à 500 ns)",
+            "l'alimentation sous laquelle elle s'arrête : la fiche technique donne 3,7 à 5,5 V sans limite basse de fonctionnement ; Espressif l'alimente en 3,3 V sur l'ESP32-C3-DevKitM-1, où elle s'allume, donc le modèle accepte des données jusqu'à 3,0 V, une hypothèse"
+          ]
+        }
+      }
+    }
+  }
 }

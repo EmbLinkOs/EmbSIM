@@ -98,5 +98,27 @@
   },
   "tests": [
     "tests/*.json"
-  ]
+  ],
+  "i18n": {
+    "fr": {
+      "source": "9e7d19481e6c",
+      "description": "Symbole de rail d'alimentation idéal ; le réseau qu'il touche est maintenu à la tension configurée.",
+      "fidelity": {
+        "functional": {
+          "claims": "Impose (1, alimentation) sur son réseau (SPEC-003 §3)."
+        },
+        "timed": {
+          "claims": "Comme en fonctionnel sur les réseaux numériques, source idéale sur les réseaux analogiques."
+        },
+        "electrical": {
+          "claims": "Source de tension idéale de nominal_v entre le réseau et la masse (SPEC-003 §4 broche d'alimentation).",
+          "omissions": [
+            "l'impédance de sortie",
+            "la limite de courant",
+            "l'ondulation"
+          ]
+        }
+      }
+    }
+  }
 }

@@ -191,5 +191,34 @@
   },
   "tests": [
     "tests/*.json"
-  ]
+  ],
+  "i18n": {
+    "fr": {
+      "source": "f78747b5242c",
+      "description": "Bouton tactile momentané, normalement ouvert ; fermé tant qu'il est appuyé.",
+      "fidelity": {
+        "functional": {
+          "claims": "Ouvert ou fermé selon l'entrée pressed ; pas de temporisation (SPEC-003 §5 push_button).",
+          "omissions": [
+            "le rebond"
+          ]
+        },
+        "timed": {
+          "claims": "Rebond (actif par défaut, ADR-034) sous forme d'une rafale de basculements répartie sur bounce_ms à l'appui et au relâchement.",
+          "omissions": [
+            "l'usure",
+            "la température"
+          ]
+        },
+        "electrical": {
+          "claims": "Résistance ron fermé, roff ouvert ; le rebond génère des points d'arrêt (SPEC-004 §7 switch).",
+          "omissions": [
+            "la capacité de contact",
+            "les arcs",
+            "l'usure"
+          ]
+        }
+      }
+    }
+  }
 }

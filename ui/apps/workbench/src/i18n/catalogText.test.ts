@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
 // Copyright 2026 Junior Deogracias
 import { describe, expect, it } from 'vitest';
-import { catalogDescription, catalogFidelity } from './catalogText';
+import { catalogDescription, catalogFidelity, diagnosticMessage } from './catalogText';
 
 const entry = {
   description: 'A 1 kOhm resistor.',
@@ -29,5 +29,14 @@ describe('catalog text', () => {
   it('keeps the English omissions when the translation’s do not line up', () => {
     const stale = { ...entry, i18n: { fr: { fidelity: { electrical: { claims: 'La loi d’Ohm.', omissions: ['l’échauffement'] } } } } };
     expect(catalogFidelity(stale, 'electrical', 'fr')?.omissions).toEqual(['self-heating', 'noise']);
+  });
+});
+
+describe('diagnosticMessage', () => {
+  it('shows the engine translation in its language and English otherwise', () => {
+    const r = { message: 'cannot read x', messages: { fr: 'impossible de lire x' } };
+    expect(diagnosticMessage(r, 'fr')).toBe('impossible de lire x');
+    expect(diagnosticMessage(r, 'en')).toBe('cannot read x');
+    expect(diagnosticMessage({ message: 'raw' }, 'fr')).toBe('raw');
   });
 });

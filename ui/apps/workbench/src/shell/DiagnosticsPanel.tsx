@@ -9,6 +9,8 @@ import { useProject } from '../stores/project';
 import { useSelection } from '../stores/selection';
 import { useSession } from '../stores/session';
 import { t as tr } from '../i18n';
+import { diagnosticMessage } from '../i18n/catalogText';
+import { useSettings } from '../stores/settings';
 
 const ICON: Record<DiagnosticRecord['severity'], React.ReactNode> = {
   info: <Info />,
@@ -30,6 +32,7 @@ export function DiagnosticsPanel() {
   const selectComponent = useSelection((s) => s.selectComponent);
   const setPerspective = useLayout((s) => s.setPerspective);
   const project = useProject((s) => s.project);
+  const language = useSettings((s) => s.language);
 
   useEffect(() => {
     markRead();
@@ -83,7 +86,7 @@ export function DiagnosticsPanel() {
           '—'
         ),
     },
-    { id: 'message', header: tr('diag.message'), cell: (r) => r.message },
+    { id: 'message', header: tr('diag.message'), cell: (r) => diagnosticMessage(r, language) },
   ];
   const rows = diagnostics.map((d, i) => ({ ...d, key: `${i}` }));
   if (rows.length === 0) {

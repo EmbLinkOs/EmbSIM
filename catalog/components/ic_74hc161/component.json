@@ -315,5 +315,36 @@
   },
   "tests": [
     "tests/*.json"
-  ]
+  ],
+  "i18n": {
+    "fr": {
+      "source": "af0ab6a62fb4",
+      "description": "Compteur binaire synchrone 4 bits préréglable avec remise à zéro générale asynchrone (74HC161) : compte sur front montant de CP tant que CEP et CET sont hautes, charge D0-D3 tant que PE_N est basse ; TC est haute à 15 avec CET.",
+      "fidelity": {
+        "functional": {
+          "claims": "Comptage et chargement synchrones sur front montant de CP, remise à zéro asynchrone, TC = (Q = 15) et CET.",
+          "omissions": [
+            "les temps d'établissement et de maintien",
+            "le délai de CP à TC est le même que de CP à Q"
+          ]
+        },
+        "timed": {
+          "claims": "Comme en fonctionnel ; délais tels qu'indiqués.",
+          "omissions": [
+            "les temps d'établissement et de maintien",
+            "le délai de CP à TC est le même que de CP à Q"
+          ]
+        },
+        "electrical": {
+          "claims": "Les broches se relient aux réseaux analogiques avec les modèles de broche par défaut de la famille ; le comportement est celui du modèle Lua.",
+          "omissions": [
+            "les temps d'établissement et de maintien",
+            "le délai de CP à TC est le même que de CP à Q",
+            "le courant d'alimentation",
+            "les limites de courant de sortie"
+          ]
+        }
+      }
+    }
+  }
 }

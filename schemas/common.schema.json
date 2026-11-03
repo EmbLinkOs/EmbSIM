@@ -166,6 +166,7 @@
           "type": "object",
           "additionalProperties": false,
           "properties": {
+            "source": {"type": "string", "pattern": "^[0-9a-f]{12}$", "description": "The first 12 hex digits of the SHA-256 of the English text the translation was made from (tools/i18n/catalog_text.py): a translation whose English has changed since is out of date."},
             "description": {"type": "string", "minLength": 1},
             "fidelity": {
               "type": "object",

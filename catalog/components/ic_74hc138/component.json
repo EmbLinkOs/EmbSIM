@@ -299,5 +299,33 @@
   },
   "tests": [
     "tests/*.json"
-  ]
+  ],
+  "i18n": {
+    "fr": {
+      "source": "8aa0ed119d35",
+      "description": "Décodeur/démultiplexeur 3 vers 8 à sorties actives à l'état bas (74HC138) : avec E1_N et E2_N basses et E3 haute, la sortie choisie par A2-A0 passe à l'état bas ; décodage d'adresses et sélections de puces.",
+      "fidelity": {
+        "functional": {
+          "claims": "Table de fonctions du 74HC138.",
+          "omissions": [
+            "les parasites pendant les changements d'adresse"
+          ]
+        },
+        "timed": {
+          "claims": "Comme en fonctionnel ; délais tels qu'indiqués.",
+          "omissions": [
+            "les parasites pendant les changements d'adresse"
+          ]
+        },
+        "electrical": {
+          "claims": "Les broches se relient aux réseaux analogiques avec les modèles de broche par défaut de la famille ; le comportement est celui du modèle Lua.",
+          "omissions": [
+            "les parasites pendant les changements d'adresse",
+            "le courant d'alimentation",
+            "les limites de courant de sortie"
+          ]
+        }
+      }
+    }
+  }
 }

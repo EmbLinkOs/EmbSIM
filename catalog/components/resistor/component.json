@@ -143,5 +143,36 @@
   },
   "tests": [
     "tests/*.json"
-  ]
+  ],
+  "i18n": {
+    "fr": {
+      "source": "5e39e2a3975b",
+      "description": "Résistance linéaire idéale avec coefficients de température facultatifs.",
+      "fidelity": {
+        "functional": {
+          "claims": "Un fil : les deux broches sont le même nœud logique.",
+          "omissions": [
+            "la résistance",
+            "les rappels formés avec d'autres composants"
+          ]
+        },
+        "timed": {
+          "claims": "Comme en électrique quand ses réseaux sont analogiques ; sinon un fil.",
+          "omissions": [
+            "le bruit"
+          ]
+        },
+        "electrical": {
+          "claims": "Résistance linéaire r avec dépendance à la température tc1/tc2 (SPEC-004 §7 resistor) ; la résistance de chaque instance tirée uniformément dans ±tolerance autour de la valeur nominale à partir de la graine du projet et de son id (ADR-034 ; nominale avec settings.imperfections \"ideal\").",
+          "omissions": [
+            "le bruit thermique",
+            "l'auto-échauffement",
+            "l'inductance et la capacité parasites",
+            "la puissance nominale",
+            "la répartition dans la plage de tolérance (uniforme : un fabricant ne garantit que la plage)"
+          ]
+        }
+      }
+    }
+  }
 }

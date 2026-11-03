@@ -137,5 +137,30 @@
   },
   "tests": [
     "tests/*.json"
-  ]
+  ],
+  "i18n": {
+    "fr": {
+      "source": "3e37f7e1f97d",
+      "description": "Diode zener/à avalanche avec tension de claquage vz et résistance dynamique rz.",
+      "fidelity": {
+        "functional": {
+          "claims": "Un fil.",
+          "omissions": [
+            "l'écrêtage"
+          ]
+        },
+        "timed": {
+          "claims": "Comme en électrique."
+        },
+        "electrical": {
+          "claims": "Diode de Shockley en direct plus claquage inverse à vz avec résistance de pente rz (SPEC-004 §7 zener).",
+          "omissions": [
+            "le coefficient de température de vz",
+            "la douceur du coude",
+            "la capacité"
+          ]
+        }
+      }
+    }
+  }
 }

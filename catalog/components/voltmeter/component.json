@@ -108,5 +108,22 @@
   },
   "tests": [
     "tests/*.json"
-  ]
+  ],
+  "i18n": {
+    "fr": {
+      "source": "00ee7f1ca017",
+      "description": "Voltmètre continu différentiel câblé. Sa résistance d'entrée finie tire du courant entre + et - ; inverser les cordons inverse la lecture.",
+      "fidelity": {
+        "electrical": {
+          "claims": "Résistance linéaire finie ; tension aux bornes et courant observés avec leur signe.",
+          "omissions": [
+            "Les calibres, la précision, le bruit et l'étalonnage propres au fabricant",
+            "La protection contre les surcharges, la fusion du fusible, l'échauffement et les dommages",
+            "Les limites de bande passante et la quantification de l'échantillonnage et de l'ADC",
+            "Les limites de mode commun et une liaison à la terre ou au châssis ; le cordon de référence doit être câblé explicitement"
+          ]
+        }
+      }
+    }
+  }
 }

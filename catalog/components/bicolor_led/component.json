@@ -162,5 +162,40 @@
         }
       }
     ]
+  },
+  "i18n": {
+    "fr": {
+      "source": "56c7df7c88b1",
+      "description": "Deux jonctions rouge et verte en antiparallèle. Inverser le courant choisit la puce ; chaque puce rapporte son courant et sa lumière normalisée. Une limitation de courant externe est nécessaire. Topologie générique, pas un boîtier nommé.",
+      "fidelity": {
+        "functional": {
+          "claims": "Chaque puce s'allume pour une anode haute connue et une cathode basse connue, avec l'indication idéale d'emblink/led.",
+          "omissions": [
+            "la qualification par le fabricant",
+            "l'étalonnage optique",
+            "les effets thermiques et les dommages",
+            "la capacité de jonction et le claquage inverse"
+          ]
+        },
+        "timed": {
+          "claims": "Chaque puce s'allume pour une anode haute connue et une cathode basse connue, avec l'indication idéale d'emblink/led.",
+          "omissions": [
+            "la qualification par le fabricant",
+            "l'étalonnage optique",
+            "les effets thermiques et les dommages",
+            "la capacité de jonction et le claquage inverse"
+          ]
+        },
+        "electrical": {
+          "claims": "Jonctions de LED indépendantes suivant les modèles statiques courant-tension d'emblink/led ; les liaisons internes des lignes et des colonnes conservent le courant.",
+          "omissions": [
+            "la qualification par le fabricant",
+            "l'étalonnage optique",
+            "les effets thermiques et les dommages",
+            "la capacité de jonction et le claquage inverse"
+          ]
+        }
+      }
+    }
   }
 }

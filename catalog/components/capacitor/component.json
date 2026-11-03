@@ -134,5 +134,32 @@
   },
   "tests": [
     "tests/*.json"
-  ]
+  ],
+  "i18n": {
+    "fr": {
+      "source": "fa1b098467b7",
+      "description": "Condensateur idéal avec ESR et tension initiale facultatives.",
+      "fidelity": {
+        "functional": {
+          "claims": "Broches seulement : un circuit ouvert, comme un condensateur en continu (ainsi les condensateurs de découplage et de filtrage d'une carte fonctionnent sous toutes les politiques).",
+          "omissions": [
+            "la charge et les délais qu'elle donne"
+          ]
+        },
+        "timed": {
+          "claims": "Comme en électrique ; un condensateur n'a pas de sens au niveau logique."
+        },
+        "electrical": {
+          "claims": "Capacité linéaire avec ESR et condition initiale, modèle compagnon trapèze/BDF2 (SPEC-004 §7 capacitor) ; la capacité de chaque instance tirée uniformément dans ±tolerance autour de la valeur nominale à partir de la graine du projet et de son id (ADR-034 ; nominale avec settings.imperfections \"ideal\").",
+          "omissions": [
+            "l'absorption diélectrique",
+            "la fuite",
+            "l'ESL",
+            "le coefficient de tension",
+            "la répartition dans la plage de tolérance (uniforme : un fabricant ne garantit que la plage)"
+          ]
+        }
+      }
+    }
+  }
 }

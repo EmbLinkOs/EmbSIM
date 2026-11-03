@@ -183,5 +183,46 @@
   },
   "tests": [
     "tests/*.json"
-  ]
+  ],
+  "i18n": {
+    "fr": {
+      "source": "8095d7e331f7",
+      "description": "Capteur de température et d'humidité relative à protocole à un fil (DHT22 / AM2302) : après que l'hôte a maintenu DATA bas pendant 1 ms puis l'a libéré, le capteur répond par 80 us bas, 80 us haut et 40 bits (50 us bas, puis 26 us haut pour 0 ou 70 us pour 1) : humidité x10, température x10 et une somme de contrôle. La température et l'humidité sont des entrées interactives.",
+      "fidelity": {
+        "functional": {
+          "claims": "Le protocole à un fil de l'AM2302 à la temporisation d'une vraie puce, mesurée sur 15 captures sigrok d'un AM2302 (environ 230 lectures) et vérifiée sur elles par tools/verify/replay_captures.py : la réponse 25 us après que l'hôte libère la ligne, 80 us bas et 81 us haut, puis 40 bits de 54 us bas chacun (64 us avant le premier bit de chaque octet) et 26 us (0) ou 73 us (1) haut, l'humidité et la température signée x10 et une somme de contrôle, et un état bas final de 47 us ; un départ de 400 us ou plus reçoit une réponse, de 250 us seulement après 3 s sans lecture et de 150 us après 11 s, rien de plus court, et un départ moins de 0,4 s après la dernière réponse est ignoré (le comportement de la vraie puce ; la fiche technique demande 1 ms) ; une réponse seulement avec VCC à 3,0 V ou plus et après la première seconde suivant la mise sous tension ; chaque lecture envoie la mesure précédente, une nouvelle étant faite au plus toutes les 2 s ; l'élément suit l'air avec les temps de réponse de la fiche technique (5 s pour l'humidité, 10 s pour la température, premier ordre) ; lectures bornées à -40..80 C et 0..99,9 %HR par pas de 0,1.",
+          "omissions": [
+            "la dispersion de précision entre exemplaires (+-0,5 C, +-2 %HR)",
+            "la dérive à long terme",
+            "le courant d'alimentation",
+            "les coupures d'alimentation entre deux lectures (l'alimentation est examinée à l'arrivée d'un signal de départ)",
+            "la dispersion temporelle entre exemplaires : les temps sont ceux d'un AM2302 (les captures de quatre puces sœurs AM23xx concordent à 2 us près)",
+            "le hasard dans la réponse à un départ faible près d'un seuil (la vraie puce répond à certains départs de 300 us et pas à d'autres ; le modèle décide par le seul temps de repos)",
+            "la mesure que renvoie une lecture suit la description de la fiche technique, sans vérification sur une capture (la pièce des captures n'a pas changé)"
+          ]
+        },
+        "timed": {
+          "claims": "Comme en fonctionnel ; délais tels qu'indiqués.",
+          "omissions": [
+            "la dispersion de précision entre exemplaires (+-0,5 C, +-2 %HR)",
+            "la dérive à long terme",
+            "le courant d'alimentation",
+            "les coupures d'alimentation entre deux lectures (l'alimentation est examinée à l'arrivée d'un signal de départ)",
+            "les tolérances temporelles (valeurs nominales uniquement)"
+          ]
+        },
+        "electrical": {
+          "claims": "Les broches se relient aux réseaux analogiques avec les modèles de broche par défaut de la famille ; le comportement est celui du modèle Lua.",
+          "omissions": [
+            "la dispersion de précision entre exemplaires (+-0,5 C, +-2 %HR)",
+            "la dérive à long terme",
+            "le courant d'alimentation",
+            "les coupures d'alimentation entre deux lectures (l'alimentation est examinée à l'arrivée d'un signal de départ)",
+            "les tolérances temporelles (valeurs nominales uniquement)",
+            "les limites de courant de sortie"
+          ]
+        }
+      }
+    }
+  }
 }

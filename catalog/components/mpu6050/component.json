@@ -396,5 +396,58 @@
   },
   "tests": [
     "tests/*.json"
-  ]
+  ],
+  "i18n": {
+    "fr": {
+      "source": "ca815113b579",
+      "description": "Accéléromètre et gyroscope InvenSense MPU-6050 sur I2C (0x68/0x69 selon AD0) : en veille après la mise sous tension, la fréquence d'échantillonnage tirée de SMPLRT_DIV et du filtre passe-bas numérique, quatre pleines échelles pour chaque capteur, la température de la puce et l'interruption de données prêtes. L'accélération (g), la vitesse de rotation (deg/s) et la température sont des entrées interactives.",
+      "fidelity": {
+        "functional": {
+          "claims": "I2C en 0x68 + AD0 avec lectures et écritures auto-incrémentées ; WHO_AM_I 0x68 ; mise sous tension et DEVICE_RESET vers la veille avec registres effacés ; la fréquence d'échantillonnage tirée de SMPLRT_DIV et du DLPF, chaque échantillon prenant les entrées telles qu'elles étaient un délai de DLPF plus tôt ; les quatre pleines échelles de l'accéléromètre et du gyroscope avec saturation aux limites de 16 bits ; la température à 340 LSB/C à partir de 36,53 C ; des lectures en rafale issues d'un même instant d'échantillonnage ; les axes en veille et TEMP_DIS figés ; DATA_RDY dans INT_STATUS et sur INT (impulsion de 50 us ou verrouillée, options de niveau et de drain ouvert) ; aucune réponse sous 2,375 V.",
+          "omissions": [
+            "la FIFO (FIFO_COUNT se lit 0)",
+            "le maître I2C auxiliaire et le mode transparent (XDA, XCL)",
+            "la détection de mouvement",
+            "l'autotest",
+            "le mode CYCLE (réveils basse consommation de l'accéléromètre)",
+            "FSYNC et CLKIN",
+            "le bruit du capteur, ses décalages et leur dérive avec la température (lectures exactes au LSB près)",
+            "la sensibilité transverse",
+            "la stabilisation au démarrage (30 ms pour le gyroscope)",
+            "le courant d'alimentation"
+          ]
+        },
+        "timed": {
+          "claims": "Comme en fonctionnel.",
+          "omissions": [
+            "la FIFO (FIFO_COUNT se lit 0)",
+            "le maître I2C auxiliaire et le mode transparent (XDA, XCL)",
+            "la détection de mouvement",
+            "l'autotest",
+            "le mode CYCLE (réveils basse consommation de l'accéléromètre)",
+            "FSYNC et CLKIN",
+            "le bruit du capteur, ses décalages et leur dérive avec la température (lectures exactes au LSB près)",
+            "la sensibilité transverse",
+            "la stabilisation au démarrage (30 ms pour le gyroscope)",
+            "le courant d'alimentation"
+          ]
+        },
+        "electrical": {
+          "claims": "Les broches se relient aux réseaux analogiques avec les modèles de broche par défaut de la famille ; la tension de VDD conditionne la puce ; le comportement est celui du modèle Lua.",
+          "omissions": [
+            "la FIFO (FIFO_COUNT se lit 0)",
+            "le maître I2C auxiliaire et le mode transparent (XDA, XCL)",
+            "la détection de mouvement",
+            "l'autotest",
+            "le mode CYCLE (réveils basse consommation de l'accéléromètre)",
+            "FSYNC et CLKIN",
+            "le bruit du capteur, ses décalages et leur dérive avec la température (lectures exactes au LSB près)",
+            "la sensibilité transverse",
+            "la stabilisation au démarrage (30 ms pour le gyroscope)",
+            "le courant d'alimentation"
+          ]
+        }
+      }
+    }
+  }
 }

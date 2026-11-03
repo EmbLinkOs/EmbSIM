@@ -219,5 +219,41 @@
   },
   "tests": [
     "tests/*.json"
-  ]
+  ],
+  "i18n": {
+    "fr": {
+      "source": "62ac797d2a09",
+      "description": "Le multimètre portable à valeur efficace vraie 87V de Fluke, utilisé comme sur le banc : le commutateur rotatif choisit la grandeur mesurée (volts alternatifs et continus, millivolts, ohms, test de diode, courants alternatifs et continus en µA, mA et A), les cordons vont dans ses douilles (COM, V Ω, mA/µA, A) et il charge le circuit comme le fait l'appareil : 10 MΩ en volts, un courant de test en ohms, ses shunts sur les douilles de courant. Les douilles de courant sont protégées par fusibles (440 mA et 11 A, rapides) : mesurez la tension d'une alimentation avec le cordon resté dans A et le fusible fond. L'afficheur montre 6000 points, quatre fois par seconde, en changeant seul de calibre.",
+      "fidelity": {
+        "timed": {
+          "claims": "Comme en électrique.",
+          "omissions": [
+            "la précision en tant qu'erreur : les lectures sont exactes à leur résolution près",
+            "la capacité d'entrée de 100 pF",
+            "la capacité, la conductance, la fréquence, le rapport cyclique, la température, MIN MAX, la crête, REL, HOLD, le mode 4½ chiffres, le bargraphe, le rétroéclairage et la pile",
+            "le bip de continuité (son seuil n'est pas dans les spécifications)",
+            "le signal d'alerte d'entrée (on ne sait pas si un cordon est dans une douille)",
+            "en position mA/A, le 87V lit la douille où se trouve son cordon ; ici la fonction nomme la douille (ma_dc, a_dc)",
+            "la tension à vide du calibre 50 MΩ (5,5 V, choisie pour que sa pleine échelle reste sous les < 4,5 V de la fiche)",
+            "le refroidissement de l'élément fusible entre deux surcharges (leurs fractions s'additionnent sans décroître) ; les courbes lues sur le graphique d'Eaton à environ ±10 %",
+            "les dommages dus aux surtensions"
+          ]
+        },
+        "electrical": {
+          "claims": "Ce qu'il met sur ses douilles, d'après les spécifications détaillées des 83V/87V de Fluke : 10 MΩ sur les fonctions volts ; en ohms une source par calibre tirée des courants de court-circuit typiques (600 Ω 1 mA, 6 kΩ 100 µA, 60 kΩ 10 µA, 600 kΩ 1 µA, 6 MΩ 1 µA, 50 MΩ 0,5 µA) et de la borne à vide (< 7,3 V), en changeant d'un calibre par rafraîchissement ; test de diode < 3,9 V à vide, 0,6 mA, OL au-delà de 3,000 V ; les shunts des douilles de courant dans toutes les positions aux chutes de tension typiques (100 µV/µA, 1,8 mV/mA, 0,03 V/A) ; les fusibles F1 440 mA et F2 11 A s'ouvrant après leur temps total de coupure tiré des courbes DMM-B d'Eaton (les surcharges y ajoutant leurs fractions), remplacés par une entrée ; l'afficheur à 6000 points, 4 rafraîchissements par seconde, les calibres et résolutions de la fiche, le continu moyenné sur le rafraîchissement, l'alternatif en valeur efficace vraie de sa partie alternative, OL au-delà du calibre le plus haut.",
+          "omissions": [
+            "la précision en tant qu'erreur : les lectures sont exactes à leur résolution près",
+            "la capacité d'entrée de 100 pF",
+            "la capacité, la conductance, la fréquence, le rapport cyclique, la température, MIN MAX, la crête, REL, HOLD, le mode 4½ chiffres, le bargraphe, le rétroéclairage et la pile",
+            "le bip de continuité (son seuil n'est pas dans les spécifications)",
+            "le signal d'alerte d'entrée (on ne sait pas si un cordon est dans une douille)",
+            "en position mA/A, le 87V lit la douille où se trouve son cordon ; ici la fonction nomme la douille (ma_dc, a_dc)",
+            "la tension à vide du calibre 50 MΩ (5,5 V, choisie pour que sa pleine échelle reste sous les < 4,5 V de la fiche)",
+            "le refroidissement de l'élément fusible entre deux surcharges (leurs fractions s'additionnent sans décroître) ; les courbes lues sur le graphique d'Eaton à environ ±10 %",
+            "les dommages dus aux surtensions"
+          ]
+        }
+      }
+    }
+  }
 }

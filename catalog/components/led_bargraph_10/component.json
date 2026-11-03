@@ -604,5 +604,40 @@
         }
       }
     ]
+  },
+  "i18n": {
+    "fr": {
+      "source": "5146089d3ca7",
+      "description": "Un bargraphe à LED de 10 segments dans le boîtier DIP courant à 20 broches (le brochage du Kingbright DC-10) : dix jonctions de LED rouges indépendantes, l'anode du segment n sur la broche n et sa cathode sur la broche 21 - n. Chaque segment suit le courant de sa propre jonction et demande sa propre résistance série.",
+      "fidelity": {
+        "functional": {
+          "claims": "Chaque segment s'allume tant que son anode est haute et sa cathode basse, par l'indication d'emblink/led.",
+          "omissions": [
+            "la qualification du fabricant : les jonctions sont la LED rouge du catalogue, pas une courbe ajustée du Kingbright DC-10",
+            "l'étalonnage optique",
+            "les effets thermiques et les dommages",
+            "la capacité de jonction et le claquage inverse"
+          ]
+        },
+        "timed": {
+          "claims": "Comme en fonctionnel.",
+          "omissions": [
+            "la qualification du fabricant : les jonctions sont la LED rouge du catalogue, pas une courbe ajustée du Kingbright DC-10",
+            "l'étalonnage optique",
+            "les effets thermiques et les dommages",
+            "la capacité de jonction et le claquage inverse"
+          ]
+        },
+        "electrical": {
+          "claims": "Dix jonctions de LED indépendantes avec la loi courant-tension rouge d'emblink/led ; pas de borne commune.",
+          "omissions": [
+            "la qualification du fabricant : les jonctions sont la LED rouge du catalogue, pas une courbe ajustée du Kingbright DC-10",
+            "l'étalonnage optique",
+            "les effets thermiques et les dommages",
+            "la capacité de jonction et le claquage inverse"
+          ]
+        }
+      }
+    }
   }
 }

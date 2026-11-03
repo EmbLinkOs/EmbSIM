@@ -621,5 +621,42 @@
         "page": 3
       }
     ]
+  },
+  "i18n": {
+    "fr": {
+      "source": "92a19c6f1533",
+      "description": "WP154A4SUREQBFZGC, LED RVB transparente à cathode commune Kingbright de 5 mm. Boîtier et courbe continue nominale à 25 C, 2–20 mA, vérifiés sur la source. Aucune qualification du fabricant en cas extrêmes, optique, thermique ou de dommages.",
+      "fidelity": {
+        "functional": {
+          "claims": "Indication binaire idéale avec un chemin de retour logique direct connu ; aucune qualification électrique.",
+          "omissions": [
+            "la charge en courant",
+            "la courbe de transfert du fabricant",
+            "l'étalonnage optique"
+          ]
+        },
+        "timed": {
+          "claims": "Indication binaire idéale avec un chemin de retour logique direct connu ; aucune qualification électrique.",
+          "omissions": [
+            "la charge en courant",
+            "la courbe de transfert du fabricant",
+            "l'étalonnage optique"
+          ]
+        },
+        "electrical": {
+          "claims": "Ajustement statique I–V aux bornes à 25 C sur 2–20 mA, vérifié sur la source, à 0,06 V près de points de contrôle indépendants de la courbe source. Le brochage et l'encombrement du corps de 5/5,9/8,6 mm suivent la source citée ; le dégagement de montage de 3 mm et la courbure sont représentatifs. Luminosité et couleur d'affichage normalisées génériques, pas des unités photométriques.",
+          "omissions": [
+            "les cas extrêmes garantis par le fabricant et la variation d'un exemplaire à l'autre",
+            "la température et l'auto-échauffement",
+            "les dommages et l'application des maximums absolus",
+            "la qualification du claquage et de la fuite en inverse",
+            "la capacité de jonction et le stockage de charge",
+            "l'étalonnage optique et colorimétrique",
+            "la moyenne perçue de la MLI",
+            "l'accouplement du connecteur, la mise en forme des pattes et la qualification mécanique"
+          ]
+        }
+      }
+    }
   }
 }

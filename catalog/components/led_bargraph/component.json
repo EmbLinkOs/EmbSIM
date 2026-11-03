@@ -343,5 +343,36 @@
   },
   "tests": [
     "tests/*.json"
-  ]
+  ],
+  "i18n": {
+    "fr": {
+      "source": "0510f5ba7195",
+      "description": "Huit LED en ligne à cathode commune : une barre s'allume quand son anode est haute et K basse. Un indicateur de niveau sur la vue de la carte.",
+      "fidelity": {
+        "functional": {
+          "claims": "Chaque barre est allumée quand son anode vaut 1 et que la cathode commune est connue basse.",
+          "omissions": [
+            "la tension et le courant directs",
+            "la luminosité"
+          ]
+        },
+        "timed": {
+          "claims": "Comme en fonctionnel ; délais tels qu'indiqués.",
+          "omissions": [
+            "la tension et le courant directs",
+            "la luminosité"
+          ]
+        },
+        "electrical": {
+          "claims": "Les broches se relient aux réseaux analogiques avec les modèles de broche par défaut de la famille ; le comportement est celui du modèle Lua.",
+          "omissions": [
+            "la tension et le courant directs",
+            "la luminosité",
+            "le courant d'alimentation",
+            "les limites de courant de sortie"
+          ]
+        }
+      }
+    }
+  }
 }

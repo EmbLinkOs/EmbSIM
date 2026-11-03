@@ -194,5 +194,26 @@
   },
   "tests": [
     "tests/*.json"
-  ]
+  ],
+  "i18n": {
+    "fr": {
+      "source": "c7b278c7fc2e",
+      "description": "MOSFET à enrichissement canal N (SPICE niveau 1) ; une référence nommée choisit vto, kp et lambda.",
+      "fidelity": {
+        "timed": {
+          "claims": "Comme en électrique."
+        },
+        "electrical": {
+          "claims": "Shichman-Hodges niveau 1 avec régions de blocage, linéaire et de saturation, lambda, cgs/cgd facultatives ; substrat relié à la source (SPEC-004 §7 nmos/pmos).",
+          "omissions": [
+            "la diode intrinsèque",
+            "la conduction sous le seuil",
+            "la température",
+            "l'avalanche",
+            "la non-linéarité de la charge de grille"
+          ]
+        }
+      }
+    }
+  }
 }

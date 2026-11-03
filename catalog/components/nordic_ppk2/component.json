@@ -331,5 +331,35 @@
   },
   "tests": [
     "tests/*.json"
-  ]
+  ],
+  "i18n": {
+    "fr": {
+      "source": "7cbe8cdc1f0b",
+      "description": "Le Power Profiler Kit II de Nordic, qui suit le courant d'une carte pendant qu'elle tourne : en source-mètre il alimente la carte (0,8 à 5,0 V, 600 mA au plus), en ampèremètre il se place en série avec l'alimentation propre de la carte (jusqu'à 1 A). Il échantillonne le courant à 100 kéch/s de 200 nA à 1 A, en passant seul d'un de ses cinq calibres à l'autre, avec D0 à D7 de son port logique échantillonnées en parallèle ; l'atelier l'affiche comme le fait l'application Power Profiler de Nordic.",
+      "fidelity": {
+        "timed": {
+          "claims": "Comme en électrique.",
+          "omissions": [
+            "les valeurs des résistances de mesure et la tension qu'elles font chuter (non publiées : r_series est une hypothèse)",
+            "la précision en tant qu'erreur (+-10 %, +-15 % sur le calibre le plus haut) : les lectures sont exactes à leur résolution près",
+            "les transitoires au changement de calibre",
+            "l'absorption de courant en mode source-mètre",
+            "les seuils et l'impédance des entrées (non publiés : VIL et VIH sont des hypothèses, 0,3 et 0,7 d'un VCC de 3,3 V par défaut)",
+            "la bande passante de 50 kHz en tant que filtre : une impulsion plus courte qu'un échantillon peut quand même être vue si un échantillon tombe dedans"
+          ]
+        },
+        "electrical": {
+          "claims": "Son cœur de mesure (emblink/ppk2_core) et son port logique (emblink/ppk2_logic_port) : un source-mètre ou un ampèremètre échantillonnant le courant entrant dans la carte à 100 kéch/s à la résolution de son calibre, D0 à D7 à 100 kHz.",
+          "omissions": [
+            "les valeurs des résistances de mesure et la tension qu'elles font chuter (non publiées : r_series est une hypothèse)",
+            "la précision en tant qu'erreur (+-10 %, +-15 % sur le calibre le plus haut) : les lectures sont exactes à leur résolution près",
+            "les transitoires au changement de calibre",
+            "l'absorption de courant en mode source-mètre",
+            "les seuils et l'impédance des entrées (non publiés : VIL et VIH sont des hypothèses, 0,3 et 0,7 d'un VCC de 3,3 V par défaut)",
+            "la bande passante de 50 kHz en tant que filtre : une impulsion plus courte qu'un échantillon peut quand même être vue si un échantillon tombe dedans"
+          ]
+        }
+      }
+    }
+  }
 }

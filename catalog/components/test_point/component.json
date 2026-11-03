@@ -78,5 +78,25 @@
   },
   "tests": [
     "tests/*.json"
-  ]
+  ],
+  "i18n": {
+    "fr": {
+      "source": "c65efa92f68c",
+      "description": "Un point de mesure nommé sur un réseau : aucun comportement, un endroit où accrocher une sonde ou la masse d'un oscilloscope.",
+      "fidelity": {
+        "functional": {
+          "claims": "Aucun comportement ; un point de raccordement à un réseau."
+        },
+        "timed": {
+          "claims": "Aucun comportement."
+        },
+        "electrical": {
+          "claims": "Aucun comportement.",
+          "omissions": [
+            "la capacité de la pastille"
+          ]
+        }
+      }
+    }
+  }
 }

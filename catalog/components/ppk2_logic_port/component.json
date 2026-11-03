@@ -281,5 +281,34 @@
       }
     ]
   },
-  "tests": []
+  "tests": [],
+  "i18n": {
+    "fr": {
+      "source": "a5f5bb412add",
+      "description": "Le port logique à 10 broches du Power Profiler Kit II, tel que l'utilise le composant emblink/nordic_ppk2 : D0 à D7 échantillonnées à 100 kHz avec le courant, référencées au VCC de la carte. Placez emblink/nordic_ppk2 plutôt que celui-ci.",
+      "fidelity": {
+        "functional": {
+          "claims": "D0 à D7 échantillonnées à 100 kHz, un front vu au premier échantillon qui le suit.",
+          "omissions": [
+            "les seuils et l'impédance des entrées (non publiés : VIL et VIH sont des hypothèses, 0,3 et 0,7 d'un VCC de 3,3 V par défaut)",
+            "la bande passante de 50 kHz en tant que filtre : une impulsion plus courte qu'un échantillon peut quand même être vue si un échantillon tombe dedans"
+          ]
+        },
+        "timed": {
+          "claims": "Comme en fonctionnel.",
+          "omissions": [
+            "les seuils et l'impédance des entrées (non publiés : VIL et VIH sont des hypothèses, 0,3 et 0,7 d'un VCC de 3,3 V par défaut)",
+            "la bande passante de 50 kHz en tant que filtre : une impulsion plus courte qu'un échantillon peut quand même être vue si un échantillon tombe dedans"
+          ]
+        },
+        "electrical": {
+          "claims": "Comme en fonctionnel ; chaque entrée se lit haute au-dessus de vih et basse sous vil.",
+          "omissions": [
+            "les seuils et l'impédance des entrées (non publiés : VIL et VIH sont des hypothèses, 0,3 et 0,7 d'un VCC de 3,3 V par défaut)",
+            "la bande passante de 50 kHz en tant que filtre : une impulsion plus courte qu'un échantillon peut quand même être vue si un échantillon tombe dedans"
+          ]
+        }
+      }
+    }
+  }
 }

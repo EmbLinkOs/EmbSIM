@@ -118,6 +118,18 @@ limits by quantity; `validation` lists fixture files or external references.
 A session policy requiring a tier the component does not provide refuses the
 load (`fidelity.tier_missing`). Clients show the declaration in the inspector.
 
+The entry's text in other languages sits in `i18n.<lang>` (schemas/common.schema.json):
+its `description` and, tier by tier, its fidelity's `claims` and `omissions`
+in the English's order, with `source`, a fingerprint of the English it was
+made from. Ranges, validation and every identifier stay as written. A
+client shows the language its user chose and the English wherever a
+translation is missing or lists a different number of omissions.
+`tools/validate.py` checks the translated tiers exist and their omission
+counts match; `tools/i18n/catalog_text.py check` (ctest `catalog_fr`) fails
+when an entry has no French or its English has changed since the French was
+made, and `catalog_text.py dump` and `apply` move an entry's text out for
+translation and back.
+
 ## 7. Inputs and outputs
 
 `inputs` are the interactive controls of the component: what a user, a

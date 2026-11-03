@@ -325,5 +325,33 @@
   },
   "tests": [
     "tests/*.json"
-  ]
+  ],
+  "i18n": {
+    "fr": {
+      "source": "b08ce0b15d3e",
+      "description": "74HC04 sextuple inverseur dans son boîtier à 14 broches : 6 portes inverseuses indépendantes (emblink/inverter) partageant VCC (14) et GND (7).",
+      "fidelity": {
+        "functional": {
+          "claims": "Chaque porte comme emblink/inverter.",
+          "omissions": [
+            "le courant d'alimentation partagé",
+            "les limites thermiques du boîtier"
+          ]
+        },
+        "timed": {
+          "claims": "Le tpd de chaque porte comme emblink/inverter.",
+          "omissions": [
+            "la variation du délai avec l'alimentation"
+          ]
+        },
+        "electrical": {
+          "claims": "Chaque porte comme emblink/inverter ; les broches se relient avec les valeurs par défaut cmos_3v3.",
+          "omissions": [
+            "le courant d'alimentation partagé",
+            "le rebond de masse"
+          ]
+        }
+      }
+    }
+  }
 }

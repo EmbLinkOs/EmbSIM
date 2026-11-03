@@ -2197,5 +2197,28 @@
  },
  "tests": [
   "tests/*.json"
- ]
+ ],
+  "i18n": {
+    "fr": {
+      "source": "23baf5ba6869",
+      "description": "Mini plaque d'essai sans soudure (BusBoard BB170), sans rails d'alimentation : pas de 0,1 in, bandes de cinq trous de part et d'autre d'une rainure de 0,3 in.",
+      "fidelity": {
+        "functional": {
+          "claims": "170 trous ; chaque bande de cinq (17 de chaque côté) et chaque rail d'alimentation forme un seul conducteur ; les bandes de part et d'autre de la rainure centrale et les bandes voisines sont isolées."
+        },
+        "timed": {
+          "claims": "170 trous ; chaque bande de cinq (17 de chaque côté) et chaque rail d'alimentation forme un seul conducteur ; les bandes de part et d'autre de la rainure centrale et les bandes voisines sont isolées."
+        },
+        "electrical": {
+          "claims": "170 trous ; chaque bande de cinq (17 de chaque côté) et chaque rail d'alimentation forme un seul conducteur ; les bandes de part et d'autre de la rainure centrale et les bandes voisines sont isolées. Les contacts sont idéaux.",
+          "omissions": [
+            "la résistance de contact (quelques dizaines de milliohms par contact)",
+            "la capacité entre bandes voisines (quelques pF)",
+            "la valeur nominale de 36 V et 2 A par contact n'est pas imposée",
+            "les contacts usés et les fils mal fixés"
+          ]
+        }
+      }
+    }
+  }
 }

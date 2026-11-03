@@ -47,6 +47,11 @@ void esk_diag_clear(esk_diag *d);
 void esk_diag_raise(esk_diag *d, es_severity_t sev, const char *code, es_time_t t,
                     const char *subject_kind, const char *subject, const char *file, int line,
                     const char *fmt, ...);
+/* the message in French (diag_fr.c) into out; 0 when it has no translation
+ * (a message built elsewhere and passed through) */
+int esk_diag_french(const char *code, const char *subject, const char *message, char *out, size_t cap);
+/* add "messages": {"fr": ...} to a diagnostic's JSON when it has a translation */
+void esk_diag_messages(esk_alloc *a, esk_json *o, const char *code, const char *subject, const char *message);
 /* the log as a JSON array (newest last) */
 esk_json *esk_diag_to_json(const esk_diag *d);
 size_t esk_diag_count(const esk_diag *d, es_severity_t sev);

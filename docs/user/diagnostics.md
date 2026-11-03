@@ -11,6 +11,10 @@ see both; loading another project forgets them all. `embsim validate` reports
 the load's and those of the circuit settled at its first instant (firmware not
 run).
 
+Each message is in English; in JSON a record also carries `messages.fr`, the
+same message in French (SPEC-001 §7), which the workbench shows when its
+language is French.
+
 | Code | Default severity | Subject | Meaning |
 |---|---|---|---|
 | `schema.parse` | error | file | a description is not valid JSON |

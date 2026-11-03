@@ -331,5 +331,30 @@
   },
   "tests": [
     "tests/*.json"
-  ]
+  ],
+  "i18n": {
+    "fr": {
+      "source": "ee4a1e6917fa",
+      "description": "La Debug Probe de Raspberry Pi : un RP2040 exécutant le micrologiciel debugprobe (CMSIS-DAP v2), un câble USB vers l'ordinateur (2e8a:000c). Son port D (SC, SD, GND) pilote le fil série d'une cible, son port U (TX, RX, GND) est une UART reliée au port série de l'ordinateur. OpenOCD, pyOCD et probe-rs la pilotent comme ils pilotent la vraie sonde : par le serveur USB/IP de la session (usbip.serve), la pile USB propre de l'ordinateur l'ouvre.",
+      "fidelity": {
+        "functional": {
+          "claims": "La version CMSIS-DAP v2 du micrologiciel debugprobe telle qu'un ordinateur la voit (usb_descriptors.c, DAP_config.h, tusb_edpt_handler.c et cdc_uart.c de debugprobe, le DAP.c v2.0.0 d'Arm qu'il compile) : le périphérique USB 2e8a:000c, USB 2.1, bcdDevice 0x0231, « Raspberry Pi » / « Debug Probe (CMSIS-DAP) » et son numéro de série ; l'interface 0 « CMSIS-DAP v2 Interface » (classe fabricant, bulk 0x04 OUT et 0x85 IN, 64 octets), les interfaces 1 et 2 l'UART CDC ACM (0x81 notifications, 0x02 et 0x83 données), l'interface 3 l'interface de réinitialisation de picotool ; le BOS avec son jeu de descripteurs Microsoft OS 2.0 (WinUSB et les GUID des interfaces). DAP_Info (micrologiciel 2.0.0 ; capacités SWD, commandes atomiques, l'horodatage à 1 MHz ; paquets de 64 octets, 6 d'entre eux ; pas de chaînes de fabricant, de produit ni de numéro de série), les LED connecté et en marche de DAP_HostStatus, DAP_Connect (SWD ; JTAG refusé), Disconnect, TransferConfigure (cycles de repos, tentatives sur WAIT, tentatives de correspondance), Transfer avec lectures d'AP différées, le masque de correspondance et la correspondance de valeur, les tentatives sur WAIT et les horodatages, TransferBlock, WriteABORT, Delay, ResetTarget (pas de séquence de réinitialisation), SWJ_Pins (le port D n'a pas de nRESET : les entrées se lisent 0), SWJ_Clock, SWJ_Sequence, SWD_Configure (retournement, phase de données), SWD_Sequence (TARGETSEL pour le multipoint), ExecuteCommands et QueueCommands retenus jusqu'à un paquet qui n'en est pas un ; les commandes JTAG répondent DAP_ERROR, les commandes SWO et UART, les commandes fabricant et TransferAbort ID_DAP_Invalid, comme le fait cette version. Huit tampons de requête et huit de réponse de 64 octets : le point de terminaison OUT répond NAK quand ils sont pleins, chaque réponse attend que la ligne ait porté ses bits au débit de SWJ_Clock. Chaque paquet SWD est cadencé bit par bit sur le fil série propre de la cible (l'en-tête, les retournements, l'ACK, les données et la parité, les cycles de repos ; la phase de données repoussée d'une erreur de protocole), de sorte que les ports de débogage de la cible répondent comme les siens (les ports multipoints du RP2040, le Rescue DP). L'UART sur le port U au codage de ligne de l'ordinateur (5 à 8 bits de données, parité aucune, impaire ou paire, 1 ou 2 bits d'arrêt ; 1,5 pris comme 2), relayée tant que DTR est positionné ; port fermé, la FIFO de 32 octets du récepteur se remplit et perd des octets ; une trame avec une erreur de tramage ou de parité (le 0x00 d'un break) est transmise et comptée, comme le uart_getc du micrologiciel la prend ; SEND_BREAK maintient TX bas pendant sa durée.",
+          "omissions": [
+            "les fronts de SWCLK sur le réseau (la ligne est celle de la cible, cadencée bit par bit ; SC reste haut) ; le temps de traitement du micrologiciel entre les paquets",
+            "la détection automatique par le débit magique, le contrôle de flux de l'UART (pas de RTS ni de CTS sur le port U), les notifications d'état série du CDC",
+            "les redémarrages de l'interface de réinitialisation en BOOTSEL ou sur la flash (acquittés, non exécutés) ; les LED comme broches ; la suspension USB ; la mise à jour du micrologiciel de la sonde elle-même (le BOOTSEL de son RP2040)",
+            "le JTAG et le SWO (absents du micrologiciel de la Debug Probe) ; le CMSIS-DAP v1 sur HID (une autre version du micrologiciel)"
+          ]
+        },
+        "electrical": {
+          "claims": "Les broches des ports D et U en CMOS 3,3 V (les GPIO du RP2040 de la sonde : SC et TX pilotées, SD et RX en entrées avec les seuils cmos_3v3) ; ses broches USB portent le bus sous forme de transactions (engine/usb.h).",
+          "omissions": [
+            "les résistances série et la protection ESD des ports",
+            "le changement de sens de SD sur le réseau (la ligne est cadencée dans le modèle de la cible)",
+            "le courant d'alimentation propre de la sonde tiré de VBUS"
+          ]
+        }
+      }
+    }
+  }
 }

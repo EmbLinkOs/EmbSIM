@@ -316,5 +316,33 @@
   },
   "tests": [
     "tests/*.json"
-  ]
+  ],
+  "i18n": {
+    "fr": {
+      "source": "0f50ec4a14cf",
+      "description": "Verrou/décodeur/pilote BCD vers 7 segments (CD4511) pour afficheurs à cathode commune : SA-SG allument le chiffre donné sur D-A ; les codes au-dessus de 9 éteignent ; LT_N allume tous les segments, BL_N éteint, LE haut fige l'entrée.",
+      "fidelity": {
+        "functional": {
+          "claims": "Table de fonctions du CD4511 (BCD 0-9, éteint au-dessus de 9, test des lampes, extinction, verrou).",
+          "omissions": [
+            "le courant de commande des segments (la vraie puce fournit jusqu'à 25 mA)"
+          ]
+        },
+        "timed": {
+          "claims": "Comme en fonctionnel ; délais tels qu'indiqués.",
+          "omissions": [
+            "le courant de commande des segments (la vraie puce fournit jusqu'à 25 mA)"
+          ]
+        },
+        "electrical": {
+          "claims": "Les broches se relient aux réseaux analogiques avec les modèles de broche par défaut de la famille ; le comportement est celui du modèle Lua.",
+          "omissions": [
+            "le courant de commande des segments (la vraie puce fournit jusqu'à 25 mA)",
+            "le courant d'alimentation",
+            "les limites de courant de sortie"
+          ]
+        }
+      }
+    }
+  }
 }

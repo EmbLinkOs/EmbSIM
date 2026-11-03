@@ -92,6 +92,7 @@ static void diag_forward(void *ctx, const es_diagnostic_t *d)
     esk_json_set_string(s->a, o, "severity", d->severity == ES_SEV_INFO ? "info" : d->severity == ES_SEV_WARNING ? "warning" : d->severity == ES_SEV_ERROR ? "error" : "fatal");
     esk_json_set_string(s->a, o, "code", d->code);
     esk_json_set_string(s->a, o, "message", d->message);
+    esk_diag_messages(s->a, o, d->code, d->subject, d->message);
     esk_json_set_u64_string(s->a, o, "time_ps", d->time_ps);
     if (d->subject_kind) {
         esk_json *sub = esk_json_new_object(s->a);

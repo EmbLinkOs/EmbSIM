@@ -209,5 +209,40 @@
   },
   "tests": [
     "tests/*.json"
-  ]
+  ],
+  "i18n": {
+    "fr": {
+      "source": "202afe9d149a",
+      "description": "Module codeur rotatif KY-040 (un codeur mécanique de type EC11 avec bouton-poussoir) : 20 crans par tour, chacun un cycle de quadrature complet sur CLK (A) et DT (B) avec A en avance dans le sens horaire, contacts vers GND avec les rappels de 10 kOhms du module vers +, rebond des contacts à chaque changement, SW vers GND sans rappel. La position de l'axe et l'appui sont des entrées interactives.",
+      "fidelity": {
+        "functional": {
+          "claims": "Contacts vers GND avec les rappels du module vers + (flottants sans lui) et aucun sur SW ; 20 crans par tour, un cycle de quadrature chacun, ouverts au repos, A en avance dans le sens horaire ; rotation à `rate` crans par seconde ; trois changements de rebond dans `bounce` après chaque changement de contact.",
+          "omissions": [
+            "le couple des crans et la vitesse de la main variant au cours d'un tour",
+            "la résistance de contact (un contact fermé est un niveau bas fort)",
+            "la course de l'interrupteur",
+            "l'angle de l'axe entre deux crans"
+          ]
+        },
+        "timed": {
+          "claims": "Contacts vers GND avec les rappels du module vers + (flottants sans lui) et aucun sur SW ; 20 crans par tour, un cycle de quadrature chacun, ouverts au repos, A en avance dans le sens horaire ; rotation à `rate` crans par seconde ; trois changements de rebond dans `bounce` après chaque changement de contact.",
+          "omissions": [
+            "le couple des crans et la vitesse de la main variant au cours d'un tour",
+            "la résistance de contact (un contact fermé est un niveau bas fort)",
+            "la course de l'interrupteur",
+            "l'angle de l'axe entre deux crans"
+          ]
+        },
+        "electrical": {
+          "claims": "Les broches se relient aux réseaux analogiques avec les modèles de broche par défaut de la famille (les rappels au niveau haut en sources faibles) ; le comportement est celui du modèle Lua.",
+          "omissions": [
+            "le couple des crans et la vitesse de la main variant au cours d'un tour",
+            "la résistance de contact (un contact fermé est un niveau bas fort)",
+            "la course de l'interrupteur",
+            "l'angle de l'axe entre deux crans"
+          ]
+        }
+      }
+    }
+  }
 }

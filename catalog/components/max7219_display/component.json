@@ -214,5 +214,39 @@
   },
   "tests": [
     "tests/*.json"
-  ]
+  ],
+  "i18n": {
+    "fr": {
+      "source": "a9b2dc98e961",
+      "description": "Un module afficheur 7 segments à 8 chiffres piloté par un MAX7219 : des trames de 16 bits entrées par décalage sur le front montant de CLK (MSB en premier) et verrouillées au front montant de LOAD (CS) règlent les chiffres, le mode de décodage code B, l'intensité, la limite de balayage, l'arrêt et le test d'affichage ; DOUT ressort chaque bit sur le front descendant de CLK, 16 coups d'horloge plus tard, pour un composant chaîné. L'affichage apparaît sur la vue de la carte.",
+      "fidelity": {
+        "functional": {
+          "claims": "La carte des registres du MAX7219 : chiffres avec leurs points décimaux, la police code B (tableau 5) par chiffre, l'intensité, la limite de balayage, l'arrêt (état à la mise sous tension) et le test d'affichage ; les segments allumés de chaque chiffre en sortie ; DOUT présentant le bit 15 sur le front descendant de CLK.",
+          "omissions": [
+            "les broches de commande des segments et des chiffres (l'afficheur fait partie du module)",
+            "le multiplexage et la luminosité",
+            "la sémantique des no-op en chaîne au-delà de DOUT"
+          ]
+        },
+        "timed": {
+          "claims": "Comme en fonctionnel ; délais tels qu'indiqués.",
+          "omissions": [
+            "les broches de commande des segments et des chiffres (l'afficheur fait partie du module)",
+            "le multiplexage et la luminosité",
+            "la sémantique des no-op en chaîne au-delà de DOUT"
+          ]
+        },
+        "electrical": {
+          "claims": "Les broches se relient aux réseaux analogiques avec les modèles de broche par défaut de la famille ; le comportement est celui du modèle Lua.",
+          "omissions": [
+            "les broches de commande des segments et des chiffres (l'afficheur fait partie du module)",
+            "le multiplexage et la luminosité",
+            "la sémantique des no-op en chaîne au-delà de DOUT",
+            "le courant d'alimentation",
+            "les limites de courant de sortie"
+          ]
+        }
+      }
+    }
+  }
 }

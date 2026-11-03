@@ -195,5 +195,31 @@
   },
   "tests": [
     "tests/*.json"
-  ]
+  ],
+  "i18n": {
+    "fr": {
+      "source": "7ffd937a0bc6",
+      "description": "Régulateur linéaire positif fixe de la famille 78xx (TO-220, broches IN-GND-OUT) : 7805, 7809, 7812, 78L05.",
+      "fidelity": {
+        "functional": {
+          "claims": "OUT impose (1, alimentation) ; IN et GND sont ignorées.",
+          "omissions": [
+            "la tension de déchet",
+            "le courant"
+          ]
+        },
+        "timed": {
+          "claims": "Comme en fonctionnel sur les réseaux numériques, comme en électrique sur les réseaux analogiques."
+        },
+        "electrical": {
+          "claims": "vout tant que vin > vout + dropout, sinon vin - dropout ; courant limité à imax ; courant de repos vers GND (SPEC-004 §7 regulator).",
+          "omissions": [
+            "la régulation de ligne et de charge",
+            "la protection thermique",
+            "la réjection d'ondulation"
+          ]
+        }
+      }
+    }
+  }
 }

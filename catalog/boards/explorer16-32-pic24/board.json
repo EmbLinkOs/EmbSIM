@@ -1263,5 +1263,38 @@
   },
   "tests": [
     "tests/*.json"
-  ]
+  ],
+  "i18n": {
+    "fr": {
+      "source": "95b7ebcaff2d",
+      "description": "La carte de développement Explorer 16/32 de Microchip avec le module enfichable PIC24FJ1024GB610 : un quartz de 8 MHz sur l'oscillateur primaire et un de 32,768 kHz sur le secondaire, huit LED D3 à D10 sur RA0 à RA7 (actives à l'état haut), les boutons-poussoirs S3 (RD6), S6 (RD7) et S4 (RD13) vers la masse avec rappels au niveau haut, S1 de MCLR, un régulateur 3,3 V alimenté par VIN, et le pont USB-UART sur RF5 et RF4, que le PPS attribue à l'UART2 (RP17 U2TX, RP10 U2RX), la console de la session.",
+      "fidelity": {
+        "functional": {
+          "claims": "Réseaux, ports, les huit LED, les boutons avec leurs rappels au niveau haut et S1 de MCLR comme composants logiques ; la console est l'UART2 sur les broches du pont USB-UART.",
+          "omissions": [
+            "le potentiomètre R6 sur RB5 et l'ADC qui le lit",
+            "l'écran LCD, l'EEPROM 25LC256, le capteur de température TC1047A et les supports mikroBUS",
+            "S5 (sur RA7 avec D10 sur la vraie carte)",
+            "le pont USB-UART lui-même (le port série de la session le remplace)",
+            "les autres composants du PIM (le connecteur USB, les condensateurs de charge des quartz)"
+          ]
+        },
+        "timed": {
+          "claims": "Comme en fonctionnel.",
+          "omissions": [
+            "comme en fonctionnel"
+          ]
+        },
+        "electrical": {
+          "claims": "Le régulateur 3,3 V alimenté par VIN, les LED avec leurs résistances série, les rappels au niveau haut des boutons et de MCLR et les quartz en équivalents BVD ; les liaisons GPIO utilisent les modèles de broche par défaut du MCU.",
+          "omissions": [
+            "le découplage",
+            "le choix de l'alimentation (USB-C, jack, le PICkit)",
+            "le PICkit On Board 4 (PKOB4) embarqué tel qu'un hôte l'atteint : son protocole USB est propre à Microchip, parlé seulement par MPLAB X et MPLAB IPE et publié nulle part, donc aucun outil ne peut piloter un modèle de celui-ci ; la carte se débogue sur le serveur GDB d'EmbSIM (embsim gdb, embsim ide) et se programme en chargeant son image, et la programmation ICSP du connecteur PICkit/ICSP (les spécifications de programmation de la flash des puces) attend une voie côté hôte (docs/engineering/debug-probes.md, étape 7)",
+            "les diodes ESD"
+          ]
+        }
+      }
+    }
+  }
 }

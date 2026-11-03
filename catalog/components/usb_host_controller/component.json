@@ -375,5 +375,30 @@
       "type": "string",
       "doc": "Text the terminal sends on the device's CDC ACM serial port (bulk OUT), once it is open"
     }
-  ]
+  ],
+  "i18n": {
+    "fr": {
+      "source": "aa0b60e7b164",
+      "description": "Le contrôleur hôte derrière le port USB 2.0 d'un ordinateur, côté protocole : il énumère le périphérique pleine vitesse sur ses D+ et D- comme le font Windows et Linux (anti-rebond, réinitialisation du port, le descripteur de périphérique à l'adresse 0, une seconde réinitialisation, SET_ADDRESS, les descripteurs et les chaînes, SET_CONFIGURATION), puis interroge les points de terminaison d'interruption de ses interfaces HID. emblink/usb_host est le port avec son VBUS ; utilisez ce composant seul quand VBUS vient d'ailleurs.",
+      "fidelity": {
+        "functional": {
+          "claims": "Un port racine USB 2.0 en pleine vitesse tel que le voit le périphérique au bout de son câble, porté sous forme de transactions (engine/usb.h, ADR-031) : l'anti-rebond de branchement (100 ms), des réinitialisations de port de reset_ms (50 ms) et les 10 ms de rétablissement après réinitialisation, des SOF toutes les 1,000 ms avec leur numéro de trame ; l'énumération dans l'ordre de Windows et Linux : GET_DESCRIPTOR(device, 64) à l'adresse 0, une seconde réinitialisation, SET_ADDRESS et ses 2 ms de rétablissement, le descripteur de périphérique, la configuration (9 octets, puis wTotalLength), la table des langues et les chaînes de fabricant, de produit et de numéro de série, SET_CONFIGURATION ; le SET_IDLE (un STALL est admis) et le descripteur de rapport de chaque interface HID, puis son point de terminaison d'interruption IN interrogé toutes les bInterval trames au début de la trame. Transferts de contrôle par SETUP, paquets IN de bMaxPacketSize0 avec leurs bascules de données vérifiées, et l'étape d'état ; les NAK retentés, trois expirations ou un STALL ou 5 s faisant échouer la requête ; les bits de chaque transaction à 12 Mbit/s et aucune transaction à cheval sur le début d'une trame. Les rapports d'une souris d'amorçage déplacent son curseur. La suspension (les trames s'arrêtent, SET_FEATURE(DEVICE_REMOTE_WAKEUP) envoyé d'abord quand la configuration le propose) et la reprise (20 ms de signalisation de reprise, TDRSMDN, puis les trames et CLEAR_FEATURE) ; le réveil à distance du périphérique répondu par la propre reprise de l'hôte ; le câble détecté par VBUS côté périphérique, une déconnexion et un nouveau branchement quand on le débranche et le rebranche. DFU 1.1 avec l'extension DfuSe 1.1a de ST (UM0424), telle que dfu-util la pilote : l'image un fichier DfuSe (UM0391 : les éléments et adresses de ses cibles) ou un binaire brut ; la disposition mémoire de la chaîne d'interface lue et respectée (segments en lecture seule refusés), chaque secteur que touche l'image effacé (0x41), le pointeur d'adresse réglé (0x21), des blocs de wTransferSize à partir de wBlockNum 2 avec DFU_GETSTATUS après chacun, son bwPollTimeout attendu tant que le périphérique est occupé, DFU_CLRSTATUS pour une erreur restée d'avant, et le DNLOAD de longueur nulle et la manifestation de :leave, le départ du périphérique compté comme sa sortie. Stockage de masse (transport bulk only, SCSI) : un fichier copié sur le lecteur comme le fait un gestionnaire de fichiers sur un volume FAT16 (INQUIRY et READ CAPACITY, le secteur d'amorçage, la FAT et le répertoire racine lus, des clusters pris après le dernier utilisé, les copies de la FAT et l'entrée de répertoire écrites, puis les données en commandes WRITE(10) de 64 Kio au plus), les NAK retentés toutes les 125 us ; un lecteur qui disparaît une fois sa dernière commande répondue (le redémarrage d'un chargeur d'amorçage UF2) compte comme copié. CDC ACM (un port série USB) tel qu'un terminal l'ouvre : SET_LINE_CODING (115200 8N1) et SET_CONTROL_LINE_STATE (DTR et RTS) une fois configuré, le point de terminaison bulk IN lu à chaque trame dans cdc_text, et les octets de l'entrée cdc_send envoyés sur bulk OUT. Son port CDC ACM peut être un port série sur l'ordinateur (un port hôte) : DTR suit l'ouverture par un programme, le débit du programme est envoyé comme codage de ligne, et ce que le programme écrit part au rythme où le point de terminaison bulk le prend.",
+          "omissions": [
+            "les concentrateurs et plus d'un périphérique par câble ; les périphériques basse vitesse",
+            "les niveaux J, K et SE0 sur D+ et D- (les broches ne portent aucun signal : le câble est trouvé par le réseau où se trouve D+)",
+            "les rapports des périphériques HID qui ne sont pas des souris d'amorçage sont gardés entiers mais pas décodés",
+            "le LPM (L1) et les temporisations de suspension sélective : une suspension a lieu quand l'entrée `suspend` la demande",
+            "stockage de masse : un fichier dans le répertoire racine sous son nom 8.3, clusters libres cherchés dans le premier secteur de la FAT seulement, pas de noms longs, pas de REQUEST SENSE après une commande échouée",
+            "les notifications du CDC ACM (le point de terminaison d'interruption) et BREAK"
+          ]
+        },
+        "timed": {
+          "claims": "Comme en fonctionnel."
+        },
+        "electrical": {
+          "claims": "Comme en fonctionnel : ses broches ne portent aucun signal."
+        }
+      }
+    }
+  }
 }

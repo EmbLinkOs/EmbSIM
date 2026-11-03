@@ -342,5 +342,32 @@
   },
   "tests": [
     "tests/*.json"
-  ]
+  ],
+  "i18n": {
+    "fr": {
+      "source": "b982b249ea31",
+      "description": "Deux bascules D sur front montant avec mise à un et remise à zéro asynchrones actives à l'état bas (la remise à zéro l'emporte), dans le boîtier à 14 broches.",
+      "fidelity": {
+        "functional": {
+          "claims": "Chaque moitié est un emblink/dff avec des inverseurs sur PRE_N et CLR_N ; le premier niveau d'horloge après la mise sous tension n'est pas un front.",
+          "omissions": [
+            "les temps d'établissement et de maintien",
+            "l'état avec les deux entrées basses (Q et QN tous deux hauts sur la vraie puce)"
+          ]
+        },
+        "timed": {
+          "claims": "Délais des composants internes.",
+          "omissions": [
+            "les temps d'établissement et de maintien"
+          ]
+        },
+        "electrical": {
+          "claims": "Comme en fonctionnel avec les liaisons de broche cmos_3v3.",
+          "omissions": [
+            "le courant d'alimentation"
+          ]
+        }
+      }
+    }
+  }
 }

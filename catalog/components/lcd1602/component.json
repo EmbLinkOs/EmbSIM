@@ -398,5 +398,48 @@
   },
   "tests": [
     "tests/*.json"
-  ]
+  ],
+  "i18n": {
+    "fr": {
+      "source": "58ffd5c84862",
+      "description": "Écran LCD à caractères 16x2 compatible HD44780 : commandes et caractères verrouillés sur front descendant de E, bus 8 ou 4 bits, chacun prenant le temps d'exécution du contrôleur (les écritures pendant l'occupation sont perdues) ; le drapeau d'occupation, le compteur d'adresse et la RAM relus ; les rappels au niveau haut de la puce sur RS, R/W et DB0-DB7 ; la tension de contraste et le rétroéclairage ; les deux lignes s'affichent sur la vue de la carte.",
+      "fidelity": {
+        "functional": {
+          "claims": "Le jeu d'instructions du HD44780 et sa réinitialisation à la mise sous tension (8 bits, une ligne, affichage éteint, 10 ms d'occupation) ; les transferts 8 et 4 bits ; les temps d'exécution (37 us ; effacement et retour 1,52 ms) avec les écritures ignorées pendant l'occupation ; les lectures du drapeau d'occupation, du compteur d'adresse et de la DDRAM/CGRAM ; les rappels au niveau haut sur RS, R/W et DB0-DB7 ; la DDRAM en une ou deux lignes avec décalage ; la CGRAM mémorisée et relue ; la ROM de caractères A00 (yen, flèches, katakana, grec) ; caractères affichés seulement avec VDD - V0 de 3,0 V ou plus ; le rétroéclairage allumé avec A 2,5 V au-dessus de K.",
+          "omissions": [
+            "la police 5x10",
+            "la variation des temps d'exécution avec l'alimentation et la température",
+            "les pixels des caractères CGRAM dans les sorties de ligne (affichés comme #)",
+            "l'affichage du curseur et du clignotement",
+            "la LED de rétroéclairage ne consomme aucun courant (câblez une LED entre A et K)",
+            "les pavés sombres qu'un module non initialisé affiche sur la ligne 1 avec un contraste élevé"
+          ]
+        },
+        "timed": {
+          "claims": "Comme en fonctionnel ; délais tels qu'indiqués.",
+          "omissions": [
+            "la police 5x10",
+            "la variation des temps d'exécution avec l'alimentation et la température",
+            "les pixels des caractères CGRAM dans les sorties de ligne (affichés comme #)",
+            "l'affichage du curseur et du clignotement",
+            "la LED de rétroéclairage ne consomme aucun courant (câblez une LED entre A et K)",
+            "les pavés sombres qu'un module non initialisé affiche sur la ligne 1 avec un contraste élevé"
+          ]
+        },
+        "electrical": {
+          "claims": "Les broches se relient aux réseaux analogiques avec les modèles de broche par défaut de la famille ; le comportement est celui du modèle Lua.",
+          "omissions": [
+            "la police 5x10",
+            "la variation des temps d'exécution avec l'alimentation et la température",
+            "les pixels des caractères CGRAM dans les sorties de ligne (affichés comme #)",
+            "l'affichage du curseur et du clignotement",
+            "le courant d'alimentation",
+            "les limites de courant de sortie",
+            "la LED de rétroéclairage ne consomme aucun courant (câblez une LED entre A et K)",
+            "les pavés sombres qu'un module non initialisé affiche sur la ligne 1 avec un contraste élevé"
+          ]
+        }
+      }
+    }
+  }
 }

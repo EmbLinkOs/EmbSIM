@@ -347,5 +347,33 @@
   },
   "tests": [
     "tests/*.json"
-  ]
+  ],
+  "i18n": {
+    "fr": {
+      "source": "2bfd5afa0478",
+      "description": "Joue une liste de mots de 16 bits sur OUT0..OUT15, un mot par période : un stimulus pour les bus, les protocoles et les cas de test. Push-pull, ou drain ouvert (un 1 libère la broche) pour l'I2C et les autres lignes en ET câblé.",
+      "fidelity": {
+        "functional": {
+          "claims": "Chaque mot est appliqué d'un coup sur toutes les sorties à l'instant de son pas ; le drain ouvert libère les uns. Chaque pas d'une forme d'onde dure sa propre durée, à la picoseconde.",
+          "omissions": [
+            "les vitesses de front des sorties"
+          ]
+        },
+        "timed": {
+          "claims": "Comme en fonctionnel ; délais tels qu'indiqués.",
+          "omissions": [
+            "les vitesses de front des sorties"
+          ]
+        },
+        "electrical": {
+          "claims": "Les broches se relient aux réseaux analogiques avec les modèles de broche par défaut de la famille ; le comportement est celui du modèle Lua.",
+          "omissions": [
+            "les vitesses de front des sorties",
+            "le courant d'alimentation",
+            "les limites de courant de sortie"
+          ]
+        }
+      }
+    }
+  }
 }

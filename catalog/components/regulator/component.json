@@ -319,5 +319,33 @@
       "type": "boolean",
       "doc": "Its thermal shutdown is limiting the output"
     }
-  ]
+  ],
+  "i18n": {
+    "fr": {
+      "source": "178355b45073",
+      "description": "Régulateur de tension linéaire comportemental style LM1117 ; la broche OUT est une alimentation pour les réseaux qu'elle dessert.",
+      "fidelity": {
+        "functional": {
+          "claims": "OUT impose (1, alimentation) ; IN et GND sont ignorées.",
+          "omissions": [
+            "la tension de déchet",
+            "le courant"
+          ]
+        },
+        "timed": {
+          "claims": "Comme en fonctionnel sur les réseaux numériques, comme en électrique sur les réseaux analogiques."
+        },
+        "electrical": {
+          "claims": "vout tant que vin > vout + dropout, sinon suit vin - dropout ; courant limité à imax ; courant de repos vers GND (SPEC-004 §7 regulator). Avec rth_ja et tsd (le préréglage NCP1117ST50, tiré du NCP1117/D d'onsemi : SOT-223 160 K/W avec pastille minimale, 15 K/W de la jonction au boîtier, la puce maintenue vers 175 C), sa puce chauffe avec sa propre dissipation et la protection thermique ramène sa limite de courant à zéro sur 2 K au-dessus de tsd, de sorte qu'un régulateur surchargé sans dissipateur s'affaisse et maintient sa puce vers 175 C.",
+          "omissions": [
+            "la régulation de charge et de ligne",
+            "la protection thermique",
+            "la stabilité selon le condensateur de sortie",
+            "le bruit",
+            "la loi de commande exacte de la limitation thermique (non publiée : une bande de 2 K au-dessus de tsd) et les capacités thermiques (estimations)"
+          ]
+        }
+      }
+    }
+  }
 }

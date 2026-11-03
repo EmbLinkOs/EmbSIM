@@ -222,5 +222,39 @@
   },
   "tests": [
     "tests/*.json"
-  ]
+  ],
+  "i18n": {
+    "fr": {
+      "source": "70e575ebb358",
+      "description": "DAC 12 bits à sortie en tension sur SPI (MCP4921) : mots de commande de 16 bits avec bits de gain et d'arrêt, verrouillés sur front montant de CS (ou descendant de LDAC_N). La tension de sortie est rapportée comme valeur de sortie.",
+      "fidelity": {
+        "functional": {
+          "claims": "Décodage du mot de commande (canal A seulement, tampon, gain, arrêt), verrouillage sur front montant de CS et par LDAC_N ; vout = Vref x gain x code / 4096 limitée à VDD.",
+          "omissions": [
+            "VOUT n'est pas imposée sur son réseau (un script ne peut pas piloter un nœud analogique)",
+            "le temps d'établissement",
+            "l'INL/DNL"
+          ]
+        },
+        "timed": {
+          "claims": "Comme en fonctionnel ; délais tels qu'indiqués.",
+          "omissions": [
+            "VOUT n'est pas imposée sur son réseau (un script ne peut pas piloter un nœud analogique)",
+            "le temps d'établissement",
+            "l'INL/DNL"
+          ]
+        },
+        "electrical": {
+          "claims": "Les broches se relient aux réseaux analogiques avec les modèles de broche par défaut de la famille ; le comportement est celui du modèle Lua.",
+          "omissions": [
+            "VOUT n'est pas imposée sur son réseau (un script ne peut pas piloter un nœud analogique)",
+            "le temps d'établissement",
+            "l'INL/DNL",
+            "le courant d'alimentation",
+            "les limites de courant de sortie"
+          ]
+        }
+      }
+    }
+  }
 }

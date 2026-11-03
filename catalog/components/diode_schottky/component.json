@@ -182,5 +182,30 @@
   },
   "tests": [
     "tests/*.json"
-  ]
+  ],
+  "i18n": {
+    "fr": {
+      "source": "71bbb053196c",
+      "description": "Redresseur Schottky : faible tension directe et recouvrement rapide (1N5817, 1N5819).",
+      "fidelity": {
+        "functional": {
+          "claims": "Un fil ; le sens n'est pas imposé.",
+          "omissions": [
+            "la tension directe",
+            "le blocage"
+          ]
+        },
+        "timed": {
+          "claims": "Comme en électrique."
+        },
+        "electrical": {
+          "claims": "Diode de Shockley avec rs en série, claquage bv et capacité de jonction (SPEC-004 §7 diode) ajustée à la courbe directe.",
+          "omissions": [
+            "la dépendance de la fuite inverse à la température",
+            "l'auto-échauffement"
+          ]
+        }
+      }
+    }
+  }
 }

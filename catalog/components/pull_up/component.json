@@ -102,5 +102,29 @@
   },
   "tests": [
     "tests/*.json"
-  ]
+  ],
+  "i18n": {
+    "fr": {
+      "source": "795ef434673b",
+      "description": "Résistance vers le rail d'alimentation ; une source faible de 1 sur les réseaux numériques.",
+      "fidelity": {
+        "functional": {
+          "claims": "Une source faible (1, faible) sur son réseau (SPEC-003 §3 rappels).",
+          "omissions": [
+            "la résistance"
+          ]
+        },
+        "timed": {
+          "claims": "Comme en fonctionnel sur les réseaux numériques, comme en électrique sur les réseaux analogiques."
+        },
+        "electrical": {
+          "claims": "Résistance r du réseau vers voltage (SPEC-004 §7 pull).",
+          "omissions": [
+            "la tolérance",
+            "le bruit"
+          ]
+        }
+      }
+    }
+  }
 }

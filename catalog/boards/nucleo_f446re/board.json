@@ -1894,5 +1894,43 @@
   },
   "tests": [
     "tests/*.json"
-  ]
+  ],
+  "i18n": {
+    "fr": {
+      "source": "13d52eeb46ab",
+      "description": "La NUCLEO-F446RE de ST (MB1136 C-03) : un STM32F446RET6 cadencé par le MCO 8 MHz du ST-LINK, avec un quartz de 32,768 kHz, la LED utilisateur verte LD2 sur PA5, le bouton bleu USER sur PC13, le bouton noir RESET, la LED d'alimentation LD3, JP5 choisissant l'USB du ST-LINK (U5V) ou E5V/VIN, JP6 (IDD) pour mesurer le courant du MCU, les connecteurs Arduino Uno V3 et les deux connecteurs morpho ST. Le port COM virtuel du ST-LINK/V2-1 est la console série de la session sur l'USART2 (PA2/PA3), et un port série sur l'hôte (embsim serve --serial).",
+      "fidelity": {
+        "functional": {
+          "claims": "Réseaux, ports, LD2, LD3, B1, B2 et les cavaliers comme composants ; le ST-LINK/V2-1 en U2 (emblink/st_link_v21) sur PA13, PA14, NRST et VDD, atteint par le stlink-server de la session par OpenOCD et les IDE qui le pilotent : SWD, NRST, la tension de la cible, la programmation de la flash et le débogage par le débogage du cœur ; le STM32F446RE exécute son micrologiciel (voir sa description), son HSE une horloge de 8 MHz sur PH0 (HSEBYP nécessaire, comme sur la vraie carte) et son LSE le quartz X2. Le port COM virtuel du ST-LINK/V2-1 est la console de la session sur l'USART2 (PA2/PA3) et un port série sur l'hôte ; D0/D1 de l'Arduino ne sont pas reliées à PA3/PA2, SB62/SB63 étant ouverts d'usine.",
+          "omissions": [
+            "le périphérique USB du ST-LINK/V2-1 : son énumération sur l'hôte (un débogueur l'atteint par le stlink-server de la session), la programmation par glisser-déposer en stockage de masse",
+            "les octets du VCP arrivent directement à l'USART2, pas en trames sur PA2/PA3",
+            "LD1 (COM), la LED tricolore du ST-LINK",
+            "les ponts de soudure sont figés dans leur état d'usine (SB62/SB63 ouverts, SB48/SB49 ouverts, SB56/SB51 fermés, SB16/SB50 fermés, SB45/SB57 fermés, SB17, SB21 et SB2 fermés)",
+            "un seul cavalier JP5 ne peut pas occuper les deux positions ; les deux interrupteurs ici le peuvent",
+            "la broche 29 de CN7 (PH0, SB55 ouvert) et X3, C33, C34, R35 et R37 non montés",
+            "CN3 (le SWD du ST-LINK) et CN4 (SWD vers une cible externe)"
+          ]
+        },
+        "timed": {
+          "claims": "Comme en fonctionnel.",
+          "omissions": [
+            "comme en fonctionnel"
+          ]
+        },
+        "electrical": {
+          "claims": "Les chemins d'alimentation d'UM1724 6.3 : le 5 V USB du ST-LINK (U5V) à travers T2 (STS7PF30L, activé par PWR_ENn bas) et les broches 1-2 de JP5 vers +5V ; VIN (7 à 12 V) à travers U3 (LD1117S50) et D4 (STPS2L30A) vers E5V et, avec JP5 sur les broches 2-3, vers +5V ; U4 (LD39050PU33R) fabrique le +3.3V et JP6 (IDD) le porte vers VDD, VBAT et (par SB57) VDDA. LD3 montre +5V, LD2 est allumée par PA5 à travers 510 ohms, R30 (4,7 kOhms) maintient PC13 haut et B1 le tire à la masse à travers R29 (100 ohms, environ 69 mV appuyé), C15 (100 nF) sur PC13 le filtrant, C14 maintient NRST bas environ 1,5 ms à la mise sous tension face au rappel du STM32, C26 est sur VCAP_1, R33 maintient BOOT0 bas, et X2 est un équivalent BVD.",
+          "omissions": [
+            "la négociation de courant du ST-LINK : PWR_ENn est bas comme après qu'un hôte a accordé 300 mA (un port de 100 mA, JP1 et le refus de l'hôte ne sont pas modélisés)",
+            "l'alimentation propre du ST-LINK (U1, LD3985M33R) et son courant",
+            "les condensateurs de découplage et de réservoir (C16 à C25, C27 à C30)",
+            "C31/C32 et R34/R36 autour de X2",
+            "la protection ESD",
+            "le courant d'alimentation du STM32 : VDD ne porte que ce que pilotent les broches, donc sans JP6 et sans ampèremètre VDD flotte au lieu de tomber à 0 V, et le STM32 continue de tourner quelle que soit VDD",
+            "L1, la ferrite entre VDD et VDDA (sa référence n'est pas donnée sur le schéma), est prise comme un court-circuit"
+          ]
+        }
+      }
+    }
+  }
 }

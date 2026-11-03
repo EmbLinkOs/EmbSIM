@@ -864,5 +864,41 @@
   },
   "tests": [
     "tests/*.json"
-  ]
+  ],
+  "i18n": {
+    "fr": {
+      "source": "339275fc9ddd",
+      "description": "L'Arduino Uno R3 : un ATmega328P à 16 MHz, des régulateurs 5 V et 3,3 V, la LED « L » sur D13, la LED d'alimentation, le bouton de réinitialisation et les connecteurs numériques, analogiques et d'alimentation. L'USB arrive par la broche 5 V ; le pont USB-série ATmega16U2 est la console série de la session sur l'USART0, et un port série sur l'hôte (embsim serve --serial), dont le DTR réinitialise l'ATmega328P comme le fait le condensateur de réinitialisation automatique de 100 nF de la carte.",
+      "fidelity": {
+        "functional": {
+          "claims": "Réseaux, ports, LED et bouton de réinitialisation comme composants logiques ; l'ATmega328P exécute son micrologiciel (voir sa description). Le pont ATmega16U2 est un port série sur l'hôte (un pseudo-terminal) : le débit du programme hôte est celui de la ligne, une différence avec celui du sketch se décode en données incohérentes dans les deux sens, et l'ouverture du port (DTR levé) réinitialise l'ATmega328P comme le fait le condensateur de réinitialisation automatique de 100 nF ; le pont envoie les octets de l'hôte au débit de la ligne, que le sketch les lise ou non. L'ATmega328P porte les fusibles de l'Uno (bas 0xFF, haut 0xDE : une section d'amorçage de 256 mots, BOOTRST ; étendu 0xFD ; verrou 0xCF), donc un projet dont l'image contient Optiboot (optiboot_atmega328.hex d'ArduinoCore-avr, ou le .with_bootloader.hex de l'IDE) se programme à travers le pont par avrdude -c arduino, comme le fait le bouton Téléverser de l'IDE ; une image sans chargeur d'amorçage traverse la section d'amorçage effacée jusqu'à son application en 0.",
+          "omissions": [
+            "les octets du 16U2 arrivent directement à l'USART0, pas en trames sur PD0 à travers ses résistances de 1 kOhm (un shield qui pilote D0 n'entre pas en conflit avec lui)",
+            "DTR basculé par ioctl (le programmateur arduino d'avrdude), RTS et les breaks : un pseudo-terminal n'a pas de lignes de modem",
+            "Optiboot lui-même n'est pas fourni (GPL-2.0, ADR-029) : l'image du projet l'apporte",
+            "les LED TX et RX",
+            "le tampon LMV358 de la LED L",
+            "les connecteurs ICSP"
+          ]
+        },
+        "timed": {
+          "claims": "Comme en fonctionnel.",
+          "omissions": [
+            "comme en fonctionnel"
+          ]
+        },
+        "electrical": {
+          "claims": "Régulateurs, LED avec résistances série, le rappel de réinitialisation au niveau haut et le résonateur en équivalents BVD ; les liaisons GPIO utilisent les modèles de broche par défaut du MCU. Le 5 V de l'USB arrive sur USB_VBUS à travers F1 (le fusible réarmable MF-MSMF050-2, qui chauffe et se déclenche au-delà d'environ 1 A) et T1 (l'interrupteur FDN340P) vers +5V ; U5A (LMV358) compare VIN/2 à 3,3 V et bloque T1 quand VIN dépasse environ 6,6 V, de sorte que le régulateur alimente la carte et que l'USB ne porte rien.",
+          "omissions": [
+            "le découplage",
+            "la forme d'onde du condensateur de réinitialisation (sa réinitialisation est une impulsion, la réinitialisation par DTR ci-dessus)",
+            "les diodes ESD",
+            "la LED L est pilotée par D13 lui-même : U5B suit D13 sans la LED comme charge",
+            "le LMV358 sous son alimentation minimale de 2,7 V (après le déclenchement de F1) se comporte comme le modèle l'extrapole, pas comme une vraie puce",
+            "le régulateur 3V3 est modélisé comme un LM1117-3.3 (1,2 V de tension de déchet), pas le LP2985-33 de la R3"
+          ]
+        }
+      }
+    }
+  }
 }

@@ -35,6 +35,8 @@ export interface DiagnosticRecord {
   severity: Severity;
   code: string;
   message: string;
+  /** the message in other languages, where the engine has its translation */
+  messages?: Record<string, string>;
   time_ps?: PsString;
   subject?: { kind: string; name: string };
   location?: { file?: string; line?: number; node?: string };
@@ -474,6 +476,8 @@ export interface ComponentDescription {
 }
 
 export interface CatalogTranslation {
+  /** fingerprint of the English the translation was made from */
+  source?: string;
   description?: string;
   fidelity?: Partial<Record<FidelityTier, { claims: string; omissions?: string[] }>>;
 }

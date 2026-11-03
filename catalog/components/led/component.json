@@ -315,5 +315,36 @@
       "default": false,
       "doc": "True: a burnt-out LED is replaced with a new one"
     }
-  ]
+  ],
+  "i18n": {
+    "fr": {
+      "source": "d673396ec1a0",
+      "description": "Diode électroluminescente ; la couleur choisit la caractéristique directe. Rapporte le courant et la luminance.",
+      "fidelity": {
+        "functional": {
+          "claims": "Allumée quand le réseau d'anode vaut 1 et le réseau de cathode 0 (SPEC-003 §5 indicator).",
+          "omissions": [
+            "le courant",
+            "la luminosité"
+          ]
+        },
+        "timed": {
+          "claims": "Comme en fonctionnel sur les réseaux numériques ; comme en électrique sur les réseaux analogiques."
+        },
+        "electrical": {
+          "claims": "Diode avec valeurs par défaut vf/is/n par couleur et rs en série ; l'observation rapporte le courant et une luminance saturant à if_nom (SPEC-004 §7 led). Ses limites tirées des valeurs maximales absolues du WP7113ID de Kingbright : au-delà de 30 mA en continu ou de 5 V en inverse, un avertissement ; sa jonction chauffée par sa propre puissance à travers les résistances thermiques de la fiche technique (560 K/W vers l'ambiante, 390 K/W vers les pattes, deux nœuds thermiques, la pièce à la température du monde), grillant (circuit ouvert) quand elle dépasse 125 C, jusqu'à son remplacement.",
+          "omissions": [
+            "le vieillissement",
+            "le claquage inverse",
+            "la capacité",
+            "le coefficient de température de la tension directe",
+            "les capacités thermiques (non publiées : estimations tirées de la taille de la puce et de l'époxy du boîtier)",
+            "les dommages sont pris à la température de jonction maximale absolue ; une vraie LED peut survivre un peu au-dessus, ou défaillir en court-circuit",
+            "la baisse de lumière due à une surcharge sans aller jusqu'à griller",
+            "le courant crête nominal de 160 mA comme limite distincte (ses impulsions sont de la chaleur que voit le modèle thermique)"
+          ]
+        }
+      }
+    }
+  }
 }

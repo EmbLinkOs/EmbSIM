@@ -400,5 +400,42 @@
   },
   "tests": [
     "tests/*.json"
-  ]
+  ],
+  "i18n": {
+    "fr": {
+      "source": "335c7f6f4cd9",
+      "description": "ADC à approximations successives 10 bits, 8 canaux sur SPI (MCP3008) : bit de départ, sélection de canal simple ou différentiel, un bit nul et le résultat MSB en premier. Les entrées lisent la tension du nœud de leur broche, ou une tension interactive quand elles ne sont pas connectées.",
+      "fidelity": {
+        "functional": {
+          "claims": "Le protocole bit à bit SPI de la figure 6-1 de la fiche technique ; l'échantillon est pris après le quatrième bit de configuration : code = 1024 Vin / Vref, borné.",
+          "omissions": [
+            "la capacité d'échantillonnage et l'impédance de source",
+            "l'INL/DNL et le décalage",
+            "les limites de l'horloge de conversion",
+            "les données LSB en premier après le mot MSB en premier"
+          ]
+        },
+        "timed": {
+          "claims": "Comme en fonctionnel ; délais tels qu'indiqués.",
+          "omissions": [
+            "la capacité d'échantillonnage et l'impédance de source",
+            "l'INL/DNL et le décalage",
+            "les limites de l'horloge de conversion",
+            "les données LSB en premier après le mot MSB en premier"
+          ]
+        },
+        "electrical": {
+          "claims": "Les broches se relient aux réseaux analogiques avec les modèles de broche par défaut de la famille ; le comportement est celui du modèle Lua.",
+          "omissions": [
+            "la capacité d'échantillonnage et l'impédance de source",
+            "l'INL/DNL et le décalage",
+            "les limites de l'horloge de conversion",
+            "les données LSB en premier après le mot MSB en premier",
+            "le courant d'alimentation",
+            "les limites de courant de sortie"
+          ]
+        }
+      }
+    }
+  }
 }

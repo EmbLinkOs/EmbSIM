@@ -198,5 +198,27 @@
     "manufacturer": "Vishay",
     "package": "DIP-4",
     "datasheet": "https://www.vishay.com/docs/83430/vo617a.pdf"
+  },
+  "i18n": {
+    "fr": {
+      "source": "280009fcec09",
+      "description": "Optocoupleur à phototransistor DIP-4 : coude de la LED d'entrée, CTR nominal de la classe choisie, résistance de saturation finie, aucun chemin galvanique entre l'entrée et la sortie.",
+      "fidelity": {
+        "electrical": {
+          "claims": "Optocoupleur à phototransistor DIP-4 : coude de la LED d'entrée, CTR nominal de la classe choisie, résistance de saturation finie, aucun chemin galvanique entre l'entrée et la sortie.",
+          "omissions": [
+            "le CTR en fonction du courant de LED et de la température",
+            "la tolérance de la classe de CTR",
+            "le délai de propagation",
+            "la capacité",
+            "le comportement d'isolement certifié",
+            "une courbe de LED précise",
+            "le fonctionnement en collecteur inversé",
+            "les cas extrêmes des paramètres du fabricant",
+            "les dommages thermiques et les limites destructives"
+          ]
+        }
+      }
+    }
   }
 }

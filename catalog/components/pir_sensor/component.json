@@ -189,5 +189,39 @@
   },
   "tests": [
     "tests/*.json"
-  ]
+  ],
+  "i18n": {
+    "fr": {
+      "source": "698ee23555fc",
+      "description": "Module détecteur de mouvement infrarouge passif (HC-SR501, BISS0001) : environ une minute de mise en chauffe après la mise sous tension ; un mouvement fait monter OUT (3,3 V) pendant le temps de maintien Tx ; avec le cavalier sur H (par défaut) un mouvement pendant Tx le relance, sur L OUT retombe Tx après sa montée ; après la retombée de OUT le contrôleur se bloque environ 2,5 s. Le mouvement est une entrée interactive ou, s'il n'est pas réglé, un corps chaud (une personne, un animal) se déplaçant dans le champ de vision de 110 degrés de la lentille et sa portée de 3 à 7 m.",
+      "fidelity": {
+        "functional": {
+          "claims": "Mise en chauffe, temps de maintien Tx, modes H (redéclenchement) et L (unique), le blocage d'environ 2,5 s après la retombée de OUT ; le mouvement venant du monde sous forme d'un corps chaud dont l'image passe d'un cône de vision de la lentille de Fresnel au suivant (ou entre dans le champ ou en sort) dans le champ de vision et la portée, examiné toutes les 100 ms, de sorte qu'un passage en travers est vu plus tôt qu'une marche droit vers lui. Le mouvement du monde est vérifié de bout en bout par tests/protocol/test_pir.py.",
+          "omissions": [
+            "le vrai motif de la lentille (ses cônes forment une grille régulière de zone_deg de large, le pas du HC-SR501 n'étant pas publié), la réponse de l'élément à la vitesse et à la taille d'un corps (tout cône traversé compte, quelle que soit la vitesse)",
+            "la différence de température nécessaire (un corps est chaud ou non)",
+            "les parasites de sortie pendant la mise en chauffe (0 à 3 basculements sur le module)"
+          ]
+        },
+        "timed": {
+          "claims": "Comme en fonctionnel ; délais tels qu'indiqués.",
+          "omissions": [
+            "le vrai motif de la lentille (ses cônes forment une grille régulière de zone_deg de large, le pas du HC-SR501 n'étant pas publié), la réponse de l'élément à la vitesse et à la taille d'un corps (tout cône traversé compte, quelle que soit la vitesse)",
+            "la différence de température nécessaire (un corps est chaud ou non)",
+            "les parasites de sortie pendant la mise en chauffe (0 à 3 basculements sur le module)"
+          ]
+        },
+        "electrical": {
+          "claims": "Les broches se relient aux réseaux analogiques avec les modèles de broche par défaut de la famille ; le comportement est celui du modèle Lua.",
+          "omissions": [
+            "le vrai motif de la lentille (ses cônes forment une grille régulière de zone_deg de large, le pas du HC-SR501 n'étant pas publié), la réponse de l'élément à la vitesse et à la taille d'un corps (tout cône traversé compte, quelle que soit la vitesse)",
+            "la différence de température nécessaire (un corps est chaud ou non)",
+            "les parasites de sortie pendant la mise en chauffe (0 à 3 basculements sur le module)",
+            "le courant d'alimentation",
+            "les limites de courant de sortie"
+          ]
+        }
+      }
+    }
+  }
 }

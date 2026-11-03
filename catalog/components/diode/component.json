@@ -184,5 +184,31 @@
   },
   "tests": [
     "tests/*.json"
-  ]
+  ],
+  "i18n": {
+    "fr": {
+      "source": "65d414e954bb",
+      "description": "Diode à jonction au silicium (classe 1N4148/1N4007) avec le modèle de Shockley.",
+      "fidelity": {
+        "functional": {
+          "claims": "Un fil ; le sens n'est pas imposé.",
+          "omissions": [
+            "la chute directe",
+            "le blocage"
+          ]
+        },
+        "timed": {
+          "claims": "Comme en électrique."
+        },
+        "electrical": {
+          "claims": "Équation de Shockley avec rs en série, claquage bv, charges de jonction (cj0) et de diffusion (tt) (SPEC-004 §7 diode).",
+          "omissions": [
+            "la dépendance à la température",
+            "le recouvrement inverse au-delà de tt",
+            "le bruit"
+          ]
+        }
+      }
+    }
+  }
 }

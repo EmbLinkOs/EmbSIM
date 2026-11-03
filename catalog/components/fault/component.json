@@ -139,5 +139,28 @@
   },
   "tests": [
     "tests/*.json"
-  ]
+  ],
+  "i18n": {
+    "fr": {
+      "source": "21ae39758fee",
+      "description": "Un défaut introduit volontairement dans un circuit (le mode défaut de l'ADR-034) : une coupure (un fil cassé, une soudure fissurée, une broche décollée de sa pastille) qui conduit jusqu'à ce qu'elle soit activée, ou un court-circuit (un pont de soudure, un câble écrasé, un composant défaillant) qui ne conduit que lorsqu'il est actif. Le chargeur en câble un pour chacun des défauts d'un projet ; son entrée active l'enclenche et le coupe à tout moment.",
+      "fidelity": {
+        "functional": {
+          "claims": "Conducteur ou non selon le défaut et son entrée active."
+        },
+        "timed": {
+          "claims": "Comme en fonctionnel.",
+          "omissions": [
+            "le crépitement d'un défaut intermittent : il change quand l'entrée change"
+          ]
+        },
+        "electrical": {
+          "claims": "ron quand il conduit, roff sinon.",
+          "omissions": [
+            "les arcs d'une coupure ou la résistance d'un court-circuit qui change en chauffant"
+          ]
+        }
+      }
+    }
+  }
 }

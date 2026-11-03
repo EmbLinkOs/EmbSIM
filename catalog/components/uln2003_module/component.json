@@ -387,5 +387,21 @@
   },
   "tests": [
     "tests/*.json"
-  ]
+  ],
+  "i18n": {
+    "fr": {
+      "source": "bc1a56dc8b27",
+      "description": "La carte de commande de moteur pas à pas ULN2003 courante vendue avec le 28BYJ-48 : IN1 à IN4 vers un ULN2003A, ses sorties sur le connecteur moteur à 5 broches (broche 5 vers + par le cavalier ON/OFF), et une LED (A à D) sur chaque sortie qui s'allume tant que le canal absorbe, montrant la séquence des pas.",
+      "fidelity": {
+        "electrical": {
+          "claims": "La carte de commande pas à pas ULN2003 courante : un ULN2003A avec les entrées IN1 à IN4 sur le connecteur, ses sorties 1 à 4 sur les broches 1 à 4 du connecteur moteur, + vers COM et vers la broche 5 du connecteur par le cavalier ON/OFF en place, et quatre LED (A à D) avec 1 kOhm de + vers les sorties, allumées tant qu'une sortie absorbe.",
+          "omissions": [
+            "le cavalier ON/OFF (toujours en place)",
+            "les entrées 5 à 7 de l'ULN2003 (inutilisées sur la carte)",
+            "la dispersion de couleur et de luminosité des LED d'une carte à l'autre"
+          ]
+        }
+      }
+    }
+  }
 }

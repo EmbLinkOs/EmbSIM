@@ -245,5 +245,25 @@
     "manufacturer": "Omron",
     "package": "PCB relay SPDT",
     "datasheet": "https://omronfs.omron.com/en_US/ecb/products/pdf/en-g5le.pdf"
+  },
+  "i18n": {
+    "fr": {
+      "source": "8e8ccff14fa3",
+      "description": "Relais inverseur G5LE-1 avec bobine R/L, enclenchement à hystérésis, délais de 10 ms à l'enclenchement et de 5 ms au relâchement ; circuit de contact indépendant.",
+      "fidelity": {
+        "electrical": {
+          "claims": "Relais inverseur G5LE-1 avec bobine R/L, enclenchement à hystérésis, délais de 10 ms à l'enclenchement et de 5 ms au relâchement ; circuit de contact indépendant.",
+          "omissions": [
+            "l'inductance de bobine est indicative, non mesurée",
+            "le rebond et les arcs des contacts",
+            "la saturation magnétique",
+            "l'élévation de température",
+            "le comportement d'isolement certifié",
+            "les cas extrêmes des paramètres du fabricant",
+            "les dommages thermiques et les limites destructives"
+          ]
+        }
+      }
+    }
   }
 }

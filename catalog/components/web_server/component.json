@@ -138,5 +138,31 @@
   },
   "tests": [
     "tests/*.json"
-  ]
+  ],
+  "i18n": {
+    "fr": {
+      "source": "76ea203c3093",
+      "description": "Un serveur web sur internet au-delà des routeurs du banc, tel que le client HTTP d'une carte le trouve : son nom DNS se résout (par le relais DNS d'un routeur) en son adresse publique, une connexion TCP à son port est acceptée, et un GET de son chemin reçoit son contenu, puis la connexion est fermée. Il n'atteint le circuit que par le côté WAN d'un routeur (emblink/wifi_ap), à la latence réglée.",
+      "fidelity": {
+        "functional": {
+          "claims": "TCP en serveur (RFC 9293) : SYN répondu par SYN-ACK avec un MSS de 1460 et une fenêtre de 65535 ; l'option MSS du client (536 sans elle) et sa fenêtre respectées ; la requête prise dans l'ordre et acquittée, un segment hors ordre répondu avec le numéro de séquence attendu ; la réponse en segments du MSS dans la fenêtre, PSH sur le dernier, puis FIN ; le FIN du client acquitté ; les données, SYN-ACK ou FIN non acquittés renvoyés après 1 s, le délai doublant, cinq fois avant la réinitialisation de la connexion ; TIME-WAIT pendant 2 s ; RST à un segment sans connexion. HTTP/1.0 et 1.1 (RFC 9112) : GET et HEAD de son chemin (et de son index.html quand c'est un répertoire) répondus 200 OK avec son Content-Type, son Content-Length et Connection: close, une cible de son chemin en forme absolue aussi ; un autre chemin 404 Not Found, une autre méthode 501 Not Implemented, une requête mal formée 400 Bad Request ; la connexion fermée après la réponse. Les requêtes d'écho ICMP reçoivent une réponse. Atteint par son nom à travers le relais DNS d'un routeur et à son adresse à travers le NAT du routeur (engine/inet.h), avec sa latence dans chaque sens. protocols/http_request d'ESP-IDF récupère sa page sans modification.",
+          "omissions": [
+            "le HTTPS (TLS)",
+            "les connexions persistantes et le pipelining",
+            "les corps de requête au-delà de 2 Ko, le transfert par morceaux",
+            "plus de 8 connexions simultanées (un SYN au-delà est ignoré, comme avec une file pleine)",
+            "l'UDP (pas d'ICMP port inaccessible)",
+            "l'IPv6",
+            "le temps que met un serveur à répondre (il répond tout de suite)"
+          ]
+        },
+        "timed": {
+          "claims": "Comme en fonctionnel."
+        },
+        "electrical": {
+          "claims": "Comme en fonctionnel : il n'a pas de broches."
+        }
+      }
+    }
+  }
 }

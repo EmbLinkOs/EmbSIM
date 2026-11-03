@@ -202,5 +202,31 @@
   },
   "tests": [
     "tests/*.json"
-  ]
+  ],
+  "i18n": {
+    "fr": {
+      "source": "286accdd2e4e",
+      "description": "Bascule D sur front montant avec mise à un et remise à zéro asynchrones actives à l'état haut.",
+      "fidelity": {
+        "functional": {
+          "claims": "Q suit D à chaque front montant de CLK ; S et R l'emportent de façon asynchrone (SPEC-003 §5 dff).",
+          "omissions": [
+            "la temporisation"
+          ]
+        },
+        "timed": {
+          "claims": "Délai horloge-sortie tco ; les violations d'établissement et de maintien lèvent un avertissement et échantillonnent X.",
+          "omissions": [
+            "le temps de résolution de la métastabilité"
+          ]
+        },
+        "electrical": {
+          "claims": "Les broches se relient aux réseaux analogiques avec les valeurs par défaut cmos_3v3 ; la fonction est numérique.",
+          "omissions": [
+            "le courant d'alimentation"
+          ]
+        }
+      }
+    }
+  }
 }

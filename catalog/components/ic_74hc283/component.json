@@ -305,5 +305,33 @@
   },
   "tests": [
     "tests/*.json"
-  ]
+  ],
+  "i18n": {
+    "fr": {
+      "source": "595058eed3d2",
+      "description": "Additionneur binaire complet 4 bits à retenue rapide (74HC283) : S3-S0 et COUT valent A + B + CIN.",
+      "fidelity": {
+        "functional": {
+          "claims": "S = A + B + CIN en binaire.",
+          "omissions": [
+            "la propagation de la retenue (un seul délai pour toutes les sorties)"
+          ]
+        },
+        "timed": {
+          "claims": "Comme en fonctionnel ; délais tels qu'indiqués.",
+          "omissions": [
+            "la propagation de la retenue (un seul délai pour toutes les sorties)"
+          ]
+        },
+        "electrical": {
+          "claims": "Les broches se relient aux réseaux analogiques avec les modèles de broche par défaut de la famille ; le comportement est celui du modèle Lua.",
+          "omissions": [
+            "la propagation de la retenue (un seul délai pour toutes les sorties)",
+            "le courant d'alimentation",
+            "les limites de courant de sortie"
+          ]
+        }
+      }
+    }
+  }
 }

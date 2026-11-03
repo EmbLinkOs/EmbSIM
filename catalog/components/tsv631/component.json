@@ -180,5 +180,31 @@
     "manufacturer": "STMicroelectronics",
     "package": "SOT23-5",
     "datasheet": "https://www.st.com/resource/en/datasheet/tsv631.pdf"
+  },
+  "i18n": {
+    "fr": {
+      "source": "d0ba7bf92298",
+      "description": "STMicroelectronics TSV631, un ampli-op CMOS simple micropuissance à entrée et sortie rail à rail (880 kHz, 1,5 à 5,5 V) en SOT23-5 : le U7 de la NUCLEO-144 (MB1137), un suiveur de tension qui pilote LD1 depuis PB0.",
+      "fidelity": {
+        "functional": {
+          "claims": "Broches seulement : la politique fonctionnelle n'a pas de tensions analogiques.",
+          "omissions": [
+            "l'amplification"
+          ]
+        },
+        "timed": {
+          "claims": "Comme en électrique."
+        },
+        "electrical": {
+          "claims": "Un ampli-op simple de gain en boucle ouverte 100 000, produit gain-bande de 880 kHz et vitesse de balayage de 0,34 V/us, sa sortie à 5 mV de chaque rail et derrière 30 ohms.",
+          "omissions": [
+            "la fiche technique n'était pas disponible : le gain, la marge et la résistance de sortie sont supposés ; 880 kHz et 0,34 V/us sont les chiffres phares de la famille TSV63x",
+            "le décalage d'entrée, le courant de polarisation et le bruit",
+            "le courant d'alimentation (environ 60 uA) et la limite de courant de la sortie",
+            "la température"
+          ]
+        }
+      }
+    }
   }
 }

@@ -190,5 +190,41 @@
         0
       ]
     }
+  },
+  "i18n": {
+    "fr": {
+      "source": "f6afb9525fc9",
+      "description": "Module capteur de distance à ultrasons (HC-SR04) : une impulsion TRIG d'au moins 10 us lance une mesure ; après la salve, ECHO reste haut pendant l'aller-retour du son, 58,24 us par centimètre à 20 C (la vitesse du son suit la température de l'air), de 2 à 400 cm, sinon un délai de 38 ms. La distance et la température sont des entrées interactives.",
+      "fidelity": {
+        "functional": {
+          "claims": "Un déclenchement de 10 us ou plus, mesuré depuis son front descendant ; ECHO après burst_delay ; l'écho dure l'aller-retour du son 2 d / c avec c = 331,3 + 0,606 T m/s ; 2-400 cm, sinon le délai de 38 ms ; déclenchements ignorés pendant une mesure ; aucune réponse sous 4,0 V.",
+          "omissions": [
+            "le faisceau de 15 degrés, les cibles à côté et les cibles multiples",
+            "le matériau et l'angle de la cible",
+            "le faible effet de l'humidité sur la vitesse du son",
+            "le courant d'alimentation"
+          ]
+        },
+        "timed": {
+          "claims": "Comme en fonctionnel ; délais tels qu'indiqués.",
+          "omissions": [
+            "le faisceau de 15 degrés, les cibles à côté et les cibles multiples",
+            "le matériau et l'angle de la cible",
+            "le faible effet de l'humidité sur la vitesse du son",
+            "le courant d'alimentation"
+          ]
+        },
+        "electrical": {
+          "claims": "Les broches se relient aux réseaux analogiques avec les modèles de broche par défaut de la famille ; le comportement est celui du modèle Lua.",
+          "omissions": [
+            "le faisceau de 15 degrés, les cibles à côté et les cibles multiples",
+            "le matériau et l'angle de la cible",
+            "le faible effet de l'humidité sur la vitesse du son",
+            "le courant d'alimentation",
+            "les limites de courant de sortie"
+          ]
+        }
+      }
+    }
   }
 }

@@ -139,5 +139,25 @@
         "side": "right"
       }
     }
+  },
+  "i18n": {
+    "fr": {
+      "source": "506689b07e8c",
+      "description": "Comparateur continu à collecteur ouvert sans discontinuité ; rappel externe au niveau haut nécessaire.",
+      "fidelity": {
+        "electrical": {
+          "claims": "Collecteur ouvert : résistance à l'état passant finie pour V+entrée < V-entrée ; haute impédance sinon.",
+          "omissions": [
+            "le délai de propagation",
+            "les limites de mode commun en entrée",
+            "le décalage",
+            "les courants de polarisation",
+            "le courant d'alimentation",
+            "l'hystérésis",
+            "la précision de la fuite hors tension"
+          ]
+        }
+      }
+    }
   }
 }

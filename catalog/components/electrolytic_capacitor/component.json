@@ -142,5 +142,26 @@
   },
   "tests": [
     "tests/*.json"
-  ]
+  ],
+  "i18n": {
+    "fr": {
+      "source": "62ff767abd04",
+      "description": "Condensateur électrolytique aluminium polarisé : découplage de réservoir et filtrage d'alimentation.",
+      "fidelity": {
+        "timed": {
+          "claims": "Comme en électrique."
+        },
+        "electrical": {
+          "claims": "Capacité linéaire avec ESR et condition initiale (SPEC-004 §7 capacitor) ; la capacité de chaque instance tirée uniformément dans ±tolerance autour de la valeur nominale à partir de la graine du projet et de son id (ADR-034 ; nominale avec settings.imperfections \"ideal\").",
+          "omissions": [
+            "la polarité : une polarisation inverse n'est pas diagnostiquée",
+            "le courant de fuite",
+            "la dépendance de l'ESR à la fréquence",
+            "le vieillissement",
+            "la répartition dans la plage de tolérance (uniforme : un fabricant ne garantit que la plage)"
+          ]
+        }
+      }
+    }
+  }
 }

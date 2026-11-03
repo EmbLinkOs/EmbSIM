@@ -164,5 +164,33 @@
   },
   "tests": [
     "tests/*.json"
-  ]
+  ],
+  "i18n": {
+    "fr": {
+      "source": "c9d009c76719",
+      "description": "Verrou D transparent (un bit d'un 74HC75/373) : Q suit D tant que LE est haut et se fige quand LE retombe.",
+      "fidelity": {
+        "functional": {
+          "claims": "Transparent tant que LE est haut, mémorise tant qu'il est bas.",
+          "omissions": [
+            "l'établissement et le maintien autour du front descendant de LE"
+          ]
+        },
+        "timed": {
+          "claims": "Comme en fonctionnel ; délais tels qu'indiqués.",
+          "omissions": [
+            "l'établissement et le maintien autour du front descendant de LE"
+          ]
+        },
+        "electrical": {
+          "claims": "Les broches se relient aux réseaux analogiques avec les modèles de broche par défaut de la famille ; le comportement est celui du modèle Lua.",
+          "omissions": [
+            "l'établissement et le maintien autour du front descendant de LE",
+            "le courant d'alimentation",
+            "les limites de courant de sortie"
+          ]
+        }
+      }
+    }
+  }
 }

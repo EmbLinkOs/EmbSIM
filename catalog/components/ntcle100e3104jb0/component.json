@@ -169,5 +169,24 @@
     "manufacturer": "Vishay",
     "package": "Radial bead",
     "datasheet": "https://www.vishay.com/docs/29049/ntcle100.pdf"
+  },
+  "i18n": {
+    "fr": {
+      "source": "bd03ef0919ca",
+      "description": "Résistance CTN suivant la loi bêta en fonction de la température ; R25 et B25/85 tirés de la ligne de commande choisie dans la famille.",
+      "fidelity": {
+        "electrical": {
+          "claims": "Résistance CTN suivant la loi bêta en fonction de la température ; R25 et B25/85 tirés de la ligne de commande choisie dans la famille.",
+          "omissions": [
+            "l'inertie thermique",
+            "l'auto-échauffement",
+            "la courbe de résistance complète du fabricant",
+            "la tolérance de R25 et de B",
+            "les cas extrêmes des paramètres du fabricant",
+            "les dommages thermiques et les limites destructives"
+          ]
+        }
+      }
+    }
   }
 }

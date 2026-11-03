@@ -155,5 +155,39 @@
       "source": "KiCad library kicad-packages3D at b8b3cfd (2020-10-02, GitHub mirror of gitlab.com/kicad/libraries/kicad-packages3D): Buzzer_Beeper.3dshapes/Buzzer_12x9.5RM7.6.wrl",
       "license": "CC-BY-SA 4.0 with KiCad's design exception (kicad-3d/LICENSE.md); shipped as a separate file with its attribution (ADR-029)"
     }
+  },
+  "i18n": {
+    "fr": {
+      "source": "fe22a90fec72",
+      "description": "Buzzer piézo : un actif sonne tant que + est haut et - bas ; un passif sonne à la fréquence du signal carré sur + (tone_hz, tirée de la période entre fronts montants), muet dès que deux périodes passent sans front ; sous 20 Hz les fronts sont des clics, pas une tonalité.",
+      "fidelity": {
+        "functional": {
+          "claims": "Son et tonalité selon les niveaux logiques sur ses broches : la tonalité d'un buzzer passif est la fréquence de commande d'une période à l'autre, et il se tait deux périodes après l'arrêt de la commande.",
+          "omissions": [
+            "la pression acoustique",
+            "la résonance",
+            "le courant de bobine"
+          ]
+        },
+        "timed": {
+          "claims": "Comme en fonctionnel ; délais tels qu'indiqués.",
+          "omissions": [
+            "la pression acoustique",
+            "la résonance",
+            "le courant de bobine"
+          ]
+        },
+        "electrical": {
+          "claims": "Les broches se relient aux réseaux analogiques avec les modèles de broche par défaut de la famille ; le comportement est celui du modèle Lua.",
+          "omissions": [
+            "la pression acoustique",
+            "la résonance",
+            "le courant de bobine",
+            "le courant d'alimentation",
+            "les limites de courant de sortie"
+          ]
+        }
+      }
+    }
   }
 }

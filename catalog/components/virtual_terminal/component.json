@@ -182,5 +182,33 @@
   },
   "tests": [
     "tests/*.json"
-  ]
+  ],
+  "i18n": {
+    "fr": {
+      "source": "c6644b487b59",
+      "description": "Codeur/décodeur UART sur deux réseaux : le texte envoyé par tx_text (ou les octets par tx_hex) est sérialisé sur TX ; les trames sur RX sont décodées dans rx_text et rx_hex.",
+      "fidelity": {
+        "functional": {
+          "claims": "Tramage de style 8N1 à baud avec bits de données, parité et bits d'arrêt configurables ; temporisation des octets exacte au bit (SPEC-003 §5 virtual_terminal) ; octets envoyés et vus en hexadécimal (tx_hex, rx_hex), comme le mode hexadécimal d'un programme de terminal, pour les protocoles binaires tels que HCI.",
+          "omissions": [
+            "le contrôle de flux",
+            "la détection de break"
+          ]
+        },
+        "timed": {
+          "claims": "Comme en fonctionnel.",
+          "omissions": [
+            "la tolérance sur le débit"
+          ]
+        },
+        "electrical": {
+          "claims": "Les broches se relient avec les valeurs par défaut cmos_3v3 ; RX a un rappel faible au niveau haut.",
+          "omissions": [
+            "les pilotes de ligne",
+            "les niveaux RS-232 au-delà de l'inversion"
+          ]
+        }
+      }
+    }
+  }
 }

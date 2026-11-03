@@ -157,5 +157,27 @@
   },
   "artwork": {
     "svg": "artwork.svg"
+  },
+  "i18n": {
+    "fr": {
+      "source": "69035745957e",
+      "description": "L7809CV (TO-220-3). Approximation paramétrée par un régulateur pour la conception de circuits basse fréquence ; pas un modèle SPICE du fabricant.",
+      "fidelity": {
+        "electrical": {
+          "claims": "Approximation paramétrée du régulateur ; couverture par des cas de test en continu et basse fréquence uniquement.",
+          "omissions": [
+            "la régulation de charge et de ligne",
+            "la protection thermique",
+            "la stabilité selon le condensateur de sortie",
+            "le bruit",
+            "les tolérances min/max du fabricant",
+            "le comportement thermique ou destructif",
+            "la dispersion d'un exemplaire à l'autre",
+            "le comportement à haute fréquence, non vérifié",
+            "aucune qualification par un modèle du fabricant"
+          ]
+        }
+      }
+    }
   }
 }

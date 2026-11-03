@@ -340,5 +340,37 @@
   },
   "tests": [
     "tests/*.json"
-  ]
+  ],
+  "i18n": {
+    "fr": {
+      "source": "100b8f4645ed",
+      "description": "L'analyseur logique USB Logic 8 de Saleae : huit cordons de voie et une masse, chaque entrée 1 MOhm en parallèle avec 10 pF, haute au-dessus de 1,2 V et basse sous 0,6 V. Il échantillonne les huit entrées à la fréquence choisie (1 à 100 Méch/s ; 100 Méch/s sur 3 voies au plus, 25 Méch/s sur les 8), depuis Start pendant une durée fixée ou autour d'un déclenchement sur le front d'une voie, et transmet la capture à l'atelier, où elle se lit comme l'affiche le logiciel Logic 2 de Saleae : lignes de voies, décodeurs de protocoles, mesures.",
+      "fidelity": {
+        "functional": {
+          "claims": "Échantillonne les huit entrées à la fréquence choisie exactement comme le fait un échantillonneur (un front au premier instant d'échantillonnage qui le suit, un changement annulé avant l'instant suivant manqué), la fréquence limitée par les voies actives comme le donne la fiche technique, une capture depuis Start pendant sa durée ou autour d'un déclenchement sur le front d'une voie avec une part de pré-déclenchement, lue en direct par instrument.read.",
+          "omissions": [
+            "les entrées analogiques (10 bits, 0 à 5 V, jusqu'à 10 Méch/s)",
+            "l'inductance et la diaphonie des cordons",
+            "les entrées au-delà du maximum absolu (-25 V à +25 V)"
+          ]
+        },
+        "timed": {
+          "claims": "Comme en fonctionnel.",
+          "omissions": [
+            "les entrées analogiques (10 bits, 0 à 5 V, jusqu'à 10 Méch/s)",
+            "l'inductance et la diaphonie des cordons",
+            "les entrées au-delà du maximum absolu (-25 V à +25 V)"
+          ]
+        },
+        "electrical": {
+          "claims": "Comme en fonctionnel ; chaque cordon charge son réseau de 1 MOhm vers la masse en parallèle avec 10 pF, et lit haut au-dessus de 1,2 V et bas sous 0,6 V, gardant son état entre les deux.",
+          "omissions": [
+            "les entrées analogiques (10 bits, 0 à 5 V, jusqu'à 10 Méch/s)",
+            "l'inductance et la diaphonie des cordons",
+            "les entrées au-delà du maximum absolu (-25 V à +25 V)"
+          ]
+        }
+      }
+    }
+  }
 }

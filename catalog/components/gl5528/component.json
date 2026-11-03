@@ -213,5 +213,23 @@
     "manufacturer": "Senba Sensing",
     "package": "Radial CdS cell",
     "datasheet": "https://www.senba-sensing.com/products/gl55-series-photo-resistor.html"
+  },
+  "i18n": {
+    "fr": {
+      "source": "1cf5e7d25102",
+      "description": "Photorésistance CdS GL5528 (série Senba GL55) : R = 15 kOhms x (E / 10 lx)^-0,6, la résistance à 10 lux de chaque exemplaire tirée dans les 10-20 kOhms de la fiche technique, au moins 1 MOhm dans l'obscurité, suivant un changement de lumière en 20 ms en montée et 30 ms en décroissance ; lit l'éclairement du monde tant que le sien n'est pas réglé.",
+      "fidelity": {
+        "electrical": {
+          "claims": "La loi de lumière de la fiche technique GL55 pour la GL5528 : 10-20 kOhms à 10 lux (chaque exemplaire tiré de la graine), gamma 0,6 entre 10 et 100 lux, 1 MOhm de résistance d'obscurité comme plafond ; son temps de réponse comme un retard du premier ordre sur la conductance, 20 ms en montée et 30 ms en décroissance.",
+          "omissions": [
+            "la réponse spectrale",
+            "la dépendance du temps de réponse au niveau de lumière, et la lente traîne vers la résistance d'obscurité (que la fiche technique mesure 10 s après l'extinction) : une seule constante de montée et une seule de décroissance, celles de la fiche technique à 10 lux. La fiche technique GL55 ne donne que ces chiffres, comme les fiches CdS de Hamamatsu et de Luna ; la dépendance n'est publiée que sous forme de courbes de fabricants, qui ne sont pas reproduites ici sans leurs valeurs",
+            "l'historique d'éclairement (effet mémoire)",
+            "l'auto-échauffement",
+            "les dommages thermiques et les limites destructives"
+          ]
+        }
+      }
+    }
   }
 }

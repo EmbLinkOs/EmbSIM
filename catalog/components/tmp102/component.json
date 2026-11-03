@@ -194,5 +194,42 @@
   },
   "tests": [
     "tests/*.json"
-  ]
+  ],
+  "i18n": {
+    "fr": {
+      "source": "d8d742b5c941",
+      "description": "Capteur de température numérique sur I2C (TMP102) : lectures sur 12 bits à 0,0625 °C, registres de configuration, T(low) et T(high) et une sortie ALERT à drain ouvert en mode comparateur. La température est une entrée interactive.",
+      "fidelity": {
+        "functional": {
+          "claims": "Registres de pointeur, de température, de configuration et de limites ; ALERT en mode comparateur avec hystérésis entre T(low) et T(high).",
+          "omissions": [
+            "la durée des conversions (les lectures sont immédiates)",
+            "les modes arrêt, mesure unique et étendu",
+            "la file de défauts",
+            "ADD0 n'est pas lue"
+          ]
+        },
+        "timed": {
+          "claims": "Comme en fonctionnel ; délais tels qu'indiqués.",
+          "omissions": [
+            "la durée des conversions (les lectures sont immédiates)",
+            "les modes arrêt, mesure unique et étendu",
+            "la file de défauts",
+            "ADD0 n'est pas lue"
+          ]
+        },
+        "electrical": {
+          "claims": "Les broches se relient aux réseaux analogiques avec les modèles de broche par défaut de la famille ; le comportement est celui du modèle Lua.",
+          "omissions": [
+            "la durée des conversions (les lectures sont immédiates)",
+            "les modes arrêt, mesure unique et étendu",
+            "la file de défauts",
+            "ADD0 n'est pas lue",
+            "le courant d'alimentation",
+            "les limites de courant de sortie"
+          ]
+        }
+      }
+    }
+  }
 }

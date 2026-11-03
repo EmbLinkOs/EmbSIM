@@ -299,5 +299,33 @@
   },
   "tests": [
     "tests/*.json"
-  ]
+  ],
+  "i18n": {
+    "fr": {
+      "source": "7cd83f672937",
+      "description": "Comparateur de grandeur 4 bits (74HC85) : AGTB, AEQB et ALTB comparent A3-A0 à B3-B0 ; en cas d'égalité, les entrées de cascade IGT, IEQ et ILT décident, de sorte que les étages s'enchaînent pour des mots plus larges.",
+      "fidelity": {
+        "functional": {
+          "claims": "Table de fonctions du 74HC85, mise en cascade comprise.",
+          "omissions": [
+            "les combinaisons de cascade interdites du tableau de la fiche technique"
+          ]
+        },
+        "timed": {
+          "claims": "Comme en fonctionnel ; délais tels qu'indiqués.",
+          "omissions": [
+            "les combinaisons de cascade interdites du tableau de la fiche technique"
+          ]
+        },
+        "electrical": {
+          "claims": "Les broches se relient aux réseaux analogiques avec les modèles de broche par défaut de la famille ; le comportement est celui du modèle Lua.",
+          "omissions": [
+            "les combinaisons de cascade interdites du tableau de la fiche technique",
+            "le courant d'alimentation",
+            "les limites de courant de sortie"
+          ]
+        }
+      }
+    }
+  }
 }

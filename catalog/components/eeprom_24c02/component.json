@@ -221,5 +221,39 @@
   },
   "tests": [
     "tests/*.json"
-  ]
+  ],
+  "i18n": {
+    "fr": {
+      "source": "ed4b6f01833b",
+      "description": "EEPROM série de 2 kbit (256 x 8) sur I2C (24C02 / AT24C02) : écritures d'octets et de pages de 8 octets avec un cycle d'écriture pendant lequel elle n'acquitte pas, lectures séquentielles, protection en écriture.",
+      "fidelity": {
+        "functional": {
+          "claims": "Écritures d'octets et de pages validées au STOP, bouclage de page, lectures séquentielles, pas d'ACK pendant le cycle d'écriture, WP haut bloque les écritures.",
+          "omissions": [
+            "A0-A2 ne sont pas lues : réglez le paramètre address",
+            "l'endurance et la rétention",
+            "le contenu n'est pas conservé d'une session à l'autre"
+          ]
+        },
+        "timed": {
+          "claims": "Comme en fonctionnel ; délais tels qu'indiqués.",
+          "omissions": [
+            "A0-A2 ne sont pas lues : réglez le paramètre address",
+            "l'endurance et la rétention",
+            "le contenu n'est pas conservé d'une session à l'autre"
+          ]
+        },
+        "electrical": {
+          "claims": "Les broches se relient aux réseaux analogiques avec les modèles de broche par défaut de la famille ; le comportement est celui du modèle Lua.",
+          "omissions": [
+            "A0-A2 ne sont pas lues : réglez le paramètre address",
+            "l'endurance et la rétention",
+            "le contenu n'est pas conservé d'une session à l'autre",
+            "le courant d'alimentation",
+            "les limites de courant de sortie"
+          ]
+        }
+      }
+    }
+  }
 }

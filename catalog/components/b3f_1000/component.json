@@ -171,5 +171,23 @@
     "manufacturer": "Omron",
     "package": "6 x 6 mm through-hole",
     "datasheet": "https://omronfs.omron.com/en_US/ecb/products/pdf/en-b3f.pdf"
+  },
+  "i18n": {
+    "fr": {
+      "source": "a76d2dd83bd7",
+      "description": "Bouton tactile Omron B3F-1000 de 6 mm ; les pastilles 1/2 et 3/4 restent reliées en interne, l'appui relie les deux paires. Les pastilles en double inutilisées peuvent rester ouvertes.",
+      "fidelity": {
+        "electrical": {
+          "claims": "Bouton tactile Omron B3F-1000 de 6 mm ; les pastilles 1/2 et 3/4 restent reliées en interne, l'appui relie les deux paires. Les pastilles en double inutilisées peuvent rester ouvertes.",
+          "omissions": [
+            "le rebond des contacts",
+            "la force et la course d'actionnement",
+            "l'usure des contacts",
+            "les cas extrêmes des paramètres du fabricant",
+            "les dommages thermiques et les limites destructives"
+          ]
+        }
+      }
+    }
   }
 }

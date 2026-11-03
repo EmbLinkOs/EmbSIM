@@ -212,5 +212,33 @@
   },
   "tests": [
     "tests/*.json"
-  ]
+  ],
+  "i18n": {
+    "fr": {
+      "source": "1c9b2a658d8d",
+      "description": "Monostable redéclenchable (une moitié d'un 74HC123) : un front descendant sur A_N avec B haute, ou un front montant sur B avec A_N basse, lance une impulsion de K x Rext x Cext sur Q ; un nouveau déclenchement la relance ; CLR_N basse la termine.",
+      "fidelity": {
+        "functional": {
+          "claims": "Largeur d'impulsion K Rext Cext, redéclenchable, remise à zéro par CLR_N.",
+          "omissions": [
+            "la dépendance de la largeur à l'alimentation et aux petites valeurs de Cext"
+          ]
+        },
+        "timed": {
+          "claims": "Comme en fonctionnel ; délais tels qu'indiqués.",
+          "omissions": [
+            "la dépendance de la largeur à l'alimentation et aux petites valeurs de Cext"
+          ]
+        },
+        "electrical": {
+          "claims": "Les broches se relient aux réseaux analogiques avec les modèles de broche par défaut de la famille ; le comportement est celui du modèle Lua.",
+          "omissions": [
+            "la dépendance de la largeur à l'alimentation et aux petites valeurs de Cext",
+            "le courant d'alimentation",
+            "les limites de courant de sortie"
+          ]
+        }
+      }
+    }
+  }
 }
