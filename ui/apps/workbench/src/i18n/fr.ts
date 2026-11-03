@@ -478,6 +478,7 @@ export const fr: Record<MessageKey, string> = {
   'insp.clearDrawing': 'Effacer le dessin',
   'insp.clearSelection': 'Effacer la sélection',
   'insp.disconnect': 'Déconnecter',
+  'insp.range': 'Plage : {list}',
   'insp.fidelity': 'Fidélité',
   'insp.firmware': 'Firmware',
   'insp.island': 'Îlot',

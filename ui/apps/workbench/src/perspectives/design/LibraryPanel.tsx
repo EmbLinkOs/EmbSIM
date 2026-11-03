@@ -9,6 +9,8 @@ import { useProject, type CatalogEntry } from '../../stores/project';
 import { IndicatorEvidence } from './IndicatorEvidence';
 import { categoryGroups, categoryName, filterLibrary } from './libraryFilters';
 import { t as tr, type MessageKey } from '../../i18n';
+import { catalogDescription, catalogFidelity } from '../../i18n/catalogText';
+import { useSettings } from '../../stores/settings';
 
 const TIERS: { tier: FidelityTier; letter: string; title: string }[] = [
   { tier: 'functional', letter: 'F', title: 'functional' },
@@ -93,10 +95,11 @@ export function LibraryPanel({ onPlace }: LibraryPanelProps) {
 }
 
 function LibraryItem({ item, entry, policy, selected, onPreview, onPlace }: { item: CatalogItem; entry?: CatalogEntry; policy: FidelityTier; selected: boolean; onPreview: () => void; onPlace: (id: string) => void }) {
+  const lang = useSettings((s) => s.language);
   const unavailable = useProject((state) => !state.editable || state.busy || state.commands.isBusy);
   return (
     <li className={cx('wb-library__item', selected && 'wb-library__item--selected')} draggable={!item.broken && item.fidelity_tiers.includes(policy)} onDragStart={(e) => { e.dataTransfer.setData('text/x-embsim-component', item.id); e.dataTransfer.effectAllowed = 'copy'; }}>
-      <button type="button" className="wb-library__part" aria-label={tr('library.previewOf', { name: item.name })} aria-pressed={selected} onClick={onPreview} title={entry?.description.description ?? item.name}>
+      <button type="button" className="wb-library__part" aria-label={tr('library.previewOf', { name: item.name })} aria-pressed={selected} onClick={onPreview} title={catalogDescription(entry?.description, lang) ?? item.name}>
         <span className="wb-library__thumb">{entry && <SymbolThumbnail svg={entry.files.symbol ?? ''} symbol={entry.description.symbol} size={30} />}</span>
         <span className="wb-library__identity"><strong className="wb-library__name">{item.name}</strong><span className="wb-library__subtitle">{entry?.description.part ? `${entry.description.part.manufacturer} · ${entry.description.part.package}` : categoryName(item.category)}</span><span className="wb-library__meta"><FidelityBadges tiers={item.fidelity_tiers} />{item.broken ? <span className="es-badge es-badge--danger">{tr('library.broken')}</span> : entry?.description.inputs?.length ? <span className="wb-library__interactive">{tr('library.interactive')}</span> : null}</span></span>
       </button>
@@ -108,6 +111,7 @@ function LibraryItem({ item, entry, policy, selected, onPreview, onPlace }: { it
 function LibraryPreview({ item, entry, policy, onClose, onPlace }: { item: CatalogItem; entry: CatalogEntry; policy: FidelityTier; onClose: () => void; onPlace: () => void }) {
   const unavailable = useProject((state) => !state.editable || state.busy || state.commands.isBusy);
   const d = entry.description;
+  const lang = useSettings((s) => s.language);
   const [tab, setTab] = useState<'overview' | 'pins' | 'models'>('overview');
   const reviewed = d.provenance.sources?.some((s) => s.hash && s.url === d.part?.datasheet);
   return <section className="wb-library__preview" aria-label={tr('library.preview')}>
@@ -115,10 +119,10 @@ function LibraryPreview({ item, entry, policy, onClose, onPlace }: { item: Catal
     <div className="wb-library__hero"><SymbolThumbnail svg={entry.files.symbol ?? ''} symbol={d.symbol} size={76} /><div><h3>{d.name}</h3><span>{d.part?.manufacturer ?? tr('library.generic')}</span><small>{d.part?.package ?? categoryName(item.category)} · {tr('library.terminals', { n: d.pins.length })}</small></div></div>
     <div className="wb-library__tabs" role="group" aria-label={tr('library.previewSections')}>{(['overview', 'pins', 'models'] as const).map((t) => <button type="button" key={t} aria-pressed={tab === t} onClick={() => setTab(t)}>{tr(`library.tab.${t}` as MessageKey)}</button>)}</div>
     <div className="wb-library__detailbody">
-      {tab === 'overview' && <><p>{d.description}</p>{d.part && <><span className="wb-library__source"><Check size={12} />{reviewed ? tr('library.sourceReviewed') : tr('library.sourceReference')}</span><a className="wb-library__datasheet" href={d.part.datasheet} target="_blank" rel="noopener noreferrer"><BookOpen size={13} /> {tr('library.datasheet')} <ArrowUpRight size={12} /></a></>}{Boolean(d.inputs?.length) && <p className="wb-library__hint">{tr('library.liveControls', { list: d.inputs?.map((i) => `${i.name}${i.unit ? ` (${i.unit})` : ''}`).join(', ') ?? '' })}</p>}<code>{item.id}</code></>}
+      {tab === 'overview' && <><p>{catalogDescription(d, lang)}</p>{d.part && <><span className="wb-library__source"><Check size={12} />{reviewed ? tr('library.sourceReviewed') : tr('library.sourceReference')}</span><a className="wb-library__datasheet" href={d.part.datasheet} target="_blank" rel="noopener noreferrer"><BookOpen size={13} /> {tr('library.datasheet')} <ArrowUpRight size={12} /></a></>}{Boolean(d.inputs?.length) && <p className="wb-library__hint">{tr('library.liveControls', { list: d.inputs?.map((i) => `${i.name}${i.unit ? ` (${i.unit})` : ''}`).join(', ') ?? '' })}</p>}<code>{item.id}</code></>}
       {tab === 'pins' && <table className="es-table"><thead><tr><th scope="col">No.</th><th scope="col">{tr('library.terminal')}</th><th scope="col">{tr('library.function')}</th></tr></thead><tbody>{[...d.pins].sort((a, b) => (a.number ?? 0) - (b.number ?? 0)).map((p) => <tr key={p.name}><td>{p.number ?? '—'}</td><td>{p.name}</td><td>{p.doc ?? p.model?.kind ?? '—'}</td></tr>)}</tbody></table>}
       {tab === 'models' && d.qualification && <IndicatorEvidence evidence={d.qualification} />}
-      {tab === 'models' && TIERS.map(({ tier }) => <div className="wb-library__model" key={tier}><strong>{tr(`policy.${tier}` as MessageKey)}<span>{d.fidelity[tier] ? tr('library.provided') : tr('library.notProvided')}</span></strong>{d.fidelity[tier] && <><p>{d.fidelity[tier]?.claims}</p>{Boolean(d.fidelity[tier]?.omissions?.length) && <p className="wb-library__hint">{tr('library.limits', { list: d.fidelity[tier]?.omissions?.join('; ') ?? '' })}</p>}</>}</div>)}
+      {tab === 'models' && TIERS.map(({ tier }) => { const f = catalogFidelity(d, tier, lang); return <div className="wb-library__model" key={tier}><strong>{tr(`policy.${tier}` as MessageKey)}<span>{f ? tr('library.provided') : tr('library.notProvided')}</span></strong>{f && <><p>{f.claims}</p>{Boolean(f.omissions?.length) && <p className="wb-library__hint">{tr('library.limits', { list: f.omissions?.join('; ') ?? '' })}</p>}</>}</div>; })}
     </div>
     {!item.fidelity_tiers.includes(policy) && <p className="wb-library__hint">{tr('library.noModelPlace', { policy: tr(`policy.${policy}` as MessageKey) })}</p>}
     <Button size="sm" icon={<Plus />} disabled={unavailable || item.broken || !item.fidelity_tiers.includes(policy)} onClick={onPlace}>{tr('design.place', { name: d.name })}</Button>

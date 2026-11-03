@@ -150,6 +150,9 @@
     "fidelity": {
       "$ref": "common.schema.json#/$defs/fidelity"
     },
+    "i18n": {
+      "$ref": "common.schema.json#/$defs/i18n"
+    },
     "provenance": {
       "$ref": "common.schema.json#/$defs/provenance"
     },

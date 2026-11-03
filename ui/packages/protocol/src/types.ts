@@ -466,8 +466,16 @@ export interface ComponentDescription {
   ties?: string[][];
   bench?: BenchDescription;
   fidelity: Partial<Record<FidelityTier, FidelityDeclaration | null>>;
+  /** The entry's text in other languages (fr): its description, its
+   * fidelity's claims and omissions tier by tier, in the English's order. */
+  i18n?: Record<string, CatalogTranslation>;
   provenance: Provenance;
   tests?: string[];
+}
+
+export interface CatalogTranslation {
+  description?: string;
+  fidelity?: Partial<Record<FidelityTier, { claims: string; omissions?: string[] }>>;
 }
 
 export interface CatalogItem {

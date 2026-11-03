@@ -17,7 +17,9 @@ import { FidelityBadges } from './LibraryPanel';
 import { WireProperties } from './WireProperties';
 import { parameterValue } from './parameterEditing';
 import { SelectionProperties } from './SelectionProperties';
-import { t as tr } from '../../i18n';
+import { t as tr, type MessageKey } from '../../i18n';
+import { catalogDescription, catalogFidelity } from '../../i18n/catalogText';
+import { useSettings } from '../../stores/settings';
 
 const UNIT_LABEL: Record<string, string> = { ohm: 'Ω', F: 'F', V: 'V', A: 'A', ms: 'ms', W: 'W', '%': '%' };
 
@@ -74,8 +76,9 @@ function FrontPanelButtons({ id }: { id: string }) {
 function BoardInspector({ id }: { id: string }) {
   const board = useProject((s) => s.project?.boards?.find((b) => b.id === id));
   const entry = useProject((s) => (board ? s.catalog[board.board] : undefined));
+  const lang = useSettings((s) => s.language);
   if (!board) return <EmptyState title={`${id} no longer exists`} />;
-  const desc = entry?.description as { name?: string; description?: string; version?: string; mcu?: { ref?: string } } | undefined;
+  const desc = entry?.description as { name?: string; description?: string; version?: string; mcu?: { ref?: string }; i18n?: Record<string, { description?: string }> } | undefined;
   return (
     <div className="wb-inspector">
       <div className="wb-inspector__head">
@@ -85,7 +88,7 @@ function BoardInspector({ id }: { id: string }) {
       <div className="es-muted" style={{ fontSize: 'var(--text-xs)' }}>
         <span className="es-mono">{board.board}</span>
         {desc?.version && ` v${desc.version}`}
-        {desc?.description && ` — ${desc.description}`}
+        {desc?.description && ` — ${(lang !== 'en' && desc.i18n?.[lang]?.description) || desc.description}`}
       </div>
       <SelectionProperties />
       <section className="wb-inspector__section" aria-label={tr('insp.board')}>
@@ -114,6 +117,7 @@ function ComponentInspector({ id }: { id: string }) {
   const setParam = useProject((s) => s.setParam);
   const outputs = useSession((s) => s.outputs);
   const { toast } = useToast();
+  const lang = useSettings((s) => s.language);
   if (!component) return <EmptyState title={`${id} no longer exists`} />;
   const desc = entry?.description;
   const pinNet = (pin: string) => Object.entries(nets ?? {}).find(([, pins]) => pins.includes(`${id}.${pin}`))?.[0];
@@ -131,7 +135,7 @@ function ComponentInspector({ id }: { id: string }) {
       <div className="es-muted" style={{ fontSize: 'var(--text-xs)' }}>
         <span className="es-mono">{component.component}</span>
         {desc && ` v${desc.version}`}
-        {desc?.description && ` — ${desc.description}`}
+        {desc?.description && ` — ${catalogDescription(desc, lang)}`}
       </div>
       {desc?.qualification && <IndicatorEvidence evidence={desc.qualification} />}
       <OpenInsideButton id={id} />
@@ -205,16 +209,16 @@ function ComponentInspector({ id }: { id: string }) {
         <section className="wb-inspector__section" aria-label={tr('insp.fidelity')}>
           <h3>{tr('insp.fidelity')}</h3>
           {(['functional', 'timed', 'electrical'] as const).map((tier) => {
-            const f = desc.fidelity[tier];
+            const f = catalogFidelity(desc, tier, lang);
             return (
               <div key={tier} className="wb-fidelity-card">
                 <div className="wb-fidelity-card__title">
-                  <span>{tier}</span>
-                  <Badge tone={f ? 'accent' : 'default'}>{f ? 'provided' : 'not provided'}</Badge>
+                  <span>{tr(`policy.${tier}` as MessageKey)}</span>
+                  <Badge tone={f ? 'accent' : 'default'}>{f ? tr('library.provided') : tr('library.notProvided')}</Badge>
                 </div>
                 {f && <div>{f.claims}</div>}
-                {f?.omissions?.length ? <div className="wb-fidelity-card__omissions">Omits: {f.omissions.join(', ')}</div> : null}
-                {f?.range && <div className="wb-fidelity-card__omissions">Range: {Object.entries(f.range).map(([k, [lo, hi]]) => `${k} ${lo}…${hi}`).join('; ')}</div>}
+                {f?.omissions?.length ? <div className="wb-fidelity-card__omissions">{tr('library.limits', { list: f.omissions.join('; ') })}</div> : null}
+                {f?.range && <div className="wb-fidelity-card__omissions">{tr('insp.range', { list: Object.entries(f.range).map(([k, [lo, hi]]) => `${k} ${lo}…${hi}`).join('; ') })}</div>}
               </div>
             );
           })}

@@ -157,6 +157,35 @@
         }
       }
     },
+    "i18n": {
+      "description": "The entry's text in other languages, by language tag (fr): its description, and its fidelity's claims and omissions tier by tier, in the same order as the English (checked semantically). Technical identifiers stay as written.",
+      "type": "object",
+      "additionalProperties": false,
+      "patternProperties": {
+        "^[a-z]{2}(-[A-Z]{2})?$": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "description": {"type": "string", "minLength": 1},
+            "fidelity": {
+              "type": "object",
+              "additionalProperties": false,
+              "patternProperties": {
+                "^(functional|timed|electrical)$": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": ["claims"],
+                  "properties": {
+                    "claims": {"type": "string", "minLength": 1},
+                    "omissions": {"type": "array", "items": {"type": "string", "minLength": 1}}
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "fidelity": {
       "description": "Per-tier declaration: null (not provided) or a declaration. At least one tier must be declared (checked semantically).",
       "type": "object",

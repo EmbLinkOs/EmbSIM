@@ -490,6 +490,7 @@ export const en = {
   'insp.clearDrawing': 'Clear drawing',
   'insp.clearSelection': 'Clear selection',
   'insp.disconnect': 'Disconnect',
+  'insp.range': 'Range: {list}',
   'insp.fidelity': 'Fidelity',
   'insp.firmware': 'Firmware',
   'insp.island': 'Island',

@@ -671,6 +671,18 @@ def check_fidelity(report: Report, file: Path, doc: dict, base_dir: Path) -> set
         for i, ref in enumerate(decl.get("validation") or []):
             if isinstance(ref, str) and not re.match(r"^[a-z]+:", ref) and not (base_dir / ref).exists() and not sorted(base_dir.glob(ref)):
                 report.error(file, ptr("fidelity", tier, "validation", i), "catalog.file_missing", f"validation reference {ref} matches no file")
+    # the text in other languages: the same tiers, each omission's translation
+    # in the English's place
+    for lang, tr in (doc.get("i18n") or {}).items():
+        for tier, decl in (tr.get("fidelity") or {}).items():
+            if tier not in tiers:
+                report.error(file, ptr("i18n", lang, "fidelity", tier), "i18n.tier", f"{lang}: a translation of tier {tier}, which is not declared")
+                continue
+            want = len(fid[tier].get("omissions") or [])
+            have = len(decl.get("omissions") or [])
+            if want != have:
+                report.error(file, ptr("i18n", lang, "fidelity", tier, "omissions"), "i18n.omissions",
+                             f"{lang}: {have} omissions translated for the English's {want}")
     return tiers
 
 
