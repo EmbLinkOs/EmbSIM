@@ -35,6 +35,7 @@ PDF's text. The fixtures then hold the model to the same table's limits.
 | `zeners_1n47xx` | Vishay 1N4728A to 1N4761A (34), 1.3 W, DO-41 | 85816 | VZ at IZT within 5 %; IR at VR; VF at 200 mA |
 | `zeners_1n52xx` | Vishay 1N5221 to 1N5267 in their B (5 %) and C (2 %) tolerances (94), DO-35 | 85588 | VZ at IZT within the suffix's tolerance; IR at VR; VF at 200 mA |
 | `zeners_bzx79` | onsemi BZX79C2V4 to BZX79C18 (21), DO-35 | BZX79C2V4/D | VZ at IZT within the table's minimum and maximum; IR at VR; VF at 200 mA |
+| `bridges_w0xg` | Vishay W005G to W10G 1.5 A bridge rectifiers, WOG (7): four junctions in a composite | 88769 | full-wave rectification both ways into 10 ohm under the per-diode VF maximum |
 | `switching_1n914` | onsemi 1N914, 1N914A, 1N914B, 1N916, 1N916A, 1N916B, 1N4148, 1N4448, DO-35 | 1N914/D | each grade's VF window or maximum at its test currents; IR at 20 V and 75 V; breakdown at the 100 V minimum |
 | `bjt_bc546` | onsemi BC546B, BC547A, BC547B, BC547C, BC548B, BC548C (NPN), TO-92 | BC546/D | IC within the hFE group's limits at 2 mA and VBE(on) inside 0.55 to 0.7 V; VCE(sat) at 10 mA; ICES |
 | `bjt_bc556` | onsemi BC556B, BC557A, BC557B, BC557C, BC558B (PNP), TO-92 | BC556B/D | the same, with the PNP's limits |

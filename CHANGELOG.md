@@ -52,7 +52,9 @@ versions follow semantic versioning. There is no release yet.
   onsemi's BZX79C2V4 to C18) and 23 Kingbright LEDs (the 5 mm WP7113 and
   3 mm WP710A10 lines in their colours and lenses), each LED at its
   datasheet's typical forward voltage at its test current, damaged past its
-  ratings (ADR-034), its colour its dominant wavelength's.
+  ratings (ADR-034), its colour its dominant wavelength's. And Vishay's
+  W005G to W10G bridge rectifiers, four junctions in a composite with their
+  own bridge symbol.
 - The capacitor primitive's `esr` (SPEC-004 §7) is applied: it was read
   and ignored, so a capacitor had no series resistance whatever its
   description said. The capacitance now sits behind an internal node, the
