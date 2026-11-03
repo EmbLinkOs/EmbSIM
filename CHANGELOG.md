@@ -40,6 +40,19 @@ versions follow semantic versioning. There is no release yet.
   temperature coefficient the datasheet's. The bench draws a resistor's
   colour code from its value and tolerance (five bands at 1 %), TO-92 and
   TO-220 bodies by package; `run_fixtures.py` runs fixtures in parallel.
+- 323 Nichicon aluminium electrolytic capacitors, every part number of the
+  UVR (85 C) and UHE (105 C, low impedance) catalogs' tables, each with its
+  catalog's capacitance, voltage, case, ripple and an ESR from its tan δ
+  (UVR) or 100 kHz impedance (UHE), held to the RC time constant and the
+  ESR step; the bench draws each can at its size. And 385 Vishay K series
+  radial leaded MLCCs, every ordering code of its C0G and X7R tables (10 pF
+  to 1 uF, 50 to 500 V), with the datasheet's tolerance, size and lead
+  spacing.
+- The capacitor primitive's `esr` (SPEC-004 §7) is applied: it was read
+  and ignored, so a capacitor had no series resistance whatever its
+  description said. The capacitance now sits behind an internal node, the
+  ESR between it and the first pin, `ic` across the capacitance itself
+  (`test_analog`'s `test_cap_esr`).
 - The library's browser is the category tree: a category opens its
   sub-categories with their counts, search matches category and
   sub-category names, and `embsim catalog show` prints both.

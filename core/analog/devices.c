@@ -293,18 +293,34 @@ static es_status cap_setup(esk_adev *d)
         s->c = 1e-6;
     }
     s->esr = pd(d, "esr", 0.0);
+    if (s->esr < 0.0) {
+        param_error(d, "esr", "must be >= 0");
+        s->esr = 0.0;
+    }
     s->has_ic = has_param(d, "ic");
     s->ic = pd(d, "ic", 0.0);
-    d->nbranch = s->has_ic ? 1 : 0; /* an ideal source holds `ic` at the operating point */
+    /* an ideal source holds `ic` at the operating point; with an ESR the
+     * capacitance sits behind an internal node (C') the ESR joins to the
+     * first pin, as a real capacitor's dielectric behind its plates and leads */
+    d->nbranch = (s->has_ic ? 1 : 0) + (s->esr > 0.0 ? 1 : 0);
     return ES_OK;
+}
+
+/* the capacitance's own node: C' behind the ESR, or the first pin */
+static int cap_node(const esk_adev *d, const cap_state *s)
+{
+    return s->esr > 0.0 ? d->branch[s->has_ic ? 1 : 0] : d->node[0];
 }
 
 static void cap_load_dc(esk_adev *d, esk_amatrix *m)
 {
     cap_state *s = (cap_state *)d->state;
-    double v = esk_am_v(m, d->node[0], d->node[1]);
+    int a = cap_node(d, s);
+    double v = esk_am_v(m, a, d->node[1]);
     if (s->has_ic)
-        stamp_vsrc(m, d->node[0], d->node[1], d->branch[0], s->ic * esk_am_source_scale(m), 0.0);
+        stamp_vsrc(m, a, d->node[1], d->branch[0], s->ic * esk_am_source_scale(m), 0.0);
+    if (s->esr > 0.0)
+        esk_am_stamp_g(m, d->node[0], a, 1.0 / s->esr);
     s->q_trial = s->c * v;
     s->i_trial = 0.0;
     s->trial_first = 1;
@@ -314,10 +330,13 @@ static void cap_load_dc(esk_adev *d, esk_amatrix *m)
 static void cap_load_tr(esk_adev *d, esk_amatrix *m, const esk_integ *in)
 {
     cap_state *s = (cap_state *)d->state;
-    double v = esk_am_v(m, d->node[0], d->node[1]);
+    int a = cap_node(d, s);
+    double v = esk_am_v(m, a, d->node[1]);
     double q = s->c * v, geq, ieq;
     esk_integ_companion(in, q, s->q_prev, s->i_prev, s->c, &geq, &ieq);
-    stamp_nl(m, d->node[0], d->node[1], geq, ieq, v);
+    stamp_nl(m, a, d->node[1], geq, ieq, v);
+    if (s->esr > 0.0)
+        esk_am_stamp_g(m, d->node[0], a, 1.0 / s->esr);
     if (s->has_ic) {
         /* the initial-condition branch carries no current after the operating point */
         esk_am_stamp_j(m, d->branch[0], d->branch[0], 1.0);

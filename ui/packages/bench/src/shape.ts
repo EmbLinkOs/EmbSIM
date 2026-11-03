@@ -55,6 +55,8 @@ export interface BenchShape {
   textured?: boolean;
   /** a small-outline part drawn on its SO-to-DIP breakout (the DIP's pins are the breakout's) */
   smallOutline?: SmallOutline;
+  /** a radial part's body: an electrolytic can or a dipped ceramic */
+  radial?: 'electrolytic' | 'ceramic';
   /** an axial part's body: a resistor (with its colour bands), a glass or a moulded diode */
   axial?: 'resistor' | 'glass' | 'moulded';
   /** a resistor's nominal resistance, ohms (its description's default: the instance's value wins) */
@@ -177,6 +179,24 @@ function siValue(v: unknown): number | undefined {
   if (!m) return undefined;
   const mult: Record<string, number> = { p: 1e-12, n: 1e-9, u: 1e-6, µ: 1e-6, m: 1e-3, k: 1e3, K: 1e3, M: 1e6, meg: 1e6, G: 1e9 };
   return Number(m[1]) * (m[2] ? mult[m[2]] ?? 1 : 1);
+}
+
+/** a radial can as a datasheet names it: "Radial 8 x 11.5 mm, P 3.5 mm" (diameter, length,
+ *  lead spacing), an aluminium electrolytic's black sleeve */
+function radialPackage(pkg: string | undefined): { span: number; dia: number; h: number; color: string } | undefined {
+  const m = /^Radial ([\d.]+) x ([\d.]+) mm(?:, P ([\d.]+) mm)?/.exec(pkg ?? '');
+  if (!m) return undefined;
+  const dia = Number(m[1]);
+  return { dia, h: Number(m[2]), span: m[3] ? Number(m[3]) : dia < 8 ? 2.5 : dia < 10 ? 3.5 : dia < 16 ? 5 : 7.5, color: '#1b1b1b' };
+}
+
+/** a radial leaded MLCC by its size code: "MLCC size 15, P 2.5 mm" (Vishay's K series:
+ *  size 10, 15 and 20 are 3.6, 4.0 and 5.0 mm wide and high at most), black epoxy */
+function mlccPackage(pkg: string | undefined): { span: number; dia: number; h: number; color: string } | undefined {
+  const m = /^MLCC size (\d+), P ([\d.]+) mm/.exec(pkg ?? '');
+  if (!m) return undefined;
+  const wb = ({ 10: 3.6, 15: 4.0, 20: 5.0 } as Record<string, number>)[m[1]!] ?? 4.0;
+  return { dia: wb, h: wb, span: Number(m[2]), color: '#1b1b1b' };
 }
 
 /** axial packages by the name a datasheet gives them (JEDEC outlines): the
@@ -483,10 +503,12 @@ function deriveShape(desc: Desc, params?: Record<string, unknown>, artwork?: str
     const size: [number, number, number] = [8, 5.8, 8.6];
     return { package: 'led', size, pins: inRow(names, size, PITCH, 2.9), color: '#f4f6ff' };
   }
-  const rad = RADIAL[short];
+  const radPkg = (desc as { part?: { package?: string } }).part?.package;
+  const rad = RADIAL[short] ?? radialPackage(radPkg) ?? mlccPackage(radPkg);
   if (rad && names.length === 2) {
     const size: [number, number, number] = [Math.max(rad.dia, rad.span + 1), rad.dia, rad.h];
-    return { package: 'radial', size, pins: inRow(names, size, rad.span, rad.dia / 2), color: rad.color };
+    const kind = short === 'electrolytic_capacitor' || /^Radial /.test(radPkg ?? '') ? 'electrolytic' : short === 'capacitor' || /^MLCC /.test(radPkg ?? '') ? 'ceramic' : undefined;
+    return { package: 'radial', size, pins: inRow(names, size, rad.span, rad.dia / 2), color: rad.color, ...(kind ? { radial: kind } : {}) };
   }
   const pkg = (desc as { part?: { package?: string } }).part?.package ?? '';
   if ((TO92.has(short) || /^TO-92\b/.test(pkg)) && names.length === 3) {

@@ -1,0 +1,60 @@
+{
+  "schema_version": 1,
+  "kind": "component_test",
+  "name": "time_constant",
+  "description": "1 V through R = 10 ms / C from 0 V: 1 - 1/e of it at 10 ms, the nominal capacitance (its ESR adds a little)",
+  "policy": "electrical",
+  "until": "12ms",
+  "settings": {
+    "imperfections": "ideal"
+  },
+  "circuit": {
+    "components": [
+      {
+        "id": "V1",
+        "component": "emblink/vsource",
+        "params": {
+          "dc": 1
+        }
+      },
+      {
+        "id": "R1",
+        "component": "emblink/resistor",
+        "params": {
+          "resistance": 14.7059,
+          "tolerance": 0
+        }
+      },
+      {
+        "id": "DUT",
+        "component": "emblink/uhe0j681mpd"
+      },
+      {
+        "id": "G",
+        "component": "emblink/gnd"
+      }
+    ],
+    "nets": {
+      "VIN": [
+        "V1.+",
+        "R1.1"
+      ],
+      "VC": [
+        "R1.2",
+        "DUT.+"
+      ],
+      "GND": [
+        "V1.-",
+        "DUT.-",
+        "G.GND"
+      ]
+    }
+  },
+  "expect": {
+    "net:VC": {
+      "at": "10ms",
+      "min_v": 0.62581,
+      "max_v": 0.63846
+    }
+  }
+}

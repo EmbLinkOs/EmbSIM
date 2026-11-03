@@ -40,6 +40,19 @@ PDF's text. The fixtures then hold the model to the same table's limits.
 | `resistors_ccf55` | Vishay CCF55, 1 %, 100 ppm/K: every E96 value from 10 ohm to 3.01 Mohm (527) | 31015 | the nominal resistance (a divider read to 0.1 %) |
 | `resistors_ccf07` | Vishay CCF07, E24 from 10 ohm to 1 Mohm at 2 % and 5 %, and 1.1 to 2 Mohm at 5 % (249) | 31013 | the same |
 
+| `capacitors_uvr` | Nichicon UVR, 85 C general purpose: every part number of its table, 6.3 to 450 V, 1 to 22000 uF (111) | UVR catalog | the RC time constant (1 - 1/e at 10 ms through 10 ms / C) and the ESR step |
+| `capacitors_uhe` | Nichicon UHE, 105 C low impedance: every part number of its table, 6.3 to 100 V (212) | UHE catalog | the same |
+
+| `capacitors_vishay_k` | Vishay K series radial leaded MLCC: every ordering code of its C0G and X7R tables, 10 pF to 1 uF, 50 to 500 V (385) | 45171 | the RC time constant |
+
+The UVR's ESR is its catalog's tan δ at 120 Hz over the capacitive reactance;
+the UHE's, its maximum impedance at 100 kHz, where a low-impedance
+electrolytic is its ESR. The K series' ordering codes leave the tolerance and
+lead options open (#): the family fills them with J (5 %) for C0G and K (10 %)
+for X7R, bulk, and the datasheet's preferred L2 or H5 leads (K104K15X7RF53L2).
+The bench draws each can at its catalog's diameter
+and length with its lead spacing.
+
 The resistors' part numbers are the datasheets' own coding (`CCF55` + the value
 with R, K or M for its decimal point + the tolerance and temperature
 coefficient letters + `E36`: CCF5510K0FKE36), and the bench marks them with

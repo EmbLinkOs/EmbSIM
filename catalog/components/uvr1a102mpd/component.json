@@ -1,0 +1,175 @@
+{
+  "schema_version": 1,
+  "kind": "component",
+  "id": "emblink/uvr1a102mpd",
+  "version": "1.0.0",
+  "name": "UVR1A102MPD",
+  "category": "capacitors",
+  "subcategory": "electrolytic",
+  "description": "Nichicon UVR1A102MPD, a UVR radial aluminium electrolytic capacitor: 1000 uF ±20 %, 10 V, -40 to +85 C, 10 x 12.5 mm (lead spacing 5 mm). Its ESR, 0.3183 ohm, the catalog's tan δ at 120 Hz over the capacitive reactance (tan δ / (2π 120 Hz C), from its 0.24); rated ripple 650 mA rms, leakage at most 100 uA. 2000 hours at 85 C.",
+  "keywords": [
+    "Nichicon",
+    "UVR1A102MPD",
+    "UVR",
+    "capacitor",
+    "electrolytic",
+    "aluminium",
+    "radial",
+    "1000 uF",
+    "10 V",
+    "polarised"
+  ],
+  "pins": [
+    {
+      "name": "+",
+      "number": 1,
+      "model": {
+        "kind": "passive"
+      },
+      "aliases": [
+        "1"
+      ],
+      "doc": "Positive (longer lead)"
+    },
+    {
+      "name": "-",
+      "number": 2,
+      "model": {
+        "kind": "passive"
+      },
+      "aliases": [
+        "2"
+      ],
+      "doc": "Negative (stripe)"
+    }
+  ],
+  "params": {
+    "capacitance": {
+      "type": "number",
+      "unit": "F",
+      "default": "1000u",
+      "min": "100n",
+      "max": "1",
+      "doc": "Capacitance",
+      "spread": "tolerance"
+    },
+    "tolerance": {
+      "type": "number",
+      "unit": "%",
+      "default": 20,
+      "min": 0,
+      "max": 50,
+      "doc": "Tolerance: each part's capacitance lies within this band of the nominal, drawn from the project's seed (ADR-034). 20 % is IEC 60062's code M, the usual grade of aluminium electrolytic capacitors; 0 for an exact part."
+    },
+    "esr": {
+      "type": "number",
+      "unit": "ohm",
+      "default": 0.3183,
+      "min": 0,
+      "max": 1000,
+      "doc": "Equivalent series resistance: the catalog's tan δ at 120 Hz over the capacitive reactance (tan δ / (2π 120 Hz C), from its 0.24)"
+    },
+    "rated_v": {
+      "type": "number",
+      "unit": "V",
+      "default": 10,
+      "min": 2,
+      "max": 500,
+      "doc": "Rated voltage (informative)",
+      "advanced": true
+    },
+    "ic": {
+      "type": "number",
+      "unit": "V",
+      "default": 0,
+      "doc": "Initial voltage",
+      "advanced": true
+    }
+  },
+  "model": {
+    "primitive": "capacitor",
+    "bind": {
+      "c": "capacitance",
+      "esr": "esr",
+      "ic": "ic"
+    }
+  },
+  "fidelity": {
+    "functional": null,
+    "timed": {
+      "claims": "As electrical.",
+      "omissions": []
+    },
+    "electrical": {
+      "claims": "Capacitance at the nominal value, drawn within the series' ±20 % from the project's seed (ADR-034; nominal under \"ideal\" imperfections), in series with the ESR the catalog's tan δ at 120 Hz over the capacitive reactance (tan δ / (2π 120 Hz C), from its 0.24); DC and transient fixtures (the RC time constant and the ESR step) from the catalog's table.",
+      "omissions": [
+        "leakage current (at most 100 uA after its specified time): the dielectric does not discharge on its own",
+        "ESR's frequency and temperature dependence, and the inductance",
+        "polarity: reverse bias and over-voltage are not diagnosed and do no damage",
+        "the ripple current's self-heating and the endurance and shelf-life drifts",
+        "the distribution inside the tolerance band (uniform: the catalog guarantees the band only)"
+      ],
+      "validation": [
+        "tests/*.json"
+      ]
+    }
+  },
+  "provenance": {
+    "author": "EmbSIM",
+    "license": "Apache-2.0",
+    "sources": [
+      {
+        "title": "Nichicon UVR series catalog",
+        "url": "https://www.nichicon.co.jp/english/series_items/catalog_pdf/e-uvr.pdf",
+        "rev": "current at retrieval",
+        "date": "2026-11-03",
+        "hash": "sha256:77ade7b9c76bb6e81b6233502327d29e0f8500ef624494000079148ec407db76",
+        "notes": "Pages 1 to 4: -40 to +85 C, 6.3 to 450 V, ±20 % at 120 Hz, 2000 hours at 85 C; the dimensions table, one row per part number: rated voltage and capacitance, case size, tan δ, leakage current, rated ripple at 85 C and 120 Hz. Lead spacing by diameter from the radial lead drawing (6.3: 2.5, 8: 3.5, 10 and 12.5: 5.0, 16 and 18: 7.5 mm). generated from catalog/families/capacitors_uvr/family.json by tools/catalog/families.py; edit the family, not this file"
+      }
+    ]
+  },
+  "symbol": {
+    "svg": "symbol.svg",
+    "width": 60,
+    "height": 40,
+    "pins": {
+      "+": {
+        "x": 0,
+        "y": 20,
+        "side": "left"
+      },
+      "-": {
+        "x": 60,
+        "y": 20,
+        "side": "right"
+      }
+    }
+  },
+  "tests": [
+    "tests/*.json"
+  ],
+  "part": {
+    "manufacturer": "Nichicon",
+    "mpn": "UVR1A102MPD",
+    "package": "Radial 10 x 12.5 mm, P 5 mm",
+    "datasheet": "https://www.nichicon.co.jp/english/series_items/catalog_pdf/e-uvr.pdf"
+  },
+  "i18n": {
+    "fr": {
+      "source": "4a8510a7b538",
+      "description": "Nichicon UVR1A102MPD, un condensateur électrolytique aluminium radial UVR : 1000 uF ±20 %, 10 V, -40 à +85 °C, 10 x 12.5 mm (écartement des fils 5,0 mm). Sa résistance série équivalente, 0,3183 ohm, la tan δ du catalogue à 120 Hz rapportée à la réactance capacitive (tan δ / (2π 120 Hz C), d'après sa valeur de 0.24) ; courant d'ondulation nominal 650 mA eff., fuite d'au plus 100 uA. 2000 heures à 85 °C.",
+      "fidelity": {
+        "electrical": {
+          "claims": "Capacité à la valeur nominale, tirée dans les ±20 % de la série à partir de la graine du projet (ADR-034 ; nominale avec les imperfections « ideal »), en série avec la résistance série équivalente la tan δ du catalogue à 120 Hz rapportée à la réactance capacitive (tan δ / (2π 120 Hz C), d'après sa valeur de 0.24) ; cas de test en continu et en transitoire (la constante de temps RC et le saut dû à la RSE) tirés du tableau du catalogue.",
+          "omissions": [
+            "le courant de fuite (au plus 100 uA après son temps spécifié) : le diélectrique ne se décharge pas de lui-même",
+            "la dépendance de la RSE à la fréquence et à la température, et l'inductance",
+            "la polarité : l'inversion de tension et la surtension ne sont ni signalées ni destructrices",
+            "l'échauffement par le courant d'ondulation et les dérives d'endurance et de stockage",
+            "la répartition dans la bande de tolérance (uniforme : le catalogue ne garantit que la bande)"
+          ]
+        }
+      }
+    }
+  }
+}

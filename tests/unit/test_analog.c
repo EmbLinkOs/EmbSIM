@@ -453,6 +453,28 @@ static void test_rc_with_ic(void)
     esk_engine_free(&e);
 }
 
+/* A capacitor's ESR in series with its capacitance (SPEC-004 §7): 1 V through
+ * 9 ohm into 1 ohm of ESR and 1 mF steps at once to 0.1 V, the divider's,
+ * then charges with tau = (9 + 1) ohm x 1 mF = 10 ms; with ic the initial
+ * voltage is across the capacitance, not the ESR. */
+static void test_cap_esr(void)
+{
+    esk_engine e;
+    double tau = 10e-3, t = 2e-3, vc = 1.0 - exp(-t / tau), i = exp(-t / tau) / 10.0;
+    engine_open(&e);
+    add_power(&e, "G", "gnd", 0.0);
+    add_dev2(&e, "vsource", "V1", "{\"dc\": 1}", "vin", "gnd");
+    add_dev2(&e, "resistor", "R1", "{\"r\": 9}", "vin", "out");
+    add_dev2(&e, "capacitor", "C1", "{\"c\": \"1m\", \"esr\": 1, \"ic\": 0}", "out", "gnd");
+    engine_run(&e);
+    CHECK(esk_engine_advance(&e, ES_PS_PER_US) == ES_OK);
+    CHECK_NEAR(v_of(&e, "out"), 0.1 + 0.9 * (1.0 - exp(-1e-6 / tau)), 2e-3);
+    CHECK(esk_engine_advance(&e, 2 * ES_PS_PER_MS) == ES_OK);
+    CHECK_NEAR(v_of(&e, "out"), vc + i * 1.0, 0.01 * (vc + i));
+    CHECK_EQ(diag_errors, 0);
+    esk_engine_free(&e);
+}
+
 static void test_rl(void)
 {
     esk_engine e;
@@ -1780,6 +1802,7 @@ RUN(test_led_emission_integral);
 RUN(test_rgb_emission_integrals);
 RUN(test_scope_input_refinement);
 RUN(test_rc_with_ic);
+RUN(test_cap_esr);
 RUN(test_rl);
 RUN(test_rl_transient);
 RUN(test_diode_curve);

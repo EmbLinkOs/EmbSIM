@@ -1,0 +1,174 @@
+{
+  "schema_version": 1,
+  "kind": "component",
+  "id": "emblink/k123k20x7rl53h5",
+  "version": "1.0.0",
+  "name": "K123K20X7RL53H5",
+  "category": "capacitors",
+  "subcategory": "ceramic",
+  "description": "Vishay BCcomponents K123K20X7RL53H5, a radial leaded multilayer ceramic capacitor of the K series: 12 nF ±10 %, 500 V, X7R (class 2), size 20 (5 x 5 x 3.2 mm at most), 5 mm lead spacing, black epoxy. Like every X7R it loses capacitance with DC bias and temperature (±15 % from -55 to +125 C), which the model does not.",
+  "keywords": [
+    "Vishay",
+    "BCcomponents",
+    "K123K20X7RL53H5",
+    "K series",
+    "capacitor",
+    "ceramic",
+    "MLCC",
+    "X7R",
+    "12 nF",
+    "500 V",
+    "radial"
+  ],
+  "pins": [
+    {
+      "name": "1",
+      "number": 1,
+      "model": {
+        "kind": "passive"
+      }
+    },
+    {
+      "name": "2",
+      "number": 2,
+      "model": {
+        "kind": "passive"
+      }
+    }
+  ],
+  "params": {
+    "capacitance": {
+      "type": "number",
+      "unit": "F",
+      "default": "12n",
+      "doc": "Capacitance",
+      "min": "1p",
+      "max": "10",
+      "spread": "tolerance"
+    },
+    "tolerance": {
+      "type": "number",
+      "unit": "%",
+      "default": 10,
+      "min": 0,
+      "max": 50,
+      "doc": "Tolerance: each part's capacitance lies within this band of the nominal, drawn from the project's seed (ADR-034); the part number's grade (J 5 %, K 10 %) by default"
+    },
+    "esr": {
+      "type": "number",
+      "unit": "ohm",
+      "default": 0,
+      "doc": "Equivalent series resistance",
+      "min": 0,
+      "advanced": true
+    },
+    "ic": {
+      "type": "number",
+      "unit": "V",
+      "default": 0,
+      "doc": "Initial voltage at t=0 (pin 1 relative to pin 2)",
+      "advanced": true
+    }
+  },
+  "functional": {
+    "composite": {
+      "components": [],
+      "nets": {},
+      "ports": {}
+    }
+  },
+  "model": {
+    "primitive": "capacitor",
+    "bind": {
+      "c": "capacitance",
+      "esr": "esr",
+      "ic": "ic"
+    }
+  },
+  "symbol": {
+    "svg": "symbol.svg",
+    "width": 60,
+    "height": 20,
+    "pins": {
+      "1": {
+        "x": 0,
+        "y": 10,
+        "side": "left"
+      },
+      "2": {
+        "x": 60,
+        "y": 10,
+        "side": "right"
+      }
+    }
+  },
+  "fidelity": {
+    "functional": {
+      "claims": "Pins only: an open circuit, as a capacitor is at DC (so a board's decoupling and filter capacitors run under every policy).",
+      "omissions": [
+        "charge and the delays it gives"
+      ],
+      "validation": [
+        "tests/*.json"
+      ]
+    },
+    "timed": {
+      "claims": "As electrical; a capacitor has no logic-level meaning.",
+      "omissions": []
+    },
+    "electrical": {
+      "claims": "Capacitance at the nominal value, drawn within the part number's tolerance from the project's seed (ADR-034; nominal under \"ideal\" imperfections); an RC fixture from the nominal value.",
+      "omissions": [
+        "the X7R's temperature characteristic (±15 % from -55 to +125 C), DC-bias capacitance loss and ageing",
+        "the dissipation factor (2.5 % max. at 1 kHz at its test frequency) and the ESR and ESL: an ideal capacitance",
+        "insulation resistance (10 Gohm or 100 ohm F, whichever is less) and dielectric absorption",
+        "the rated voltage's limit and the test voltage: no breakdown and no damage",
+        "the distribution inside the tolerance band (uniform: the datasheet guarantees the band only)"
+      ],
+      "validation": [
+        "tests/*.json"
+      ]
+    }
+  },
+  "provenance": {
+    "author": "EmbSIM",
+    "license": "Apache-2.0",
+    "sources": [
+      {
+        "title": "Vishay BCcomponents K series datasheet (document 45171)",
+        "url": "https://www.vishay.com/docs/45171/kseries.pdf",
+        "rev": "5 September 2025",
+        "date": "2026-11-03",
+        "hash": "sha256:555cf6e7062fe1de1962ee38c5b8cfcff0c9cab469d563599ec6505b70485457",
+        "notes": "Page 1: C0G and X7R, 50 to 500 V, tolerances J 5 %, K 10 %, M 20 %, dissipation factor and insulation resistance; page 2: size codes 10, 15, 20 (Wb, H, T max.), lead styles and spacings, the ordering code (K + capacitance + tolerance + size + T.C. + voltage letter F 50, H 100, K 200, L 500 + lead diameter 5 + packaging 3 bulk + lead style L straight or H flat crimp + spacing 2 or 5); pages 3 and 4: the ordering codes by capacitance, dielectric and voltage, whose # this family fills with J for C0G and K for X7R, bulk, and the preferred L2 or H5 lead (the H5 where the table fixes the 5.0 mm spacing). generated from catalog/families/capacitors_vishay_k/family.json by tools/catalog/families.py; edit the family, not this file"
+      }
+    ]
+  },
+  "tests": [
+    "tests/*.json"
+  ],
+  "part": {
+    "manufacturer": "Vishay",
+    "mpn": "K123K20X7RL53H5",
+    "package": "MLCC size 20, P 5 mm",
+    "datasheet": "https://www.vishay.com/docs/45171/kseries.pdf"
+  },
+  "i18n": {
+    "fr": {
+      "source": "06b966813378",
+      "description": "Vishay BCcomponents K123K20X7RL53H5, un condensateur céramique multicouche à fils radiaux de la série K : 12 nF ±10 %, 500 V, X7R (classe 2), taille 20 (5,0 x 5,0 x 3,2 mm au plus), écartement des fils 5,0 mm, époxy noir. Comme tout X7R il perd de la capacité avec la polarisation continue et la température (±15 % de -55 à +125 °C), ce que le modèle ne fait pas.",
+      "fidelity": {
+        "electrical": {
+          "claims": "Capacité à la valeur nominale, tirée dans la tolérance de la référence à partir de la graine du projet (ADR-034 ; nominale avec les imperfections « ideal ») ; un cas de test RC tiré de la valeur nominale.",
+          "omissions": [
+            "la caractéristique en température du X7R (±15 % de -55 à +125 °C), la perte de capacité sous polarisation continue et le vieillissement",
+            "le facteur de dissipation (2,5 % au plus à 1 kHz à sa fréquence de mesure), la RSE et l'ESL : une capacité idéale",
+            "la résistance d'isolement (10 Gohm ou 100 ohm F, le plus faible des deux) et l'absorption diélectrique",
+            "la limite de la tension nominale et la tension d'essai : ni claquage ni dommages",
+            "la répartition dans la bande de tolérance (uniforme : la fiche technique ne garantit que la bande)"
+          ]
+        }
+      }
+    }
+  }
+}

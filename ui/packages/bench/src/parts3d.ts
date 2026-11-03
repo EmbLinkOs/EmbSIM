@@ -280,13 +280,14 @@ function radial(shape: BenchShape, look: PartLook): THREE.Group {
   const [, d, h] = shape.size;
   const pins = Object.values(local(shape));
   const lift = 1.5;
-  if (short === 'capacitor') {
+  const kind = shape.radial ?? (short === 'capacitor' ? 'ceramic' : short === 'electrolytic_capacitor' ? 'electrolytic' : undefined);
+  if (kind === 'ceramic') {
     // a ceramic disc, dipped
     const disc = mesh(new THREE.SphereGeometry(d / 2, 24, 12), standard(shape.color ?? '#e1a33c', 0.6));
     disc.scale.set(1, 1.1, 0.45);
     disc.position.y = lift + h / 2;
     g.add(disc);
-  } else if (short === 'electrolytic_capacitor') {
+  } else if (kind === 'electrolytic') {
     // the stripe faces the negative lead
     const lp = local(shape);
     const minus = lp['-'] ?? pins[1] ?? [1, 0];
