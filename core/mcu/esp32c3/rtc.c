@@ -314,15 +314,7 @@ const struct esk_dev_ops esk_esp32c3_rtc_ops = {
 
 static struct c3_rtc *rtc_of(struct esk_mach *m)
 {
-    int i;
-    for (i = 0; m->rf; i++) {
-        struct esk_rf_periph *p = esk_rf_periph_at(m->rf, i);
-        if (!p)
-            break;
-        if (p->ops == &esk_esp32c3_rtc_ops)
-            return (struct c3_rtc *)p->ctx;
-    }
-    return NULL;
+    return (struct c3_rtc *)esk_rf_ctx_of(m->rf, &esk_esp32c3_rtc_ops);
 }
 
 /* the TRM's reset classes (table 6.1-1) */

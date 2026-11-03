@@ -7,6 +7,7 @@
  * stepping, and a transient of trapezoidal steps with backward-Euler restarts,
  * LTE step control, exact breakpoints and bisected comparator crossings. */
 #include "analog/analog.h"
+#include "analog/named.h"
 #include "host/host.h"
 #include "util/num.h"
 #include <math.h>
@@ -39,6 +40,11 @@ struct esk_amatrix {
     double source_scale;
     int dc;
     int noncon; /* a device limited its voltage this iteration */
+    /* the entries of J the stamps have ever written: assembly clears only
+     * these (J's pattern hardly changes between iterations) */
+    int *touched;
+    unsigned char *mark;
+    size_t ntouched;
 };
 
 typedef struct mna {
@@ -49,6 +55,11 @@ typedef struct mna {
     int n;
     double *J, *f, *x_iter, *x_old, *dx;
     int *piv;
+    int *nz;   /* lu_factor's scratch: the pivot row's nonzero columns */
+    int *perm; /* fill-reducing order: factor row and column i are unknown perm[i] */
+    double *B; /* J in that order, factored in place */
+    double *t; /* solve()'s permuted right-hand side */
+    int ordered;
     int allocated;
     int started, running, in_step;
     int exact_until; /* a catch-up: never step past `until` */
@@ -169,7 +180,14 @@ void esk_am_stamp_j(esk_amatrix *m, int row, int col, double v)
 {
     if (row <= 0 || col <= 0 || row > m->n || col > m->n)
         return;
-    m->J[(size_t)(row - 1) * (size_t)m->n + (size_t)(col - 1)] += v;
+    {
+        size_t idx = (size_t)(row - 1) * (size_t)m->n + (size_t)(col - 1);
+        if (!m->mark[idx]) {
+            m->mark[idx] = 1;
+            m->touched[m->ntouched++] = (int)idx;
+        }
+        m->J[idx] += v;
+    }
 }
 
 void esk_am_stamp_f(esk_amatrix *m, int row, double v)
@@ -256,13 +274,18 @@ int esk_integ_negligible(const esk_integ *in)
 /* ---- linear solver ----------------------------------------------------------- */
 
 /* LU in place with partial pivoting; the pivot is the max-magnitude entry, the
- * lowest row on ties. Returns the row of a zero pivot, or -1. */
-static int lu_factor(double *A, int *piv, int n)
+ * lowest row on ties. Returns the row of a zero pivot, or -1. An MNA matrix is
+ * mostly zeros: each elimination step updates only the pivot row's nonzero
+ * columns (listed in nz, n ints of scratch), and skips rows with nothing under
+ * the pivot. The updates skipped would subtract exact zeros, so the factors
+ * equal the dense ones bit for bit. */
+static int lu_factor(double *A, int *piv, int *nz, int n)
 {
     int i, j, k;
     for (k = 0; k < n; k++) {
-        int best = k;
+        int best = k, m = 0, q;
         double bmag = fabs(A[(size_t)k * (size_t)n + (size_t)k]);
+        const double *rk;
         for (i = k + 1; i < n; i++) {
             double mag = fabs(A[(size_t)i * (size_t)n + (size_t)k]);
             if (mag > bmag) {
@@ -280,15 +303,21 @@ static int lu_factor(double *A, int *piv, int n)
                 A[(size_t)best * (size_t)n + (size_t)j] = t;
             }
         }
+        rk = A + (size_t)k * (size_t)n;
+        for (j = k + 1; j < n; j++)
+            if (rk[j] != 0.0)
+                nz[m++] = j;
         for (i = k + 1; i < n; i++) {
             double *ri = A + (size_t)i * (size_t)n;
-            const double *rk = A + (size_t)k * (size_t)n;
-            double l = ri[k] / rk[k];
+            double l;
+            if (ri[k] == 0.0)
+                continue;
+            l = ri[k] / rk[k];
             if (l == 0.0)
                 continue;
             ri[k] = l;
-            for (j = k + 1; j < n; j++)
-                ri[j] -= l * rk[j];
+            for (q = 0; q < m; q++)
+                ri[nz[q]] -= l * rk[nz[q]];
         }
     }
     return -1;
@@ -320,6 +349,96 @@ static void lu_solve(const double *A, const int *piv, int n, double *b)
     }
 }
 
+/* A minimum-degree order of the unknowns from J's pattern (made symmetric):
+ * eliminating the unknown with the fewest neighbours first keeps the factors
+ * nearly as sparse as J. Greedy on a dense adjacency, once per island build;
+ * the order changes only which rounding the factors carry, not the solution
+ * Newton converges to. Above ORDER_MAX unknowns the natural order is kept. */
+#define ORDER_MAX 2048
+static void order_unknowns(esk_island *isl, mna *p)
+{
+    int n = p->n, i, j, k, step;
+    unsigned char *adj, *done;
+    int *deg;
+    for (i = 0; i < n; i++)
+        p->perm[i] = i;
+    p->ordered = 1;
+    if (n < 3 || n > ORDER_MAX)
+        return;
+    adj = (unsigned char *)esk_calloc(isl->a, (size_t)n * (size_t)n, 1);
+    done = (unsigned char *)esk_calloc(isl->a, (size_t)n, 1);
+    deg = (int *)esk_calloc(isl->a, (size_t)n, sizeof *deg);
+    if (!adj || !done || !deg) {
+        esk_free(isl->a, adj, (size_t)n * (size_t)n);
+        esk_free(isl->a, done, (size_t)n);
+        esk_free(isl->a, deg, (size_t)n * sizeof *deg);
+        return;
+    }
+    for (i = 0; i < n; i++)
+        for (j = 0; j < n; j++)
+            if (i != j && p->J[(size_t)i * (size_t)n + (size_t)j] != 0.0) {
+                adj[(size_t)i * (size_t)n + (size_t)j] = 1;
+                adj[(size_t)j * (size_t)n + (size_t)i] = 1;
+            }
+    for (i = 0; i < n; i++)
+        for (j = 0; j < n; j++)
+            deg[i] += adj[(size_t)i * (size_t)n + (size_t)j];
+    for (step = 0; step < n; step++) {
+        int best = -1;
+        for (i = 0; i < n; i++) /* the lowest index on ties: a deterministic order */
+            if (!done[i] && (best < 0 || deg[i] < deg[best]))
+                best = i;
+        p->perm[step] = best;
+        done[best] = 1;
+        /* eliminating best joins its remaining neighbours to one another */
+        for (j = 0; j < n; j++) {
+            if (done[j] || !adj[(size_t)best * (size_t)n + (size_t)j])
+                continue;
+            adj[(size_t)j * (size_t)n + (size_t)best] = 0;
+            deg[j]--;
+            for (k = 0; k < n; k++)
+                if (k != j && !done[k] && adj[(size_t)best * (size_t)n + (size_t)k] &&
+                    !adj[(size_t)j * (size_t)n + (size_t)k]) {
+                    adj[(size_t)j * (size_t)n + (size_t)k] = 1;
+                    deg[j]++;
+                }
+        }
+    }
+    esk_free(isl->a, adj, (size_t)n * (size_t)n);
+    esk_free(isl->a, done, (size_t)n);
+    esk_free(isl->a, deg, (size_t)n * sizeof *deg);
+}
+
+/* J in the fill-reducing order, factored; returns lu_factor's bad row in the
+ * unknowns' own numbering, or -1 */
+static int factor(esk_island *isl, mna *p)
+{
+    int n = p->n, i, j, bad;
+    if (!p->ordered)
+        order_unknowns(isl, p);
+    for (i = 0; i < n; i++) {
+        const double *src = p->J + (size_t)p->perm[i] * (size_t)n;
+        double *dst = p->B + (size_t)i * (size_t)n;
+        for (j = 0; j < n; j++)
+            dst[j] = src[p->perm[j]];
+    }
+    bad = lu_factor(p->B, p->piv, p->nz, n);
+    return bad < 0 ? -1 : p->perm[bad];
+}
+
+/* J dx = b with the factors of factor(): b in, dx out (both in the unknowns'
+ * own order) */
+static void solve(mna *p, double *b)
+{
+    int n = p->n, i;
+    double *t = p->t;
+    for (i = 0; i < n; i++)
+        t[i] = b[p->perm[i]];
+    lu_solve(p->B, p->piv, n, t);
+    for (i = 0; i < n; i++)
+        b[p->perm[i]] = t[i];
+}
+
 /* ---- assembly and Newton ------------------------------------------------------ */
 
 static void assemble(esk_island *isl, int dc)
@@ -327,7 +446,11 @@ static void assemble(esk_island *isl, int dc)
     mna *p = (mna *)isl->priv;
     size_t i;
     int k;
-    memset(p->J, 0, (size_t)p->n * (size_t)p->n * sizeof *p->J);
+    {
+        size_t t;
+        for (t = 0; t < p->m.ntouched; t++)
+            p->J[p->m.touched[t]] = 0.0;
+    }
     memset(p->f, 0, (size_t)p->n * sizeof *p->f);
     p->m.x = p->x_iter;
     p->m.dc = dc;
@@ -377,7 +500,7 @@ static int newton(esk_island *isl, int dc, int *bad_row)
         if (iter == isl->p.max_iter)
             break;
         {
-            int bad = lu_factor(p->J, p->piv, p->n);
+            int bad = factor(isl, p);
             if (bad >= 0) {
                 *bad_row = bad;
                 return 2;
@@ -385,7 +508,7 @@ static int newton(esk_island *isl, int dc, int *bad_row)
         }
         for (i = 0; i < p->n; i++)
             p->dx[i] = -p->f[i];
-        lu_solve(p->J, p->piv, p->n, p->dx);
+        solve(p, p->dx);
         dx_small = 1;
         for (i = 0; i < p->n; i++) {
             double tol;
@@ -640,15 +763,27 @@ static void free_matrices(esk_island *isl)
     esk_free(isl->a, p->x_old, n * sizeof *p->x_old);
     esk_free(isl->a, p->dx, n * sizeof *p->dx);
     esk_free(isl->a, p->piv, n * sizeof *p->piv);
+    esk_free(isl->a, p->nz, n * sizeof *p->nz);
+    esk_free(isl->a, p->perm, n * sizeof *p->perm);
+    esk_free(isl->a, p->B, n * n * sizeof *p->B);
+    esk_free(isl->a, p->t, n * sizeof *p->t);
+    esk_free(isl->a, p->m.touched, n * n * sizeof *p->m.touched);
+    esk_free(isl->a, p->m.mark, n * n);
+    p->m.touched = NULL;
+    p->m.mark = NULL;
+    p->m.ntouched = 0;
     esk_free(isl->a, isl->x, n * sizeof *isl->x);
     p->J = p->f = p->x_iter = p->x_old = p->dx = NULL;
-    p->piv = NULL;
+    p->piv = p->nz = p->perm = NULL;
+    p->B = p->t = NULL;
     isl->x = NULL;
     p->allocated = 0;
 }
 
 static void dev_free(esk_island *isl, esk_adev *d)
 {
+    esk_power_profiler_free(d); /* its sample ring, outside the island's allocator */
+    esk_oscilloscope_free(d);   /* its history and acquisition */
     if (d->ops && d->ops->state_size)
         esk_free(isl->a, d->state, d->ops->state_size);
     esk_free(isl->a, d, sizeof *d);
@@ -811,6 +946,10 @@ static es_status setup_devices(esk_island *isl)
     for (i = 0; i < isl->devs.len; i++) {
         esk_adev *d = isl->devs.data[i];
         int k;
+        /* what a device holds outside the island's allocator goes before its
+         * state is zeroed (a reset clears an instrument's capture) */
+        esk_power_profiler_free(d);
+        esk_oscilloscope_free(d);
         if (d->state)
             memset(d->state, 0, d->ops->state_size);
         d->nbranch = 0;
@@ -843,9 +982,17 @@ static es_status allocate(esk_island *isl)
     p->x_old = (double *)esk_calloc(isl->a, n, sizeof *p->x_old);
     p->dx = (double *)esk_calloc(isl->a, n, sizeof *p->dx);
     p->piv = (int *)esk_calloc(isl->a, n, sizeof *p->piv);
+    p->nz = (int *)esk_calloc(isl->a, n, sizeof *p->nz);
+    p->perm = (int *)esk_calloc(isl->a, n, sizeof *p->perm);
+    p->B = (double *)esk_calloc(isl->a, n * n, sizeof *p->B);
+    p->t = (double *)esk_calloc(isl->a, n, sizeof *p->t);
+    p->m.touched = (int *)esk_calloc(isl->a, n * n, sizeof *p->m.touched);
+    p->m.mark = (unsigned char *)esk_calloc(isl->a, n * n, 1);
+    p->m.ntouched = 0;
+    p->ordered = 0;
     isl->x = (double *)esk_calloc(isl->a, n, sizeof *isl->x);
     p->allocated = 1;
-    if (!p->J || !p->f || !p->x_iter || !p->x_old || !p->dx || !p->piv || !isl->x) {
+    if (!p->J || !p->f || !p->x_iter || !p->x_old || !p->dx || !p->piv || !p->nz || !p->perm || !p->B || !p->t || !p->m.touched || !p->m.mark || !isl->x) {
         /* sizes were computed from n: free with the same n */
         size_t nn = n;
         esk_free(isl->a, p->J, nn * nn * sizeof *p->J);
@@ -854,9 +1001,18 @@ static es_status allocate(esk_island *isl)
         esk_free(isl->a, p->x_old, nn * sizeof *p->x_old);
         esk_free(isl->a, p->dx, nn * sizeof *p->dx);
         esk_free(isl->a, p->piv, nn * sizeof *p->piv);
+        esk_free(isl->a, p->nz, nn * sizeof *p->nz);
+        esk_free(isl->a, p->perm, nn * sizeof *p->perm);
+        esk_free(isl->a, p->B, nn * nn * sizeof *p->B);
+        esk_free(isl->a, p->t, nn * sizeof *p->t);
+        esk_free(isl->a, p->m.touched, nn * nn * sizeof *p->m.touched);
+        esk_free(isl->a, p->m.mark, nn * nn);
+        p->m.touched = NULL;
+        p->m.mark = NULL;
         esk_free(isl->a, isl->x, nn * sizeof *isl->x);
         p->J = p->f = p->x_iter = p->x_old = p->dx = NULL;
-        p->piv = NULL;
+        p->piv = p->nz = p->perm = NULL;
+        p->B = p->t = NULL;
         isl->x = NULL;
         p->allocated = 0;
         return ES_ENOMEM;
@@ -1017,6 +1173,14 @@ es_status esk_island_start(esk_island *isl)
     return st;
 }
 
+void esk_island_halt(esk_island *isl)
+{
+    mna *p = (mna *)isl->priv;
+    p->running = 0;
+    p->touched = 0;
+    isl->step_event = 0; /* the scheduler it was in was cleared */
+}
+
 es_status esk_island_reset(esk_island *isl)
 {
     return start_or_reset(isl);
@@ -1130,14 +1294,22 @@ static es_time_t step_horizon(const esk_island *isl, es_time_t until)
     return want > until ? want : until;
 }
 
-/* the step to x_iter changed no unknown beyond rounding */
+/* the step to x_iter changed no unknown by more than the solver resolves:
+ * a node voltage by vntol (1 uV), a branch current by abstol (1 pA), the
+ * absolute tolerances Newton's convergence test uses. Below them two
+ * solutions are the same to the solver; an exponential tail (an RC on a
+ * reset pin approaching its supply) would otherwise keep an island stepping
+ * for dozens of time constants after anything could see it move. The
+ * relative tolerance is left out on purpose: a slow ramp moving by less
+ * than reltol of its value per step can still be heading for a threshold. */
 static int unchanged(const esk_island *isl)
 {
     const mna *p = (const mna *)isl->priv;
     int i;
     for (i = 0; i < p->n; i++) {
         double a = isl->x[i], b = p->x_iter[i];
-        if (fabs(a - b) > 1e-14 * (1.0 + fabs(a)))
+        double tol = i + 1 < p->nnodes ? isl->p.vntol : isl->p.abstol;
+        if (fabs(a - b) > tol + 1e-14 * fabs(a))
             return 0;
     }
     return 1;

@@ -4,7 +4,8 @@
   "id": "emblink/bme280",
   "version": "1.0.0",
   "name": "BME280 humidity, pressure and temperature sensor",
-  "category": "sensors",
+  "category": "transducers",
+  "subcategory": "pressure",
   "description": "Bosch BME280 combined sensor on I2C (0x76/0x77 from SDO) or SPI: chip ID 0x60, sleep, forced and normal modes, oversampling x1 to x16, the IIR filter and standby times, trimming parameters that Bosch's compensation formulas turn into degrees, pascals and %RH. Temperature, pressure and humidity are interactive inputs.",
   "keywords": [
     "sensor",
@@ -281,5 +282,46 @@
   },
   "tests": [
     "tests/*.json"
-  ]
+  ],
+  "i18n": {
+    "fr": {
+      "source": "e83bb752475f",
+      "description": "Capteur combiné Bosch BME280 sur I2C (0x76/0x77 selon SDO) ou SPI : identifiant de puce 0x60, modes veille, forcé et normal, suréchantillonnage x1 à x16, le filtre IIR et les temps de veille, les paramètres d'ajustage que les formules de compensation de Bosch transforment en degrés, pascals et %HR. La température, la pression et l'humidité sont des entrées interactives.",
+      "fidelity": {
+        "functional": {
+          "claims": "I2C en 0x76 + SDO avec paires adresse/donnée et lectures auto-incrémentées ; SPI à 4 fils (mode 0) dès que CSB passe bas, l'I2C coupé ensuite jusqu'à la mise hors tension ; la carte des registres avec l'identifiant de puce 0x60, la réinitialisation logicielle, ctrl_hum appliqué par ctrl_meas, l'état (measuring, im_update), config ignoré en mode normal ; modes veille, forcé et normal avec le temps de mesure typique et les temps de veille ; des valeurs brutes que la compensation de Bosch transforme en les entrées à la résolution du suréchantillonnage, le filtre IIR sur la température et la pression, les mesures sautées à 0x80000/0x8000, les registres de données doublés ; aucune réponse sous 1,71 V.",
+          "omissions": [
+            "le bruit que le suréchantillonnage moyenne (lectures exactes à la résolution près)",
+            "la dispersion de précision entre exemplaires (+-1 C, +-1 hPa, +-3 %HR)",
+            "le temps de réponse en humidité (1 s) et l'auto-échauffement",
+            "le mode SPI 3 et le SPI à 3 fils (spi3w_en)",
+            "le courant d'alimentation",
+            "les dommages au-delà du maximum absolu de 4,25 V"
+          ]
+        },
+        "timed": {
+          "claims": "Comme en fonctionnel.",
+          "omissions": [
+            "le bruit que le suréchantillonnage moyenne (lectures exactes à la résolution près)",
+            "la dispersion de précision entre exemplaires (+-1 C, +-1 hPa, +-3 %HR)",
+            "le temps de réponse en humidité (1 s) et l'auto-échauffement",
+            "le mode SPI 3 et le SPI à 3 fils (spi3w_en)",
+            "le courant d'alimentation",
+            "les dommages au-delà du maximum absolu de 4,25 V"
+          ]
+        },
+        "electrical": {
+          "claims": "Les broches se relient aux réseaux analogiques avec les modèles de broche par défaut de la famille ; la tension de VDD conditionne la puce ; le comportement est celui du modèle Lua.",
+          "omissions": [
+            "le bruit que le suréchantillonnage moyenne (lectures exactes à la résolution près)",
+            "la dispersion de précision entre exemplaires (+-1 C, +-1 hPa, +-3 %HR)",
+            "le temps de réponse en humidité (1 s) et l'auto-échauffement",
+            "le mode SPI 3 et le SPI à 3 fils (spi3w_en)",
+            "le courant d'alimentation",
+            "les dommages au-delà du maximum absolu de 4,25 V"
+          ]
+        }
+      }
+    }
+  }
 }

@@ -411,5 +411,42 @@
       }
     ],
     "notes": "registers.json and tqfp100.json are converted from Microchip's device pack under its Apache-2.0 licence (LICENSES/) by tools/importers/edc2regs.py; the rest is written for EmbSIM."
+  },
+  "i18n": {
+    "fr": {
+      "source": "f799acd30366",
+      "description": "Microchip PIC32MX795F512L : un cœur MIPS32 M4K jusqu'à 80 MHz, 512 Kio de flash programme, 12 Kio de flash d'amorçage, 128 Kio de RAM, l'USB OTG, l'Ethernet, deux contrôleurs CAN, six UART ; le PIM PIC32MX de l'Explorer 16/32 (MA320003).",
+      "fidelity": {
+        "functional": {
+          "claims": "Exécution MIPS32r2 avec MIPS16e par le cœur M4K extrait d'EmbCC (mode EIC, deux jeux de registres, correspondance fixe, le timer du cœur) ; chaque registre de fonction spéciale de l'EDC du pack de la puce avec sa valeur à la mise sous tension et ses registres CLR, SET et INV ; des modèles de comportement extraits d'EmbCC de l'EVIC (vecteurs partagés, priorités et sous-priorités, modes à un et plusieurs vecteurs, le jeu de registres fantôme par FSRSSEL et SS0), de l'oscillateur (l'horloge des mots de configuration, la PLL, la bascule, PBDIV, le verrou de SYSKEY), de Timer1 à Timer5 (prédiviseurs, paires 32 bits), des ports A à G (TRIS, LAT, ODC, les détections de changement et leurs rappels, les broches analogiques du port B) et de l'UART1 à l'UART6 (FIFO, interruptions persistantes, trames au débit sur leurs broches).",
+          "omissions": [
+            "l'ADC, le SPI, l'I2C, la capture d'entrée, la comparaison de sortie, le PMP, la RTCC, le DMA, l'USB, l'Ethernet, le CAN et les comparateurs (simples registres)",
+            "le chien de garde (simples registres : il ne réinitialise jamais la puce)",
+            "la programmation de la flash (NVM)",
+            "le cache de prélecture et les partitions de la matrice de bus",
+            "la veille et le repos",
+            "les broches d'interruption externe (INTx)",
+            "les registres ICD du débogueur (simple mémorisation)"
+          ]
+        },
+        "timed": {
+          "claims": "Durée des instructions estimée à partir de la table de coûts MIPS32 d'EmbCC (ADR-015) : 1 cycle, 2 pour un chargement ou une multiplication, 18 pour une division ; la flash tourne à la vitesse du cœur. Le timer du cœur compte un cycle de SYSCLK sur deux ; les timers et les UART comptent PBCLK exactement par rapport à SYSCLK.",
+          "omissions": [
+            "les états d'attente de la flash (le cache de prélecture en masque la plupart une fois actif)",
+            "la durée du diviseur selon les opérandes",
+            "la latence d'interruption au-delà de l'instruction en cours"
+          ]
+        },
+        "electrical": {
+          "claims": "Modèles de broche GPIO par défaut à 3,3 V tirés des caractéristiques continues de la fiche technique (VOH 2,4 V, VOL 0,4 V, VIH 0,65 VDD, VIL 0,2 VDD, les rappels de détection de changement).",
+          "omissions": [
+            "les broches tolérantes au 5 V",
+            "l'intensité de commande au-delà d'une seule résistance de sortie",
+            "les structures de protection ESD",
+            "le régulateur du cœur (VCAP)"
+          ]
+        }
+      }
+    }
   }
 }

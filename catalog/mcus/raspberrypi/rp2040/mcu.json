@@ -20,6 +20,20 @@
     "priority_bits": 2,
     "cores": 2,
     "timing_tier": "estimated",
+    "swd": {
+      "version": 2,
+      "dpidr": "0x0BC12477",
+      "targetid": "0x01002927",
+      "multidrop": true,
+      "ap_idr": "0x04770031",
+      "ap_base": "0xE00FF003",
+      "reset_pin_resets_ports": true,
+      "ports": [
+        {"core": 0, "instance": 0, "instance_field": "SYSCFG.PROC_CONFIG.PROC0_DAP_INSTID"},
+        {"core": 1, "instance": 1, "instance_field": "SYSCFG.PROC_CONFIG.PROC1_DAP_INSTID"},
+        {"rescue": true, "instance": 15}
+      ]
+    },
     "fpu": false,
     "mpu": true,
     "endian": "little"
@@ -178,7 +192,7 @@
     },
     {
       "match": "BUSCTRL",
-      "model": "storage"
+      "model": "rp2040-busctrl"
     },
     {
       "match": "VREG_AND_CHIP_RESET",
@@ -309,30 +323,39 @@
   },
   "fidelity": {
     "functional": {
-      "claims": "Armv6-M (Cortex-M0+) execution on both cores by the Cortex-M core extracted from EmbCC, interleaved on one clock with each core's NVIC, SysTick and event register (WFE, SEV); core 1 launched through its bootrom's FIFO handshake and powered off and on by the PSM; every register of RP2040.svd with its reset value, on the part's bus rules (the atomic XOR, set and clear aliases; byte writes across the word); behavioural models extracted from EmbCC of RESETS (peripherals held in reset), the clocks (XOSC, ROSC, PLL_SYS, PLL_USB, the clock generators and FC0; clk_sys is the core's clock), PSM, the watchdog (its microsecond tick, its counter and the chip reset), the timer (its 64-bit count and four alarms), IO_BANK0 and PADS_BANK0 (function select, overrides, pulls, the four interrupt kinds, to each core's own summary), the SIO (GPIO, spinlocks, each core's view: CPUID, a divider each, the FIFOs between the cores and SIO_IRQ_PROC0/1), UART0 and UART1 (PL011 FIFOs, interrupts, frames at the divisor's baud rate on their pins) and the SSI with the Pico's W25Q16JV flash behind it; the PWM's eight slices written for EmbSIM (the fractional divider, free-running and phase-correct counting, CC and TOP double-buffered, inversion, the wrap interrupt) on their pins, and the ADC (96 clk_adc cycles a conversion from GPIO26-29's voltages and the temperature sensor, START_ONCE and START_MANY with DIV, round robin, the FIFO with SHIFT, THRESH, OVER and UNDER, its interrupt); SPI0 and SPI1 as masters (the PL022's FIFOs, 4 to 16 bits in Motorola's modes 0 to 3 at its prescaler and SCR, CSn around each frame, loopback, overrun, the interrupts) and I2C0 and I2C1 as masters (DW_apb_i2c's command and receive FIFOs, START, repeated START and STOP on open-drain SCL and SDA at the HCNT and LCNT counts, the bus held between commands, the aborts and their source, the raw interrupts and their clear registers) on their pins, written for EmbSIM; and a stand-in for the bootrom that checks boot2's CRC, copies it to SRAM and enters it.",
+      "claims": "Armv6-M (Cortex-M0+) execution on both cores by the Cortex-M core extracted from EmbCC, interleaved on one clock with each core's NVIC, SysTick and event register (WFE, SEV); core 1 launched through its bootrom's FIFO handshake and powered off and on by the PSM; every register of RP2040.svd with its reset value, on the part's bus rules (the atomic XOR, set and clear aliases; byte writes across the word); behavioural models extracted from EmbCC of RESETS (peripherals held in reset), the clocks (XOSC, ROSC, PLL_SYS, PLL_USB, the clock generators and FC0; clk_sys is the core's clock), PSM, the watchdog (its microsecond tick, its counter and the chip reset), the timer (its 64-bit count and four alarms), IO_BANK0 and PADS_BANK0 (function select, overrides, pulls, the four interrupt kinds, to each core's own summary), the SIO (GPIO, spinlocks, each core's view: CPUID, a divider each, the FIFOs between the cores and SIO_IRQ_PROC0/1), UART0 and UART1 (PL011 FIFOs, interrupts, frames at the divisor's baud rate on their pins) and the SSI with the Pico's W25Q16JV flash behind it; the PWM's eight slices written for EmbSIM (the fractional divider, free-running and phase-correct counting, CC and TOP double-buffered, inversion, the wrap interrupt) on their pins, and the ADC (96 clk_adc cycles a conversion from GPIO26-29's voltages and the temperature sensor, START_ONCE and START_MANY with DIV, round robin, the FIFO with SHIFT, THRESH, OVER and UNDER, its interrupt); SPI0 and SPI1 as masters (the PL022's FIFOs, 4 to 16 bits in Motorola's modes 0 to 3 at its prescaler and SCR, CSn around each frame, loopback, overrun, the interrupts) and I2C0 and I2C1 as masters (DW_apb_i2c's command and receive FIFOs, START, repeated START and STOP on open-drain SCL and SDA at the HCNT and LCNT counts, the bus held between commands, the aborts and their source, the raw interrupts and their clear registers) on their pins, written for EmbSIM; and a stand-in for the bootrom that checks boot2's CRC, copies it to SRAM and enters it; the bootrom's USB boot (BOOTSEL held at reset, no boot2, or reset_to_usb_boot): the RPI-RP2 drive on the USB cable (VID 0x2E8A, PID 0x0003, mass storage over bulk-only SCSI, a 128 MiB FAT16 volume with INFO_UF2.TXT and INDEX.HTM), UF2 blocks of RP2040's family written to flash at the W25Q16JV's erase and program times, then the reboot into them; the USB controller in device mode as TinyUSB drives it (the pull-up from MAIN_CTRL and SIE_CTRL, bus reset, SOF, SETUP into the DPRAM, each endpoint's buffer control words with single and double buffers, STALL with EP_STALL_ARM, BUFF_STATUS, EP_ABORT, INTR, INTS and USBCTRL_IRQ); the bootrom's flash_exit_xip and flash_enter_cmd_xip set the SSI as the bootrom does, so a program's own flash commands (the unique ID) reach the flash; the RTC (clk_rtc divided by CLKDIV_M1 + 1 for its seconds, LOAD from SETUP_0/1, the calendar with leap years and FORCE_NOTLEAPYEAR, RTC_1/RTC_0, the alarm from IRQ_SETUP's match enables on RTC_IRQ); DMA written for EmbSIM (twelve channels through their four aliases and the null trigger, 1, 2 and 4-byte transfers through the bus as the core makes them, the increments, RING_SIZE and BSWAP, one transfer a clk_sys cycle with HIGH_PRIORITY first and round robin, the DREQs of the PIOs, SPI, UART, PWM, I2C and the ADC, the four pacing timers, CHAIN_TO, MULTI_CHAN_TRIGGER, CHAN_ABORT, the bus errors, INTR, INTS0/1 on DMA_IRQ_0/1, the sniffer's CRC-32, CRC-16-CCITT, XOR and sum with OUT_REV and OUT_INV); PIO0 and PIO1 written for EmbSIM (32 words of instruction memory, four state machines each on their fractional clock divider, all nine instructions in every mode, side-set (optional, to pins or directions) and delays, the wrap, ISR and OSR shifts with autopush and autopull at their thresholds, FJOIN, the OUT, SET, side-set, IN and JMP pins, MOV STATUS, the eight IRQ flags with WAIT IRQ and the relative index, SMx_INSTR and EXEC, SM_RESTART and CLKDIV_RESTART, FSTAT, FLEVEL, FDEBUG, INTR and PIOx_IRQ_0/1, the FIFOs' DREQs) on the GPIOs whose FUNCSEL gives them to it. The core's halting debug as a probe drives it through the debug port (ARM DDI 0419E C1 / DDI 0403E C1): DHCSR's halt, step and restart with C_MASKINTS, DCRSR and DCRDR for every core register, DEMCR's reset vector catch, DFSR, BKPT halting a debugged core, the breakpoint unit's four comparators and the DWT's two comparators as watchpoints; a halted core runs nothing while the clocks and peripherals go on, and a system reset keeps the debug domain (a power-on clears it). The serial wire as a probe drives it, clock by clock (ARM IHI 0031F B4; the datasheet 2.3.4): three SWD v2 debug ports on one multi-drop wire, core 0's (TARGETSEL 0x01002927), core 1's (0x11002927) and the Rescue DP (0xf1002927), their instance IDs from SYSCFG.PROC_CONFIG; the line reset, the dormant state with the selection alert and SWD's activation code, TARGETSEL's selection and lockout, the protocol errors left unanswered; DPIDR 0x0BC12477, CTRL/STAT's power-up handshake and sticky flags, ABORT, SELECT, RESEND, RDBUFF, DLCR, TARGETID, DLPIDR; each core's AHB-AP (IDR 0x04770031, BASE 0xE00FF003: CSW's 8, 16 and 32-bit sizes and single increment within 1 KiB, TAR, DRW's byte lanes, BD0-3), its reads posted; RUN low holds the ports in reset; the Rescue DP's CDBGPWRUPREQ holds the chip in its rescue reset, after which CHIP_RESET reads HAD_PSM_RESTART and the bootrom halts in its dead loop.",
       "omissions": [
-        "the bootrom's code and its function table (flash programming, the float library, memcpy, the USB boot)",
+        "the debug monitor exception (DEMCR's MON_ bits), C_SNAPSTALL, the FPB's flash patching (FP_REMAP), the DWT's counters other than CYCCNT, PC sampling, data value matching and linked comparators, the ITM and TPIU (no SWO trace); a halted core draws its sleep current; the serial wire: every access completes at once (no WAIT), ORUNDETECT's data phase, TRNMODE's pushed compare and TRNCNT, JTAG (the ports are SWD only, as on the part), SYSCFG.DBGFORCE's bit-banged SWD from the cores and PROC_CONFIG's PROC0_HALTED and PROC1_HALTED; CSW's reset value is EmbSIM's (a word, no increment)",
+        "the bootrom's code (EmbSIM's stand-in does what it does: boot2, the function and data tables, the USB boot)",
         "a debugger's choice of core (it sees the one that runs next)",
         "the XIP cache",
-        "DMA, the PIOs, USB and the RTC (plain registers)",
+        "USB host mode",
+        "DMA: the XIP streaming DREQs, the debug registers (CHn_DBG_CTDREQ, CHn_DBG_TCR: plain), the DREQ counters' exact behaviour against a peripheral whose request drops between two transfers",
+        "the PIOs: the input synchroniser's two cycles (inputs are read at once), OUT_STICKY and INLINE_OUT_EN, the debug registers (DBG_PADOUT and DBG_PADOE give the outputs), a delay on an EXEC'd instruction taken as on any other",
         "SPI and I2C slave modes, TI's and Microwire's SPI formats, the SPI receive timeout, 10-bit I2C addresses, general call and START bytes, clock stretching by an I2C slave, arbitration, the I2C spike filter",
-        "PWM's gated and edge-counting DIVMODEs and phase advance; the ADC's error flags and DMA requests",
+        "PWM's gated and edge-counting DIVMODEs and phase advance; the ADC's error flags",
         "the interpolators",
         "DORMANT and SLEEP",
-        "the QSPI bank's pins"
+        "the QSPI bank's pins",
+        "the USB boot's PICOBOOT interface (picotool), UF2 files for RAM, the activity LED; its serial number and INDEX.HTM's version argument are not the bootrom's",
+        "the USB controller's isochronous endpoints, suspend detection (no SOF for 3 ms) and remote wakeup, NAK and stall interrupts, data sequence errors; the flash's unique ID is EmbSIM's (45 6d 62 53 69 6d 00 01), not a part's",
+        "the RTC's RTC_ACTIVE follows RTC_ENABLE at once (the part takes a few clk_rtc edges), out-of-range times loaded are not checked"
       ],
       "validation": [
         "repo:tests/unit/test_rp2040.c",
+        "repo:tests/unit/test_cm_timing.c",
         "repo:examples/pico-blink-serial",
         "repo:examples/pico-dual-core",
-        "repo:tests/vendor/pico-sdk"
+        "repo:tests/vendor/pico-sdk",
+        "repo:tests/vendor/micropython"
       ]
     },
     "timed": {
-      "claims": "Instruction timing estimated from EmbCC's Cortex-M0+ cost table (ADR-015): single-cycle ALU, 2-cycle loads and stores, 3 cycles for a taken branch; flash runs at the core's speed (no cache misses). The timer counts the watchdog's microsecond tick of clk_ref exactly against clk_sys.",
+      "claims": "The bus fabric's arbitration (RP2040 datasheet 2.1): the four masters (both cores' fetches, loads and stores, the DMA's read and write ports) on the ROM, XIP, SRAM0-5 (striped), FASTPERI and APB ports, one access a port and a cycle; two in one cycle, BUS_PRIORITY's high level first, then round robin, the other waiting a cycle; BUSCTRL's PERFCTR0-3 counting the PERFSEL events (each port's accesses and contested accesses, 24-bit saturating, cleared by a write). Instruction timing is the Cortex-M0+ TRM's Table 3-1 (ARM DDI 0484C, zero wait states): loads and stores 2 cycles, 1 on the SIO's single-cycle I/O port; a taken branch 2, BL 3, POP with PC 3+N; MULS 1 (the RP2040's fast multiplier). An exception's entry takes the TRM's worst-case 15 cycles, with late arrival. Flash runs at the core's speed (no cache misses). The timer counts the watchdog's microsecond tick of clk_ref exactly against clk_sys.",
       "omissions": [
         "XIP cache misses",
-        "bus contention",
+        "the bus fabric: the APB bridge's and the XIP cache misses' wait states (an access is one cycle), the fetches the core's prefetch makes and does not use, an access seen more than 1024 cycles after another master's in the same cycle",
+        "an exception's return and tail-chain cycles (no figure in the TRM)",
         "the divider's 8 cycles but in CSR.READY"
       ],
       "validation": [
@@ -378,5 +401,50 @@
       }
     ],
     "notes": "registers.json is converted from Raspberry Pi's RP2040.svd under its BSD-3-Clause licence (LICENSES/); the rest is written for EmbSIM."
+  },
+  "i18n": {
+    "fr": {
+      "source": "d84c0f4166d9",
+      "description": "Raspberry Pi RP2040 : deux cœurs Arm Cortex-M0+ jusqu'à 133 MHz, 264 Kio de SRAM, une ROM d'amorçage de 16 Kio, une flash QSPI externe exécutée sur place ; le MCU du Raspberry Pi Pico.",
+      "fidelity": {
+        "functional": {
+          "claims": "Exécution Armv6-M (Cortex-M0+) sur les deux cœurs par le cœur Cortex-M extrait d'EmbCC, entrelacée sur une même horloge avec le NVIC, le SysTick et le registre d'événement de chaque cœur (WFE, SEV) ; le cœur 1 lancé par la poignée de main sur la FIFO de sa ROM d'amorçage et éteint puis rallumé par le PSM ; chaque registre de RP2040.svd avec sa valeur de réinitialisation, selon les règles de bus de la puce (les alias atomiques XOR, set et clear ; les écritures d'octets répliquées sur le mot) ; des modèles de comportement extraits d'EmbCC de RESETS (périphériques maintenus en réinitialisation), des horloges (XOSC, ROSC, PLL_SYS, PLL_USB, les générateurs d'horloge et FC0 ; clk_sys est l'horloge du cœur), du PSM, du chien de garde (son tic microseconde, son compteur et la réinitialisation de la puce), du timer (son compte sur 64 bits et quatre alarmes), d'IO_BANK0 et PADS_BANK0 (choix de fonction, forçages, rappels, les quatre types d'interruption, vers le résumé propre à chaque cœur), du SIO (GPIO, verrous tournants, la vue de chaque cœur : CPUID, un diviseur chacun, les FIFO entre les cœurs et SIO_IRQ_PROC0/1), de l'UART0 et de l'UART1 (FIFO PL011, interruptions, trames au débit du diviseur sur leurs broches) et du SSI avec la flash W25Q16JV du Pico derrière ; les huit tranches de la MLI écrites pour EmbSIM (le diviseur fractionnaire, comptage libre et à phase correcte, CC et TOP à double tampon, inversion, l'interruption de bouclage) sur leurs broches, et l'ADC (96 cycles de clk_adc par conversion à partir des tensions de GPIO26-29 et du capteur de température, START_ONCE et START_MANY avec DIV, le tourniquet, la FIFO avec SHIFT, THRESH, OVER et UNDER, son interruption) ; le SPI0 et le SPI1 en maîtres (les FIFO du PL022, 4 à 16 bits dans les modes Motorola 0 à 3 à son prédiviseur et SCR, CSn autour de chaque trame, le rebouclage, le débordement, les interruptions) et l'I2C0 et l'I2C1 en maîtres (les FIFO de commande et de réception du DW_apb_i2c, START, START répété et STOP sur SCL et SDA à drain ouvert aux comptes HCNT et LCNT, le bus maintenu entre les commandes, les abandons et leur source, les interruptions brutes et leurs registres d'effacement) sur leurs broches, écrits pour EmbSIM ; et un remplaçant de la ROM d'amorçage qui vérifie le CRC de boot2, le copie en SRAM et y entre ; l'amorçage USB de la ROM (BOOTSEL maintenu à la réinitialisation, pas de boot2, ou reset_to_usb_boot) : le lecteur RPI-RP2 sur le câble USB (VID 0x2E8A, PID 0x0003, stockage de masse en SCSI bulk-only, un volume FAT16 de 128 Mio avec INFO_UF2.TXT et INDEX.HTM), les blocs UF2 de la famille RP2040 écrits en flash aux temps d'effacement et de programmation du W25Q16JV, puis le redémarrage sur eux ; le contrôleur USB en mode périphérique tel que TinyUSB le pilote (le rappel au niveau haut par MAIN_CTRL et SIE_CTRL, la réinitialisation du bus, le SOF, le SETUP dans la DPRAM, les mots de contrôle de tampon de chaque point de terminaison en tampon simple et double, STALL avec EP_STALL_ARM, BUFF_STATUS, EP_ABORT, INTR, INTS et USBCTRL_IRQ) ; flash_exit_xip et flash_enter_cmd_xip de la ROM règlent le SSI comme le fait la ROM, de sorte que les commandes de flash propres à un programme (l'identifiant unique) atteignent la flash ; la RTC (clk_rtc divisée par CLKDIV_M1 + 1 pour ses secondes, LOAD depuis SETUP_0/1, le calendrier avec les années bissextiles et FORCE_NOTLEAPYEAR, RTC_1/RTC_0, l'alarme tirée des activations de correspondance d'IRQ_SETUP sur RTC_IRQ) ; le DMA écrit pour EmbSIM (douze canaux par leurs quatre alias et le déclenchement nul, transferts de 1, 2 et 4 octets par le bus comme le cœur les fait, les incréments, RING_SIZE et BSWAP, un transfert par cycle de clk_sys avec HIGH_PRIORITY d'abord et le tourniquet, les DREQ des PIO, du SPI, de l'UART, de la MLI, de l'I2C et de l'ADC, les quatre timers de cadence, CHAIN_TO, MULTI_CHAN_TRIGGER, CHAN_ABORT, les erreurs de bus, INTR, INTS0/1 sur DMA_IRQ_0/1, le CRC-32, le CRC-16-CCITT, le XOR et la somme du renifleur avec OUT_REV et OUT_INV) ; PIO0 et PIO1 écrits pour EmbSIM (32 mots de mémoire d'instructions, quatre machines d'état chacune sur son diviseur d'horloge fractionnaire, les neuf instructions dans tous les modes, le side-set (facultatif, vers les broches ou les sens) et les délais, le bouclage, les décalages d'ISR et d'OSR avec autopush et autopull à leurs seuils, FJOIN, les broches OUT, SET, side-set, IN et JMP, MOV STATUS, les huit drapeaux IRQ avec WAIT IRQ et l'index relatif, SMx_INSTR et EXEC, SM_RESTART et CLKDIV_RESTART, FSTAT, FLEVEL, FDEBUG, INTR et PIOx_IRQ_0/1, les DREQ des FIFO) sur les GPIO que leur FUNCSEL leur attribue. Le débogage avec arrêt du cœur tel qu'une sonde le pilote par le port de débogage (ARM DDI 0419E C1 / DDI 0403E C1) : l'arrêt, le pas à pas et la relance de DHCSR avec C_MASKINTS, DCRSR et DCRDR pour chaque registre du cœur, la capture du vecteur de réinitialisation de DEMCR, DFSR, BKPT arrêtant un cœur débogué, les quatre comparateurs de l'unité de points d'arrêt et les deux comparateurs du DWT comme points d'observation ; un cœur arrêté n'exécute rien pendant que les horloges et les périphériques continuent, et une réinitialisation système garde le domaine de débogage (une mise sous tension l'efface). Le fil série tel qu'une sonde le pilote, coup d'horloge par coup d'horloge (ARM IHI 0031F B4 ; la fiche technique 2.3.4) : trois ports de débogage SWD v2 sur un même fil multipoint, celui du cœur 0 (TARGETSEL 0x01002927), celui du cœur 1 (0x11002927) et le Rescue DP (0xf1002927), leurs identifiants d'instance tirés de SYSCFG.PROC_CONFIG ; la réinitialisation de ligne, l'état dormant avec l'alerte de sélection et le code d'activation du SWD, la sélection et le verrouillage de TARGETSEL, les erreurs de protocole laissées sans réponse ; DPIDR 0x0BC12477, la poignée de main de mise sous tension et les drapeaux persistants de CTRL/STAT, ABORT, SELECT, RESEND, RDBUFF, DLCR, TARGETID, DLPIDR ; l'AHB-AP de chaque cœur (IDR 0x04770031, BASE 0xE00FF003 : les tailles 8, 16 et 32 bits de CSW et l'incrément simple dans 1 Kio, TAR, les voies d'octets de DRW, BD0-3), ses lectures différées ; RUN bas maintient les ports en réinitialisation ; le CDBGPWRUPREQ du Rescue DP maintient la puce dans sa réinitialisation de secours, après laquelle CHIP_RESET lit HAD_PSM_RESTART et la ROM d'amorçage s'arrête dans sa boucle morte.",
+          "omissions": [
+            "l'exception de moniteur de débogage (bits MON_ de DEMCR), C_SNAPSTALL, le remappage de la flash par le FPB (FP_REMAP), les compteurs du DWT autres que CYCCNT, l'échantillonnage du PC, la comparaison de valeurs de données et les comparateurs liés, l'ITM et le TPIU (pas de trace SWO) ; un cœur arrêté consomme son courant de veille ; le fil série : chaque accès se termine tout de suite (pas de WAIT), la phase de données d'ORUNDETECT, la comparaison poussée et TRNCNT de TRNMODE, le JTAG (les ports sont SWD seulement, comme sur la puce), le SWD logiciel de SYSCFG.DBGFORCE depuis les cœurs et PROC0_HALTED et PROC1_HALTED de PROC_CONFIG ; la valeur de réinitialisation de CSW est celle d'EmbSIM (un mot, pas d'incrément)",
+            "le code de la ROM d'amorçage (le remplaçant d'EmbSIM fait ce qu'elle fait : boot2, les tables de fonctions et de données, l'amorçage USB)",
+            "le choix du cœur par un débogueur (il voit celui qui s'exécute ensuite)",
+            "le cache XIP",
+            "le mode hôte USB",
+            "DMA : les DREQ de flux XIP, les registres de débogage (CHn_DBG_CTDREQ, CHn_DBG_TCR : simples), le comportement exact des compteurs DREQ face à un périphérique dont la requête tombe entre deux transferts",
+            "les PIO : les deux cycles du synchroniseur d'entrée (les entrées sont lues tout de suite), OUT_STICKY et INLINE_OUT_EN, les registres de débogage (DBG_PADOUT et DBG_PADOE donnent les sorties), un délai sur une instruction passée par EXEC traité comme sur toute autre",
+            "les modes esclave SPI et I2C, les formats SPI TI et Microwire, le délai de réception SPI, les adresses I2C sur 10 bits, l'appel général et les octets START, l'étirement d'horloge par un esclave I2C, l'arbitrage, le filtre anti-parasites de l'I2C",
+            "les DIVMODE à porte et à comptage de fronts de la MLI et l'avance de phase ; les drapeaux d'erreur de l'ADC",
+            "les interpolateurs",
+            "DORMANT et SLEEP",
+            "les broches du banc QSPI",
+            "l'interface PICOBOOT de l'amorçage USB (picotool), les fichiers UF2 pour la RAM, la LED d'activité ; son numéro de série et l'argument de version d'INDEX.HTM ne sont pas ceux de la ROM d'amorçage",
+            "les points de terminaison isochrones du contrôleur USB, la détection de suspension (pas de SOF pendant 3 ms) et le réveil à distance, les interruptions NAK et stall, les erreurs de séquence de données ; l'identifiant unique de la flash est celui d'EmbSIM (45 6d 62 53 69 6d 00 01), pas celui d'une puce",
+            "RTC_ACTIVE de la RTC suit RTC_ENABLE tout de suite (la puce met quelques fronts de clk_rtc), les heures chargées hors plage ne sont pas vérifiées"
+          ]
+        },
+        "timed": {
+          "claims": "L'arbitrage de l'interconnexion de bus (fiche technique du RP2040 2.1) : les quatre maîtres (lectures d'instructions, chargements et stockages des deux cœurs, les ports de lecture et d'écriture du DMA) sur les ports ROM, XIP, SRAM0-5 (entrelacées), FASTPERI et APB, un accès par port et par cycle ; deux dans un même cycle, le niveau haut de BUS_PRIORITY d'abord, puis le tourniquet, l'autre attendant un cycle ; PERFCTR0-3 de BUSCTRL comptant les événements PERFSEL (accès et accès contestés de chaque port, 24 bits saturants, effacés par une écriture). La durée des instructions est celle du tableau 3-1 du TRM du Cortex-M0+ (ARM DDI 0484C, sans état d'attente) : chargements et stockages 2 cycles, 1 sur le port d'E/S à cycle unique du SIO ; un branchement pris 2, BL 3, POP avec PC 3+N ; MULS 1 (le multiplieur rapide du RP2040). L'entrée en exception prend les 15 cycles du pire cas du TRM, avec arrivée tardive. La flash tourne à la vitesse du cœur (pas de défauts de cache). Le timer compte le tic microseconde du chien de garde issu de clk_ref exactement par rapport à clk_sys.",
+          "omissions": [
+            "les défauts du cache XIP",
+            "l'interconnexion de bus : les états d'attente du pont APB et des défauts du cache XIP (un accès prend un cycle), les lectures que fait la prélecture du cœur sans les utiliser, un accès vu plus de 1024 cycles après celui d'un autre maître dans le même cycle",
+            "les cycles de retour et d'enchaînement d'une exception (aucun chiffre dans le TRM)",
+            "les 8 cycles du diviseur sauf dans CSR.READY"
+          ]
+        },
+        "electrical": {
+          "claims": "Modèles de broche GPIO par défaut à 3,3 V tirés de la fiche technique (4 mA de commande, rappels de 50 k).",
+          "omissions": [
+            "les réglages d'intensité de commande et de vitesse de front",
+            "le réglage du trigger de Schmitt",
+            "les structures de protection ESD"
+          ]
+        }
+      }
+    }
   }
 }

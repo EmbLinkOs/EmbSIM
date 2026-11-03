@@ -1,0 +1,95 @@
+{
+ "schema_version": 1,
+ "kind": "project",
+ "name": "arduino-debounce",
+ "description": "The IDE's Debounce (Examples > 02.Digital) as its comment wires it: a push button from +5 V to D2, 10 kOhm from D2 to GND, the board's L LED on D13. The button bounces as a real one does (ADR-034).",
+ "policy": "electrical",
+ "boards": [
+  {
+   "id": "B1",
+   "board": "emblink/arduino_uno",
+   "layout": {
+    "x": 300,
+    "y": 260
+   },
+   "firmware": {
+    "image": "sketch.elf",
+    "format": "elf"
+   }
+  }
+ ],
+ "components": [
+  {
+   "id": "USB",
+   "component": "emblink/vsource",
+   "params": {
+    "kind": "dc",
+    "dc": 5
+   },
+   "layout": {
+    "x": 720,
+    "y": 60
+   }
+  },
+  {
+   "id": "GND1",
+   "component": "emblink/gnd",
+   "layout": {
+    "x": 900,
+    "y": 200
+   }
+  },
+  {
+   "id": "SW1",
+   "component": "emblink/push_button",
+   "layout": {
+    "x": 120,
+    "y": 600
+   }
+  },
+  {
+   "id": "R1",
+   "component": "emblink/resistor",
+   "params": {
+    "resistance": 10000
+   },
+   "layout": {
+    "x": 120,
+    "y": 760
+   }
+  }
+ ],
+ "nets": {
+  "USB5V": [
+   "USB.+",
+   "B1.5V",
+   "SW1.1"
+  ],
+  "GND": [
+   "B1.GND",
+   "GND1.GND",
+   "USB.-",
+   "R1.2"
+  ],
+  "BTN": [
+   "SW1.2",
+   "R1.1",
+   "B1.D2"
+  ],
+  "L": [
+   "B1.D13"
+  ]
+ },
+ "probes": [
+  {
+   "id": "button",
+   "target": "net:BTN",
+   "kind": "digital"
+  },
+  {
+   "id": "led",
+   "target": "net:L",
+   "kind": "digital"
+  }
+ ]
+}

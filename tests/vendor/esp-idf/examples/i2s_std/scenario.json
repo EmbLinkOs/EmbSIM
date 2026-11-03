@@ -1,0 +1,58 @@
+{
+ "schema_version": 1,
+ "kind": "scenario",
+ "name": "i2s_std",
+ "until": "1500ms",
+ "description": "i2s_std, unmodified, duplex: one controller's TX and RX share BCLK and WS (SIG_LOOPBACK); MSB format, 32-bit stereo at 16 kHz from the PLL's 160 MHz, so BCLK is 16000 x 64 = 1.024 MHz and WS 16 kHz. The write task sends a 2048-byte buffer of 12 34 56 78 9a bc de f0 repeated; the read task, through IO4 where DOUT and DIN meet, reads it back and prints its first eight bytes, as the example's README shows.",
+ "inputs": [],
+ "assertions": [
+  {
+   "id": "written",
+   "at": "1500ms",
+   "probe": "console",
+   "expect": {
+    "contains": "Write Task: i2s write 2048 bytes"
+   }
+  },
+  {
+   "id": "read",
+   "at": "1500ms",
+   "probe": "console",
+   "expect": {
+    "contains": "Read Task: i2s read 2048 bytes"
+   }
+  },
+  {
+   "id": "looped-back",
+   "at": "1500ms",
+   "probe": "console",
+   "expect": {
+    "contains": "[0] 12 [1] 34 [2] 56 [3] 78\n[4] 9a [5] bc [6] de [7] f0"
+   }
+  },
+  {
+   "id": "bclk",
+   "between": [
+    "1000ms",
+    "1500ms"
+   ],
+   "probe": "bclk",
+   "expect": {
+    "frequency_hz": 1024000,
+    "tolerance": 0.001
+   }
+  },
+  {
+   "id": "ws",
+   "between": [
+    "1000ms",
+    "1500ms"
+   ],
+   "probe": "ws",
+   "expect": {
+    "frequency_hz": 16000,
+    "tolerance": 0.001
+   }
+  }
+ ]
+}

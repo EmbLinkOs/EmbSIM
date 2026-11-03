@@ -13,6 +13,7 @@ import { errorMessage } from '../actions';
 import { tryClient } from '../connection';
 import { useLayout } from '../stores/layout';
 import { useProject } from '../stores/project';
+import { t as tr } from '../i18n';
 
 /** a project with `board` (a catalog id) as B1, or none */
 export function newProject(name: string, board: string | null): Project {
@@ -59,7 +60,7 @@ export function NewProjectDialog() {
   }, [open, boards]);
 
   const options = useMemo(
-    () => [{ id: '', name: 'Blank sheet', description: 'An empty schematic: place parts and boards from the library.' }, ...(boards ?? [])],
+    () => [{ id: '', name: tr('np.blank'), description: tr('np.blankDesc') }, ...(boards ?? [])],
     [boards],
   );
 
@@ -69,9 +70,9 @@ export function NewProjectDialog() {
       const project = newProject(projectName(name), choice || null);
       await loadProjectJson(project);
       setOpen(false);
-      toast({ kind: 'success', title: `New project ${project.name}`, description: choice ? `Started from the ${boards?.find((b) => b.id === choice)?.name ?? choice}` : 'A blank sheet' });
+      toast({ kind: 'success', title: tr('np.created', { name: project.name }), description: choice ? tr('np.startedFrom', { board: boards?.find((b) => b.id === choice)?.name ?? choice }) : tr('np.aBlank') });
     } catch (e) {
-      toast({ kind: 'error', title: 'The project could not be created', description: errorMessage(e) });
+      toast({ kind: 'error', title: tr('np.failed'), description: errorMessage(e) });
     } finally {
       setBusy(false);
     }
@@ -81,25 +82,25 @@ export function NewProjectDialog() {
     <Dialog
       open={open}
       onOpenChange={setOpen}
-      title="New project"
-      description={current ? `Replaces ${current} in this session: save it first if it has changes.` : undefined}
+      title={tr('np.title')}
+      description={current ? tr('np.replaces', { name: current }) : undefined}
       footer={
         <>
           <Button variant="ghost" onClick={() => setOpen(false)}>
-            Cancel
+            {tr('common.cancel')}
           </Button>
           <Button variant="primary" disabled={busy} onClick={() => void create()}>
-            Create
+            {tr('np.create')}
           </Button>
         </>
       }
     >
       <div className="wb-newproject">
         <label className="wb-newproject__name">
-          <span>Name</span>
-          <Input value={name} onChange={(e) => setName(e.target.value)} aria-label="Project name" />
+          <span>{tr('insp.name')}</span>
+          <Input value={name} onChange={(e) => setName(e.target.value)} aria-label={tr('np.name')} />
         </label>
-        <div className="wb-newproject__options" role="radiogroup" aria-label="Start from">
+        <div className="wb-newproject__options" role="radiogroup" aria-label={tr('np.startFrom')}>
           {options.map((o) => (
             <label key={o.id || 'blank'} className="wb-newproject__option" data-checked={choice === o.id || undefined}>
               <input type="radio" name="new-project-start" value={o.id} checked={choice === o.id} onChange={() => setChoice(o.id)} />
@@ -112,7 +113,7 @@ export function NewProjectDialog() {
               </span>
             </label>
           ))}
-          {boards === null && <div className="es-muted">Loading the catalog's boards…</div>}
+          {boards === null && <div className="es-muted">{tr('np.loadingBoards')}</div>}
         </div>
       </div>
     </Dialog>

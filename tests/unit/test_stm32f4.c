@@ -867,6 +867,126 @@ static void test_syscfg(void)
     f4_close(&f);
 }
 
+/* ---- the flash interface's read timing (RM0390 3.4) ---- */
+
+static void fl16(f4 *f, u32 *at, u32 h)
+{
+    CHECK_EQ(esk_bus_debug_write(&f->m.bus, *at, 2, h), 0);
+    *at += 2;
+}
+
+/* the machine's cycles over the next `n` instructions */
+static u64 run_insns(f4 *f, u64 n)
+{
+    u64 c0 = f->m.cycles;
+    esk_mach_run(&f->m, 100000, n);
+    return f->m.cycles - c0;
+}
+
+/* a program at 0x08000100 from reset, with FLASH_ACR `acr` set before it runs */
+static int art_open(f4 *f, u32 acr)
+{
+    u32 at = 0x08000100u;
+    int i;
+    if (!f4_open(f, 1))
+        return 0;
+    CHECK_EQ(esk_bus_debug_write(&f->m.bus, 0x08000000u, 4, 0x20001000u), 0);
+    CHECK_EQ(esk_bus_debug_write(&f->m.bus, 0x08000004u, 4, 0x08000101u), 0);
+    /* 0x100: 32 sequential 32-bit instructions (nop.w), 4 to a 128-bit line */
+    for (i = 0; i < 32; i++) {
+        fl16(f, &at, 0xf3af);
+        fl16(f, &at, 0x8000);
+    }
+    fl16(f, &at, 0xe7fe); /* b . */
+    /* 0x200: a loop of two lines: 8 nops, 7 nops and b back to 0x200 */
+    at = 0x08000200u;
+    for (i = 0; i < 15; i++)
+        fl16(f, &at, 0xbf00);
+    fl16(f, &at, 0xe7ef);
+    /* 0x300: ldr r0, [pc, #12] twice, both the literal at 0x310, and b . */
+    at = 0x08000300u;
+    fl16(f, &at, 0x4803);
+    fl16(f, &at, 0x4803); /* from 0x302, Align(pc + 4, 4) is 0x304 too: the same literal */
+    fl16(f, &at, 0xe7fe);
+    CHECK_EQ(esk_bus_debug_write(&f->m.bus, 0x08000310u, 4, 0x12345678u), 0);
+    esk_mach_reset(&f->m);
+    wr(f, FLASH_ACR, acr);
+    return 1;
+}
+
+static void art_jump(f4 *f, u32 pc)
+{
+    u8 b[4] = { (u8)pc, (u8)(pc >> 8), (u8)(pc >> 16), (u8)(pc >> 24) };
+    CHECK(f->m.cpu->ops->reg_write(f->m.cpu, 15, b) > 0);
+}
+
+static void test_flash_read_timing(void)
+{
+    f4 f;
+    u64 c;
+    /* RM0390 Figure 4: 3 wait states, sequential 32-bit instructions.
+     * Without prefetch each 128-bit line waits 3 cycles before its four
+     * instructions; with it only the first line waits */
+    if (!art_open(&f, 3u))
+        return;
+    c = run_insns(&f, 4);
+    CHECK_EQ(c, 3 + 4);
+    CHECK_EQ(run_insns(&f, 4), 3 + 4);
+    CHECK_EQ(run_insns(&f, 8), 2 * (3 + 4));
+    f4_close(&f);
+    if (!art_open(&f, 3u | 0x100u)) /* PRFTEN */
+        return;
+    CHECK_EQ(run_insns(&f, 4), 3 + 4);
+    CHECK_EQ(run_insns(&f, 4), 4);
+    CHECK_EQ(run_insns(&f, 16), 16); /* zero-wait-state speed */
+    f4_close(&f);
+    /* 5 wait states: a line read takes 6 cycles, four 32-bit instructions 4:
+     * prefetch hides all but 2 of each */
+    if (!art_open(&f, 5u | 0x100u))
+        return;
+    CHECK_EQ(run_insns(&f, 4), 5 + 4);
+    CHECK_EQ(run_insns(&f, 4), 2 + 4);
+    CHECK_EQ(run_insns(&f, 8), 2 * (2 + 4));
+    f4_close(&f);
+    /* a loop over two lines at 5 wait states: each pass misses both lines
+     * (the branch back is no sequential fetch) without the instruction
+     * cache, and none of them once ICEN holds them: 16 instructions, the
+     * branch's 1 + 2 */
+    if (!art_open(&f, 5u))
+        return;
+    art_jump(&f, 0x08000200u);
+    run_insns(&f, 16);
+    CHECK_EQ(run_insns(&f, 16), 5 + 5 + 15 + 3);
+    f4_close(&f);
+    if (!art_open(&f, 5u | 0x200u)) /* ICEN */
+        return;
+    art_jump(&f, 0x08000200u);
+    run_insns(&f, 16);              /* the first pass fills the cache */
+    CHECK_EQ(run_insns(&f, 16), 15 + 3);
+    CHECK_EQ(run_insns(&f, 16), 15 + 3);
+    f4_close(&f);
+    /* a literal pool read through D-Code waits the latency each time
+     * without DCEN, once with it */
+    if (!art_open(&f, 5u))
+        return;
+    art_jump(&f, 0x08000300u);
+    c = run_insns(&f, 1);
+    CHECK_EQ(c, 5 + 2 + 5); /* the line's fetch, ldr's 2, the literal's line */
+    CHECK_EQ(run_insns(&f, 1), 2 + 5);
+    f4_close(&f);
+    if (!art_open(&f, 5u | 0x400u)) /* DCEN */
+        return;
+    art_jump(&f, 0x08000300u);
+    CHECK_EQ(run_insns(&f, 1), 5 + 2 + 5);
+    CHECK_EQ(run_insns(&f, 1), 2); /* the data cache holds the literal's line */
+    f4_close(&f);
+    /* 0 wait states: nothing waits */
+    if (!art_open(&f, 0u))
+        return;
+    CHECK_EQ(run_insns(&f, 8), 8);
+    f4_close(&f);
+}
+
 /* ---- timers ------------------------------------------------------------------ */
 
 /* the core kept busy (nop; b back) so that time passes instruction by
@@ -3738,4 +3858,5 @@ RUN(test_crc);
 RUN(test_tim5_lsi);
 RUN(test_tim_widths);
 RUN(test_otg_fs);
+RUN(test_flash_read_timing);
 TEST_MAIN_END

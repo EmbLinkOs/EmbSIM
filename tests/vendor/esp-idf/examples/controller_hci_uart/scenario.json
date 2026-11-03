@@ -1,0 +1,47 @@
+{
+ "schema_version": 1,
+ "kind": "scenario",
+ "name": "controller_hci_uart",
+ "until": "2s",
+ "description": "controller_hci_uart_esp32c3_and_esp32s3, unmodified: the Bluetooth controller's HCI H4 transport over UART1 at 115200 baud with UHCI and the GDMA (a receive list of the length the controller asks for, closed by PKT_THRS; a transmit list per packet). The terminal, as the host, sends HCI_Reset and gets its Command Complete (Num_HCI_Command_Packets 5, as Espressif's controller reports it), then HCI_Read_BD_ADDR and gets the chip's Bluetooth address, its base MAC plus 2. The 0x00 the host sees first is the example's own: it makes IO4 an output at level 0 before UART1 takes it.",
+ "inputs": [
+  {
+   "at": "1500ms",
+   "target": "VT1",
+   "input": "tx_hex",
+   "value": "01 03 0c 00"
+  },
+  {
+   "at": "1700ms",
+   "target": "VT1",
+   "input": "tx_hex",
+   "value": "01 09 10 00"
+  }
+ ],
+ "assertions": [
+  {
+   "id": "before",
+   "at": "1450ms",
+   "probe": "hci_rx",
+   "expect": {
+    "equals": "00"
+   }
+  },
+  {
+   "id": "reset-complete",
+   "at": "1600ms",
+   "probe": "hci_rx",
+   "expect": {
+    "equals": "00040e0405030c00"
+   }
+  },
+  {
+   "id": "bd-addr",
+   "at": "2s",
+   "probe": "hci_rx",
+   "expect": {
+    "equals": "00040e0405030c00040e0a05091000646d45a1df7c"
+   }
+  }
+ ]
+}

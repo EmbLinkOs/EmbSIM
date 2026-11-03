@@ -413,5 +413,40 @@
       }
     ],
     "notes": "registers.json and tqfp100.json are converted from Microchip's device pack under its Apache-2.0 licence (LICENSES/) by tools/importers/edc2regs.py; the rest is written for EmbSIM."
+  },
+  "i18n": {
+    "fr": {
+      "source": "ea8232cb11c4",
+      "description": "Microchip PIC24FJ1024GB610 : un cœur PIC24F 16 bits jusqu'à 16 MIPS (32 MHz), 1 Mio de flash programme à double partition, 32 Kio de RAM, l'USB OTG, six UART, le Peripheral Pin Select ; le PIM PIC24 de l'Explorer 16/32 (MA240023).",
+      "fidelity": {
+        "functional": {
+          "claims": "Exécution PIC24F par le cœur extrait d'EmbCC (chaque instruction que le manuel de référence 16 bits donne au PIC24F, les modes d'adressage, REPEAT et la division itérative, l'Extended Data Space et la visibilité de l'espace programme, les lectures de table, les traps et les interruptions par la table des vecteurs, DISI, PWRSAV) ; chaque registre de fonction spéciale de l'EDC du pack de la puce avec sa valeur à la mise sous tension ; des modèles de comportement du contrôleur d'interruptions (priorités, ordre naturel, INTTREG, les drapeaux de trap, NSTDIS), de l'oscillateur (FNOSC tiré des mots de configuration, les séquences de déverrouillage d'OSCCON, la bascule, les 32 MHz de la PLL et CPDIV) avec le verrou du PPS (IOLOCK, IOL1WAY), de Timer1 à Timer5 (prédiviseurs, paires 32 bits, TMRxHLD), des ports A à G (TRIS, LAT, ODC, ANS, les rappels, l'interruption sur changement) et de l'UART1 à l'UART6 (tampons de 4 niveaux, les choix d'interruption, trames au débit sur les broches que le PPS leur attribue).",
+          "omissions": [
+            "l'ADC, le SPI, l'I2C, la capture d'entrée, la comparaison de sortie, les modules MCCP et SCCP, l'EPMP, la RTCC, le DMA, l'USB, les comparateurs, le CRC, les CLC, le CTMU, le HLVD et l'horloge de référence (simples registres)",
+            "le chien de garde et la veille profonde (il ne réinitialise jamais la puce)",
+            "la programmation de la flash (NVM) et les doubles partitions",
+            "les autres modes de la PLL (4x, 6x, 8x : FOSC vaut 32 MHz divisés par CPDIV) et le DCO",
+            "les broches d'interruption externe (INTx)",
+            "les instructions DSP du dsPIC (le mode dsPIC33E du cœur n'est pas utilisé par cette puce)"
+          ]
+        },
+        "timed": {
+          "claims": "Cycles d'instruction tels que les donne le manuel de référence (un ; deux pour un branchement pris, GOTO, CALL et les instructions de table ; trois pour RETURN et RETFIE ; cinq pour l'entrée en exception) ; les timers comptent FCY avec leurs prédiviseurs et les UART FCY / (16 ou 4 x (BRG + 1)) exactement.",
+          "omissions": [
+            "le démarrage de l'oscillateur et le temps de verrouillage de la PLL",
+            "la latence d'interruption au-delà de l'instruction en cours"
+          ]
+        },
+        "electrical": {
+          "claims": "Modèles de broche GPIO par défaut à 3,3 V tirés des caractéristiques continues de la fiche technique (VOH 2,4 V, VOL 0,4 V, VIH 0,8 VDD, VIL 0,2 VDD, les rappels faibles).",
+          "omissions": [
+            "les broches tolérantes au 5 V",
+            "l'intensité de commande au-delà d'une seule résistance de sortie",
+            "les structures de protection ESD",
+            "le régulateur du cœur (VCAP)"
+          ]
+        }
+      }
+    }
   }
 }

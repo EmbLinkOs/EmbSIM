@@ -1,0 +1,82 @@
+{
+  "schema_version": 1,
+  "kind": "scenario",
+  "name": "ShiftRegister74HC595 example",
+  "until": "5s",
+  "description": "The outputs as the library sets them: all high, all low, one more bit each 250 ms, 0b10101010, then the next loop.",
+  "inputs": [],
+  "assertions": [
+    {
+      "id": "t250",
+      "at": "250ms",
+      "probe": "latch",
+      "expect": {
+        "equals": 255
+      }
+    },
+    {
+      "id": "t750",
+      "at": "750ms",
+      "probe": "latch",
+      "expect": {
+        "equals": 0
+      }
+    },
+    {
+      "id": "t1125",
+      "at": "1125ms",
+      "probe": "latch",
+      "expect": {
+        "equals": 1
+      }
+    },
+    {
+      "id": "t1375",
+      "at": "1375ms",
+      "probe": "latch",
+      "expect": {
+        "equals": 3
+      }
+    },
+    {
+      "id": "t1875",
+      "at": "1875ms",
+      "probe": "latch",
+      "expect": {
+        "equals": 15
+      }
+    },
+    {
+      "id": "t2875",
+      "at": "2875ms",
+      "probe": "latch",
+      "expect": {
+        "equals": 255
+      }
+    },
+    {
+      "id": "t3500",
+      "at": "3500ms",
+      "probe": "latch",
+      "expect": {
+        "equals": 170
+      }
+    },
+    {
+      "id": "t4250",
+      "at": "4250ms",
+      "probe": "latch",
+      "expect": {
+        "equals": 255
+      }
+    },
+    {
+      "id": "t4750",
+      "at": "4750ms",
+      "probe": "latch",
+      "expect": {
+        "equals": 0
+      }
+    }
+  ]
+}

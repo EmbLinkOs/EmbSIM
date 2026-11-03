@@ -4,7 +4,8 @@
   "id": "emblink/ic_74hc08",
   "version": "1.0.0",
   "name": "74HC08 quad 2-input AND",
-  "category": "logic",
+  "category": "ttl_74",
+  "subcategory": "gates",
   "description": "74HC08 quad 2-input AND in its 14-pin package: 4 independent AND gates (emblink/and2) sharing VCC (14) and GND (7).",
   "keywords": [
     "logic",
@@ -311,5 +312,33 @@
   },
   "tests": [
     "tests/*.json"
-  ]
+  ],
+  "i18n": {
+    "fr": {
+      "source": "e76a19f980bd",
+      "description": "74HC08 quadruple ET à 2 entrées dans son boîtier à 14 broches : 4 portes ET indépendantes (emblink/and2) partageant VCC (14) et GND (7).",
+      "fidelity": {
+        "functional": {
+          "claims": "Chaque porte comme emblink/and2.",
+          "omissions": [
+            "le courant d'alimentation partagé",
+            "les limites thermiques du boîtier"
+          ]
+        },
+        "timed": {
+          "claims": "Le tpd de chaque porte comme emblink/and2.",
+          "omissions": [
+            "la variation du délai avec l'alimentation"
+          ]
+        },
+        "electrical": {
+          "claims": "Chaque porte comme emblink/and2 ; les broches se relient avec les valeurs par défaut cmos_3v3.",
+          "omissions": [
+            "le courant d'alimentation partagé",
+            "le rebond de masse"
+          ]
+        }
+      }
+    }
+  }
 }

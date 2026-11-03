@@ -2,7 +2,7 @@
 
 A GL5528 light divider drives a 2N3904 LED switch; a two-way terminal block exposes the supply connections.
 
-Adjust LDR1 illuminance. Darkness switches the LED on; bright light switches it off. The GL5528 power-law fit is illustrative and its manufacturer source remains reference-only. It does not simulate spectral response or light-adaptation time.
+Adjust LDR1 illuminance. Darkness switches the LED on; bright light switches it off. The GL5528 power-law fit is illustrative and its manufacturer source remains reference-only. The cell follows a change of light as the datasheet's response time says (20 ms rising, 30 ms decaying), so the scenario gives it a few hundred milliseconds at each light. It does not simulate spectral response.
 
 Run from the repository root:
 

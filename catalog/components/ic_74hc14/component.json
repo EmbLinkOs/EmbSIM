@@ -4,7 +4,8 @@
   "id": "emblink/ic_74hc14",
   "version": "1.0.0",
   "name": "74HC14 hex Schmitt-trigger inverter",
-  "category": "logic",
+  "category": "ttl_74",
+  "subcategory": "gates",
   "description": "74HC14 hex Schmitt-trigger inverter in its 14-pin package: 6 independent Schmitt inverter gates (emblink/schmitt_inverter) sharing VCC (14) and GND (7).",
   "keywords": [
     "logic",
@@ -325,5 +326,33 @@
   },
   "tests": [
     "tests/*.json"
-  ]
+  ],
+  "i18n": {
+    "fr": {
+      "source": "fb5204c5927b",
+      "description": "74HC14 sextuple inverseur à trigger de Schmitt dans son boîtier à 14 broches : 6 portes inverseuses de Schmitt indépendantes (emblink/schmitt_inverter) partageant VCC (14) et GND (7).",
+      "fidelity": {
+        "functional": {
+          "claims": "Chaque porte comme emblink/schmitt_inverter.",
+          "omissions": [
+            "le courant d'alimentation partagé",
+            "les limites thermiques du boîtier"
+          ]
+        },
+        "timed": {
+          "claims": "Le tpd de chaque porte comme emblink/schmitt_inverter.",
+          "omissions": [
+            "la variation du délai avec l'alimentation"
+          ]
+        },
+        "electrical": {
+          "claims": "Chaque porte comme emblink/schmitt_inverter ; les broches se relient avec les valeurs par défaut cmos_3v3.",
+          "omissions": [
+            "le courant d'alimentation partagé",
+            "le rebond de masse"
+          ]
+        }
+      }
+    }
+  }
 }

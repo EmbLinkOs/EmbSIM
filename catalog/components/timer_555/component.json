@@ -4,7 +4,8 @@
   "id": "emblink/timer_555",
   "version": "1.0.0",
   "name": "555 timer",
-  "category": "analog",
+  "category": "analog_ics",
+  "subcategory": "timers",
   "description": "NE555 timer as a behavioural block: astable at f = 1.44 / ((R1 + 2 R2) C) with the datasheet's high and low times, or a monostable pulse of 1.1 R1 C started by TRIG falling. The timing comes from the r1, r2 and c parameters rather than from the parts wired to THR and TRIG.",
   "keywords": [
     "timer",
@@ -239,5 +240,39 @@
   },
   "tests": [
     "tests/*.json"
-  ]
+  ],
+  "i18n": {
+    "fr": {
+      "source": "cc75434436ac",
+      "description": "Temporisateur NE555 en bloc comportemental : astable à f = 1,44 / ((R1 + 2 R2) C) avec les temps haut et bas de la fiche technique, ou une impulsion monostable de 1,1 R1 C lancée par un front descendant de TRIG. La temporisation vient des paramètres r1, r2 et c plutôt que des composants câblés à THR et TRIG.",
+      "fidelity": {
+        "functional": {
+          "claims": "Astable : d'abord haut ln3 (R1+R2) C, puis ln2 (R1+R2) C haut et ln2 R2 C bas ; monostable : 1,1 R1 C par front descendant de TRIG ; RESET bas force OUT bas.",
+          "omissions": [
+            "des temps tirés des tensions réelles de THR/TRIG/CTRL",
+            "le courant de sortie",
+            "la variation des temps avec l'alimentation"
+          ]
+        },
+        "timed": {
+          "claims": "Comme en fonctionnel ; délais tels qu'indiqués.",
+          "omissions": [
+            "des temps tirés des tensions réelles de THR/TRIG/CTRL",
+            "le courant de sortie",
+            "la variation des temps avec l'alimentation"
+          ]
+        },
+        "electrical": {
+          "claims": "Les broches se relient aux réseaux analogiques avec les modèles de broche par défaut de la famille ; le comportement est celui du modèle Lua.",
+          "omissions": [
+            "des temps tirés des tensions réelles de THR/TRIG/CTRL",
+            "le courant de sortie",
+            "la variation des temps avec l'alimentation",
+            "le courant d'alimentation",
+            "les limites de courant de sortie"
+          ]
+        }
+      }
+    }
+  }
 }

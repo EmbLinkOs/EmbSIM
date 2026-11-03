@@ -1,0 +1,65 @@
+{
+  "schema_version": 1,
+  "kind": "component_test",
+  "name": "auto-refreshes",
+  "description": "The same steady 1 V in Auto: with no trigger it acquires anyway, once a screen's time has passed (12 ms at 1 ms/div), showing AUTO.",
+  "policy": "electrical",
+  "until": "40ms",
+  "circuit": {
+    "components": [
+      {
+        "id": "DUT",
+        "component": "emblink/rigol_ds1054z",
+        "params": {
+          "trig_level": 1.5,
+          "sweep": "auto"
+        }
+      },
+      {
+        "id": "V",
+        "component": "emblink/vsource",
+        "params": {
+          "kind": "dc",
+          "dc": 1.0
+        }
+      },
+      {
+        "id": "RS",
+        "component": "emblink/resistor",
+        "params": {
+          "resistance": 1
+        }
+      },
+      {
+        "id": "G",
+        "component": "emblink/gnd"
+      }
+    ],
+    "nets": {
+      "SRC": [
+        "V.+",
+        "RS.1"
+      ],
+      "TIP": [
+        "RS.2",
+        "DUT.CH1"
+      ],
+      "GND": [
+        "V.-",
+        "G.GND",
+        "DUT.GND"
+      ]
+    }
+  },
+  "expect": {
+    "output:DUT.acquisitions": {
+      "at": "40ms",
+      "min": 2,
+      "max": 4
+    },
+    "output:DUT.status": {
+      "at": "40ms",
+      "equals": "AUTO"
+    }
+  }
+}

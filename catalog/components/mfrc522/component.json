@@ -4,7 +4,8 @@
   "id": "emblink/mfrc522",
   "version": "1.0.0",
   "name": "MFRC522 RFID reader with a MIFARE Classic card",
-  "category": "sensors",
+  "category": "transducers",
+  "subcategory": "rfid",
   "description": "NXP MFRC522 13.56 MHz reader on the common RC522 module, on SPI, with a MIFARE Classic 1K card that can be held to its antenna: REQA, anticollision and SELECT of the card's UID, authentication with its keys and reading and writing its 64 blocks. The card's presence is an interactive input.",
   "keywords": [
     "rfid",
@@ -265,5 +266,52 @@
   },
   "tests": [
     "tests/*.json"
-  ]
+  ],
+  "i18n": {
+    "fr": {
+      "source": "b17f43ee8b42",
+      "description": "Lecteur NXP MFRC522 à 13,56 MHz sur le module RC522 courant, en SPI, avec une carte MIFARE Classic 1K que l'on peut approcher de son antenne : REQA, anticollision et SELECT de l'UID de la carte, authentification avec ses clés et lecture et écriture de ses 64 blocs. La présence de la carte est une entrée interactive.",
+      "fidelity": {
+        "functional": {
+          "claims": "Accès aux registres en SPI mode 0 avec rafales sur la FIFO ; mise hors tension et réinitialisation matérielle par NRSTPD ; les commandes de CommandReg avec le PowerDown de SoftReset, les registres d'interruption et d'erreur, la FIFO de 64 octets, le tramage au bit, le coprocesseur CRC (CRC_A depuis le préréglage de ModeReg), le timer avec TAuto, les pilotes d'antenne, VersionReg 0x92 et la broche IRQ ; trames à 106 kbit/s recevant une réponse après le délai de trame ; une carte MIFARE Classic 1K : REQA/WUPA, anticollision et SELECT d'un UID de 4 octets (ATQA 0004h, SAK 08h), HLTA, MFAuthent sur le bloc de fin de secteur (clé B inutilisable tant qu'elle est lisible), READ et WRITE avec ACK/NAK, la clé A des blocs de fin lue à zéro ; muet sous 2,5 V. Cartes présentées une à la fois par l'entrée card, par UID ou par un nom tiré de cards (avec leurs blocs et blocs de fin), chacune gardant sa propre mémoire d'une présentation à l'autre.",
+          "omissions": [
+            "le chiffrement Crypto1 sur l'air (l'hôte voit du clair après MFAuthent, comme à travers un vrai MFRC522)",
+            "l'incrément, le décrément, la restauration et le transfert des blocs de valeur",
+            "les autres cartes (Ultralight, UID de 7 octets) et plusieurs cartes avec leurs collisions",
+            "la portée de l'antenne et le champ qui alimente la carte",
+            "les interfaces hôte I2C et UART",
+            "les octets de GenerateRandomID",
+            "les dommages dus à 5 V sur VCC (le module demande 3,3 V)",
+            "le courant d'alimentation"
+          ]
+        },
+        "timed": {
+          "claims": "Comme en fonctionnel.",
+          "omissions": [
+            "le chiffrement Crypto1 sur l'air (l'hôte voit du clair après MFAuthent, comme à travers un vrai MFRC522)",
+            "l'incrément, le décrément, la restauration et le transfert des blocs de valeur",
+            "les autres cartes (Ultralight, UID de 7 octets) et plusieurs cartes avec leurs collisions",
+            "la portée de l'antenne et le champ qui alimente la carte",
+            "les interfaces hôte I2C et UART",
+            "les octets de GenerateRandomID",
+            "les dommages dus à 5 V sur VCC (le module demande 3,3 V)",
+            "le courant d'alimentation"
+          ]
+        },
+        "electrical": {
+          "claims": "Les broches se relient aux réseaux analogiques avec les modèles de broche par défaut de la famille ; la tension de VCC conditionne la puce ; le comportement est celui du modèle Lua.",
+          "omissions": [
+            "le chiffrement Crypto1 sur l'air (l'hôte voit du clair après MFAuthent, comme à travers un vrai MFRC522)",
+            "l'incrément, le décrément, la restauration et le transfert des blocs de valeur",
+            "les autres cartes (Ultralight, UID de 7 octets) et plusieurs cartes avec leurs collisions",
+            "la portée de l'antenne et le champ qui alimente la carte",
+            "les interfaces hôte I2C et UART",
+            "les octets de GenerateRandomID",
+            "les dommages dus à 5 V sur VCC (le module demande 3,3 V)",
+            "le courant d'alimentation"
+          ]
+        }
+      }
+    }
+  }
 }

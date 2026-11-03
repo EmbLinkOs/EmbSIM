@@ -1,0 +1,262 @@
+{
+  "schema_version": 1,
+  "kind": "component",
+  "id": "emblink/st_link_v21",
+  "version": "0.1.0",
+  "name": "ST-LINK/V2-1 debug probe",
+  "category": "instruments",
+  "subcategory": "debug_probes",
+  "description": "ST's ST-LINK/V2-1, the debugger and programmer on a NUCLEO-64 (UM1724 6.2), firmware V2J37M26 (0483:374B). Its SWD lines and NRST go to the target, T_VCC senses the target's supply. A debugger on the computer reaches it through the session's stlink-server (stlink.serve, the TCP service STM32CubeIDE and OpenOCD's `st-link backend tcp` use): its commands, as OpenOCD 0.12 sends them, halt, step and run the target's core, read and write its registers and memory and program its flash, all through the target's debug port.",
+  "keywords": [
+    "st-link",
+    "stlink",
+    "debugger",
+    "programmer",
+    "swd",
+    "probe",
+    "openocd",
+    "nucleo",
+    "stm32"
+  ],
+  "family": "cmos_3v3",
+  "pins": [
+    {
+      "name": "SWDIO",
+      "number": 1,
+      "model": {
+        "kind": "digital_io",
+        "family": "cmos_3v3"
+      },
+      "doc": "SWD data, to the target's SWDIO (PA13 on an STM32): the MCU on this net is the probe's target"
+    },
+    {
+      "name": "SWCLK",
+      "number": 2,
+      "model": {
+        "kind": "digital_in",
+        "family": "cmos_3v3"
+      },
+      "doc": "SWD clock, to the target's SWCLK (PA14); held high-impedance, as the clock is not simulated edge by edge"
+    },
+    {
+      "name": "NRST",
+      "number": 3,
+      "model": {
+        "kind": "digital_out",
+        "drive": "open_drain",
+        "strength": "strong",
+        "family": "cmos_3v3"
+      },
+      "doc": "The target's reset, pulled low by DRIVE_NRST (open drain)"
+    },
+    {
+      "name": "T_VCC",
+      "number": 4,
+      "model": {
+        "kind": "digital_in",
+        "family": "cmos_3v3"
+      },
+      "doc": "VDD_TARGET: the target's supply, read by GET_TARGET_VOLTAGE; below 1.65 V no target answers"
+    },
+    {
+      "name": "GND",
+      "number": 5,
+      "model": {
+        "kind": "power",
+        "role": "ground"
+      },
+      "required": false
+    },
+    {
+      "name": "SWO",
+      "number": 6,
+      "model": {
+        "kind": "digital_in",
+        "family": "cmos_3v3"
+      },
+      "doc": "The target's serial wire output (PB3's TRACESWO on an STM32, through SB15 on a NUCLEO-64): the probe's UART receiver for SWO trace"
+    },
+    {
+      "name": "USB_DP",
+      "number": 7,
+      "model": {
+        "kind": "digital_io",
+        "family": "cmos_3v3"
+      },
+      "doc": "Its USB D+ (CN1 on a NUCLEO-64): the probe's own USB device, 0483:374B"
+    },
+    {
+      "name": "USB_DM",
+      "number": 8,
+      "model": {
+        "kind": "digital_io",
+        "family": "cmos_3v3"
+      },
+      "doc": "Its USB D-"
+    },
+    {
+      "name": "VBUS",
+      "number": 9,
+      "model": {
+        "kind": "power",
+        "role": "supply"
+      },
+      "required": false,
+      "doc": "The USB cable's 5 V (U5V), which powers the probe"
+    }
+  ],
+  "params": {
+    "serial": {
+      "type": "string",
+      "default": "066DFF495051717867152438",
+      "doc": "The probe's serial number (24 hex digits), as GET_DEV_INFO and USB report it"
+    },
+    "drive": {
+      "type": "string",
+      "default": "NODE_F446RE",
+      "doc": "The label of its mass-storage drive (the board's name)"
+    }
+  },
+  "outputs": [
+    {
+      "name": "mode",
+      "type": "string",
+      "doc": "The firmware's mode: mass (the default), debug once a debugger entered SWD, dfu"
+    },
+    {
+      "name": "swd",
+      "type": "boolean",
+      "doc": "SWD entered: the target's debug port is in use"
+    },
+    {
+      "name": "target",
+      "type": "string",
+      "doc": "The MCU on SWDIO's net, empty when none"
+    },
+    {
+      "name": "target_voltage",
+      "type": "number",
+      "unit": "V",
+      "doc": "T_VCC as the probe measures it"
+    },
+    {
+      "name": "nrst_low",
+      "type": "boolean",
+      "doc": "The probe holds NRST low"
+    },
+    {
+      "name": "commands",
+      "type": "integer",
+      "doc": "Commands answered since the session started"
+    },
+    {
+      "name": "log",
+      "type": "string",
+      "doc": "What the probe did: SWD entered and left, NRST driven"
+    }
+  ],
+  "model": {
+    "primitive": "st_link"
+  },
+  "functional": {
+    "primitive": "st_link"
+  },
+  "symbol": {
+    "svg": "symbol.svg",
+    "width": 80,
+    "height": 60,
+    "pins": {
+      "SWDIO": {
+        "x": 80,
+        "y": 10,
+        "side": "right"
+      },
+      "SWCLK": {
+        "x": 80,
+        "y": 20,
+        "side": "right"
+      },
+      "NRST": {
+        "x": 80,
+        "y": 30,
+        "side": "right"
+      },
+      "T_VCC": {
+        "x": 80,
+        "y": 40,
+        "side": "right"
+      },
+      "GND": {
+        "x": 40,
+        "y": 60,
+        "side": "bottom"
+      },
+      "SWO": {
+        "x": 0,
+        "y": 10,
+        "side": "left"
+      },
+      "USB_DP": {
+        "x": 0,
+        "y": 30,
+        "side": "left"
+      },
+      "USB_DM": {
+        "x": 0,
+        "y": 40,
+        "side": "left"
+      },
+      "VBUS": {
+        "x": 20,
+        "y": 0,
+        "side": "top"
+      }
+    }
+  },
+  "fidelity": {
+    "functional": {
+      "claims": "The ST-LINK/V2-1's command interface as firmware V2J37M26 answers it and OpenOCD 0.12's stlink_usb.c reads it: GET_VERSION, GET_CURRENT_MODE, DFU_EXIT, GET_TARGET_VOLTAGE (T_VCC against its 1.2 V reference); in DEBUG mode APIV2_ENTER (SWD), EXIT, READ_IDCODES (the target's SW-DP IDCODE), SWD_SET_FREQ, DRIVE_NRST (low, high, a 2 ms pulse on its open-drain NRST), RESETSYS (AIRCR.SYSRESETREQ), GETSTATUS, FORCEDEBUG, RUNCORE, STEPCORE, READREG and WRITEREG through DCRSR and DCRDR, READALLREGS, READDEBUGREG and WRITEDEBUGREG, memory reads and writes of 8, 16 and 32 bits and 32 bits without increment, GETLASTRWSTATUS(2) with the faulting address, READ_DAP_REG and WRITE_DAP_REG (DP: DPIDR, CTRL/STAT, SELECT, RDBUFF; MEM-AP: CSW, TAR, DRW, BASE, IDR), INIT_AP and CLOSE_AP_DBG; SWO trace: START_TRACE_RX (the rate, at most 2 MHz), STOP_TRACE_RX, GET_TRACE_NB and the trace endpoint's read (stlink-server's READ_SWO), its UART receiver on the SWO pin taking the target's serial wire output into a 4 KiB buffer, NRZ only and within 3 % of its rate (else garbage, counted and not kept); status 0x80, 0x81, 0x09 when no target answers, 0x11 for an AP fault. Its target is the MCU on SWDIO's net, reached through that MCU's MEM-AP. Shared with the host by the session's stlink-server (stlink.serve). Its own USB device on its USB_DP and USB_DM pins (the NUCLEO's CN1): full-speed composite 0483:374B, \"STMicroelectronics\" / \"STM32 STLink\" with its serial number, the debug interface (0x01 OUT commands, 0x81 IN answers, 0x82 IN trace), the mass-storage drive and the virtual COM port's interfaces; the drive is a FAT16 volume labelled `drive` (NODE_F446RE) with MBED.HTM and DETAILS.TXT, and a .bin copied onto it is programmed through the target's flash interface (the core halted, KEYR unlocked, each sector erased with SER and STRT, the words programmed at PSIZE x32 with BSY polled, locked, the part reset), at the flash's own times; the probe then leaves the bus and comes back with the file gone, or with FAIL.TXT when it could not program it. With CN1 free, the session's USB/IP server (usbip.serve) puts that USB device on a computer's own USB stack, for the tools that open it themselves (st-flash, STM32CubeProgrammer).",
+      "omissions": [
+        "SWD as transactions, not SWDIO and SWCLK edges; a command takes no simulated time",
+        "SWO in Manchester (the V2-1 reads NRZ only: a Manchester output arrives as garbage); JTAG, SWIM, its own firmware upgrade (DFU)",
+        "the virtual COM port's data on USB (its endpoints NAK; the board's console bridge stands for the port, its line coding is kept)",
+        "the drive's geometry and the words of MBED.HTM, DETAILS.TXT and FAIL.TXT (EmbSIM's); .hex files; targets other than the STM32F446 (their copy fails with FAIL.TXT); the firmware's MAINTENANCE mode; USB suspend"
+      ]
+    }
+  },
+  "provenance": {
+    "author": "EmbSIM",
+    "license": "Apache-2.0",
+    "sources": [
+      {
+        "title": "ST UM1724, STM32 Nucleo-64 boards, 6.2 (the embedded ST-LINK/V2-1)",
+        "notes": "Its SWD, NRST and VDD_TARGET wiring on MB1136"
+      },
+      {
+        "title": "OpenOCD 0.12.0 src/jtag/drivers/stlink_usb.c",
+        "url": "https://github.com/openocd-org/openocd/blob/v0.12.0/src/jtag/drivers/stlink_usb.c",
+        "notes": "The ST-LINK command set and stlink-server's TCP protocol as OpenOCD sends and reads them; read for their layout, not copied (GPL-2.0)"
+      }
+    ]
+  },
+  "tests": [
+    "tests/*.json"
+  ],
+  "i18n": {
+    "fr": {
+      "source": "55656ebb3b5d",
+      "description": "Le ST-LINK/V2-1 de ST, le débogueur et programmateur d'une NUCLEO-64 (UM1724 6.2), micrologiciel V2J37M26 (0483:374B). Ses lignes SWD et NRST vont à la cible, T_VCC mesure l'alimentation de la cible. Un débogueur sur l'ordinateur l'atteint par le stlink-server de la session (stlink.serve, le service TCP qu'utilisent STM32CubeIDE et `st-link backend tcp` d'OpenOCD) : ses commandes, telles qu'OpenOCD 0.12 les envoie, arrêtent, font avancer pas à pas et relancent le cœur de la cible, lisent et écrivent ses registres et sa mémoire et programment sa flash, le tout par le port de débogage de la cible.",
+      "fidelity": {
+        "functional": {
+          "claims": "L'interface de commande du ST-LINK/V2-1 telle que le micrologiciel V2J37M26 y répond et que la lit le stlink_usb.c d'OpenOCD 0.12 : GET_VERSION, GET_CURRENT_MODE, DFU_EXIT, GET_TARGET_VOLTAGE (T_VCC par rapport à sa référence de 1,2 V) ; en mode DEBUG APIV2_ENTER (SWD), EXIT, READ_IDCODES (l'IDCODE du SW-DP de la cible), SWD_SET_FREQ, DRIVE_NRST (bas, haut, une impulsion de 2 ms sur son NRST à drain ouvert), RESETSYS (AIRCR.SYSRESETREQ), GETSTATUS, FORCEDEBUG, RUNCORE, STEPCORE, READREG et WRITEREG par DCRSR et DCRDR, READALLREGS, READDEBUGREG et WRITEDEBUGREG, les lectures et écritures mémoire de 8, 16 et 32 bits et de 32 bits sans incrément, GETLASTRWSTATUS(2) avec l'adresse en faute, READ_DAP_REG et WRITE_DAP_REG (DP : DPIDR, CTRL/STAT, SELECT, RDBUFF ; MEM-AP : CSW, TAR, DRW, BASE, IDR), INIT_AP et CLOSE_AP_DBG ; la trace SWO : START_TRACE_RX (le débit, 2 MHz au plus), STOP_TRACE_RX, GET_TRACE_NB et la lecture du point de terminaison de trace (READ_SWO du stlink-server), son récepteur UART sur la broche SWO prenant la sortie série de la cible dans un tampon de 4 Kio, NRZ seulement et à 3 % près de son débit (sinon des données incohérentes, comptées et non gardées) ; état 0x80, 0x81, 0x09 quand aucune cible ne répond, 0x11 pour une faute d'AP. Sa cible est le MCU sur le réseau de SWDIO, atteint par le MEM-AP de ce MCU. Partagé avec l'hôte par le stlink-server de la session (stlink.serve). Son propre périphérique USB sur ses broches USB_DP et USB_DM (le CN1 de la NUCLEO) : composite pleine vitesse 0483:374B, « STMicroelectronics » / « STM32 STLink » avec son numéro de série, l'interface de débogage (0x01 commandes OUT, 0x81 réponses IN, 0x82 trace IN), le lecteur de stockage de masse et les interfaces du port COM virtuel ; le lecteur est un volume FAT16 nommé `drive` (NODE_F446RE) avec MBED.HTM et DETAILS.TXT, et un .bin copié dessus est programmé par l'interface de flash de la cible (le cœur arrêté, KEYR déverrouillé, chaque secteur effacé avec SER et STRT, les mots programmés en PSIZE x32 en scrutant BSY, verrouillé, la puce réinitialisée), aux temps propres de la flash ; la sonde quitte alors le bus et revient avec le fichier disparu, ou avec FAIL.TXT quand elle n'a pas pu le programmer. Avec CN1 libre, le serveur USB/IP de la session (usbip.serve) place ce périphérique USB sur la pile USB propre d'un ordinateur, pour les outils qui l'ouvrent eux-mêmes (st-flash, STM32CubeProgrammer).",
+          "omissions": [
+            "le SWD en transactions, pas en fronts de SWDIO et SWCLK ; une commande ne prend pas de temps simulé",
+            "le SWO en Manchester (le V2-1 ne lit que le NRZ : une sortie Manchester arrive comme des données incohérentes) ; le JTAG, le SWIM, la mise à jour de son propre micrologiciel (DFU)",
+            "les données du port COM virtuel sur l'USB (ses points de terminaison répondent NAK ; le pont de console de la carte remplace le port, son codage de ligne est gardé)",
+            "la géométrie du lecteur et le texte de MBED.HTM, DETAILS.TXT et FAIL.TXT (ceux d'EmbSIM) ; les fichiers .hex ; les cibles autres que le STM32F446 (leur copie échoue avec FAIL.TXT) ; le mode MAINTENANCE du micrologiciel ; la suspension USB"
+          ]
+        }
+      }
+    }
+  }
+}

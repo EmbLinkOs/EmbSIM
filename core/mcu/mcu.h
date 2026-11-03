@@ -53,6 +53,10 @@ typedef struct esk_mcu_setup {
     const esk_mcu_file *files; /* the memory regions' factory files */
     int nfiles;
     const unsigned char *mac; /* this chip's factory MAC (6 bytes), or NULL */
+    /* the fuse and lock bytes as programmed (an AVR's low, high, extended,
+     * lock), when has_fuses */
+    unsigned char fuse[4];
+    int has_fuses;
 } esk_mcu_setup;
 
 /* Give a component made with esk_mcu_ops its machine and firmware. Errors
@@ -88,6 +92,9 @@ struct esk_an *esk_mcu_analysis(const esk_comp *c);
 const char *esk_mcu_console(esk_comp *c, size_t *len, u64 *total);
 /* the console's line rate as the firmware set its receiver (0: unknown) */
 uint32_t esk_mcu_console_baud(esk_comp *c);
+/* the rate the console's byte number `index` (counting every byte it sent)
+ * went out at, and in `until` the first byte sent at another rate after it */
+uint32_t esk_mcu_console_baud_of(esk_comp *c, uint64_t index, uint64_t *until);
 /* each UART's received text by unit, and "console": the console's unit */
 esk_json *esk_mcu_serial_json(esk_comp *c, esk_alloc *a);
 /* the registers of peripheral `periph` as they read now, each with its set
@@ -97,6 +104,34 @@ int esk_mcu_dump_regs(esk_comp *c, const char *periph, esk_strbuf *out);
 /* the RTOS tasks the firmware's memory holds now (mcu/rtos.h), or NULL with
  * the reason in `why` */
 esk_json *esk_mcu_rtos_json(esk_comp *c, esk_alloc *a, char *why, size_t cap);
+/* A probe's access to an Arm MCU through its debug port (ADIv5 SW-DP and
+ * MEM-AP; docs/engineering/debug-probes.md): the SW-DP's IDCODE (0 when
+ * the MCU has none), and a MEM-AP transfer of 1, 2 or 4 bytes at `addr`
+ * made now, as a bus master other than the core makes it (the core's debug
+ * registers among what it reaches). ESK_DAP_FAULT when nothing answers
+ * the address or the part is held in reset, ESK_DAP_NO_TARGET when it is
+ * not powered or has no debug port. */
+enum { ESK_DAP_OK = 0, ESK_DAP_FAULT = 1, ESK_DAP_NO_TARGET = 2 };
+uint32_t esk_mcu_dap_idcode(esk_comp *c);
+int esk_mcu_dap_mem(esk_comp *c, uint32_t addr, int bytes, int write, uint32_t *v);
+/* the same for the debug of core `core` (a part with a debug port for each
+ * of its cores: the RP2040's) */
+int esk_mcu_dap_mem_core(esk_comp *c, int core, uint32_t addr, int bytes, int write, uint32_t *v);
+/* The MCU's serial wire as a probe drives it, clock by clock (mcu/swd.h):
+ * `n` SWCLK cycles with the probe driving SWDIO to `bits` (first bit lowest
+ * of bits[0]), or sampling it into `bits` (1 where nothing drives it). An
+ * MCU without an Arm debug port leaves SWDIO to its pull-up. */
+void esk_mcu_swd_out(esk_comp *c, const uint8_t *bits, uint32_t n);
+void esk_mcu_swd_in(esk_comp *c, uint8_t *bits, uint32_t n);
+/* the packets its debug ports answered, those answered FAULT, and the
+ * port selected (-1 for none) */
+void esk_mcu_swd_counts(esk_comp *c, uint64_t *packets, uint64_t *faults, int *selected);
+/* the MCU's pin that can carry its serial wire output (the alternate
+ * function JTDO_SWO or TRACESWO: an STM32's PB3), or NULL */
+esk_pin *esk_mcu_swo_pin(esk_comp *c);
+/* the serial wire output's bytes that have left the trace pin by now, at
+ * most `cap`, with the TPIU's protocol (SPPR: 2 NRZ) and bit rate */
+uint32_t esk_mcu_swo(esk_comp *c, uint8_t *buf, uint32_t cap, uint32_t *sppr, double *baud);
 /* the firmware image's name as the project gives it */
 const char *esk_mcu_image_name(const esk_comp *c);
 

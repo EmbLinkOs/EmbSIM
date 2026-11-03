@@ -99,6 +99,10 @@ es_status esk_island_add_bridge(esk_island *isl, esk_pin *pin, esk_adev **out);
 es_status esk_island_start(esk_island *isl);
 /* reset to the operating point and reschedule */
 es_status esk_island_reset(esk_island *isl);
+/* the session is resetting: the island stops (a pin a model reconfigures
+ * meanwhile touches nothing) until esk_island_reset starts it again, so a
+ * reset leaves no step or crossing of the run before it behind */
+void esk_island_halt(esk_island *isl);
 /* step from t_accepted to at most `until` (clipped by the caller to the next event);
  * stops early at a bridge crossing; sets *reached; schedules nothing itself */
 es_status esk_island_step(esk_island *isl, es_time_t until, es_time_t *reached);
@@ -106,6 +110,8 @@ es_status esk_island_step(esk_island *isl, es_time_t until, es_time_t *reached);
 void esk_island_touch(esk_island *isl, es_time_t now);
 /* a component wake for its analog device (a device with a clock of its own,
  * as a PTC fuse's temperatures) */
+/* an interactive input set on the device's component at `now` (instruments act on Run at once) */
+void esk_adev_on_input(esk_adev *d, const char *input, es_time_t now);
 void esk_adev_on_time(esk_adev *d, es_time_t now);
 /* 1 when the island sits at its steady state: nothing changes until a touch
  * or *next, the next breakpoint of a source (ES_TIME_MAX for none) */

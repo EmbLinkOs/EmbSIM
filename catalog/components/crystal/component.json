@@ -4,7 +4,8 @@
   "id": "emblink/crystal",
   "version": "1.0.0",
   "name": "Quartz crystal",
-  "category": "passives",
+  "category": "miscellaneous",
+  "subcategory": "crystals",
   "description": "Two-terminal quartz crystal as a Butterworth-Van Dyke equivalent circuit; the MCU oscillator is modelled by the board's oscillators block.",
   "keywords": [
     "crystal",
@@ -187,5 +188,31 @@
   },
   "tests": [
     "tests/*.json"
-  ]
+  ],
+  "i18n": {
+    "fr": {
+      "source": "0acd5e21f7cf",
+      "description": "Quartz à deux bornes sous forme de circuit équivalent de Butterworth-Van Dyke ; l'oscillateur du MCU est modélisé par le bloc oscillateurs de la carte.",
+      "fidelity": {
+        "functional": {
+          "claims": "Un fil ; l'oscillation n'est pas modélisée à ce niveau.",
+          "omissions": [
+            "tout"
+          ]
+        },
+        "timed": {
+          "claims": "Comme en électrique."
+        },
+        "electrical": {
+          "claims": "Équivalent de Butterworth-Van Dyke : C0 en parallèle avec Lm-Cm-Rm en série, composé de passifs du catalogue.",
+          "omissions": [
+            "les harmoniques",
+            "la dépendance au niveau d'excitation",
+            "le vieillissement",
+            "la température"
+          ]
+        }
+      }
+    }
+  }
 }

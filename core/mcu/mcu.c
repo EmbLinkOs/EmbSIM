@@ -11,6 +11,7 @@
 #include "mcu/mcu.h"
 #include "mcu/rf.h"
 #include "mcu/rtos.h"
+#include "mcu/swd.h"
 #include "protocol/wsutil.h"
 #include "util/num.h"
 #include "util/str.h"
@@ -18,6 +19,7 @@
 #define MCU_PORTS 8
 #define MCU_UARTS 8
 #define MCU_TEXT_CAP 65536u
+#define MCU_RATES 16
 #define MCU_INQ_CAP 4096u
 #define MCU_TXQ_CAP 64u /* frames sent ahead of the scheduler, a quantum's worth */
 #define MCU_DEFAULT_QUANTUM_PS 10000000u /* 10 us */
@@ -54,6 +56,10 @@ typedef struct mcu_uart {
     char *text; /* what it sent, the last MCU_TEXT_CAP - 1 bytes */
     size_t text_len;
     u64 text_total; /* the bytes of text it ever sent */
+    /* the rate each byte went out at: where it changed (byte index into
+     * text_total), the last MCU_RATES changes */
+    struct { u64 from; u32 baud; } rate[MCU_RATES];
+    int nrate;
     u64 tx_bytes, rx_bytes;
     /* the TX pin's waveform: the frame on the line, then those the core
      * sent while running ahead of the scheduler, each at its own time */
@@ -73,6 +79,7 @@ typedef struct mcu_uart {
     /* bytes from the session's serial input */
     unsigned char inq[MCU_INQ_CAP];
     size_t inq_head, inq_len;
+    int in_wire; /* the queued bytes come at the line's rate, read or not (a host port's bridge) */
     esk_event_handle in_ev;
     /* bytes from the RX pin */
     esk_pin *rx_pin;
@@ -149,6 +156,13 @@ typedef struct mcu_state {
     esk_rtos *rtos;
     int rtos_tried;
     char rtos_why[160];
+    /* the serial wire a probe drives (swd.h): its ports from the
+     * description's core.swd, made on the first clock */
+    esk_swd *swd;
+    esk_swd_port_cfg swd_cfg[ESK_SWD_PORTS];
+    char swd_inst[ESK_SWD_PORTS][48]; /* a register field giving a port's TINSTANCE */
+    int swd_n, swd_given, swd_pin_resets;
+    int rescue_hold; /* a debug port holds the part in reset: 1 a rescue DP, 2 an AP's reset */
 } mcu_state;
 
 static mcu_state *state_of(const esk_comp *c) { return (mcu_state *)c->state; }
@@ -488,6 +502,8 @@ static void quantum_cb(void *ctx, void *arg, es_time_t now)
             st->held = 1;
             return;
         }
+        if (st->m.strap_pin && st->m.strap_low && !level_of(esk_comp_pin(st->c, st->m.strap_pin), 1))
+            st->m.strap_low(&st->m);
         if (level_of(st->boot0, 0)) {
             st->boot_fail = 1;
             raise(st, ES_SEV_WARNING, "mcu.boot_mode",
@@ -802,10 +818,10 @@ static mcu_uart *uart_named(mcu_state *st, const char *unit, int add)
     return &st->uart[st->nuart++];
 }
 
+/* the console's bytes, NULs too (a boot loader's binary replies reach
+ * the host port whole); text views skip them (text_view) */
 static void text_append(mcu_uart *u, int c)
 {
-    if (c == 0)
-        return; /* the text is a C string */
     if (u->text_len + 1 >= MCU_TEXT_CAP) {
         size_t drop = MCU_TEXT_CAP / 4;
         memmove(u->text, u->text + drop, u->text_len - drop);
@@ -817,6 +833,35 @@ static void text_append(mcu_uart *u, int c)
 }
 
 static void tx_bit_cb(void *ctx, void *arg, es_time_t now);
+
+/* the byte about to be appended went out at `baud` */
+static void text_rate(mcu_uart *u, u32 baud)
+{
+    if (u->nrate && u->rate[u->nrate - 1].baud == baud)
+        return;
+    if (u->nrate == MCU_RATES) {
+        memmove(&u->rate[0], &u->rate[1], sizeof u->rate[0] * (MCU_RATES - 1));
+        u->nrate--;
+    }
+    u->rate[u->nrate].from = u->text_total;
+    u->rate[u->nrate].baud = baud;
+    u->nrate++;
+}
+
+/* the console as text, its NULs left out; esk_free(a, p, len + 1) */
+static char *text_view(esk_alloc *a, const mcu_uart *u, size_t *len)
+{
+    char *p = (char *)esk_malloc(a, u->text_len + 1);
+    size_t i, n = 0;
+    if (p) {
+        for (i = 0; i < u->text_len; i++)
+            if (u->text[i])
+                p[n++] = u->text[i];
+        p[n] = 0;
+    }
+    *len = u->text_len;
+    return p;
+}
 
 /* the next queued frame onto the line, no earlier than its time and the end
  * of the frame before it */
@@ -871,7 +916,9 @@ static void h_uart_frame(void *ctx, const char *unit, int c, u32 bits, int nbits
     if (stop_halves < 1 || stop_halves > 4)
         stop_halves = 2;
     if (c >= 0) {
+        u64 hz = esk_mach_core_hz(&st->m);
         u->tx_bytes++;
+        text_rate(u, bit_cycles ? (u32)((hz + bit_cycles / 2) / bit_cycles) : 0);
         text_append(u, c);
     }
     /* the waveform, when the TX pin is the UART's */
@@ -944,8 +991,11 @@ static void in_cb(void *ctx, void *arg, es_time_t now)
         return;
     catch_up(st, now);
     esk_mach_outside(&st->m);
-    if (runnable(st) && u->rx->room(u->rx->ctx)) {
-        u->rx->put(u->rx->ctx, u->inq[u->inq_head]);
+    if (u->in_wire || (runnable(st) && u->rx->room(u->rx->ctx))) {
+        /* on the wire a frame goes by whether the receiver takes it or not
+         * (in reset, off, overrun: lost, as on the part) */
+        if (runnable(st))
+            u->rx->put(u->rx->ctx, u->inq[u->inq_head]);
         u->inq_head = (u->inq_head + 1) % MCU_INQ_CAP;
         u->inq_len--;
         u->rx_bytes++;
@@ -958,12 +1008,14 @@ static void in_cb(void *ctx, void *arg, es_time_t now)
 static es_status serial_input(mcu_state *st, const char *unit, const esk_json *value)
 {
     esk_engine *e = st->c->e;
-    const char *text = esk_json_str(value), *b64 = esk_json_get_str(value, "base64", NULL);
+    const char *text = esk_json_str(value) ? esk_json_str(value) : esk_json_get_str(value, "text", NULL);
+    const char *b64 = esk_json_get_str(value, "base64", NULL);
     mcu_uart *u = uart_named(st, unit, 1);
     unsigned char bytes[1024];
     const unsigned char *data = (const unsigned char *)text;
     size_t i, n;
-    /* text, or {"base64": ...} for any byte (a host port's binary data) */
+    /* text, {"text": ...} or {"base64": ...} for any byte (a host port's
+     * binary data); "wire": true, the bytes at the line's rate */
     if ((!text && !b64) || !u || !u->rx)
         return ES_EINVAL;
     if (text) {
@@ -974,6 +1026,7 @@ static es_status serial_input(mcu_state *st, const char *unit, const esk_json *v
             return ES_EINVAL;
         data = bytes;
     }
+    u->in_wire = esk_json_get_bool(value, "wire", 0);
     for (i = 0; i < n && u->inq_len < MCU_INQ_CAP; i++) {
         u->inq[(u->inq_head + u->inq_len) % MCU_INQ_CAP] = data[i];
         u->inq_len++;
@@ -1231,9 +1284,12 @@ static void mcu_reset_now(mcu_state *st, int power_on)
         /* the core alone starts again: memory and devices keep their state */
         st->m.reset_req = 0;
         st->m.reset_cpu_only = 0;
+        int was = st->m.reset_cause;
         st->m.asleep = 0;
         st->m.yield = 0;
+        st->m.reset_cause = ESK_RESET_SOFTWARE; /* not a power-on: the debug domain stays */
         st->m.cpu->ops->reset(st->m.cpu);
+        st->m.reset_cause = was;
         return;
     }
     if (st->ev) {
@@ -1243,9 +1299,13 @@ static void mcu_reset_now(mcu_state *st, int power_on)
     if (power_on)
         st->m.reset_cause = ESK_RESET_POWER;
     for (r = 0; power_on && r < st->m.bus.nrg; r++)
-        if (!st->m.bus.rg[r].mirror)
+        if (!st->m.bus.rg[r].mirror && !(st->m.flash_written && st->m.bus.rg[r].kind == ESK_MEM_FLASH))
             esk_bus_erase(&st->m.bus.rg[r]);
-    if (!st->image && !esk_mach_store(&st->m, "flash")) {
+    /* a Cortex-M with nothing in its flash runs from it as the part does
+     * (its erased vectors lock it up), so a probe can halt it and program
+     * it */
+    if (!st->image && !esk_mach_store(&st->m, "flash") && !st->m.flash_written &&
+        !(st->m.cpu && !strcmp(st->m.cpu->ops->name, "cortex-m"))) {
         /* no image yet: the part sits blank, its pins inputs (a part that
          * boots its ROM from a flash it reaches through a device, as the
          * ESP32-C3, runs it on whatever the flash holds) */
@@ -1255,7 +1315,9 @@ static void mcu_reset_now(mcu_state *st, int power_on)
         st->t = e->sched.now;
         return;
     }
-    if (power_on && st->image &&
+    /* flash the program wrote itself (a boot loader's upload) stays
+     * through a power cycle, as flash does */
+    if (power_on && st->image && !st->m.flash_written &&
         esk_mach_load_image(&st->m, st->image, st->image_len, &entry, why, sizeof why) != ES_OK)
         raise(st, ES_SEV_ERROR, "mcu.image", "%s: %s", st->image_name, why);
     st->in_quantum = 0;
@@ -1443,6 +1505,8 @@ static void mcu_destroy(esk_comp *c)
     esk_rtos_close(st->rtos);
     st->rtos = NULL;
     st->rtos_tried = 0;
+    esk_swd_destroy(e->a, st->swd);
+    st->swd = NULL;
     esk_strfree(e->a, st->image_name);
     st->image = NULL;
     st->attached = 0;
@@ -1469,6 +1533,7 @@ static void mcu_reset(esk_comp *c)
         u->text_len = 0;
         u->text[0] = 0;
         u->text_total = 0;
+        u->nrate = 0;
         u->tx_bytes = u->rx_bytes = 0;
         u->inq_len = u->inq_head = 0;
         u->rx_busy = 0;
@@ -1514,7 +1579,7 @@ static void mcu_on_input(esk_comp *c, esk_pin *p)
             esk_mach_reset(&st->m);
             st->sup.tx_a = 0.0;
             supply_update(st, 1);
-        } else if (!low && st->held) {
+        } else if (!low && st->held && !st->rescue_hold) {
             st->held = 0;
             st->m.reset_cause = ESK_RESET_PIN;
             mcu_reset_now(st, 0);
@@ -1564,7 +1629,7 @@ static void mcu_observe(esk_comp *c, esk_json *out)
     const char *state;
     if (!st->attached)
         return;
-    state = !st->image && !esk_mach_store(&st->m, "flash") ? "no_image"
+    state = !st->image && !esk_mach_store(&st->m, "flash") && !st->m.flash_written ? "no_image"
             : st->boot_fail                       ? "boot_mode"
             : st->held                            ? "reset"
             : st->m.state == ESK_MACH_EXIT        ? "exited"
@@ -1583,14 +1648,18 @@ static void mcu_observe(esk_comp *c, esk_json *out)
     if (st->stopped && st->stop_why)
         esk_json_set_string(a, out, "stop", st->stop_why);
     for (i = 0; i < st->nuart; i++) {
+        size_t n;
+        char *t = text_view(a, &st->uart[i], &n);
         snprintf(key, sizeof key, "serial.%s", st->uart[i].unit);
-        esk_json_set_string(a, out, key, st->uart[i].text);
+        esk_json_set_string(a, out, key, t ? t : "");
+        /* the console under the virtual terminal's name, for serial probes */
+        if (!strcmp(st->uart[i].unit, st->console))
+            esk_json_set_string(a, out, "rx_text", t ? t : "");
+        if (t)
+            esk_free(a, t, n + 1);
     }
-    /* the console under the virtual terminal's name, for serial probes */
-    {
-        mcu_uart *u = uart_named(st, st->console, 0);
-        esk_json_set_string(a, out, "rx_text", u ? u->text : "");
-    }
+    if (!uart_named(st, st->console, 0))
+        esk_json_set_string(a, out, "rx_text", "");
 }
 
 const esk_model_ops esk_mcu_ops = { "mcu", sizeof(mcu_state), mcu_create, mcu_destroy, mcu_reset,
@@ -1644,6 +1713,66 @@ void esk_mcu_resume(esk_comp *c, u64 steps)
     wake(st);
 }
 
+uint32_t esk_mcu_dap_idcode(esk_comp *c)
+{
+    mcu_state *st = esk_mcu_is(c) ? state_of(c) : NULL;
+    if (!st || !st->attached || !st->m.cpu || strcmp(st->m.cpu->ops->name, "cortex-m") != 0)
+        return 0;
+    return esk_cortexm_dp_idcode(&st->m);
+}
+
+esk_pin *esk_mcu_swo_pin(esk_comp *c)
+{
+    mcu_state *st = esk_mcu_is(c) ? state_of(c) : NULL;
+    int af = 0, at;
+    if (!st || !st->m.rf)
+        return NULL;
+    at = esk_rf_af_pin(st->m.rf, "JTDO_SWO", 0, &af);
+    if (at < 0)
+        at = esk_rf_af_pin(st->m.rf, "TRACESWO", 0, &af);
+    if (at < 0 || at / 32 >= MCU_PORTS || at % 32 > 15)
+        return NULL;
+    return st->gpio[at / 32][at % 32];
+}
+
+uint32_t esk_mcu_swo(esk_comp *c, uint8_t *buf, uint32_t cap, uint32_t *sppr, double *baud)
+{
+    mcu_state *st = esk_mcu_is(c) ? state_of(c) : NULL;
+    if (!st)
+        return 0;
+    catch_up(st, c->e->sched.now);
+    return esk_cm_swo_take(&st->m, buf, cap, sppr, baud);
+}
+
+int esk_mcu_dap_mem(esk_comp *c, uint32_t addr, int bytes, int write, uint32_t *v)
+{
+    return esk_mcu_dap_mem_core(c, 0, addr, bytes, write, v);
+}
+
+int esk_mcu_dap_mem_core(esk_comp *c, int core, uint32_t addr, int bytes, int write, uint32_t *v)
+{
+    mcu_state *st = esk_mcu_is(c) ? state_of(c) : NULL;
+    int r;
+    if (!esk_mcu_dap_idcode(c))
+        return ESK_DAP_NO_TARGET;
+    /* in Standby or Stop the debug port answers only when DBGMCU keeps
+     * it powered (DBG_STANDBY, DBG_STOP) */
+    if ((st->m.powered_down && !(st->m.dbg.cr & 4u)) || (st->m.clocks_stopped && !(st->m.dbg.cr & 2u)))
+        return ESK_DAP_NO_TARGET;
+    if (st->held)
+        return ESK_DAP_FAULT; /* the system bus is in reset */
+    catch_up(st, c->e->sched.now);
+    esk_mach_outside(&st->m);
+    st->m.bus.dap = 1 + (core > 0 ? core : 0); /* whose debug the access reaches */
+    r = write ? esk_bus_write(&st->m.bus, addr, bytes, *v) : esk_bus_read(&st->m.bus, addr, bytes, v);
+    st->m.bus.dap = 0;
+    if (write && st->m.reset_req && !runnable(st))
+        mcu_reset_now(st, 0); /* a blank or idle part's reset: no quantum would take it */
+    else if (write)
+        wake(st); /* a halt, a restart or a reset request takes effect from now */
+    return r ? ESK_DAP_FAULT : ESK_DAP_OK;
+}
+
 void esk_mcu_halt(esk_comp *c)
 {
     mcu_state *st = esk_mcu_is(c) ? state_of(c) : NULL;
@@ -1692,6 +1821,7 @@ es_status esk_mcu_set_image(esk_comp *c, const unsigned char *image, size_t len,
     if (st->an_what)
         (void)esk_mcu_analyze(c, st->an_what, why, cap); /* the new image's functions */
     catch_up(st, e->sched.now);
+    st->m.flash_written = 0; /* the new image replaces what the program wrote */
     mcu_reset_now(st, 1);
     return ES_OK;
 }
@@ -1788,6 +1918,23 @@ esk_json *esk_mcu_serial_json(esk_comp *c, esk_alloc *a)
     return o;
 }
 
+uint32_t esk_mcu_console_baud_of(esk_comp *c, uint64_t index, uint64_t *until)
+{
+    mcu_state *st = esk_mcu_is(c) ? state_of(c) : NULL;
+    mcu_uart *u = st && st->attached ? uart_named(st, st->console, 0) : NULL;
+    int i;
+    *until = UINT64_MAX;
+    for (i = u ? u->nrate - 1 : -1; i >= 0; i--)
+        if (u->rate[i].from <= index) {
+            if (i + 1 < u->nrate)
+                *until = u->rate[i + 1].from;
+            return u->rate[i].baud;
+        }
+    if (u && u->nrate)
+        *until = u->rate[0].from;
+    return esk_mcu_console_baud(c);
+}
+
 uint32_t esk_mcu_console_baud(esk_comp *c)
 {
     mcu_state *st = esk_mcu_is(c) ? state_of(c) : NULL;
@@ -1807,6 +1954,235 @@ const char *esk_mcu_image_name(const esk_comp *c)
     return st ? st->image_name : NULL;
 }
 
+/* ---- the serial wire (swd.h) ------------------------------------------------ */
+
+static uint32_t swd_hex(const esk_json *j, const char *key, uint32_t dflt)
+{
+    uint64_t v = 0;
+    const esk_json *x = esk_json_get(j, key);
+    if (!x || esk_json_to_u64(x, &v) != 0 || v > 0xffffffffu)
+        return dflt;
+    return (uint32_t)v;
+}
+
+/* the description's core.swd: the ports on the wire; without it, the one
+ * SWJ-DP an Arm part's datasheet gives, made on the first clock */
+static void swd_setup(mcu_state *st, const esk_json *sw)
+{
+    const esk_json *ports = esk_json_get(sw, "ports");
+    size_t i, n = esk_json_len(ports);
+    st->swd_n = 0;
+    st->swd_given = sw != NULL;
+    st->swd_pin_resets = esk_json_get_bool(sw, "reset_pin_resets_ports", 0);
+    if (!sw)
+        return;
+    if (!n)
+        n = 1;
+    for (i = 0; i < n && i < ESK_SWD_PORTS; i++) {
+        const esk_json *pj = esk_json_at(ports, i);
+        esk_swd_port_cfg *c = &st->swd_cfg[i];
+        memset(c, 0, sizeof *c);
+        c->version = (int)esk_json_get_int(sw, "version", 1);
+        c->dpidr = swd_hex(sw, "dpidr", 0);
+        c->targetid = swd_hex(sw, "targetid", 0);
+        c->jtag = esk_json_get_bool(sw, "jtag", c->version < 2);
+        c->multidrop = esk_json_get_bool(sw, "multidrop", 0);
+        c->ap_idr = swd_hex(sw, "ap_idr", 0);
+        c->ap_base = swd_hex(sw, "ap_base", 0xE00FF003u);
+        c->core = (int)esk_json_get_int(pj, "core", 0);
+        c->instance = (int)esk_json_get_int(pj, "instance", 0);
+        c->rescue = esk_json_get_bool(pj, "rescue", 0);
+        if (c->rescue)
+            c->core = -1;
+        snprintf(st->swd_inst[i], sizeof st->swd_inst[i], "%s", esk_json_get_str(pj, "instance_field", ""));
+    }
+    st->swd_n = (int)i;
+}
+
+static int swd_mem(void *ctx, int core, uint32_t addr, int bytes, int write, uint32_t *v)
+{
+    mcu_state *st = (mcu_state *)ctx;
+    return esk_mcu_dap_mem_core(st->c, core, addr, bytes, write, v) == ESK_DAP_OK ? 0 : -1;
+}
+
+/* a port's TINSTANCE from the register field the description names
+ * ("SYSCFG.PROC_CONFIG.PROC0_DAP_INSTID") */
+static int swd_instance(void *ctx, int port)
+{
+    mcu_state *st = (mcu_state *)ctx;
+    char per[48], *reg, *fld;
+    struct esk_rf_periph *p;
+    struct esk_rf_reg *r;
+    u64 mask, v;
+    if (port < 0 || port >= ESK_SWD_PORTS || !st->swd_inst[port][0] || !st->m.rf)
+        return -1;
+    snprintf(per, sizeof per, "%s", st->swd_inst[port]);
+    reg = strchr(per, '.');
+    fld = reg ? strchr(reg + 1, '.') : NULL;
+    if (!fld)
+        return -1;
+    *reg++ = 0;
+    *fld++ = 0;
+    p = esk_rf_periph(st->m.rf, per);
+    r = p ? esk_rf_reg(p, reg) : NULL;
+    mask = r ? esk_rf_mask(r, fld) : 0;
+    if (!mask)
+        return -1;
+    v = r->value & mask;
+    while (!(mask & 1u)) {
+        mask >>= 1;
+        v >>= 1;
+    }
+    return (int)v;
+}
+
+/* the part held in reset by a debug port: a rescue DP's CDBGPWRUPREQ (the
+ * RP2040's psm_restart: started after as from a power-on, with the
+ * rescue's flag for its bootrom; `how` 1), or an access port's reset (an
+ * nRF52's CTRL-AP RESET: a system reset, the debug kept; `how` 2) */
+static void swd_hold(mcu_state *st, int hold, int how)
+{
+    esk_engine *e = st->c->e;
+    int cause = how == 1 ? ESK_RESET_RESCUE : ESK_RESET_SOFTWARE;
+    if (!st->attached || (hold ? how : 0) == st->rescue_hold)
+        return;
+    catch_up(st, e->sched.now);
+    st->rescue_hold = hold ? how : 0;
+    if (hold) {
+        st->held = 1;
+        if (st->ev) {
+            esk_sched_cancel(&e->sched, st->ev);
+            st->ev = 0;
+        }
+        if (st->m.pin_reset)
+            st->m.pin_reset(&st->m, 0);
+        st->m.reset_cause = cause;
+        esk_mach_reset(&st->m);
+        if (how == 1)
+            esk_swd_reset(st->swd, 1);
+        st->sup.tx_a = 0.0;
+        supply_update(st, 1);
+    } else if (level_of(st->nrst, 1)) {
+        st->held = 0;
+        st->m.reset_cause = cause;
+        mcu_reset_now(st, 0);
+        if (st->m.pin_reset)
+            st->m.pin_reset(&st->m, 1);
+        supply_update(st, 1);
+    }
+}
+
+static void swd_rescue(void *ctx, int hold) { swd_hold((mcu_state *)ctx, hold, 1); }
+
+/* an access port of the part's own (an nRF52's CTRL-AP at APSEL 1): its
+ * RESET held here, the rest the part's model's */
+static int swd_ap(void *ctx, int port, uint32_t apsel, uint32_t reg, int write, uint32_t *v)
+{
+    mcu_state *st = (mcu_state *)ctx;
+    (void)port;
+    if (apsel != 1 || !st->m.dbg.ctrl_ap)
+        return 0;
+    catch_up(st, st->c->e->sched.now);
+    if (reg == 0x000) { /* RESET: the part held in a system reset while 1 */
+        if (write)
+            swd_hold(st, *v & 1u, 2);
+        else
+            *v = st->rescue_hold == 2;
+        return 1;
+    }
+    return st->m.dbg.ctrl_ap(&st->m, reg, write, v);
+}
+
+static int swd_locked(void *ctx, int port)
+{
+    mcu_state *st = (mcu_state *)ctx;
+    (void)port;
+    return st->m.dbg.ap_locked && st->m.dbg.ap_locked(&st->m);
+}
+
+static int swd_present(void *ctx, int port)
+{
+    mcu_state *st = (mcu_state *)ctx;
+    if (!st->attached || !st->m.cpu || strcmp(st->m.cpu->ops->name, "cortex-m") != 0)
+        return 0;
+    if (st->held && !st->rescue_hold && st->swd_pin_resets)
+        return 0; /* the reset pin holds the debug ports in reset too */
+    if (st->rescue_hold == 1 && port >= 0 && port < st->swd_n && !st->swd_cfg[port].rescue)
+        return 0; /* the cores' ports are in the reset the rescue holds */
+    /* in Standby or Stop the debug port answers only when DBGMCU keeps it
+     * powered (DBG_STANDBY, DBG_STOP) */
+    if ((st->m.powered_down && !(st->m.dbg.cr & 4u)) || (st->m.clocks_stopped && !(st->m.dbg.cr & 2u)))
+        return 0;
+    return 1;
+}
+
+static esk_swd *swd_of(mcu_state *st)
+{
+    esk_swd_target t;
+    if (st->swd)
+        return st->swd;
+    if (!st->attached || !st->m.cpu || strcmp(st->m.cpu->ops->name, "cortex-m") != 0)
+        return NULL;
+    if (!st->swd_given) {
+        /* the one SWJ-DP: JTAG after power-on, its MEM-AP an AHB-AP */
+        u32 id = esk_cortexm_dp_idcode(&st->m);
+        esk_swd_port_cfg *c = &st->swd_cfg[0];
+        memset(c, 0, sizeof *c);
+        c->version = 1;
+        c->jtag = 1;
+        c->dpidr = id;
+        c->ap_base = 0xE00FF003u;
+        c->ap_idr = id == 0x0BC11477u ? 0x04770031u : id == 0x5BA02477u ? 0x74770001u : 0x24770011u;
+        st->swd_n = 1;
+    }
+    for (int i = 0; i < st->swd_n; i++)
+        if (!st->swd_cfg[i].dpidr)
+            st->swd_cfg[i].dpidr = esk_cortexm_dp_idcode(&st->m);
+    t.ctx = st;
+    t.mem = swd_mem;
+    t.instance = swd_instance;
+    t.rescue = swd_rescue;
+    t.present = swd_present;
+    t.ap = swd_ap;
+    t.locked = swd_locked;
+    st->swd = esk_swd_create(st->c->e->a, st->swd_cfg, st->swd_n, &t);
+    return st->swd;
+}
+
+void esk_mcu_swd_out(esk_comp *c, const uint8_t *bits, uint32_t n)
+{
+    mcu_state *st = esk_mcu_is(c) ? state_of(c) : NULL;
+    esk_swd *w = st ? swd_of(st) : NULL;
+    uint32_t i;
+    if (!w)
+        return;
+    catch_up(st, c->e->sched.now);
+    for (i = 0; i < n; i++)
+        (void)esk_swd_clock(w, 1, (bits[i / 8] >> (i % 8)) & 1);
+}
+
+void esk_mcu_swd_in(esk_comp *c, uint8_t *bits, uint32_t n)
+{
+    mcu_state *st = esk_mcu_is(c) ? state_of(c) : NULL;
+    esk_swd *w = st ? swd_of(st) : NULL;
+    uint32_t i;
+    if (w)
+        catch_up(st, c->e->sched.now);
+    for (i = 0; i < n; i++) {
+        int b = w ? esk_swd_clock(w, 0, 1) : 1; /* nothing drives: the pull-up */
+        if (b)
+            bits[i / 8] = (uint8_t)(bits[i / 8] | (1u << (i % 8)));
+        else
+            bits[i / 8] = (uint8_t)(bits[i / 8] & ~(1u << (i % 8)));
+    }
+}
+
+void esk_mcu_swd_counts(esk_comp *c, uint64_t *packets, uint64_t *faults, int *selected)
+{
+    mcu_state *st = esk_mcu_is(c) ? state_of(c) : NULL;
+    esk_swd_counts(st ? st->swd : NULL, packets, faults, selected);
+}
+
 es_status esk_mcu_attach(esk_comp *c, const esk_mcu_setup *su, char *why, size_t cap)
 {
     mcu_state *st = state_of(c);
@@ -1820,6 +2196,10 @@ es_status esk_mcu_attach(esk_comp *c, const esk_mcu_setup *su, char *why, size_t
     if (su->mac) {
         memcpy(st->m.factory_mac, su->mac, 6);
         st->m.has_factory_mac = 1;
+    }
+    if (su->has_fuses) {
+        memcpy(st->m.fuse, su->fuse, 4);
+        st->m.has_fuses = 1;
     }
     st->attached = 1;
     st->m.host.ctx = st;
@@ -1838,6 +2218,7 @@ es_status esk_mcu_attach(esk_comp *c, const esk_mcu_setup *su, char *why, size_t
     st->m.host.usb_remote_wakeup = h_usb_remote_wakeup;
     st->quantum_ps = su->quantum_ps ? su->quantum_ps : MCU_DEFAULT_QUANTUM_PS;
     supply_setup(st, su->mcu);
+    swd_setup(st, esk_json_get(esk_json_get(su->mcu, "core"), "swd"));
     speed_table(esk_json_get(esk_json_get(esk_json_get(su->mcu, "io"), "electrical"), "rout"), st->rout);
     speed_table(esk_json_get(esk_json_get(esk_json_get(su->mcu, "io"), "electrical"), "slew_v_per_us"),
                 st->slew);
@@ -1907,12 +2288,16 @@ es_status esk_mcu_attach(esk_comp *c, const esk_mcu_setup *su, char *why, size_t
             return ES_ENOMEM;
         st->on_air = 1;
     }
-    if (st->m.usb.pullup && !st->on_usb && st->m.usb.dp_at >= 0 && st->m.usb.dp_at / 32 < MCU_PORTS &&
-        st->m.usb.dp_at % 32 < 16 && st->gpio[st->m.usb.dp_at / 32][st->m.usb.dp_at % 32]) {
-        /* its USB controller's end of a cable: its D+ pin */
+    if (st->m.usb.pullup && !st->on_usb &&
+        ((st->m.usb.dp_at < 0 && st->m.usb.dp_pin && esk_comp_pin(c, st->m.usb.dp_pin)) ||
+         (st->m.usb.dp_at >= 0 && st->m.usb.dp_at / 32 < MCU_PORTS && st->m.usb.dp_at % 32 < 16 &&
+          st->gpio[st->m.usb.dp_at / 32][st->m.usb.dp_at % 32]))) {
+        /* its USB controller's end of a cable: its D+ pin (a GPIO, or a
+         * dedicated one) */
         st->usb.ctx = st;
         st->usb.comp = c;
-        st->usb.dp = st->gpio[st->m.usb.dp_at / 32][st->m.usb.dp_at % 32];
+        st->usb.dp = st->m.usb.dp_at < 0 ? esk_comp_pin(c, st->m.usb.dp_pin)
+                                         : st->gpio[st->m.usb.dp_at / 32][st->m.usb.dp_at % 32];
         st->usb.pullup = usb_pullup;
         st->usb.bus = usb_bus;
         st->usb.setup = usb_setup;

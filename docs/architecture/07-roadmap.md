@@ -71,8 +71,8 @@ implemented: a recorded scenario replays identically (every example, and
 recordings made in a running session), and EmbLinkRTOS's Arduino Uno
 conformance suite runs on EmbSIM as an emulated target, in its CI
 (EmbLinkOs/EmbLinkRTOS#12's `avr-embsim` job); the coverage, profile, Python client, CI
-documentation and the Verify perspective are in STATUS.md. M6 to M9 are
-planned, not delivered; M6's Uno SPI, TWI, watchdog and analog comparator are in (the ATmega328P's coverage table is complete), and so is Timer/Counter1's input capture. M7's breadboard was begun inside M6 at the owner's request (2026-10-18): breadboards, `layout.bench` and the 3D bench editing the same nets as the schematic (ADR-027's status); the world, glTF models and the rest of M7 remain. Do not bulk-copy all EmbCC boards and call them supported.
+documentation and the Verify perspective are in STATUS.md. M6 is
+delivered (2026-11-02): the Arduino Uno complete (the ATmega328P's coverage table, its SPI, TWI, watchdog, analog comparator and Timer/Counter1's input capture), the ESP32-C3-DevKitM-1 as M6's ESP32-class board with all 35 of its peripherals modelled and ESP-IDF's own examples passing on it (Wi-Fi, Bluetooth LE, TWAI, I2S, flash encryption, memory protection, HCI over UART among them), thirty of the most used parts verified by their libraries' unmodified examples, the world panel, a coverage table per board, paced real time, USB power with the polyfuse and the USB-serial bridge as a host serial port, and contact bounce and per-part tolerances on by default (ADR-034's first step); the evidence for each exit criterion is in STATUS.md. M7 to M9 are planned, not delivered. M7's breadboard was begun inside M6 at the owner's request (2026-10-18): breadboards, `layout.bench` and the 3D bench editing the same nets as the schematic (ADR-027's status); the world, glTF models and the rest of M7 remain. Do not bulk-copy all EmbCC boards and call them supported.
 
 ## 3. Specification work order
 

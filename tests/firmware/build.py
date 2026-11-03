@@ -28,6 +28,7 @@ CM4 = ["--target=thumbv7em-none-eabi", "-mcpu=cortex-m4", "-mthumb"]
 CM4F = CM4 + ["-mfpu=fpv4-sp-d16", "-mfloat-abi=softfp"]
 # the Uno's ATmega328P, with the uno-blink-serial example's header and startup
 UNO = "../../examples/uno-blink-serial/firmware"
+NUCLEO = "../../examples/nucleo-f446re-blink-serial/firmware"
 AVR = ["--target=avr", "-mmcu=atmega328p", "-Wl,--gc-sections", "-I", str(HERE / UNO)]
 # image: (sources relative to tests/firmware, linker script[, the target and CPU; a
 # Cortex-M3 by default])
@@ -41,6 +42,8 @@ IMAGES = {
     "dsp/dsp.elf": (["common/startup.c", "dsp/main.c"], "dsp/dsp.ld", CM4),
     "cm4-core/cm4-core.elf": (["common/startup.c", "cm4-core/main.c"], "cm4-core/cm4-core.ld", CM4F),
     "uno-echo/uno-echo.elf": ([f"{UNO}/startup.S", "uno-echo/main.c"], f"{UNO}/atmega328p.ld", AVR),
+    # the NUCLEO-F446RE's SWO trace (test_stlink.py), with the example's startup and linker script
+    "nucleo-swo/swo.elf": ([f"{NUCLEO}/startup.c", "nucleo-swo/main.c"], f"{NUCLEO}/stm32f446re.ld", CM4),
 }
 
 

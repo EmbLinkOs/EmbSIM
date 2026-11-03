@@ -80,11 +80,16 @@ struct es_session {
     int n_allow_origin;
     /* project.transaction: the project as edited between begin and commit */
     esk_json *tx_project;
+    esk_json *fault_view;   /* the components and nets as loaded, with the faults wired in (or NULL) */
     int tx_id, tx_last, tx_structural;
     ESK_VEC(esk_board_inst *) boards;
     ESK_VEC(esk_probe *) probes;
     /* serial ports on the host (hostport.c) */
     ESK_VEC(struct esk_host_port *) host_ports;
+    /* the probes shared as stlink-server shares them (stlinksrv.c), or NULL */
+    struct esk_stlink_server *stlink;
+    /* the bench's free USB devices over USB/IP (usbipsrv.c), or NULL */
+    struct esk_usbip_server *usbip;
     uint32_t next_probe_id;
     size_t probe_memory_bytes;
     /* inputs record (SPEC-012 §1 inputs) */
@@ -103,7 +108,13 @@ struct es_session {
     uint64_t last_host_ms;
     es_time_t run_until;     /* ES_TIME_MAX when unbounded */
     es_time_t run_slice_ps;
+    es_time_t pace_carry_ps; /* paced time not yet a whole analog grid step */
     es_time_t core_quantum_ps;
+    /* imperfections (ADR-034): the project's seed, ideal parts when set, and the
+     * values drawn inside each part's tolerance ({instance: {param: {...}}}) */
+    uint64_t seed;
+    int ideal;
+    esk_json *drawn;
     /* clients */
     es_notification_fn notify;
     void *notify_ctx;
@@ -116,6 +127,13 @@ struct es_session {
      * on every board with firmware (NULL) */
     unsigned an_what;
     char *an_board;
+    /* the measurements set with the analyses (latency.c), kept across a reload */
+    char *an_measure[16];
+    int an_nmeasure;
+    /* the trace set with the analyses (latency.c): on, its start boundary, its limit */
+    int an_trace, an_trace_access;
+    char *an_trace_start;
+    uint64_t an_trace_limit;
     /* statistics */
     uint64_t rpc_count;
     double wall_time_s;
@@ -129,6 +147,14 @@ struct es_session {
  * board's with firmware (NULL); 0 turns them off. They stay on across a
  * project's reload (esk_session_analyses_apply, after a load) */
 es_status esk_session_analyze(es_session *s, const char *board, unsigned what, char *why, size_t cap);
+/* a measurement "[NAME=]FROM..TO" for the next esk_session_analyze (ES_EINVAL when full) */
+es_status esk_session_measure(es_session *s, const char *spec);
+/* the trace for the next esk_session_analyze: from `start` (NULL: from the start), at most `limit` events */
+es_status esk_session_trace(es_session *s, const char *start, uint64_t limit);
+/* the trace's data accesses: ESK_AN_ACCESS_NONE, _PERIPHERALS or _ALL */
+void esk_session_trace_accesses(es_session *s, int which);
+/* the trace of `board` (NULL: the only one) as text or a value change dump */
+es_status esk_session_trace_write(es_session *s, const char *board, int vcd, esk_strbuf *out, char *why, size_t cap);
 void esk_session_analyses_apply(es_session *s);
 /* the boards' coverage, profile, stack or fault reports (`which`: one ESK_AN_*) as
  * text in format `fmt` (ESK_AN_TEXT, ...), one board's or every board's;
@@ -152,6 +178,22 @@ es_status esk_session_port_open(es_session *s, const char *target, const struct 
 es_status esk_session_port_close(es_session *s, const char *target);
 esk_json *esk_session_port_json(es_session *s, const struct esk_host_port *hp);
 void esk_session_ports_poll(es_session *s);
+/* stlink-server (stlinksrv.c): listen on host:port (0: any port) for the
+ * session's ST-LINK probes, the port bound in *bound; stop; the port, 0 when
+ * not serving; serve what came, as the ports are polled */
+es_status esk_session_stlink_serve(es_session *s, const char *host, int port, int *bound);
+void esk_session_stlink_close(es_session *s);
+int esk_session_stlink_port(const es_session *s);
+void esk_session_stlink_poll(es_session *s);
+/* USB/IP (usbipsrv.c): the bench's USB devices no host part holds, on
+ * host:port (0: any port; 3240 is usbipd's), served as the session runs */
+es_status esk_session_usbip_serve(es_session *s, const char *host, int port, int *bound);
+void esk_session_usbip_close(es_session *s);
+int esk_session_usbip_port(const es_session *s);
+void esk_session_usbip_poll(es_session *s);
+/* a device USB/IP can serve: on its cable's end with its pull-up, no host
+ * part holding it */
+int esk_session_usbip_free(es_session *s, const esk_usb_dev *d);
 void esk_session_ports_free(es_session *s);
 /* bytes sent back to back at `from` baud (8N1) as a UART at `to` baud reads them */
 size_t esk_uart_rebaud(const unsigned char *in, size_t n, double from, double to, unsigned char *out, size_t cap);
@@ -182,6 +224,7 @@ es_status esk_session_apply_input(es_session *s, const char *target, const char 
 esk_json *esk_session_snapshot(es_session *s, const esk_json *include);
 esk_json *esk_session_topology(es_session *s);
 es_status esk_session_probe_add(es_session *s, const char *name, const char *target, const char *kind, double rate_hz, esk_probe **out);
+es_status esk_session_probe_capacity(es_session *s, esk_probe *p, size_t cap);
 void esk_session_probe_remove(es_session *s, uint32_t id);
 esk_probe *esk_session_probe_find(es_session *s, const char *name_or_id);
 esk_json *esk_session_probe_samples(es_session *s, esk_probe *p, es_time_t from, es_time_t to, size_t max);

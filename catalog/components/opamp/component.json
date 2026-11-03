@@ -4,7 +4,8 @@
   "id": "emblink/opamp",
   "version": "1.0.0",
   "name": "Operational amplifier",
-  "category": "analog",
+  "category": "operational_amplifiers",
+  "subcategory": "ideal",
   "description": "Behavioural op-amp with open-loop gain, a dominant pole, slew rate and output saturation at the supplies.",
   "keywords": [
     "opamp",
@@ -202,5 +203,27 @@
   },
   "tests": [
     "tests/*.json"
-  ]
+  ],
+  "i18n": {
+    "fr": {
+      "source": "3b7efb8a2840",
+      "description": "Ampli-op comportemental avec gain en boucle ouverte, un pôle dominant, vitesse de balayage et saturation de sortie aux alimentations.",
+      "fidelity": {
+        "timed": {
+          "claims": "Comme en électrique."
+        },
+        "electrical": {
+          "claims": "Vout = gain*(V+ - V-) saturant aux broches d'alimentation ou à vpos/vneg, un seul pôle dominant à gbw/gain avec la vitesse de balayage `slew` pour les grands échelons et un rétablissement après saturation en quelques dizaines de nanosecondes, rout et rin (SPEC-004 §7 opamp).",
+          "omissions": [
+            "le décalage d'entrée",
+            "le courant de polarisation",
+            "le TRMC",
+            "le bruit",
+            "les limites rail à rail",
+            "les pôles supplémentaires et la marge de phase"
+          ]
+        }
+      }
+    }
+  }
 }

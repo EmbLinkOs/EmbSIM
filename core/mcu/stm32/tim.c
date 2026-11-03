@@ -1067,6 +1067,43 @@ static int clock_cycles(struct tim *t, u32 cycles)
     return 1;
 }
 
+/* DBGMCU's DBG_TIMx_STOP (RM0390 33.16.4, 33.16.5): APB1_FZ's bits 0-8 for
+ * TIM2-TIM7 and TIM12-TIM14, APB2_FZ's 0, 1 and 16-18 for TIM1, TIM8 and
+ * TIM9-TIM11; set while a debugger holds the core halted, the timer stops */
+static int frozen(const struct tim *t)
+{
+    static const signed char apb1[15] = { -1, -1, 0, 1, 2, 3, 4, 5, -1, -1, -1, -1, 6, 7, 8 };
+    static const signed char apb2[12] = { -1, 0, -1, -1, -1, -1, -1, -1, 1, 16, 17, 18 };
+    int u = t->unit;
+    if (!t->s->dbg.halted)
+        return 0;
+    if (u > 0 && u < 15 && apb1[u] >= 0 && (t->s->dbg.fz[0] >> apb1[u] & 1u))
+        return 1;
+    return u > 0 && u < 12 && apb2[u] >= 0 && (t->s->dbg.fz[1] >> apb2[u] & 1u);
+}
+
+/* frozen: every deadline moves on with the time, the counter holds */
+static void hold(struct tim *t, u32 cycles)
+{
+    int i;
+    t->now += cycles;
+    if (t->next_at)
+        t->next_at += cycles;
+    for (i = 0; i < 6; i++)
+        if (t->pend_at[i])
+            t->pend_at[i] += cycles;
+    for (i = 0; i < 4; i++) {
+        if (t->dref_at[i])
+            t->dref_at[i] += cycles;
+        if (t->drefn_at[i])
+            t->drefn_at[i] += cycles;
+    }
+    if (t->src_at) {
+        t->src_at += cycles;
+        t->src_t0 += cycles;
+    }
+}
+
 /* called after each instruction while the clock runs: kept short. A
  * deadline inside the instruction acts at its own time, the counter
  * brought up to it first. */
@@ -1075,6 +1112,10 @@ static void tim_tick(void *ctx, u32 cycles)
     struct tim *t = (struct tim *)ctx;
     u64 end = t->now + cycles, at;
     int any = 0;
+    if (frozen(t)) {
+        hold(t, cycles);
+        return;
+    }
     while ((at = t->next_at) != 0 && at <= end) {
         if (at > t->now)
             any |= clock_cycles(t, (u32)(at - t->now));
@@ -1129,6 +1170,8 @@ static int tim_next_event(void *ctx, u32 *cycles)
     struct tim *t = (struct tim *)ctx;
     u64 best = 0, c;
     int i;
+    if (frozen(t))
+        return 0; /* nothing until the debugger lets the core go */
     for (i = 0; i < 6; i++)
         if (t->pend_at[i] && (!best || t->pend_at[i] - t->now < best))
             best = t->pend_at[i] > t->now ? t->pend_at[i] - t->now : 1;

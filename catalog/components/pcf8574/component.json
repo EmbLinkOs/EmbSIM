@@ -4,7 +4,8 @@
   "id": "emblink/pcf8574",
   "version": "1.0.0",
   "name": "PCF8574 / PCF8574A I2C I/O expander",
-  "category": "misc",
+  "category": "microprocessor_ics",
+  "subcategory": "io_expanders",
   "description": "8-bit quasi-bidirectional I/O expander on I2C (NXP PCF8574, address 0x20 + A2..A0; PCF8574A 0x38): a written 1 is a weak pull-up the pin can read through, with a strong pull-up during the acknowledge; a 0 a strong low; reads return the pin levels; INT_N goes low when a pin changes. The chip on the common I2C LCD backpacks (0x27).",
   "keywords": [
     "io expander",
@@ -324,5 +325,40 @@
   },
   "tests": [
     "tests/*.json"
-  ]
+  ],
+  "i18n": {
+    "fr": {
+      "source": "c4dd74b92751",
+      "description": "Extension d'E/S quasi bidirectionnelle 8 bits sur I2C (NXP PCF8574, adresse 0x20 + A2..A0 ; PCF8574A 0x38) : un 1 écrit est un rappel faible au niveau haut à travers lequel la broche peut lire, avec un rappel fort pendant l'acquittement ; un 0 un état bas fort ; les lectures renvoient les niveaux des broches ; INT_N passe à l'état bas quand une broche change. La puce des adaptateurs I2C courants pour écrans LCD (0x27).",
+      "fidelity": {
+        "functional": {
+          "claims": "Adresse tirée de A0..A2 (et de la variante), ports quasi bidirectionnels (1 faible, 0 fort) mis à jour à l'acquittement, lectures des niveaux des broches, INT_N sur un changement et effacée par une lecture ou une écriture ; aucune réponse sous 2,5 V.",
+          "omissions": [
+            "le courant d'alimentation et les limites de courant de sortie (la source de 100 uA et le puits de 25 mA sont des intensités de commande)",
+            "A0..A2 non connectées se lisent à l'état bas (la fiche technique demande de les relier)",
+            "la limite de bus de 400 kHz (des horloges plus rapides sont aussi décodées)",
+            "le seuil de réinitialisation à la mise sous tension"
+          ]
+        },
+        "timed": {
+          "claims": "Comme en fonctionnel, avec le rappel fort au niveau haut pendant l'état haut de l'horloge d'acquittement et les délais de 4 us d'INT_N.",
+          "omissions": [
+            "le courant d'alimentation et les limites de courant de sortie (la source de 100 uA et le puits de 25 mA sont des intensités de commande)",
+            "A0..A2 non connectées se lisent à l'état bas (la fiche technique demande de les relier)",
+            "la limite de bus de 400 kHz (des horloges plus rapides sont aussi décodées)",
+            "le seuil de réinitialisation à la mise sous tension"
+          ]
+        },
+        "electrical": {
+          "claims": "Les broches se relient aux réseaux analogiques avec les modèles de broche par défaut de la famille ; le comportement est celui du modèle Lua.",
+          "omissions": [
+            "le courant d'alimentation et les limites de courant de sortie (la source de 100 uA et le puits de 25 mA sont des intensités de commande)",
+            "A0..A2 non connectées se lisent à l'état bas (la fiche technique demande de les relier)",
+            "la limite de bus de 400 kHz (des horloges plus rapides sont aussi décodées)",
+            "le seuil de réinitialisation à la mise sous tension"
+          ]
+        }
+      }
+    }
+  }
 }

@@ -37,6 +37,10 @@
  *     The computer's memory is the Logic 8's (it streams): here at most
  *     LA_MAX transitions, after which the capture ends as full.
  *
+ * With `fixed_rate` (a logic port that samples at one rate, the PPK2's at
+ * 100 kHz) `sample_rate` is taken as it is, with no rate table or channel
+ * limit.
+ *
  * Not modelled: the analog inputs (10 bits, up to 10 MS/s); the leads'
  * inductance; inputs past the absolute maximum. */
 #include <stdio.h>
@@ -244,6 +248,15 @@ static void configure(esk_comp *c)
     edge = esk_comp_param_str(c, "trigger_edge", "rising");
     s->mask = (unsigned)mask & 0xffu;
     {
+        int fixed = 0;
+        esk_comp_param_bool(c, "fixed_rate", &fixed);
+        if (fixed && rate > 0) {
+            s->rate = rate;
+            s->period = (es_time_t)(1e12 / s->rate + 0.5);
+            goto timing;
+        }
+    }
+    {
         /* the fastest rate the channels on allow (data sheet, footnote 1) */
         int on = popcount8(s->mask);
         double most = on <= 3 ? 100e6 : on <= 6 ? 50e6 : on == 7 ? 40e6 : 25e6;
@@ -259,6 +272,7 @@ static void configure(esk_comp *c)
             break;
     s->rate = i < ES_COUNTOF(RATES) ? RATES[i] : RATES[ES_COUNTOF(RATES) - 1];
     s->period = (es_time_t)(1e12 / s->rate + 0.5);
+timing:
     if (dur <= 0)
         dur = 1.0;
     s->dur_samples = (uint64_t)(dur * s->rate + 0.5);
@@ -399,6 +413,7 @@ es_status esk_logic_analyzer_read(esk_comp *c, uint64_t since, size_t max, esk_j
         esk_json_array_push(a, e, esk_json_new_number(a, s->edges[i].bits));
         esk_json_array_push(a, list, e);
     }
+    esk_json_set_string(a, out, "kind", "logic");
     esk_json_set_string(a, out, "state", mode_name(s->mode));
     esk_json_set_number(a, out, "sample_rate", s->rate);
     snprintf(num, sizeof num, "%llu", (unsigned long long)(s->start_k * s->period));

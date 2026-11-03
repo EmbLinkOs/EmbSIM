@@ -4,7 +4,8 @@
   "id": "emblink/monostable",
   "version": "1.0.0",
   "name": "Monostable multivibrator",
-  "category": "logic",
+  "category": "simulator_primitives",
+  "subcategory": "flip_flops",
   "description": "Retriggerable monostable (one half of a 74HC123): a falling edge on A_N with B high, or a rising edge on B with A_N low, starts a pulse of K x Rext x Cext on Q; a new trigger restarts it; CLR_N low ends it.",
   "keywords": [
     "logic",
@@ -212,5 +213,33 @@
   },
   "tests": [
     "tests/*.json"
-  ]
+  ],
+  "i18n": {
+    "fr": {
+      "source": "1c9b2a658d8d",
+      "description": "Monostable redéclenchable (une moitié d'un 74HC123) : un front descendant sur A_N avec B haute, ou un front montant sur B avec A_N basse, lance une impulsion de K x Rext x Cext sur Q ; un nouveau déclenchement la relance ; CLR_N basse la termine.",
+      "fidelity": {
+        "functional": {
+          "claims": "Largeur d'impulsion K Rext Cext, redéclenchable, remise à zéro par CLR_N.",
+          "omissions": [
+            "la dépendance de la largeur à l'alimentation et aux petites valeurs de Cext"
+          ]
+        },
+        "timed": {
+          "claims": "Comme en fonctionnel ; délais tels qu'indiqués.",
+          "omissions": [
+            "la dépendance de la largeur à l'alimentation et aux petites valeurs de Cext"
+          ]
+        },
+        "electrical": {
+          "claims": "Les broches se relient aux réseaux analogiques avec les modèles de broche par défaut de la famille ; le comportement est celui du modèle Lua.",
+          "omissions": [
+            "la dépendance de la largeur à l'alimentation et aux petites valeurs de Cext",
+            "le courant d'alimentation",
+            "les limites de courant de sortie"
+          ]
+        }
+      }
+    }
+  }
 }

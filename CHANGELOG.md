@@ -5,6 +5,893 @@ versions follow semantic versioning. There is no release yet.
 
 ## Unreleased
 
+### A library sorted the way an EDA sorts it
+
+- Parts are filed by category and sub-category as Proteus's device picker
+  and KiCad's libraries file them: 23 categories (Resistors, Capacitors,
+  Diodes, Transistors, Operational Amplifiers, TTL 74 Series, CMOS 4000
+  Series, Analog ICs, Data Converters, Memory ICs, Microprocessor ICs,
+  Optoelectronics, Transducers, Switches & Relays, Connectors, ...) and
+  their sub-categories, named in English, French and Spanish in
+  `catalog/taxonomy.json` (SPEC-005 §2). All 205 components are filed
+  under it; the validator rejects a category or sub-category it does not
+  list and warns on the names used before (`passives`, `logic`, ...),
+  which still load.
+- The library's browser is the category tree: a category opens its
+  sub-categories with their counts, search matches category and
+  sub-category names, and `embsim catalog show` prints both.
+
+### The workbench in Spanish
+
+- Español is the third interface language: all 1008 messages of the
+  workbench and its packages (`i18n/es.ts`), held to English's keys,
+  parameters and plural pairs by `i18n.test.ts`, numbers in `es-ES` and a
+  browser in Spanish choosing it on first start. The catalog's text and the
+  engine's diagnostics are English and French only: in Spanish they show in
+  English. `settings-language.spec.ts` walks the perspectives in Spanish
+  without overflow (`docs/gallery/spanish`).
+- The oscilloscope's coverage, period, frequency and duty labels were
+  English in every language; they take the logic analyzer's translations.
+
+### Panels that move between perspectives
+
+- Run's Meters, Air and Diagnostics, and the Debug perspective's Source,
+  Disassembly, Console, Registers, Breakpoints, Memory and Peripherals,
+  float over every perspective in a window of their own (the instrument
+  front panels' windows, moved, resized and kept across sessions), from
+  their header's button or the palette. Their home dock shows where they
+  went and docks them back. `e2e/movable-panels.spec.ts` floats Diagnostics
+  from Run, finds it over Design and after a reload, and docks it back.
+
+### Compact density on the canvas and the plots
+
+- The plots drawn on canvases (the oscilloscope, the logic analyzer, the
+  power profiler's graphs) take their rows, margins and label size from the
+  density and text size (`plotMetrics`: a logic row of 30 px comfortable,
+  20 compact), and redraw when either changes. The schematic canvas's
+  screen-space chrome (tooltip, HUD, legend, navigator) tightens; the
+  schematic's drawing keeps its sheet size, as only the zoom should change
+  it. `e2e/compact-density.spec.ts` checks the navigator shrinks and saves
+  both densities to `docs/gallery/compact-density`.
+
+### The engine's diagnostics and the catalog's text in French
+
+- Every diagnostic the engine raises carries its French in JSON
+  (`messages.fr`, SPEC-001 §7): `core/util/diag_fr.c` gives each of the 149
+  formats the engine raises, and the fixed phrases messages are built from,
+  a French format with the same conversions; a raised message is matched
+  against its code's English formats and its values carried over unchanged,
+  including messages a wrapper formatted first, the MCU runtime's component
+  prefix and messages cut at the record's length. The workbench's
+  diagnostics panel and toasts show it when the language is French.
+  `tools/i18n/diagnostics.py` (ctest `diagnostics_fr`) finds every format
+  raised in `core/` and `cli/` and fails on one with no French or with
+  different conversions. Omitted: messages built elsewhere and passed
+  through whole (a JSON parser's error, a project validation's reason, a
+  Lua model's own text) stay English.
+- The catalog in French: all 225 entries (205 components, 10 boards, 10
+  MCUs) carry `i18n.fr`, their description and their fidelity's claims and
+  omissions (about 276,000 characters of English), with a fingerprint of
+  the English each was made from (SPEC-005 §6). `tools/validate.py` checks
+  each translated tier exists and lists as many omissions as the English;
+  `tools/i18n/catalog_text.py check` (ctest `catalog_fr`) fails on an entry
+  without French or whose English changed after its French was made. The
+  library and inspector show the settings' language and fall back to
+  English.
+
+### Loads and stores in the trace
+
+- `run --trace` records each load and store a core makes, after the
+  instruction that made it and at its cycle, with its address, size and
+  value (or `bus error`) and the register it names. Examples are
+  `USART2.DR`, `PORTB.DDRB`, and `scs+0xd04` for the core's own system
+  space. An exception's entry shows its stacked words and its vector fetch.
+  The Cortex-M, RISC-V, AVR, MIPS and PIC24 cores note their accesses on
+  their own memory paths, so a debugger's, a probe's or a DMA's are left
+  out. `--trace-accesses all|peripherals|none` chooses which are kept.
+  The `.vcd` gains `address`, `data`, `write` and an `access` event.
+  Proven in `test_analysis.py` and the FreeRTOS suite (portYIELD's store
+  of PENDSVSET to SCB.ICSR the cycle before PendSV pends).
+
+### The Raspberry Pi Debug Probe on the Pico
+
+- `emblink/rpi_debug_probe`: Raspberry Pi's Debug Probe as its debugprobe
+  firmware's CMSIS-DAP v2 build shows itself to a computer (2e8a:000c,
+  "CMSIS-DAP v2 Interface" on bulk 0x04/0x85, a CDC ACM UART, picotool's
+  reset interface, the BOS with its Microsoft OS 2.0 descriptor set):
+  DAP_Info, Connect, the transfers with posted reads, value match, WAIT
+  retries and timestamps, TransferBlock, the SWJ and SWD sequences,
+  ExecuteCommands and QueueCommands as its endpoint handler holds them,
+  eight 64-byte request and response buffers, each answer ready once the
+  wire has carried its bits at SWJ_Clock's rate. Its SWD packets are
+  clocked bit by bit on the target's serial wire; its U port is a UART at
+  the computer's line coding, bridged while DTR is set.
+- The nRF52840's own serial wire (`core.swd`): its SW-DP (DPIDR
+  0x2BA01477, SWD only), its AHB-AP, and the CTRL-AP at APSEL 1 as
+  OpenOCD's `nrf52_recover` drives it (IDR 0x02880000, RESET holding the
+  part in a system reset, ERASEALL erasing the flash and the UICR for
+  ERASEALL's time whatever the NVMC's CONFIG says, ERASEALLSTATUS,
+  APPROTECTSTATUS). UICR.APPROTECT, as a reset finds it, locks the AHB-AP
+  (DeviceEn 0, its accesses refused) until a reset after the erase. The
+  DK's SWD pins are board ports (`SWDIO`, `SWDCLK`), so a probe on them
+  debugs the nRF52840 (`test_debug_probe.py`: APPROTECT locking the part
+  and `nrf52_recover` lifting it, through the Debug Probe).
+- The Pico's SWD pads are board ports (`SWCLK`, `SWDIO`, `SWD_GND`);
+  `examples/pico-debug-probe` wires a probe to a Pico as Raspberry Pi's
+  guide does.
+- Proven over USB/IP by `tests/protocol/test_debug_probe.py` (OpenOCD's
+  own packets: the multi-drop wake-up and TARGETSEL, both cores' debug,
+  the vector table by TransferBlock, the UART's echo, the Rescue DP) and,
+  in CI's linux-gcc job, by unmodified OpenOCD 0.12 with
+  `interface/cmsis-dap.cfg` and `target/rp2040.cfg` on the kernel's
+  vhci-hcd (`tests/protocol/usbip_kernel.sh`), next to stlink-tools'
+  st-info reading the NUCLEO's STM32F446 through its ST-LINK.
+
+### The serial wire, clock by clock: the RP2040's multi-drop debug ports
+
+- An Arm MCU's serial wire as a probe drives it, one SWCLK cycle at a time
+  (`core/mcu/swd.c`, ARM IHI 0031F B4): SWJ-DPs that start in JTAG and
+  take the JTAG-to-SWD sequence, SW-DP v2 ports with the dormant state
+  (the selection alert, SWD's activation code), the line reset, packets
+  with their turnarounds, ACKs and parities, protocol errors left
+  unanswered, the DP registers (CTRL/STAT's power-up handshake and sticky
+  flags answered FAULT, ABORT, SELECT, RESEND, RDBUFF, DLCR, TARGETID,
+  DLPIDR) and the MEM-AP with its posted reads, byte lanes and 1 KiB
+  auto-increment (`esk_mcu_swd_out`, `esk_mcu_swd_in`).
+- The RP2040's three ports on one multi-drop wire (`core.swd` in its
+  description): TARGETSEL selects core 0's (0x01002927), core 1's
+  (0x11002927) or the Rescue DP (0xf1002927) and locks the others out;
+  each core's AHB-AP reaches that core's own debug (DHCSR, the FPB, the
+  DWT); SYSCFG.PROC_CONFIG moves the instance IDs; RUN low holds the
+  ports in reset; the Rescue DP's CDBGPWRUPREQ holds the chip in its
+  rescue reset, after which CHIP_RESET reads HAD_PSM_RESTART and the
+  bootrom halts in its dead loop (`mcu.rescue`). Proven bit by bit with
+  OpenOCD's own sequences in `tests/unit/test_rp2040.c`.
+
+### USB/IP: the bench's USB devices on the computer's own USB stack
+
+- The session serves the bench's USB devices that no host part holds over
+  USB/IP (`usbip.serve`, `embsim serve --usbip [PORT]`), as Linux's
+  usbip-host does: the device list, the import (the session resets the
+  device and gives it its address), each URB carried out as the bus's
+  transactions with their data toggles, a NAKed URB kept until it
+  completes or is unlinked. `usbip attach` then puts the NUCLEO's ST-LINK
+  on the computer for st-flash, st-info and STM32CubeProgrammer
+  (`tests/protocol/test_usbip.py`: the device list, the import, the
+  enumeration, ST-LINK commands on its bulk endpoints, an unlinked URB,
+  the drive's INQUIRY).
+
+### The NUCLEO's ST-LINK drive: programming by copying a file
+
+- The ST-LINK/V2-1's own USB device on the NUCLEO's CN1 (`USB_VBUS`,
+  `USB_DP`, `USB_DM`): full-speed composite 0483:374B, "STM32 STLink",
+  with the debug interface (its commands and SWO trace on their bulk
+  endpoints), the mass-storage drive and the virtual COM port's
+  interfaces. The drive, NODE_F446RE, holds MBED.HTM and DETAILS.TXT; a
+  .bin copied onto it is programmed through the STM32's flash interface
+  over SWD (halt, unlock, sector erases, word programming at the flash's
+  times, reset), and the drive comes back without it, or with FAIL.TXT
+  (`tests/protocol/test_stlink_drive.py`).
+
+### SWO trace through the NUCLEO's ST-LINK
+
+- The ARMv7-M cores' ITM and TPIU (`cortexm/itm.c`): the 32 stimulus ports
+  and their software packets (TRCENA, ITMENA and TER; FIFOREADY; the lock),
+  the TPIU's protocol and prescaler, each byte ten bits at TRACECLKIN /
+  (SWOSCALER + 1); both in the debug domain, kept through a system reset.
+- The F446's PB3 carries TRACESWO while DBGMCU_CR's TRACE_IOEN selects
+  asynchronous trace; the NUCLEO's ST-LINK has its SWO input on PB3 and
+  receives it (START_TRACE_RX, GET_TRACE_NB, the trace endpoint), NRZ only
+  and within 3 % of its rate. Unmodified OpenOCD's `tpiu` and `itm`
+  commands read a program's printf over SWO (`test_stlink.py`).
+
+### The RP2040's bus fabric: contention between the cores and DMA
+
+- The crossbar's arbiters (`rp2040-busctrl`, RP2040 datasheet 2.1): both
+  cores' fetches, loads and stores and the DMA's read and write ports on
+  the ROM, XIP, SRAM0-5 (word-striped), FASTPERI and APB ports, one access
+  a port and a cycle. Two in one cycle: BUS_PRIORITY's high level first,
+  then round robin; the other waits a cycle. BUSCTRL's PERFCTR0-3 count the
+  events PERFSEL selects (the Pico SDK's `bus_ctrl_perf_counter_t`),
+  saturating at 24 bits and cleared by a write; BUS_PRIORITY_ACK
+  (`test_rp2040`'s `test_busctrl`). The SIO and the PPB stay off the
+  crossbar.
+
+### The flash interfaces of the STM32F103 and the nRF52840
+
+- The nRF52840's NVMC (`nrf-nvmc`) and UICR (`nrf-uicr`): CONFIG's modes,
+  word writes to the flash and the UICR, page, partial, UICR and whole
+  erases, READY and READYNEXT for 85 ms a page (the value nrfx gives), and
+  41 us a word and 169 ms for ERASEALL, which are the Product
+  Specification's maxima as recalled and are marked unchecked in the
+  fidelity. A program in the flash is halted until an operation ends. The
+  UICR is kept through resets, and an image's UICR segment is loaded into
+  it. Nordic's nrfx NVMC driver runs on it unmodified
+  (`tests/vendor/nrfx`'s `nrfx_nvmc`, 9/9).
+
+- The STM32F103's flash interface (`stm32f1-flash`, PM0075): the keys,
+  halfword programming (PGERR over a location not erased, a bus error for
+  another size), page and mass erase, the write protection, EOP and the
+  interrupt, and the option bytes (each byte's complement written by the
+  interface, loaded into OBR and WRPR at each reset), with BSY lasting
+  DS5319's times (a halfword 52.5 us, a page 20 ms) and a program in the
+  flash waiting them out. The factory's option bytes are in the part's
+  description. ST's HAL programs and erases the flash and its option bytes
+  unmodified (`tests/vendor/stm32cube`'s `flash`, 9/9). A store that a
+  flash interface refuses is now a BusFault, as on the part.
+- The oscilloscope's automatic measurements stay on the screen's 1200
+  points, as the DS1000Z makes them; its fidelity says so and names the
+  hardware frequency counter as not modelled.
+
+### Debug probes: the NUCLEO's ST-LINK, through the Cortex-M's own debug
+
+- The NUCLEO-F446RE's ST-LINK/V2-1 (`emblink/st_link_v21`, the board's U2
+  on PA13, PA14, NRST and VDD): the command interface of firmware V2J37M26
+  as OpenOCD 0.12 drives it, reaching the target through its debug port
+  (the SW-DP's IDCODE, the MEM-AP). The session shares it with the host as
+  ST's stlink-server does (`stlink.serve`, `embsim serve --stlink`), so
+  OpenOCD (`hla_stlink_backend tcp 7184`) and the IDEs that drive it work
+  unmodified: OpenOCD programs a blank board's flash with its loader running
+  on the target, verifies it and resets it, and GDB through OpenOCD stops
+  at breakpoints and watchpoints and steps (`tests/protocol/test_stlink.py`,
+  `docs/user/nucleo-st-link.md`).
+- `embsim ide PROJECT` writes VS Code's launch configurations and tasks
+  for the project's boards. A board with its own probe (the board
+  description's new `debug` section) is debugged through it: Cortex-Debug
+  with OpenOCD, after a task that runs the session with the probe shared.
+  Every board can also be debugged on EmbSIM's GDB server: Cortex-Debug for
+  a Cortex-M, the C/C++ extension's GDB for the other cores.
+  `tests/protocol/test_ide.py` carries both configurations out as VS Code
+  does.
+- A blank STM32 (its image not built) runs from its erased flash and locks
+  up, as a new part does, so a probe can halt and program it; a debug halt
+  ends the lockup. The F4's flash keeps what was programmed through a power
+  cycle.
+- The STM32F4's DBGMCU: IDCODE (0x10006421 on the F446) is readable (the
+  core's read-as-zero range no longer hides the external PPB), DBG_STOP and
+  DBG_STANDBY keep a probe's connection in Stop and Standby, and
+  DBG_TIMx_STOP, DBG_IWDG_STOP and DBG_WWDG_STOP freeze the timers and the
+  watchdogs while the core is halted. The Cortex-M's ROM table is at 0xE00FF000.
+
+- The Cortex-M cores' halting debug, as a probe drives it through the
+  debug port (ARM DDI 0403E and DDI 0419E, C1): DHCSR halts, steps and
+  restarts the core, DCRSR and DCRDR read and write every core register,
+  DEMCR's vector catch stops the core at its reset vector or a fault
+  handler, DFSR says why it halted, BKPT halts a debugged core, the FPB's
+  comparators are breakpoints and the DWT's comparators are watchpoints.
+  A halted core runs nothing while its clocks and peripherals go on, and
+  a system reset keeps the debug domain while a power-on clears it
+  (`tests/unit/test_cm_debug.c`). The plan for the probes on top of it:
+  `docs/engineering/debug-probes.md`.
+
+### The RP2040's PIO and DMA
+
+- PIO0 and PIO1: four state machines each on their fractional clock
+  dividers, all nine instructions, side-set and delays, the wrap, autopush
+  and autopull, FJOIN, the IRQ flags, EXEC and SMx_INSTR, the FIFOs and
+  their status, interrupts and DMA requests, driving the GPIOs whose
+  FUNCSEL gives them to the PIO. A state machine stalled on its FIFOs costs
+  nothing while it waits.
+- DMA: twelve channels through their four register aliases, 8, 16 and
+  32-bit transfers through the bus as the core makes them, the increments,
+  rings and byte swap, priority and round robin, the DREQs of the PIOs,
+  SPI, UART, PWM, I2C and the ADC and the four pacing timers, chaining,
+  MULTI_CHAN_TRIGGER and CHAN_ABORT, the interrupts, and the sniffer's
+  CRC-32, CRC-16-CCITT, XOR and sum.
+- The Pico SDK's `pio_dma` (`tests/vendor/pico-sdk/apps/pio_dma`): a
+  serial line out of a PIO program (assembled by the SDK's pioasm) read by
+  a terminal, a 1 kHz PIO square wave, DMA copies, a chain with its
+  interrupt, the CRC-32 check value from the sniffer, and DMA paced by
+  UART0, PIO0 and the ADC. MicroPython's `rp2.StateMachine` and `rp2.DMA`
+  are checked at its prompt.
+
+### MicroPython on the Pico
+
+- A USB device's serial port is a serial port on the computer: `port.open`
+  on a USB host (`PC`) gives a pseudo-terminal bound to its CDC ACM port. A
+  program opening it raises DTR (SET_CONTROL_LINE_STATE) and closing it
+  drops it; its baud rate goes to the device as the line coding; bytes
+  pass as USB carries them (no rate to mismatch), the terminal's only as
+  fast as the bulk endpoint takes them. A terminal, or mpremote's raw REPL,
+  talks to MicroPython's prompt over it.
+
+- MicroPython v1.24.1 (its rp2 port for RPI_PICO, built unmodified) is put
+  on the Pico as a person does it: plugged in with BOOTSEL held,
+  firmware.uf2 copied onto the RPI-RP2 drive, the Pico reboots, and its
+  prompt answers over its own USB serial port: `print(1+1)`, the LED lit
+  from `machine.Pin`, a file written to its littlefs filesystem in flash
+  and listed (`tests/vendor/micropython/run.py`, in CI).
+- The RP2040's RTC: its seconds from clk_rtc and CLKDIV_M1, LOAD, the
+  calendar with leap years, RTC_1/RTC_0, the alarm on RTC_IRQ (MicroPython
+  waits for it to run at boot).
+
+### USB for a Pico's own program: TinyUSB and stdio over USB (ADR-031)
+
+- The RP2040's USB controller in device mode, as TinyUSB drives it: the
+  pull-up, bus reset and SOF, SETUP into the DPRAM, each endpoint's buffer
+  control words (single and double buffered), STALL, BUFF_STATUS, EP_ABORT,
+  the interrupt. The Pico SDK's stdio over USB enumerates as 2e8a:000a
+  "Raspberry Pi" "Pico" and talks through a CDC ACM serial port
+  (`tests/vendor/pico-sdk/apps/usb_hello`, on the unmodified SDK and
+  TinyUSB).
+- `emblink/usb_host` opens a CDC ACM serial port as a terminal does (line
+  coding, DTR) and reads and writes it (`cdc_text`, `cdc_send`).
+- A write-1-to-clear bit hit by an RP2040 atomic alias (TinyUSB's
+  `usb_hw_clear`) is cleared; the bootrom's `flash_exit_xip` and
+  `flash_enter_cmd_xip` set the SSI as the bootrom does, so the flash's
+  unique ID (the USB serial number) is read.
+- Speed: the RP2040's clock frequencies are kept until a clock changes
+  (the watchdog's tick asked for them by name at every step); a program
+  polling in a tight loop runs about 3.5 times slower than the part instead
+  of 40 times.
+
+### The Pico programmed with BOOTSEL and a UF2 file (ADR-031)
+
+- The RP2040's USB boot, as its bootrom does it: BOOTSEL held at reset (the
+  flash's chip select low), no boot2, or `reset_to_usb_boot` puts the part
+  on its USB cable as the RPI-RP2 drive (VID 0x2E8A, PID 0x0003, mass
+  storage over bulk-only SCSI, a 128 MiB FAT16 volume with INFO_UF2.TXT and
+  INDEX.HTM); UF2 blocks of the RP2040's family written to it go to flash
+  at the W25Q16JV's erase and program times, and with the last one the part
+  reboots into them. The Pico gains its `USB_DP` and `USB_DM` ports.
+- `emblink/usb_host` copies a file onto a mass storage drive (`copy_file`,
+  the `copy` input) as a file manager does on FAT16.
+- `tests/protocol/test_uf2.py`; `docs/user/pico-uf2.md`.
+
+### The schematic's frame times measured (ADR-028)
+
+- `e2e/schematic-frame-budget.spec.ts`: a 500-part sheet (250 RC sections,
+  about 750 wires and 250 labels) opened as a file, then zoomed, panned and
+  a part dragged, each frame's main-thread work measured (from the frame's
+  start to a message posted from it) and reported against 8.3 ms and
+  16.7 ms; `EMBSIM_FRAME_BUDGET=enforce` judges it on a reference machine.
+  The frame-budget specs run without Playwright's trace, whose DOM snapshot
+  at every input was most of what a frame measured.
+
+### Damage and the fault mode (ADR-034)
+
+- An LED past its absolute maximum ratings: a warning above 30 mA DC or
+  5 V reverse (Kingbright WP7113ID); its junction heated by its own power
+  through the datasheet's 560 K/W and 390 K/W (two thermal nodes solved
+  exactly, the room the world's temperature), burning out open when it
+  passes 125 C: straight across 5 V within milliseconds, at 110 mA within
+  two minutes, at 45 mA never. A `replace` input fits a new one.
+- A regulator's thermal shutdown: with `rth_ja` and `tsd` its die heats
+  with what it drops and its current limit falls to what holds the die at
+  `tsd`. The Uno's 5 V regulator is now the NCP1117ST50 it carries
+  (onsemi NCP1117/D: 160 K/W, 15 K/W, about 175 C, 1.07 V dropout, 1.5 A
+  limit, 6 mA ground current).
+- An MCU's pins past their absolute maximum ratings: the ATmega328P warns
+  past 40 mA through a pin (`pin.over_current`) and outside -0.5 V to
+  VCC + 0.5 V (`pin.over_voltage`), its pins held about a diode drop past
+  their rails by their protection diodes (Microchip's datasheet, section
+  28.1, and AVR182). MCUs describe them with `iabs_max`, `vabs_hi` and
+  `vabs_lo` in `io.electrical`.
+- A PTC fuse on a busy island now looks at its temperatures when due (a
+  step clipped at its look no longer pushed the look on, so it could stop
+  heating while the circuit kept stepping).
+- The fault mode: a project's `faults` list (a pin cut, two nets or pins
+  bridged, a two-terminal part failed open or short), each an
+  `emblink/fault` switch wired in at load and turned on and off by its
+  `active` input while the session runs; the project keeps the list, not
+  the switches. `tests/protocol/test_faults.py`.
+
+### A multimeter used like the real one (ADR-033)
+
+- `emblink/fluke_87v`, the Fluke 87V: COM, V Ω, mA/µA and A jacks, the
+  rotary switch as an input (V AC/DC, mV, Ω autoranging, diode test, µA,
+  mA and A AC/DC), the meter's own load on the circuit (10 MΩ, the ohms
+  source per range, the shunts' burden voltages in every position) and its
+  fused current inputs: F1 440 mA and F2 11 A open after their total
+  clearing time from Eaton's DMM-B curves and stay open until replaced, so
+  measuring a supply with the lead in a current jack blows the fuse as it
+  does on the bench. 6000-count display at 4 updates a second, DC averaged,
+  AC true RMS. Nine fixtures; a front panel in the Run perspective.
+
+### Programming the Uno the real way (ADR-031, ADR-032)
+
+- The ATmega328P's boot loader support: the fuses as the board programs
+  them (the Uno's 0xFF, 0xDE, 0xFD, lock 0xCF; a project's
+  `settings.fuses`), BOOTSZ's boot section and BOOTRST's reset vector,
+  CKDIV8, MCUCR's IVSEL with IVCE's timed sequence, and SPM from the boot
+  section: the page buffer, page erase and write in 4.1 ms, the RWW
+  section running on with RWWSB until RWWSRE, the NRWW section halting
+  the core, the boot lock bits, the SPM Ready interrupt, the signature row
+  and fuses read by LPM. Erased flash runs through to the application at
+  0. What the program writes stays in flash through a power cycle.
+- USART0's two-level receive FIFO and shift register, with DOR0 on an
+  overrun. A host port's bytes now come at the line's rate, as the 16U2
+  sends them, read or not; a session's text still waits for room.
+- The host port keeps the console's binary bytes (NULs included) and
+  re-times each byte at the rate it was sent at, so a reset or a new UBRR
+  no longer garbles what is already on the wire.
+- Unmodified Optiboot (ArduinoCore-avr's `optiboot_atmega328.hex`) runs on
+  the Uno and `avrdude -c arduino` uploads and verifies a sketch through it
+  over the board's serial port (`tests/vendor/arduino/optiboot.py`, in CI).
+- `embsim serve --run` runs at real time with no client. The open host
+  ports are listed in `<temp>/embsim-ports`, and
+  `tools/arduino/hardware/embsim` is a pluggable discovery for the Arduino
+  IDE and arduino-cli, so the IDE lists the simulated Uno (2341:0043) and
+  its Upload button uses it (`docs/user/arduino-ide.md`). Boards' bridges
+  carry their USB identity (`console.bridge.usb`).
+- A project whose `nets` is an array now gets a schema error instead of a
+  crash.
+
+### AI assistants use the same session (ADR-035)
+
+- `embsim-mcp` (`python/embsim/mcp.py`): a Model Context Protocol server on
+  stdio, dependency-free, over one `embsim sidecar` session. Its tools are
+  a person's operations: create, load, edit (one transaction), validate
+  and save a project; search the catalog; build firmware; run and reset;
+  press, release, set inputs and type into serial ports; read the
+  consoles, nets, outputs, probes and diagnostics; run scenarios; record;
+  read a board's registers and memory. A refused operation is the tool's
+  error with the session's message. `docs/user/ai-assistants.md` says how
+  to connect Claude Code, Claude Desktop and other clients;
+  `python/tests/test_mcp.py` (ctest `mcp_server`) drives the protocol and
+  an assistant's session: the Blue Pill example's firmware, and an LED
+  circuit built from nothing and its current checked against Ohm's law
+  with the resistor's drawn value.
+
+### M6 delivered, and a faster ESP32-C3
+
+- M6, the flagship, is delivered: STATUS.md maps each of its exit
+  criteria to its evidence, and the roadmap says so. The workbench's
+  screenshots of the ESP32-C3's TWAI, I2S, memory protection and HCI over
+  UART are in `docs/gallery/c3-peripherals`.
+- The ESP32-C3 runs about twice as fast with nothing it shows changed:
+  the models find one another through a lookup the register file keeps
+  (`esk_rf_ctx_of`) instead of a search of every peripheral at each call
+  (the SAR ADC asked for the APB clock that way on every tick while the
+  bootloader's entropy source kept it scanning; the RTC watchdog read an
+  eFuse word through the bus), the register file tries the register it
+  found last before its binary search, and the RISC-V core decodes its
+  PMP entries when they are written rather than at every access, the
+  ESP-RV core trying first the entry that last granted that kind of
+  access. ESP-IDF's flash_encryption bootloader, its first 10 simulated
+  seconds: 109 s of wall time before, 48 s after (RelWithDebInfo).
+- The workbench's Controls panel sets a string input as written; only a
+  terminal's `tx_text` is sent as a typed line with its newline, so a
+  terminal's `tx_hex` reaches it as bytes.
+
+### The ESP32-C3's UHCI
+
+- UHCI0 (`esp32c3-uhci`, TRM v1.4 chapter 26) moves a UART's data to and
+  from the GDMA: the transmit list into the UART's TX FIFO as it has room,
+  the RX FIFO into the receive list while it has one; SLIP separators and
+  the separator, 0xDB, 0x11 and 0x13 escapes both ways; a received frame
+  closed after PKT_THRS bytes, on a separator, a break or the UART's
+  receive timeout; RX_START as a separator is sent and TX_START as one is
+  found, as TRM 26.4.12 names them; the interrupt on source 15.
+  UHCI1, which no GDMA channel serves, keeps its registers.
+- The virtual terminal sends and shows bytes as hex (`tx_hex`, `rx_hex`),
+  as a terminal program's hex mode, for binary protocols.
+- ESP-IDF v5.4's `controller_hci_uart_esp32c3_and_esp32s3` runs
+  unmodified: the Bluetooth controller's HCI over UART1 through UHCI and
+  the GDMA, the terminal as the host: HCI_Reset gets its Command Complete
+  and HCI_Read_BD_ADDR the chip's Bluetooth address. `test_uhci_slip`
+  checks SLIP framing and escapes through UART1's loopback. The ESP32-C3
+  has all 35 of its peripherals modelled.
+
+### The ESP32-C3's permission control
+
+- SENSITIVE (`esp32c3-pms`, TRM v1.4 chapter 14) checks the CPU's own
+  fetches, loads and stores, as ESP-IDF's memory protection (on by
+  default) sets it: internal SRAM's four instruction-bus and four data-bus
+  areas between the split lines, each with the privileged environment's
+  permissions; the RTC
+  memory's low and high areas; the ROM and the cache's 16 KB. A denied
+  load reads 0, a store writes nothing and a fetch reads an illegal
+  instruction; the IRAM0, DRAM0 and PIF monitors latch the first violation
+  (address, kind, environment, byte lanes or size) and raise interrupt sources
+  56 to 58, which ESP-IDF routes to its panic handler. The lock registers
+  hold the configuration until a reset.
+- The RISC-V core asks its machine's permission check (`access_denied`)
+  before each fetch, load and store.
+- ESP-IDF v5.4's `tools/test_apps/system/memprot` runs unmodified and
+  passes all 16 of Espressif's checks for the ESP32-C3 (read, write and
+  execution below and above the line in IRAM0, DRAM0 and the RTC memory).
+  `test_pms` checks a blocked load, store and fetch, the monitors'
+  status and the lock. The ESP32-C3 has 33 of 35 peripherals modelled.
+
+### The ESP32-C3's flash encryption (XTS-AES)
+
+- XTS-AES (`esp32c3-xts`, TRM v1.4 chapter 23): XTS-AES-128 under the
+  eFuse key block with the XTS_AES_128_KEY purpose, with Espressif's
+  addressing as espsecure computes it (each 128-byte data unit reversed,
+  tweaked by its flash address, reversed again; the key block's bytes
+  reversed). Manual encryption of 16- and 32-byte lines (PLAIN_MEM at the
+  address modulo 32, TRIGGER, RELEASE, DESTROY, STATE) while SYSTEM's
+  ENABLE_SPI_MANUAL_ENCRYPT is set; SPI1's page program then writes the
+  released line's ciphertext at its address, whatever its own address
+  and data (the ROM's esp_rom_spiflash_write_encrypted leaves ADDR as
+  it was).
+- The cache decrypts the pages it maps from the flash while eFuse
+  SPI_BOOT_CRYPT_CNT has an odd number of bits set; SPI1's reads stay raw.
+- ESP-IDF v5.4's `flash_encryption` runs unmodified in Development mode on
+  a new chip: the bootloader generates a key, burns it into BLOCK_KEY0,
+  encrypts the bootloader, the partition table and the encrypted
+  partitions in place and resets; the chip boots from the encrypted flash,
+  FATFS works on the encrypted partition and NVS is encrypted.
+  `test_xts_flash_encryption` checks 64 bytes encrypted by hand in two
+  lines against `espsecure.py encrypt_flash_data --aes_xts` and their
+  decryption through the cache. The ESP32-C3 has 32 of 35 peripherals
+  modelled.
+
+### The ESP32-C3's HMAC, digital signature and eFuse key protection
+
+- HMAC (`esp32c3-hmac`, TRM v1.4 chapter 21): HMAC-SHA256 under an eFuse
+  key block, upstream with ESP-IDF's block flow (SET_MESSAGE_ONE,
+  SET_MESSAGE_ING, ONE_BLOCK, SET_MESSAGE_PAD, SET_MESSAGE_END) and
+  downstream for the digital signature and soft JTAG; the requested
+  purpose checked against the block's KEY_PURPOSE (QUERY_ERROR).
+- The digital signature (`esp32c3-ds`, chapter 22): its encrypted
+  parameters decrypted with AES-256-CBC under the HMAC's downstream key,
+  their MD and padding checked (QUERY_CHECK), and Z = X^Y mod M to 3072
+  bits; with no key it stays busy, as ESP-IDF expects.
+- eFuses: a read-protected key block (RD_DIS) reads 0 while the hardware
+  still uses it; a write-protected key block is not programmed. The word
+  at +0x18C, which Espressif's map leaves out and ESP-IDF's eFuse driver
+  reads, reads 0; the DS's IV words (+0x630), also left out, are there.
+- ESP-IDF v5.4's `nvs_encryption_hmac` runs unmodified on a new chip: it
+  burns an HMAC key into BLOCK4, read-protected, and both NVS partitions
+  are encrypted under keys the HMAC derives, their values read back.
+  `test_hmac_upstream` checks the HMAC of a burnt, read-protected key
+  against Python's hmac and the purpose check; `test_ds_sign` an RSA-1024
+  signature against Python's pow, from parameters encrypted as ESP-IDF's
+  gen_digital_signature_tests.py encrypts them
+  (`tests/unit/gen_esp32c3_ds_vector.py`), and a corrupted parameter's MD
+  failure. The ESP32-C3 has 31 of 35 peripherals modelled.
+
+### The ESP32-C3's I2S
+
+- I2S0 (`esp32c3-i2s`, TRM v1.4 chapter 29) as a master in TDM and the
+  standard formats: BCK, WS and the data on their matrix signals, the
+  fractional MCLK divider and the BCK divider, slot and data widths, WS by
+  its idle polarity and width, MSB shift, alignment, bit order, endianness,
+  the channel enables, mono, the GDMA both ways, and the receiver on the
+  transmitter's clock (SIG_LOOPBACK, ESP-IDF's duplex mode).
+- ESP-IDF v5.4's `i2s_std` runs unmodified in its duplex mode: the buffer
+  it writes comes back through the shared data pin as its README shows
+  (`12 34 56 78 9a bc de f0`), BCLK at 1.024 MHz and WS at 16 kHz.
+  `test_i2s_frame` checks WS's frame from the dividers and TX_HUNG.
+- Fixed: SYSTEM's PERIP_CLK_EN0 gave I2S0 bit 4; it is bit 21 (ESP-IDF's
+  SYSTEM_I2S0_CLK_EN), so I2S stayed unclocked and read 0.
+- Not yet: slave mode, PDM transmission, the MCLK output, the FIFO's
+  depth and hung timeout. The ESP32-C3 has 29 of 35 peripherals modelled.
+
+### The ESP32-C3's TWAI (CAN 2.0)
+
+- TWAI0 (`esp32c3-twai`, TRM v1.4 chapter 31): an SJA1000-compatible
+  controller run bit by bit on twai_tx and twai_rx (matrix signal 74,
+  source 25). Base and extended, data and remote frames with stuffing and
+  CRC-15; arbitration (ALC, ALI); the ACK slot; self test and listen-only
+  modes; self reception, single shot and abort; the single and dual
+  acceptance filters; the 64-byte receive FIFO and its overrun; bit, stuff,
+  CRC, form and ACK errors with their capture (ECC, BEI) and error frames;
+  the counters, error warning and error passive, bus off and its recovery.
+- ESP-IDF v5.4's `twai_self_test` runs unmodified with GPIO0 jumpered to
+  GPIO2, as its README allows: three runs of 100 frames at 25 kbit/s, each
+  received through the filter (`tests/vendor/esp-idf`). `test_twai_frame`
+  checks a frame's every edge against one computed apart (CRC 0x3B93, its
+  stuff bits), its reception and release, and an unacknowledged frame's
+  error count and capture.
+- Not yet: overload frames, triple sampling, the clock output, the bus's
+  clock tolerance (no resynchronisation after the start of frame). The
+  ESP32-C3 has 28 of 35 peripherals modelled.
+
+### The ESP32-C3's sigma-delta modulation
+
+- GPIO_SD (`esp32c3-sdm`, TRM v1.4 section 5.13): four pulse-density
+  channels on gpio_sd0_out to gpio_sd3_out (matrix signals 55 to 58). A
+  channel's bit is APB_CLK over SDn_PRESCALE + 1, and (SDn_IN + 128) / 256
+  of its bits are high; FUNCTION_CLK_EN clocks them. ESP-IDF v5.4's
+  `sdm_led` runs unmodified (`tests/vendor/esp-idf`): over a whole sweep of
+  its density GPIO0 is high 46.09 % of the time, 118/256 as the density
+  gives. `test_sdm_density` checks the bit rate, densities 0, -64, 127 and
+  -128, and the held output. The ESP32-C3 has 27 of its 35 peripherals
+  modelled (`docs/coverage.md`).
+- Inside, the bit pattern is a first-order modulator's: the TRM gives the
+  density, not the pattern. Not yet: SIGMADELTA_CG's register clock gate,
+  SPI_SWAP.
+- Probes take `capacity`, the samples they keep (their memory depth, 1 to
+  16777216; 65536 when absent), so a waveform measurement over a long, busy
+  window keeps all of it (SPEC-007).
+- The register description named every channel's fields SD0_*; they are
+  SDn_IN and SDn_PRESCALE.
+
+### Parts: the GL5528's response time
+
+- The GL5528 follows a change of light as its datasheet's response time
+  says: its conductance moves toward the new light's in a first-order lag,
+  20 ms rising and 30 ms decaying (the times at 10 lux). The
+  `environment_resistor` primitive takes `rise_s` and `decay_s`. It carries
+  the conductance on its own clock between solutions and re-solves the
+  circuit at each 0.2 % of change, so a settled cell lets its island sleep.
+  New fixtures: `gl5528/tests/response-rise` (1.288 V one rise constant after
+  10 to 100 lux) and `response-decay` (1.615 V one decay constant after the
+  light goes back). The light-controlled switch example's scenario gives the
+  cell a few hundred milliseconds at each light.
+- Not yet: the times' dependence on the light level, and the slow tail
+  toward the 1 MOhm dark resistance, which the datasheet measures 10 s
+  after the light goes.
+
+### Speed: the analog solver keeps the matrix sparse
+
+- The LU factorisation runs in a minimum-degree order of the unknowns,
+  computed once per topology, and each step updates only the pivot row's
+  nonzero columns; assembly clears only the entries stamps write. On the
+  Uno driving an 8x8 LED matrix (111 unknowns) a run takes 0.61 of the time
+  it took, with the same steps and Newton iterations. SPEC-004 §5 now says
+  what the solver does (it had promised a sparse solver it never had).
+
+### Parts: the MAX7219, the buzzer, the GL5528, the push button and a 10-segment bar graph verified by their examples
+
+- LedControl's `LCDemo7Segment` runs unmodified on the Uno against the
+  MAX7219 8-digit module and passes 27 assertions: woken from shutdown,
+  "Arduino" spelled from the library's character table and raw rows, the
+  hex digits scrolling, the loop repeating. The model gains the decimal
+  points, the code-B font per digit, the patterns the library sends ("r",
+  "u", "i", "n", "o" and others), each digit's lit segments as an output,
+  and DOUT on CLK's falling edge (datasheet Figure 1).
+- The IDE's `toneMelody` plays on a passive buzzer: each note at the
+  frequency Timer2 can make from it, for its length, silent between notes.
+  A passive buzzer now falls silent two periods after its drive stops,
+  instead of 50 ms later; below 20 Hz the edges are clicks, not a tone.
+- The IDE's `Calibration` runs with a GL5528 photoresistor as its sensor:
+  the light during calibration sets the range, then the LED fades with it.
+  The GL5528 follows its datasheet: gamma 0.6 (was an illustrative 0.7),
+  each part's 10-lux resistance drawn inside 10-20 kOhm, 1 MOhm dark.
+- The IDE's `Debounce` and `StateChangeDetection` run against a bouncing
+  push button: one press chatters (seven edges on D2), yet each is counted
+  or toggles once, and a tap shorter than the debounce delay is ignored.
+- A 10-segment LED bar graph (`emblink/led_bargraph_10`): ten independent
+  red LED junctions in the common 20-pin DIP pinout (Kingbright DC-10),
+  verified by the IDE's `barGraph` with a potentiometer.
+- The IDE's `ReadAnalogVoltage` reads an LM35DZ at 25, 37.5 and 60 degC
+  and prints 0.25, 0.37 and 0.60 V.
+- ShiftRegister74HC595's example drives a 74HC595 from D0 to D2, through
+  the board's own 1 kOhm resistors to the USB-serial bridge on D0 and D1.
+- The IDE's `RowColumnScanning` moves its cursor across the 8x8 LED matrix
+  with two pots; the cursor glows at 0.4 % of full luminance, as dim as on
+  a real matrix driven by this sketch.
+- The DS1307 follows its data sheet: reads from user buffers refreshed at
+  each START, a seconds write restarting the countdown chain, 12-hour mode,
+  a user-set day of the week, a new part's oscillator halted (CH) until the
+  sketch starts it, no answer below VPF. RTClib's `ds1307` and
+  `ds1307nvram` run unmodified against it.
+- The Arduino harness finds the IDE's built-in examples (arduino-examples,
+  CC0) under their category folders.
+
+### Workbench: Visual Benchmark v0.1, settings, English and French
+
+- A two-row header: navigation (project, the four perspectives, diagnostics,
+  Settings, commands), then the simulation bar (transport, readout, speed,
+  fidelity, undo). The readout names the state in words and an icon
+  (running, paused, stopped, loading, failed, disconnected) and shows
+  **Simulated** time apart from the **Host** rate, which is measured or "—".
+- The status bar leads with the state and simulated time, then the project,
+  timing tiers, error and warning counts, the engine connection last; it
+  scrolls on a narrow window. A connection screen replaces the perspective
+  while connecting and when the engine is gone, with Reconnect.
+- A Settings page (Ctrl+,): language, theme, text size, density, restore
+  and reset panel layout, time unit, time precision, host-rate format,
+  restore defaults; applied at once and kept between sessions.
+- The interface in English and French from typed catalogs (`src/i18n`),
+  English as the fallback; the shared packages take their words through
+  `uiText` in `@embsim/design`. Technical identifiers, catalog data, the
+  engine's diagnostics and the instruments' front-panel legends stay as
+  written.
+- Design tokens for state and value colours, a text-size scale and compact
+  density; panels, titles, ribbons, library rows, controls, meters and
+  tables brought onto them. Debug's registers read as rows; Verify's panes
+  no longer repeat their titles. Nothing overflows at 768 px.
+- Fixed: a pointer going down near the edge of a pin's target started no
+  wire (the pin was looked up by distance); the pin under the pointer is
+  now taken. On the 3D bench, the measure tool takes the contact the
+  pointer names, as the jumper tool does, instead of snapping only within
+  1.5 mm of the surface hit.
+- `docs/engineering/visual-benchmark.md` gives the review, the design
+  system, the default workspaces, the verification and the limits; the
+  gallery has the same twelve workflows before, after and in French.
+
+### Imperfections: contact bounce and tolerances on by default (ADR-034)
+
+- Push buttons and toggle switches bounce by default, as real contacts do
+  (2 ms and 5 ms; `"bounce": false` gives an ideal contact). The keypad
+  already did.
+- Resistors, capacitors, electrolytics and inductors gain a `tolerance`
+  (IEC 60062's J, K, M and M grades: 5, 10, 20 and 20 %). Each part's value
+  is drawn inside that band from the project's `settings.seed` and the
+  instance's id, so a run is the same on every host and two parts of one
+  project differ. A catalog parameter names its tolerance with `spread`.
+- `settings.imperfections: "ideal"` gives nominal values and no bounce, for
+  a lesson that says so (Q17). Component fixtures run ideal unless they name
+  their `settings`.
+- The run report's `snapshot.drawn` lists each drawn value with its nominal
+  value and tolerance.
+- The Blue Pill gains its 100 nF NRST capacitor. It filters the reset
+  button's bounce and delays the boot by about 0.8 ms after power-up.
+- The Uno's DTR auto-reset is its own bounce-free part (`DTR_RESET`), not a
+  press of the reset button.
+- `examples/button-bounce` shows a raw button line chattering and an RC
+  with a Schmitt inverter debouncing it.
+- Firmware written for EmbSIM's own tests and examples now debounces its
+  buttons in software: the NUCLEO-F446ZE example, and the Arduino, STM32F1
+  HAL, Pico SDK and nrfx tours.
+- Examples and tests that check exact values declare their parts exact,
+  each with the reason.
+
+### Fixed: a reset is a fresh start
+
+- A session reset could leave a stale analog crossing from the previous run.
+  The MCU reconfigured its pins during the reset and touched islands still
+  running. So a run after a reset (a replay, or a recording begun at 0)
+  could differ from the run after loading, by 1.4 ns in an interrupt on the
+  Blue Pill.
+- Islands now stop at the start of a reset.
+- `test_reset_is_load` replays a recording begun mid-run while an RC is
+  still charging, and gets the same result to the picosecond.
+
+### Timing: paced real time no longer depends on the host's speed
+
+- Analog islands take a step boundary at each millisecond of simulated
+  time, and paced slices end on that grid.
+- A run cut into slices by the host's speed now computes the same values as
+  an uncut one, to the bit (`test_grid_slices`).
+
+### Timing: vendor expectations after the cycle-accurate cores
+
+- STM32CubeF4's EEPROM_Emulation now ends between 15.5 and 15.75 s, not
+  just past 13 s: its code is fetched from flash at five wait states.
+- The Pico SDK's polls and PWM wraps follow the Cortex-M0+'s cycle costs:
+  540 polls through the 25LC040's write cycle, and the 520th wrap just
+  after the 520 ms line.
+
+### Timing: execution traces
+
+- `embsim run --trace FILE` records each instruction start (with its
+  function), and each exception pending, taken and returned. Every event
+  carries its cycle and simulated time.
+- The trace is a table, or with `.vcd` a waveform for GTKWave and similar
+  viewers (pc, exception active, pending, cycle).
+- `--trace-start BOUNDARY` and `--trace-limit N` bound it.
+- The FreeRTOS test checks that a traced context switch equals the measured
+  one.
+
+### Timing: the STM32F4's flash wait states and ART accelerator
+
+- Code and literal pools in the STM32F446's flash now wait FLASH_ACR's
+  LATENCY cycles for each 128-bit line (RM0390 3.4).
+- The ART accelerator hides those waits the way RM0390 describes:
+  - prefetch reads the next line while the current one executes;
+  - the instruction cache holds 64 lines (LRU);
+  - the data cache holds 8 lines;
+  - ICRST and DCRST empty the caches.
+- `test_flash_read_timing` checks RM0390 Figure 4's prefetch case, a loop
+  in the instruction cache, and a literal in the data cache.
+- 180 MHz results are no longer optimistic by the waits.
+
+### Timing: the Cortex-M0+ (RP2040) from its own manual
+
+- The RP2040's cores now take the Cortex-M0+ TRM's cycles (ARM DDI 0484C
+  Table 3-1), not the Cortex-M4's: a load or store 2 cycles, 1 on the SIO's
+  single-cycle I/O port; a taken branch 2, BL 3, POP with PC 3+N; MULS 1
+  (the RP2040's fast multiplier, datasheet 2.4).
+- An exception's entry takes the TRM's worst-case 15 cycles, with late
+  arrival. The return and tail-chain are not charged, because neither the
+  TRM nor the datasheet gives a figure.
+- `tests/unit/test_cm_timing.c` times each class.
+
+### Speed: analog islands settle at the solver's tolerance
+
+- An analog island now counts as settled when a step changes no node by more
+  than vntol (1 uV) and no branch current by more than abstol (1 pA). Before,
+  the limit was 1e-14 relative, so an RC tail such as a reset pin's kept the
+  board's supply island stepping at every 1 us core quantum for about 130 ms
+  of each run.
+- FreeRTOS on the NUCLEO-F446RE runs 3.4x faster (0.23x real time, from
+  0.07x), and the NUCLEO blink example 1.9x faster. All tests, catalog
+  fixtures and ngspice references are unchanged.
+- `tools/perf/bench_mcu.py` benchmarks fixed workloads, with simulated and
+  host time in separate columns.
+
+### Timing: measurements between boundaries
+
+- `embsim run --measure [NAME=]FROM..TO` measures the cycles and the
+  simulated time between two boundaries each time they happen. A boundary
+  is an instruction starting at a symbol or address, an exception taken
+  (`exc:N`), an exception becoming pending (`pend:N`), or an exception's
+  return done (`ret:N`).
+- `--measure-out` writes the report as text or JSON, with the host's wall
+  time kept apart.
+- The measurement adds nothing to the firmware's cycles, and two runs give
+  identical numbers.
+- `pend:PendSV..ret:PendSV` measures an RTOS context switch. For FreeRTOS
+  V11.1.0 on the NUCLEO-F446RE at 16 MHz it is 155 to 167 cycles; the
+  FreeRTOS vendor test checks the tick period and that the parts of each
+  switch add up (`tests/vendor/freertos/run.py`).
+
+### Timing: Cortex-M exception entry, return, tail-chaining and late arrival
+
+- `docs/engineering/timing-fidelity.md`: an audit of the simulator's timing
+  against what an RTOS context-switch measurement needs, the accuracy levels
+  (functional, estimated, cycle-exact for a stated scope, electrical), each
+  target's level, and the plan.
+- On ARMv7-M, exceptions now take the Cortex-M4 TRM's cycles (ARM DDI 0439B
+  3.9.1, zero wait states): 12 to enter, 12 to return, 6 to tail-chain. A
+  higher priority interrupt arriving while a frame is stacked takes it (late
+  arrival). Before this, exceptions cost nothing, and a PendSV context
+  switch read about 24 cycles short. `tests/unit/test_cm_timing.c` times
+  each case.
+
+### Front panels opened from their parts, docked or floating
+
+- An instrument with a front panel of its own (the DS1054Z, the PPK2, the
+  Logic 8) opens it from its part: the inspector's Open front panel, the
+  schematic's right-click menu, the bench's list of what is on it, or the
+  command palette's Open, Float and Dock commands for each one. Opened, it
+  unfolds in the Run perspective's dock and takes the focus.
+- Float takes a panel out of the dock into a window over the workbench,
+  which stays over every perspective, so the scope can be watched while
+  the circuit is edited. Its title bar moves it (or the arrow keys on it),
+  its corner resizes it (or Shift with the arrow keys), and Dock puts it
+  back. Each window's place and size are remembered for the next session.
+- `revealDockItem` in the design system unfolds and focuses a dock item
+  wherever it is laid out, even one whose perspective is not open yet.
+- `docs/user/instruments.md`: how to wire the three instruments, open and
+  float their panels, and read each one.
+- axe runs in the browser on each instrument's front panel (the DS1054Z,
+  the Logic 8, the PPK2), docked and floating, in the light and the dark
+  theme, contrast included (`e2e/front-panels.spec.ts`; the demo session
+  has stand-in catalog entries for the three). It found, and these now
+  meet 4.5:1:
+  - the scope's STOP and AUTO badges: white on #b52b27 (6.3:1) and on
+    #2a6db5 (5.3:1);
+  - the light theme's accent, white on #0e8a66 at 4.33:1 under every small
+    primary button: #0c7f5e (4.98:1);
+  - the instruments' measurement labels, in --text-faint (3.2-4.2:1): now
+    --text-muted (6.5:1 on white). The token file says --text-faint is not
+    for text.
+
+### An oscilloscope: the Rigol DS1054Z
+
+- `emblink/rigol_ds1054z` from Rigol's DS1000Z specifications: four inputs
+  that load the circuit (1 MΩ ∥ 15 pF, 10 MΩ through the 10x probes it ships
+  with); acquisitions at 1 GSa/s with one channel on, 500 MSa/s with two,
+  250 MSa/s with three or four, lowered when the memory (12, 6 or 3 Mpts;
+  twice with the option) cannot hold the screen; 8 bits over 10 divisions
+  at 1 mV/div to 10 V/div times the probe, with offset; a first-order
+  50 MHz bandwidth (20 MHz limit); DC, AC (5 Hz) or GND coupling; the edge
+  trigger (level, slope, holdoff) in Auto, Normal or Single; Run/Stop.
+- The Run perspective draws its screen (12 by 8 divisions, the channels in
+  Rigol's colours, ground and trigger markers, the status) and its front
+  panel's controls, the acquisitions followed live as the circuit runs, and
+  the automatic measurements (frequency, period, Vpp, Vmax, Vmin, Vavg,
+  Vrms, duty, rise time) on a channel.
+- `instrument.read` gives an oscilloscope's last acquisition
+  (`kind: "scope"`). Electrical parts now hear an input as it is set
+  (`esk_adev_on_input`), so Run/Stop and Start/Stop act at their instant.
+
+### A power profiler: the Nordic Power Profiler Kit II
+
+- `emblink/nordic_ppk2`, from Nordic's PPK2 user guide (section 8): as a
+  source meter it powers the board (0.8 to 5.0 V, at most 600 mA, then
+  holds 600 mA as its output falls), as an ampere meter it sits in series
+  with the board's own supply. It samples the current into the board at
+  100 kS/s, each sample the 10 µs average at the resolution of the range it
+  falls in (0.2, 0.5, 5, 50 or 1000 µA for the five ranges, switched by
+  itself); negative currents read 0. Its logic port samples D0 to D7 at
+  100 kHz on the same grid. It is a composite of its measurement core
+  (`emblink/ppk2_core`, the new `power_profiler` primitive) and its logic
+  port (`emblink/ppk2_logic_port`, the logic analyzer's sampler at a fixed
+  rate).
+- The Run perspective has a panel for each PPK2, as Nordic's Power Profiler
+  app shows it: Start and Stop, the mode and supply voltage, the current
+  followed live, the window's or A-B selection's average, peak and charge,
+  the logic port's channels underneath, export as CSV.
+- `instrument.read` gives a power profiler's samples (`kind: "power"`).
+
 ### A logic analyzer: the Saleae Logic 8
 
 - `emblink/saleae_logic8`: Saleae's 8-channel USB logic analyzer as a part

@@ -4,7 +4,8 @@
   "id": "emblink/air_sniffer",
   "version": "0.1.0",
   "name": "Radio sniffer (Wi-Fi monitor or BLE)",
-  "category": "instruments",
+  "category": "networks",
+  "subcategory": "sniffers",
   "description": "A sniffer for Wireshark: a Wi-Fi adapter in monitor mode on one channel, or a Bluetooth LE sniffer dongle (as Nordic's nRF Sniffer) on one advertising channel. It takes every frame it hears, whoever it is for, with its FCS or CRC; the workbench's Air panel lists them and saves them as a pcap file.",
   "keywords": [
     "sniffer",
@@ -121,5 +122,28 @@
   },
   "tests": [
     "tests/*.json"
-  ]
+  ],
+  "i18n": {
+    "fr": {
+      "source": "8ca4fc9387b4",
+      "description": "Un renifleur pour Wireshark : un adaptateur Wi-Fi en mode moniteur sur un canal, ou une clé de reniflage Bluetooth LE (comme le nRF Sniffer de Nordic) sur un canal d'annonce. Il prend chaque trame qu'il entend, quel qu'en soit le destinataire, avec son FCS ou son CRC ; le panneau Air de l'atelier les liste et les enregistre en fichier pcap.",
+      "fidelity": {
+        "functional": {
+          "claims": "Chaque trame 802.11 sur son canal Wi-Fi ou chaque paquet BLE sur son canal d'annonce qu'il entend au-dessus de la sensibilité (engine/air.h), quel qu'en soit le destinataire : une trame 802.11 avec son FCS (CRC-32, IEEE 802.11-2020 9.2.4.8), un paquet BLE tel que la couche liaison l'a, l'adresse d'accès d'annonce, la PDU et son CRC-24 initialisé à 0x555555 (Bluetooth Core 5.4 Vol 6 Part B 3.1.1) ; l'instant de fin de chacun, sa fréquence et son RSSI ; les snaplen premiers octets et la longueur totale, comme tcpdump les garde.",
+          "omissions": [
+            "les ACK et autres réponses de contrôle (l'air les porte implicitement, pas comme des trames)",
+            "le suivi d'une connexion BLE sur les canaux de données après un CONNECT_IND",
+            "le saut de canal",
+            "le déchiffrement"
+          ]
+        },
+        "timed": {
+          "claims": "Comme en fonctionnel."
+        },
+        "electrical": {
+          "claims": "Comme en fonctionnel : il n'a pas de broches."
+        }
+      }
+    }
+  }
 }

@@ -5,6 +5,7 @@
   "version": "1.0.0",
   "name": "BPW34S",
   "category": "optoelectronics",
+  "subcategory": "photodiodes",
   "description": "Silicon PIN photodiode: nominal 50 uA at 10 W/m2 and 950 nm, reverse-biased; simple forward knee.",
   "keywords": [
     "optoelectronics",
@@ -181,5 +182,26 @@
     "manufacturer": "Vishay",
     "package": "Leaded top-view",
     "datasheet": "https://www.vishay.com/docs/81521/bpw34.pdf"
+  },
+  "i18n": {
+    "fr": {
+      "source": "3ba9d4d060ed",
+      "description": "Photodiode PIN au silicium : 50 uA nominaux à 10 W/m2 et 950 nm, polarisée en inverse ; coude direct simple.",
+      "fidelity": {
+        "electrical": {
+          "claims": "Photodiode PIN au silicium : 50 uA nominaux à 10 W/m2 et 950 nm, polarisée en inverse ; coude direct simple.",
+          "omissions": [
+            "la capacité de jonction",
+            "le temps de transit",
+            "la variation spectrale",
+            "la réponse en température",
+            "le claquage inverse",
+            "une caractéristique directe précise",
+            "les cas extrêmes des paramètres du fabricant",
+            "les dommages thermiques et les limites destructives"
+          ]
+        }
+      }
+    }
   }
 }

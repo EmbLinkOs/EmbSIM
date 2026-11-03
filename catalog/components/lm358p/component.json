@@ -1,7 +1,8 @@
 {
   "schema_version": 1,
   "kind": "component",
-  "category": "amplifiers",
+  "category": "operational_amplifiers",
+  "subcategory": "dual",
   "description": "LM358P dual-channel PDIP-8 behavioral approximation; both channels share explicit supply pins.",
   "pins": [
     {
@@ -253,5 +254,28 @@
   },
   "artwork": {
     "svg": "artwork.svg"
+  },
+  "i18n": {
+    "fr": {
+      "source": "73811e1e8370",
+      "description": "Approximation comportementale du LM358P double canal en PDIP-8 ; les deux canaux partagent des broches d'alimentation explicites.",
+      "fidelity": {
+        "electrical": {
+          "claims": "Deux canaux d'ampli-op continus indépendants avec gain fini, résistance de sortie et marge de tension.",
+          "omissions": [
+            "les tolérances du fabricant",
+            "le courant d'alimentation",
+            "la protection des entrées",
+            "les effets de la température",
+            "les violations du mode commun en entrée",
+            "le produit gain-bande",
+            "la vitesse de balayage",
+            "la limite de courant de sortie",
+            "l'inversion de phase",
+            "aucune qualification par un modèle du fabricant"
+          ]
+        }
+      }
+    }
   }
 }

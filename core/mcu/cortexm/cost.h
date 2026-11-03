@@ -101,4 +101,60 @@ ES_INLINE int esk_cm_cost(const uint8_t *p, size_t n, int *branch)
     return 1;
 }
 
+/* A Cortex-M0+ (ARMv6-M) instruction's cycles, from the Cortex-M0+ TRM's
+ * Table 3-1 (ARM DDI 0484C, zero wait states), timing tier "exact" for the
+ * instructions it lists: `refill` gets the cycles a taken branch adds (1;
+ * 2 for POP {.., PC}, whose 3+N the table gives) and `ls` whether it is a
+ * single load or store, which takes 2 cycles on the AHB-Lite bus and 1 on
+ * the single-cycle I/O port (the core subtracts the 1 when the access went
+ * there). MULS is 1, for the fast multiplier the RP2040 configures (its
+ * datasheet 2.4); SVC and BKPT are 1, their exception charged apart. */
+ES_INLINE int esk_cm0p_cost(const uint8_t *p, size_t n, int *refill, int *ls)
+{
+    unsigned h1 = (unsigned)p[0] | (unsigned)p[1] << 8;
+    *refill = 0;
+    *ls = 0;
+    if (n == 4) {
+        unsigned h2 = (unsigned)p[2] | (unsigned)p[3] << 8;
+        if ((h1 & 0xf800) == 0xf000 && (h2 & 0xd000) == 0xd000) {
+            *refill = 1;                                /* bl: 3 */
+            return 2;
+        }
+        return 3;                                       /* mrs, msr, isb, dsb, dmb */
+    }
+    if ((h1 & 0xff00) == 0x4700) {                      /* bx, blx: 2 */
+        *refill = 1;
+        return 1;
+    }
+    if ((h1 & 0xfc87) == 0x4487) {                      /* add pc, mov pc: 2 */
+        *refill = 1;
+        return 1;
+    }
+    if ((h1 & 0xf800) == 0x4800 || (h1 & 0xf000) == 0x5000 || (h1 & 0xe000) == 0x6000 ||
+        (h1 & 0xf000) == 0x8000 || (h1 & 0xf000) == 0x9000) {
+        *ls = 1;                                        /* ldr/str: 2 or 1 */
+        return 2;
+    }
+    if ((h1 & 0xfe00) == 0xb400)                        /* push: 1+N */
+        return 1 + esk_cm_popcount16(h1 & 0x1ff);
+    if ((h1 & 0xfe00) == 0xbc00) {                      /* pop: 1+N, with pc 3+N */
+        if (h1 & 0x100)
+            *refill = 2;
+        return 1 + esk_cm_popcount16(h1 & 0x1ff);
+    }
+    if ((h1 & 0xf000) == 0xc000)                        /* stm, ldm: 1+N */
+        return 1 + esk_cm_popcount16(h1 & 0xff);
+    if ((h1 & 0xf000) == 0xd000 && (h1 & 0x0e00) != 0x0e00) {
+        *refill = 1;                                    /* b<cond>: 1, 2 taken */
+        return 1;
+    }
+    if ((h1 & 0xf800) == 0xe000) {                      /* b: 2 */
+        *refill = 1;
+        return 1;
+    }
+    if (h1 == 0xbf20 || h1 == 0xbf30)                   /* wfe, wfi: 2 (and the wait) */
+        return 2;
+    return 1;
+}
+
 #endif

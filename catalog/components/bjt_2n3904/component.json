@@ -5,6 +5,7 @@
   "version": "1.0.0",
   "name": "2N3904",
   "category": "transistors",
+  "subcategory": "bipolar_npn",
   "description": "2N3904 (TO-92). Parameterized bjt_npn approximation for low-frequency circuit development; not a vendor SPICE model.",
   "keywords": [
     "onsemi",
@@ -180,5 +181,29 @@
   },
   "artwork": {
     "svg": "artwork.svg"
+  },
+  "i18n": {
+    "fr": {
+      "source": "8e1f42f3af4c",
+      "description": "2N3904 (TO-92). Approximation paramétrée par bjt_npn pour la conception de circuits basse fréquence ; pas un modèle SPICE du fabricant.",
+      "fidelity": {
+        "electrical": {
+          "claims": "Approximation paramétrée par bjt_npn ; couverture par des cas de test en continu et basse fréquence uniquement.",
+          "omissions": [
+            "les capacités de jonction",
+            "le temps de transit",
+            "la température",
+            "le claquage",
+            "la quasi-saturation",
+            "les tolérances min/max du fabricant",
+            "le comportement thermique ou destructif",
+            "la dispersion d'un exemplaire à l'autre",
+            "le comportement à haute fréquence, non vérifié",
+            "aucune qualification par un modèle du fabricant",
+            "le stockage de charge et la recouvrement inverse"
+          ]
+        }
+      }
+    }
   }
 }

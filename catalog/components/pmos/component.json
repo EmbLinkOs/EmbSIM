@@ -5,6 +5,7 @@
   "version": "1.0.0",
   "name": "P-channel MOSFET",
   "category": "transistors",
+  "subcategory": "mosfet_p",
   "description": "P-channel enhancement MOSFET (SPICE level 1); a named part selects vto, kp and lambda.",
   "keywords": [
     "transistor",
@@ -194,5 +195,26 @@
   },
   "tests": [
     "tests/*.json"
-  ]
+  ],
+  "i18n": {
+    "fr": {
+      "source": "bb102f463991",
+      "description": "MOSFET à enrichissement canal P (SPICE niveau 1) ; une référence nommée choisit vto, kp et lambda.",
+      "fidelity": {
+        "timed": {
+          "claims": "Comme en électrique."
+        },
+        "electrical": {
+          "claims": "Shichman-Hodges niveau 1 avec régions de blocage, linéaire et de saturation, lambda, cgs/cgd facultatives ; substrat relié à la source (SPEC-004 §7 nmos/pmos).",
+          "omissions": [
+            "la diode intrinsèque",
+            "la conduction sous le seuil",
+            "la température",
+            "l'avalanche",
+            "la non-linéarité de la charge de grille"
+          ]
+        }
+      }
+    }
+  }
 }

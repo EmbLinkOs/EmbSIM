@@ -5,6 +5,7 @@
   "version": "1.0.0",
   "name": "BZX55C5V1",
   "category": "diodes",
+  "subcategory": "zener",
   "description": "BZX55C5V1 (DO-35). Parameterized zener approximation for low-frequency circuit development; not a vendor SPICE model.",
   "keywords": [
     "Vishay",
@@ -148,5 +149,28 @@
   },
   "artwork": {
     "svg": "artwork.svg"
+  },
+  "i18n": {
+    "fr": {
+      "source": "20e498ab7f02",
+      "description": "BZX55C5V1 (DO-35). Approximation paramétrée par une zener pour la conception de circuits basse fréquence ; pas un modèle SPICE du fabricant.",
+      "fidelity": {
+        "electrical": {
+          "claims": "Approximation paramétrée par une zener ; couverture par des cas de test en continu et basse fréquence uniquement.",
+          "omissions": [
+            "le coefficient de température de vz",
+            "la douceur du coude",
+            "la capacité",
+            "les tolérances min/max du fabricant",
+            "le comportement thermique ou destructif",
+            "la dispersion d'un exemplaire à l'autre",
+            "le comportement à haute fréquence, non vérifié",
+            "aucune qualification par un modèle du fabricant",
+            "les capacités de jonction",
+            "le stockage de charge et la recouvrement inverse"
+          ]
+        }
+      }
+    }
   }
 }

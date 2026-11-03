@@ -1,7 +1,8 @@
 {
   "schema_version": 1,
   "kind": "component",
-  "category": "comparators",
+  "category": "analog_ics",
+  "subcategory": "comparators",
   "description": "LM393P dual-channel PDIP-8 behavioral approximation; both channels share explicit supply pins.",
   "pins": [
     {
@@ -234,5 +235,28 @@
   },
   "artwork": {
     "svg": "artwork.svg"
+  },
+  "i18n": {
+    "fr": {
+      "source": "d6512d88f1fb",
+      "description": "Approximation comportementale du LM393P double canal en PDIP-8 ; les deux canaux partagent des broches d'alimentation explicites.",
+      "fidelity": {
+        "electrical": {
+          "claims": "Deux canaux de comparateur indépendants à collecteur ouvert ; des rappels externes au niveau haut sont nécessaires.",
+          "omissions": [
+            "les tolérances du fabricant",
+            "le courant d'alimentation",
+            "la protection des entrées",
+            "les effets de la température",
+            "les violations du mode commun en entrée",
+            "le délai de propagation",
+            "le rétablissement après saturation",
+            "le décalage",
+            "le courant de polarisation",
+            "aucune qualification par un modèle du fabricant"
+          ]
+        }
+      }
+    }
   }
 }

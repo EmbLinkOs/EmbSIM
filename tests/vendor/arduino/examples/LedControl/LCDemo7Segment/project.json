@@ -1,0 +1,98 @@
+{
+ "schema_version": 1,
+ "kind": "project",
+ "name": "arduino-max7219",
+ "description": "LedControl's LCDemo7Segment as its comments wire it: an 8-digit 7-segment MAX7219 module with DIN on D12, CLK on D11 and LOAD (CS) on D10, VCC and GND from the Uno's 5 V; one MAX7219, so no device chained on DOUT.",
+ "policy": "electrical",
+ "boards": [
+  {
+   "id": "B1",
+   "board": "emblink/arduino_uno",
+   "layout": {
+    "x": 300,
+    "y": 260
+   },
+   "firmware": {
+    "image": "sketch.elf",
+    "format": "elf"
+   }
+  }
+ ],
+ "components": [
+  {
+   "id": "USB",
+   "component": "emblink/vsource",
+   "params": {
+    "kind": "dc",
+    "dc": 5
+   },
+   "layout": {
+    "x": 720,
+    "y": 60
+   }
+  },
+  {
+   "id": "GND1",
+   "component": "emblink/gnd",
+   "layout": {
+    "x": 900,
+    "y": 200
+   }
+  },
+  {
+   "id": "DISP",
+   "component": "emblink/max7219_display",
+   "layout": {
+    "x": 120,
+    "y": 700
+   }
+  }
+ ],
+ "nets": {
+  "USB5V": [
+   "USB.+",
+   "B1.5V",
+   "DISP.VCC"
+  ],
+  "GND": [
+   "B1.GND",
+   "GND1.GND",
+   "USB.-",
+   "DISP.GND"
+  ],
+  "DIN": [
+   "B1.D12",
+   "DISP.DIN"
+  ],
+  "CLK": [
+   "B1.D11",
+   "DISP.CLK"
+  ],
+  "LOAD": [
+   "B1.D10",
+   "DISP.CS"
+  ]
+ },
+ "probes": [
+  {
+   "id": "text",
+   "target": "output:DISP.text",
+   "kind": "value"
+  },
+  {
+   "id": "segments",
+   "target": "output:DISP.segments",
+   "kind": "value"
+  },
+  {
+   "id": "on",
+   "target": "output:DISP.on",
+   "kind": "value"
+  },
+  {
+   "id": "intensity",
+   "target": "output:DISP.intensity",
+   "kind": "value"
+  }
+ ]
+}

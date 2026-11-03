@@ -4,7 +4,8 @@
   "id": "emblink/neo6m",
   "version": "1.0.0",
   "name": "NEO-6M GPS module",
-  "category": "sensors",
+  "category": "transducers",
+  "subcategory": "position",
   "description": "u-blox NEO-6M GPS receiver on its common breakout (GY-NEO6MV2): NMEA sentences at 9600 baud once a second, a fix after the time to first fix while the antenna sees the sky, and the 1 Hz time pulse that blinks the board's LED. Position, altitude, speed, course, satellites in view and sky view are interactive inputs.",
   "keywords": [
     "gps",
@@ -261,5 +262,49 @@
   },
   "tests": [
     "tests/*.json"
-  ]
+  ],
+  "i18n": {
+    "fr": {
+      "source": "5998bb09505e",
+      "description": "Récepteur GPS u-blox NEO-6M sur sa carte d'adaptation courante (GY-NEO6MV2) : phrases NMEA à 9600 bauds une fois par seconde, une position après le temps de première acquisition tant que l'antenne voit le ciel, et l'impulsion de temps à 1 Hz qui fait clignoter la LED de la carte. La position, l'altitude, la vitesse, le cap, les satellites visibles et la vue du ciel sont des entrées interactives.",
+      "fidelity": {
+        "functional": {
+          "claims": "NMEA 0183 à `baud` 8N1 une fois par seconde dès le début de la seconde : RMC, VTG, GGA, GSA, GSV et GLL avec sommes de contrôle, champs vides sans position ; la première position après le temps de première acquisition de la fiche technique (froid/tiède 27 s, chaud 1 s) avec le ciel en vue et quatre satellites ou plus, perdue sans eux et retrouvée en 1 s ; UTC à partir d'utc_start, coordonnées ddmm.mmmmm, vitesse en nœuds et km/h, cap, qualité, satellites, HDOP, altitude et séparation du géoïde ; TIMEPULSE de 100 ms à 1 Hz tant que la position est acquise ; muet sous 2,7 V.",
+          "omissions": [
+            "les messages binaires UBX et les commandes de configuration sur RXD (débit et messages restent tels que réglés)",
+            "la bannière $GPTXT de démarrage",
+            "le bruit et la précision de la position (2,5 m CEP)",
+            "l'heure UTC connue avant la première position",
+            "les orbites réelles des satellites (un ciel fixe et plausible)",
+            "l'effet de la pile de sauvegarde sur le démarrage (le paramètre start le règle)",
+            "le courant d'alimentation"
+          ]
+        },
+        "timed": {
+          "claims": "Comme en fonctionnel.",
+          "omissions": [
+            "les messages binaires UBX et les commandes de configuration sur RXD (débit et messages restent tels que réglés)",
+            "la bannière $GPTXT de démarrage",
+            "le bruit et la précision de la position (2,5 m CEP)",
+            "l'heure UTC connue avant la première position",
+            "les orbites réelles des satellites (un ciel fixe et plausible)",
+            "l'effet de la pile de sauvegarde sur le démarrage (le paramètre start le règle)",
+            "le courant d'alimentation"
+          ]
+        },
+        "electrical": {
+          "claims": "TXD et TIMEPULSE se relient aux réseaux analogiques avec les modèles de broche par défaut de la famille ; la tension de VCC conditionne le module ; le comportement est celui du modèle Lua.",
+          "omissions": [
+            "les messages binaires UBX et les commandes de configuration sur RXD (débit et messages restent tels que réglés)",
+            "la bannière $GPTXT de démarrage",
+            "le bruit et la précision de la position (2,5 m CEP)",
+            "l'heure UTC connue avant la première position",
+            "les orbites réelles des satellites (un ciel fixe et plausible)",
+            "l'effet de la pile de sauvegarde sur le démarrage (le paramètre start le règle)",
+            "le courant d'alimentation"
+          ]
+        }
+      }
+    }
+  }
 }

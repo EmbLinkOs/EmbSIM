@@ -5,6 +5,7 @@
   "version": "1.0.0",
   "name": "STPS2L30A",
   "category": "diodes",
+  "subcategory": "schottky",
   "description": "STMicroelectronics STPS2L30A, a 30 V, 2 A low-drop power Schottky rectifier in SMA (0.45 V maximum at 2 A): the NUCLEO-64's D4, between VIN's regulator and E5V.",
   "keywords": [
     "schottky",
@@ -143,5 +144,30 @@
     "manufacturer": "STMicroelectronics",
     "package": "SMA (DO-214AC)",
     "datasheet": "https://www.st.com/resource/en/datasheet/stps2l30.pdf"
+  },
+  "i18n": {
+    "fr": {
+      "source": "076c0d5039e4",
+      "description": "STMicroelectronics STPS2L30A, un redresseur Schottky de puissance à faible chute de 30 V, 2 A en SMA (0,45 V maximum à 2 A) : la D4 de la NUCLEO-64, entre le régulateur de VIN et E5V.",
+      "fidelity": {
+        "functional": {
+          "claims": "Broches seulement : la politique fonctionnelle n'a pas de chutes de diode.",
+          "omissions": [
+            "la conduction"
+          ]
+        },
+        "timed": {
+          "claims": "Comme en électrique."
+        },
+        "electrical": {
+          "claims": "Une diode ajustée à la fiche technique : 0,40 V à 2 A (0,45 V maximum à 25 C), 0,22 V à 0,1 A, 20 uA en inverse à 30 V (200 uA maximum), claquage au-delà de 30 V.",
+          "omissions": [
+            "la température (la chute tombe à environ 0,33 V à 2 A et 125 C, et la fuite monte à des milliampères)",
+            "la capacité de jonction est une estimation",
+            "l'énergie d'avalanche et les surintensités : aucun dommage"
+          ]
+        }
+      }
+    }
   }
 }

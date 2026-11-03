@@ -120,6 +120,7 @@ def description(key: str, b: dict, pins: dict, ties: list) -> dict:
         "version": "1.0.0",
         "name": b["name"],
         "category": "connectors",
+        "subcategory": "breadboards",
         "description": b["doc"] + ": 0.1 in pitch, strips of five holes either side of a 0.3 in channel" +
                        (", power rails along both edges." if b["rails"] else "."),
         "keywords": ["breadboard", "solderless", "protoboard", "bench", b["mpn"].lower()],
@@ -185,7 +186,13 @@ def main() -> None:
         pins, ties = geometry(b)
         d = ROOT / "catalog" / "components" / key
         (d / "tests").mkdir(parents=True, exist_ok=True)
-        (d / "component.json").write_text(json.dumps(description(key, b, pins, ties), indent=1) + "\n", encoding="utf-8")
+        desc = description(key, b, pins, ties)
+        old = d / "component.json"
+        if old.exists():  # its translations are kept (tools/i18n/catalog_text.py)
+            prior = json.loads(old.read_text(encoding="utf-8")).get("i18n")
+            if prior:
+                desc["i18n"] = prior
+        (d / "component.json").write_text(json.dumps(desc, indent=1, ensure_ascii=False) + "\n", encoding="utf-8")
         (d / "symbol.svg").write_text(SYMBOL, encoding="utf-8")
         (d / "artwork.svg").write_text(artwork(b, pins), encoding="utf-8")
         last = b["cols"]

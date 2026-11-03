@@ -427,6 +427,12 @@ void esk_cm_exec16(struct esk_cm_state *cs, u32 h)
             }
             if (cs->sim->rom_call && esk_cm_rom_call(cs, h & 0xff))
                 return;
+            if (cs->dbg.ctrl & DHCSR_C_DEBUGEN) {
+                /* a debugger's: the core halts at the BKPT */
+                esk_cm_dbg_halt(cs, DFSR_BKPT);
+                cs->npc = cs->pc;
+                return;
+            }
             if (cs->model->arch == ARCH_V7M) {
                 cs->hfsr |= 1u << 31;       /* DEBUGEVT */
             }

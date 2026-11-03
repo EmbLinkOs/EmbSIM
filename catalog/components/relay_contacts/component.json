@@ -4,7 +4,8 @@
   "id": "emblink/relay_contacts",
   "version": "1.0.0",
   "name": "Relay contact controller",
-  "category": "mechanical",
+  "category": "switches_relays",
+  "subcategory": "relays",
   "description": "SPDT contact controller with hysteresis and persistent pickup/release delay. Sense pins measure coil resistor voltage.",
   "keywords": [
     "mechanical",
@@ -186,5 +187,24 @@
   },
   "tests": [
     "tests/*.json"
-  ]
+  ],
+  "i18n": {
+    "fr": {
+      "source": "ce10257ae8f1",
+      "description": "Commande de contact inverseur avec hystérésis et délais d'enclenchement et de relâchement mémorisés. Les broches de mesure lisent la tension de la résistance de bobine.",
+      "fidelity": {
+        "electrical": {
+          "claims": "Commande de contact inverseur avec hystérésis et délais d'enclenchement et de relâchement mémorisés. Les broches de mesure lisent la tension de la résistance de bobine.",
+          "omissions": [
+            "le rebond mécanique",
+            "les arcs aux contacts",
+            "la saturation magnétique",
+            "la course des contacts",
+            "les cas extrêmes des paramètres du fabricant",
+            "les dommages thermiques et les limites destructives"
+          ]
+        }
+      }
+    }
+  }
 }

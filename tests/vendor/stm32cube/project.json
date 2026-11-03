@@ -2,7 +2,7 @@
  "schema_version": 1,
  "kind": "project",
  "name": "stm32cube-vendor",
- "description": "A Blue Pill running an application built with ST's unmodified STM32F1 HAL and CMSIS device files (tests/vendor/stm32cube/run.py puts the image beside this file as sketch.elf), on USB power: a button on PA0, a terminal on PA9/PA10 at 115200 baud, a 1.0 V source on PA4, PA6 through a 10 kOhm, 4.7 uF low-pass into PA1, a 25LC040 SPI EEPROM on SPI2 (PB12 its CS, PB13 SCK, PB14 MISO, PB15 MOSI) and a 24C02 I2C EEPROM at 0x50 on I2C1 (PB6 SCL, PB7 SDA, 4.7 kOhm pull-ups).",
+ "description": "A Blue Pill running an application built with ST's unmodified STM32F1 HAL and CMSIS device files (tests/vendor/stm32cube/run.py puts the image beside this file as sketch.elf), on USB power: a button on PA0, a terminal on PA9/PA10 at 115200 baud, a 1.0 V source on PA4, PA6 through a 10 kOhm, 4.7 uF low-pass into PA1, a 25LC040 SPI EEPROM on SPI2 (PB12 its CS, PB13 SCK, PB14 MISO, PB15 MOSI) and a 24C02 I2C EEPROM at 0x50 on I2C1 (PB6 SCL, PB7 SDA, 4.7 kOhm pull-ups). Its resistors and capacitor are exact (tolerance 0): the scenarios' numbers are computed from their nominal values; the button bounces as a real one does.",
  "policy": "electrical",
  "boards": [
   {
@@ -62,7 +62,8 @@
    "id": "R1",
    "component": "emblink/resistor",
    "params": {
-    "resistance": 10000
+    "resistance": 10000,
+    "tolerance": 0
    },
    "layout": {
     "x": 520,
@@ -73,7 +74,8 @@
    "id": "C1",
    "component": "emblink/capacitor",
    "params": {
-    "capacitance": 4.7e-06
+    "capacitance": 4.7e-06,
+    "tolerance": 0
    },
    "layout": {
     "x": 420,
@@ -112,7 +114,8 @@
    "id": "R2",
    "component": "emblink/resistor",
    "params": {
-    "resistance": 4700
+    "resistance": 4700,
+    "tolerance": 0
    },
    "layout": {
     "x": 300,
@@ -123,7 +126,8 @@
    "id": "R3",
    "component": "emblink/resistor",
    "params": {
-    "resistance": 4700
+    "resistance": 4700,
+    "tolerance": 0
    },
    "layout": {
     "x": 340,

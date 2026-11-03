@@ -28,6 +28,7 @@ static nrfx_rtc_t rtc = NRFX_RTC_INSTANCE(NRF_RTC1);
 static nrfx_gpiote_t gpiote = NRFX_GPIOTE_INSTANCE(NRF_GPIOTE);
 
 static volatile unsigned ticks, presses, seconds;
+static volatile uint32_t last_edge;
 static volatile int got = -1, clock_events;
 static uint8_t rx_buf[2][1];
 static int rx_next;
@@ -69,8 +70,15 @@ static void button_handler(nrfx_gpiote_pin_t pin, nrfx_gpiote_trigger_t trigger,
 {
     (void)trigger;
     (void)ctx;
-    if (pin == BUTTON)
-        presses++;
+    /* the button's contacts chatter for a few milliseconds when pressed and
+     * when released: a press is a falling edge after 20 ms (655 ticks of the
+     * 32768 Hz RTC, a 24-bit counter) without an edge */
+    if (pin == BUTTON) {
+        uint32_t now = nrfx_rtc_counter_get(&rtc);
+        if (!nrf_gpio_pin_read(BUTTON) && ((now - last_edge) & 0xFFFFFFu) >= 655u)
+            presses++;
+        last_edge = now;
+    }
 }
 
 static void say(const char *s)
@@ -88,7 +96,7 @@ int main(void)
     nrfx_timer_config_t tcfg = NRFX_TIMER_DEFAULT_CONFIG(NRFX_MHZ_TO_HZ(1));
     nrfx_rtc_config_t rcfg = NRFX_RTC_DEFAULT_CONFIG;
     static const nrf_gpio_pin_pull_t pull = NRF_GPIO_PIN_PULLUP;
-    nrfx_gpiote_trigger_config_t trig = { .trigger = NRFX_GPIOTE_TRIGGER_HITOLO, .p_in_channel = &ch };
+    nrfx_gpiote_trigger_config_t trig = { .trigger = NRFX_GPIOTE_TRIGGER_TOGGLE, .p_in_channel = &ch };
     static const nrfx_gpiote_handler_config_t hcfg = { .handler = button_handler };
     nrfx_gpiote_input_pin_config_t icfg = { .p_pull_config = &pull, .p_trigger_config = &trig,
                                             .p_handler_config = &hcfg };

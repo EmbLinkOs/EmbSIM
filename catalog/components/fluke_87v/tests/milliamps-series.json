@@ -1,0 +1,69 @@
+{
+  "schema_version": 1,
+  "kind": "component_test",
+  "name": "milliamps-series",
+  "description": "In series with 5 V and 1 kOhm on mA DC: its 1.8 ohm shunt (1.8 mV/mA burden) leaves 4.99 mA.",
+  "policy": "electrical",
+  "until": "600ms",
+  "circuit": {
+    "components": [
+      {
+        "id": "DUT",
+        "component": "emblink/fluke_87v"
+      },
+      {
+        "id": "G",
+        "component": "emblink/gnd"
+      },
+      {
+        "id": "SUP",
+        "component": "emblink/vsource",
+        "params": {
+          "kind": "dc",
+          "dc": 5
+        }
+      },
+      {
+        "id": "R1",
+        "component": "emblink/resistor",
+        "params": {
+          "resistance": "1k",
+          "tolerance": 0
+        }
+      }
+    ],
+    "nets": {
+      "P": [
+        "SUP.+",
+        "R1.1"
+      ],
+      "M": [
+        "R1.2",
+        "DUT.MA"
+      ],
+      "GND": [
+        "SUP.-",
+        "DUT.COM",
+        "G.GND"
+      ]
+    }
+  },
+  "expect": {
+    "output:DUT.display": {
+      "at": "600ms",
+      "equals": "4.99"
+    },
+    "output:DUT.unit": {
+      "at": "600ms",
+      "equals": "mA"
+    }
+  },
+  "inputs": [
+    {
+      "at": "0s",
+      "target": "DUT",
+      "input": "function",
+      "value": "ma_dc"
+    }
+  ]
+}

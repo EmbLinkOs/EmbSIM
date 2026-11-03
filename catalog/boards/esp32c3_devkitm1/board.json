@@ -386,7 +386,8 @@
     "rx": "GPIO20",
     "baud": 115200,
     "bridge": {
-      "part": "CP2102N-A02-GQFN28"
+      "part": "CP2102N-A02-GQFN28",
+      "usb": {"vid": "0x10C4", "pid": "0xEA60", "product": "CP2102N USB to UART Bridge Controller"}
     }
   },
   "artwork": {
@@ -678,5 +679,38 @@
   },
   "tests": [
     "tests/*.json"
-  ]
+  ],
+  "i18n": {
+    "fr": {
+      "source": "666508249bc7",
+      "description": "L'ESP32-C3-DevKitM-1 d'Espressif (V1.0) : un module ESP32-C3-MINI-1 (l'ESP32-C3FN4 avec son quartz de 40 MHz et 4 Mo de flash), le régulateur SGM2212 fabriquant le 3,3 V à partir du 5 V du micro-USB à travers une 1N5819HW, la LED rouge 5 V, la LED RVB adressable (SK68XXMINI-HS) sur GPIO8, le bouton BOOT sur GPIO9, le bouton RST sur CHIP_PU et deux connecteurs de 15 broches. Le pont USB-UART du CP2102N sur l'UART0 (GPIO21/GPIO20) est la console série de la session, et un port série sur l'hôte (embsim serve --serial). Le micrologiciel est une image de flash (bin), telle qu'idf.py et esptool l'écrivent.",
+      "fidelity": {
+        "functional": {
+          "claims": "Réseaux, ports, la LED RVB, la LED d'alimentation et les deux boutons comme composants ; l'ESP32-C3 exécute son micrologiciel depuis l'image de la flash (voir sa description) : sa propre ROM, le chargeur d'amorçage de second niveau et l'application, comme sur la carte. RST tire CHIP_PU vers le bas et la puce redémarre avec rst:0x1 (POWERON) ; BOOT maintenu pendant ce temps fait attendre un téléchargement à la ROM (boot:0x4 (DOWNLOAD(USB/UART0/1)), waiting for download). Le port du CP2102N est la console de la session sur l'UART0 (GPIO21/GPIO20) et un port série sur l'hôte.",
+          "omissions": [
+            "le CP2102N lui-même : son énumération USB, sa détection de VBUS (R18, R19) et son courant d'alimentation ; ses octets arrivent directement à l'UART0, pas en trames sur GPIO20/GPIO21",
+            "le circuit de programmation automatique (Q1, Q2, R10, R12) : le port d'un hôte n'a pas de lignes de modem ici (un pseudo-terminal), donc DTR et RTS restent inactives et laissent EN et IO9 tranquilles, comme le fait un terminal qui ouvre le port ; la réinitialisation en mode téléchargement d'esptool n'est pas accessible par lui (maintenez BOOT et appuyez sur RST à la place)",
+            "le protocole de téléchargement série de la ROM est bien celui de la ROM, mais esptool ne peut pas l'atteindre sans les lignes de modem",
+            "les D+ et D- de l'USB (vers le CP2102N seulement : GPIO18 et GPIO19 ne sont pas câblés au connecteur, R2 et R3 non montées)"
+          ]
+        },
+        "timed": {
+          "claims": "Comme en fonctionnel.",
+          "omissions": [
+            "comme en fonctionnel"
+          ]
+        },
+        "electrical": {
+          "claims": "Le chemin d'alimentation du schéma : le VBUS de l'USB à travers D1 (une 1N5819) vers le 5 V, U2 (SGM2212-3.3) qui fabrique le 3V3 pour le module, R20, la LED RVB et la R5 de CHIP_PU ; D5 allumée depuis le 5 V à travers R11 (5,1 k) ; C6 (1 uF) avec R5 (10 k) maintenant CHIP_PU bas quelques millisecondes à la mise sous tension ; SW2 relie CHIP_PU à la masse, SW1 GPIO9 ; R20 (10 k) maintient GPIO8 haut.",
+          "omissions": [
+            "les diodes ESD (D2, D3, D4) et les résistances série de 22 ohms et 0 ohm de l'USB",
+            "les condensateurs de découplage et de réservoir (C1, C2, C8, C9, C10, C12 : avec les 10 uF de C1 en sortie du régulateur, le moteur analogique ne converge pas encore) et C4, C5, C13, C14, R2, R3, R14 non montés",
+            "le courant d'alimentation du pont (celui du CP2102N) ; le module consomme celui de sa puce (la table d'alimentation de l'ESP32-C3, ADR-036) mais pas celui de sa flash",
+            "R17 (0 ohm) entre GPIO8 et la LED : le DIN de la LED est le réseau de GPIO8",
+            "le 1 uF sur CHIP_PU ralentit les 200 premières ms d'une exécution : le moteur analogique suit sa charge au rythme des quanta du MCU (environ 2,5 s de temps réel)"
+          ]
+        }
+      }
+    }
+  }
 }

@@ -127,7 +127,7 @@ export function mm(v: number): string {
 export function describeMeasurement(m: Measurement): string {
   const pitches = m.distance / 2.54;
   const onGrid = m.distance > 0.01 && Math.abs(pitches - Math.round(pitches)) < 0.02;
-  const grid = onGrid ? ` (${Math.round(pitches)} × 2.54 mm)` : '';
+  const grid = onGrid ? ` (${Math.round(pitches)} × 2.54 mm)` : ''; // a pitch count, the same in every language
   return `${mm(m.distance)}${grid} · Δx ${mm(m.dx)} · Δy ${mm(m.dy)} · Δz ${mm(m.dz)}`;
 }
 

@@ -14,6 +14,7 @@
 
 import type { ArtworkState, BenchNote, BenchPlace, Hotspot, OutputValue, WorldBody, WorldRoom, WorldSun } from '@embsim/protocol';
 import { useCallback, useEffect, useImperativeHandle, useRef, useState, type KeyboardEvent, type Ref } from 'react';
+import { uiText } from '@embsim/scene';
 
 import * as THREE from 'three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
@@ -1244,19 +1245,23 @@ export function Bench3D(props: Bench3DProps) {
       m.userData.measurement = true;
       s.inspect.add(m);
     };
-    const measureAt = () => {
+    const measureAt = (ev: PointerEvent) => {
       const p = propsRef.current;
+      // a contact the pointer names (as the jumper tool would, in screen
+      // space, whatever the zoom) is taken exactly; elsewhere the surface
+      // hit snaps to a contact within 1.5 mm
+      const pick = terminalAtPointer(ev);
       const hit = hitParts()[0];
       const raw = hit?.point ?? onDesk();
-      if (!raw) return;
-      const { at, snapped } = snapPoint(raw.toArray() as Vec3, p.terminals.map((t) => t.at), 1.5);
+      if (pick.kind !== 'terminal' && !raw) return;
+      const { at, snapped } = pick.kind === 'terminal' ? { at: [...pick.terminal.at] as Vec3, snapped: true } : snapPoint(raw!.toArray() as Vec3, p.terminals.map((t) => t.at), 1.5);
       const done = s.inspect.children.some((c) => c.userData.measurement === 'line');
       if (!s.measureFrom || done) {
         for (const child of [...s.inspect.children]) if (child.userData.measurement) { s.inspect.remove(child); disposeTree(child); }
         s.measureFrom = at;
         measureMark(at, 0x38bdf8);
         p.onMeasure?.(null);
-        setFeedback({ text: `From ${at.map((v) => Math.round(v * 100) / 100).join(', ')} mm${snapped ? ' (snapped to a contact)' : ''} · click the second point · Esc clears` });
+        setFeedback({ text: uiText(snapped ? 'bench.measureFromSnapped' : 'bench.measureFrom', snapped ? 'From {at} mm (snapped to a contact) · click the second point · Esc clears' : 'From {at} mm · click the second point · Esc clears', { at: at.map((v) => Math.round(v * 100) / 100).join(', ') }) });
       } else {
         const m = measure(s.measureFrom, at);
         measureMark(at, 0x38bdf8);
@@ -1341,10 +1346,10 @@ export function Bench3D(props: Bench3DProps) {
       const blocked = Boolean(terminal?.occupiedBy?.length);
       const point = terminal ? v3(terminal.at).project(s.camera) : undefined;
       const r = el.getBoundingClientRect();
-      const text = blocked ? `${terminal!.ref} · occupied by ${terminal!.occupiedBy!.join(', ')} · choose another hole on the strip`
-        : pick.kind === 'ambiguous' ? 'Contacts overlap — zoom in to choose a pin'
-        : terminal ? from ? terminal.ref === from.ref ? `${from.ref} · choose another terminal` : `${from.ref} → ${terminal.ref} · release to connect` : `${terminal.ref} · drag to connect`
-        : from ? `${from.ref} → choose a terminal · Esc cancels` : 'Point at a hole or pin to start a jumper';
+      const text = blocked ? uiText('bench.occupied', '{ref} · occupied by {by} · choose another hole on the strip', { ref: terminal!.ref, by: terminal!.occupiedBy!.join(', ') })
+        : pick.kind === 'ambiguous' ? uiText('bench.overlap', 'Contacts overlap — zoom in to choose a pin')
+        : terminal ? from ? terminal.ref === from.ref ? uiText('bench.chooseAnother', '{ref} · choose another terminal', { ref: from.ref }) : uiText('bench.release', '{from} → {to} · release to connect', { from: from.ref, to: terminal.ref }) : uiText('bench.drag', '{ref} · drag to connect', { ref: terminal.ref })
+        : from ? uiText('bench.chooseTerminal', '{ref} → choose a terminal · Esc cancels', { ref: from.ref }) : uiText('bench.pointAt', 'Point at a hole or pin to start a jumper');
       setFeedback({ text, ref: terminal?.ref, blocked, x: point ? (point.x + 1) * r.width / 2 : undefined, y: point ? (1 - point.y) * r.height / 2 : undefined });
       el.style.cursor = blocked ? 'not-allowed' : terminal ? 'var(--draw-cursor, crosshair)' : 'default';
       return blocked ? undefined : terminal;
@@ -1358,7 +1363,7 @@ export function Bench3D(props: Bench3DProps) {
       // Route handles are visible overlay controls, so their picking priority
       // matches their depth-independent display even over a component body.
       if (p.tool === 'measure') {
-        measureAt();
+        measureAt(ev);
         return;
       }
       const hit = p.editable && p.tool === 'select' ? hits.find((h) => h.object.userData.routePoint !== undefined) ?? hits[0] : hits[0];
@@ -1465,7 +1470,7 @@ export function Bench3D(props: Bench3DProps) {
         point[2] = Math.round(at.z * 10) / 10;
         routeDrag.moved = true;
         routePreview(routeDrag.jumper, routeDrag.points);
-        setFeedback({ text: `Route point ${routeDrag.index + 1}: ${point.join(', ')} mm · Esc cancels` });
+        setFeedback({ text: uiText('bench.routePoint', 'Route point {n}: {at} mm · Esc cancels', { n: routeDrag.index + 1, at: point.join(', ') }) });
         return;
       }
       if (dragBody) {
@@ -1495,7 +1500,7 @@ export function Bench3D(props: Bench3DProps) {
         const blocked = contacts.filter((contact) => contact.hole && contact.occupiedBy.length);
         const contactPoint = (contact: typeof contacts[number]): Point3 => [contact.at[0], snapped.elevation, contact.at[1]];
         showMarks(free.map(contactPoint), blocked.map(contactPoint));
-        setFeedback({ text: contacts.map((contact) => `${contact.pin} → ${contact.hole ?? 'unseated'}${contact.occupiedBy.length ? ` (occupied: ${contact.occupiedBy.join(', ')})` : ''}`).join(' · ') || `Move ${drag.id}` });
+        setFeedback({ text: contacts.map((contact) => `${contact.pin} → ${contact.hole ?? uiText('bench.unseated', 'unseated')}${contact.occupiedBy.length ? ` (${uiText('bench.occupiedList', 'occupied: {by}', { by: contact.occupiedBy.join(', ') })})` : ''}`).join(' · ') || uiText('bench.move', 'Move {id}', { id: drag.id }) });
         el.style.cursor = blocked.length ? 'not-allowed' : 'grabbing';
         invalidate();
         return;
@@ -1556,7 +1561,7 @@ export function Bench3D(props: Bench3DProps) {
           if (snapped.insertion?.valid !== false)
             p.onMove(drag.id, { x: snapped.x, y: snapped.y, rotation: drag.rotation as 0 | 90 | 180 | 270 });
           else {
-            rejection = snapped.insertion.contacts.filter((contact) => contact.occupiedBy.length).map((contact) => `${contact.hole} is occupied by ${contact.occupiedBy.join(', ')}`).join(' · ');
+            rejection = snapped.insertion.contacts.filter((contact) => contact.occupiedBy.length).map((contact) => uiText('bench.holeOccupied', '{hole} is occupied by {by}', { hole: contact.hole ?? '', by: contact.occupiedBy.join(', ') })).join(' · ');
             const e = s.parts.get(drag.id);
             if (e) e.built.group.position.set(e.view.place.x, e.view.elevation, e.view.place.y);
           }
@@ -1717,7 +1722,7 @@ export function Bench3D(props: Bench3DProps) {
       ref={hostRef}
       className={`eb-bench3d ${props.tool === 'wire' ? 'is-wiring' : ''}`}
       role="application"
-      aria-label={props.label ?? 'Bench'}
+      aria-label={props.label ?? uiText('bench.label', 'Bench')}
       aria-roledescription="3D bench"
       tabIndex={0}
       onKeyDown={onKeyDown}

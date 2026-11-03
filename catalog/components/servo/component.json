@@ -4,7 +4,8 @@
   "id": "emblink/servo",
   "version": "1.0.0",
   "name": "Hobby servo",
-  "category": "mechanical",
+  "category": "electromechanical",
+  "subcategory": "servos",
   "description": "RC hobby servo (SG90 class): the width of each pulse on SIG sets the horn's target, from min_pulse (0°) to max_pulse (the full range), refreshed every 20 ms; the horn turns toward it at its rated speed while pulses keep coming, ignores changes within its dead band, and turns on the board view.",
   "keywords": [
     "servo",
@@ -212,5 +213,41 @@
   },
   "tests": [
     "tests/*.json"
-  ]
+  ],
+  "i18n": {
+    "fr": {
+      "source": "52aa90c45ad0",
+      "description": "Servomoteur de modélisme (classe SG90) : la largeur de chaque impulsion sur SIG fixe la cible du palonnier, de min_pulse (0°) à max_pulse (la course complète), rafraîchie toutes les 20 ms ; le palonnier tourne vers elle à sa vitesse nominale tant que les impulsions arrivent, ignore les changements dans sa zone morte, et tourne sur la vue de la carte.",
+      "fidelity": {
+        "functional": {
+          "claims": "Angle cible linéaire en largeur d'impulsion entre min_pulse et max_pulse, borné ; impulsions hors de 0,4-3 ms ignorées ; une zone morte de 10 us ; le palonnier tourne à la vitesse nominale (0,1 s pour 60 degrés à 4,8 V, proportionnelle à l'alimentation) tant qu'il est commandé, une trame après chaque impulsion, de sorte qu'il reste en place quand les impulsions cessent ; aucun mouvement sous 3,5 V sur V+.",
+          "omissions": [
+            "une charge sur le palonnier (couple, 1,8 kgf cm à 4,8 V, et blocage)",
+            "l'inertie et le dépassement",
+            "le courant d'alimentation",
+            "la dispersion de la correspondance impulsion-angle entre exemplaires"
+          ]
+        },
+        "timed": {
+          "claims": "Comme en fonctionnel ; délais tels qu'indiqués.",
+          "omissions": [
+            "une charge sur le palonnier (couple, 1,8 kgf cm à 4,8 V, et blocage)",
+            "l'inertie et le dépassement",
+            "le courant d'alimentation",
+            "la dispersion de la correspondance impulsion-angle entre exemplaires"
+          ]
+        },
+        "electrical": {
+          "claims": "Les broches se relient aux réseaux analogiques avec les modèles de broche par défaut de la famille ; le comportement est celui du modèle Lua.",
+          "omissions": [
+            "une charge sur le palonnier (couple, 1,8 kgf cm à 4,8 V, et blocage)",
+            "l'inertie et le dépassement",
+            "le courant d'alimentation",
+            "la dispersion de la correspondance impulsion-angle entre exemplaires",
+            "les limites de courant de sortie"
+          ]
+        }
+      }
+    }
+  }
 }

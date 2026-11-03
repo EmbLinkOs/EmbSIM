@@ -4,7 +4,8 @@
   "id": "emblink/trimmer_potentiometer",
   "version": "1.0.0",
   "name": "Trimmer potentiometer",
-  "category": "passives",
+  "category": "resistors",
+  "subcategory": "variable",
   "description": "Multi-turn trimmer (3296 style): a potentiometer set once with a screwdriver to calibrate a divider.",
   "keywords": [
     "trimmer",
@@ -166,5 +167,24 @@
       "max": 1,
       "doc": "Physical wiper position, before taper mapping."
     }
-  ]
+  ],
+  "i18n": {
+    "fr": {
+      "source": "e6953d0a871e",
+      "description": "Potentiomètre d'ajustage multitour (style 3296) : réglé une fois au tournevis pour étalonner un diviseur.",
+      "fidelity": {
+        "timed": {
+          "claims": "Comme en électrique."
+        },
+        "electrical": {
+          "claims": "Deux résistances partagées à la position du curseur, loi linéaire (SPEC-004 §7 potentiometer).",
+          "omissions": [
+            "la résistance aux extrémités",
+            "la résistance de contact du curseur",
+            "le coefficient de température"
+          ]
+        }
+      }
+    }
+  }
 }

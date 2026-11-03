@@ -15,7 +15,8 @@ machine-readable report of SPEC-008 §8.
 | `embsim replay RECORDING [--allow-drift] [--json]` | runs a recording again: its project from reset, its inputs at their times, to its end, comparing what the run observes with what was recorded, in order; exit 0 when all match, 4 at the first divergence (both observations printed, or in `divergence` with `--json`), 2 when the project or an image changed since the recording unless `--allow-drift` |
 | `embsim record to-scenario RECORDING [-o FILE] [--assert probes,serial\|none] [--name N]` | a scenario from a recording: its inputs at their times, and assertions on each digital probe's last level and edges and each serial probe's text |
 | `embsim validate PATH...` | loads each project through the real loader and reports its diagnostics (descriptions are validated against the schemas by `tools/validate.py`) |
-| `embsim serve [PROJECT] [--port N] [--host H] [--ui DIR] [--open] [--allow-origin ORIGIN]...` | the WebSocket endpoint on loopback plus the workbench assets (the built `ui/apps/workbench/dist` when present, else a built-in console page); `--allow-origin` admits browser pages from another origin, such as a desktop webview (SPEC-008 §1). Without a project the session starts empty and the workbench opens one |
+| `embsim serve [PROJECT] [--port N] [--host H] [--ui DIR] [--open] [--allow-origin ORIGIN]... [--serial B1]... [--stlink [PORT]] [--usbip [PORT]] [--run]` | the WebSocket endpoint on loopback plus the workbench assets (the built `ui/apps/workbench/dist` when present, else a built-in console page); `--allow-origin` admits browser pages from another origin, such as a desktop webview (SPEC-008 §1). Without a project the session starts empty and the workbench opens one; `--stlink` shares the boards' ST-LINK probes on the host as stlink-server does, for OpenOCD and the IDEs, and `--usbip` serves the bench's free USB devices (the ST-LINK itself) over USB/IP for the tools that open a USB device (`docs/user/nucleo-st-link.md`) |
+| `embsim ide PROJECT [--embsim CMD] [--force]` | VS Code's launch configurations and tasks for the project's boards in `.vscode` next to it: through a board's own probe with OpenOCD (the NUCLEO's ST-LINK) and on EmbSIM's GDB server for any board (`docs/user/nucleo-st-link.md`) |
 | `embsim sidecar [PROJECT]` | the protocol over stdin and stdout, one JSON object per line, for the desktop shell and IDEs |
 | `embsim gdb PROJECT [--board B] [--port N] [--host H]` | runs the project and serves GDB's remote protocol for one board's MCU on loopback (default port 3333): `target extended-remote :3333` in GDB, `gdb-remote 3333` in LLDB; see [firmware](firmware.md) |
 | `embsim build PROJECT [--board B] [--toolchain T]` | builds a board's firmware from its `firmware` block (sources, flags, linker script) with the named or the block's toolchain profile, writing the block's `image` |
@@ -116,6 +117,71 @@ flamegraph.pl prof.folded > profile.svg
 
 Diagnostics go to stderr as `embsim: <severity>: <code> (<subject>)` followed by
 the message; their codes are listed in [diagnostics](diagnostics.md).
+
+## Timing measurements
+
+`--measure [NAME=]FROM..TO` (up to 16) measures, each time it happens, the
+cycles and the simulated time from one boundary to the next. The report goes
+to `--measure-out FILE`; the default `-` is stderr, and a `.json` file gets
+JSON. A boundary is:
+
+| Boundary | When it is stamped |
+|---|---|
+| `SYMBOL` or `0xADDR` | the instruction at that address starts (before its own cycles, after any exception sequence before it) |
+| `exc:N` | the core starts taking exception N (before the entry's or tail-chain's cycles) |
+| `pend:N` | exception N becomes pending: an interrupt asserted, a PendSV or an SVC requested, at the cycle the device or instruction did it |
+| `ret:N` | exception N's return is done: the first instruction after it starts, or the tail-chain that takes its place starts |
+
+`N` is a number or a name: `Reset`, `NMI`, `HardFault`, `MemManage`,
+`BusFault`, `UsageFault`, `SVCall`, `DebugMon`, `PendSV`, `SysTick`, or
+`IRQn` (exception 16 + n). A sample starts at the first FROM after the last
+sample and ends at the next TO. When FROM and TO are the same boundary, each
+occurrence ends one sample and starts the next, which measures a period.
+
+    embsim run --target emblink/nucleo_f446re --image freertos.elf --until 200ms \
+        --measure ctxsw=pend:PendSV..ret:PendSV --measure tick=exc:SysTick..exc:SysTick
+
+`ctxsw` is an RTOS context switch, from the PendSV request to the first
+instruction of the task switched to. `tick` is the SysTick period.
+
+The numbers are simulated: cycles of the target's core, converted to time at
+the core clock that ran them. The host's speed does not change them, and
+the same image and inputs give the same numbers every time. The host's wall
+time is reported on a line of its own, apart from the measurements. The
+simulator watches from outside, so a measurement adds no instruction or
+cycle to the firmware; a DWT.CYCCNT read in the program does add its own.
+
+Measurements are as exact as the target's timing model. See
+`docs/engineering/timing-fidelity.md` for what each core models. On
+Cortex-M, instructions are estimated from the TRM's table, while exception
+entry, return and tail-chaining follow the TRM; flash wait states are not
+modelled yet.
+
+### Traces
+
+`--trace FILE` records every boundary as it happens:
+- each instruction starting, with its address and function;
+- each exception becoming pending, being taken, and returning;
+- each load and store the core makes, right after its instruction (an
+  exception's entry: its stacking and its vector fetch). Each carries its
+  address, its size and value (or `bus error`), and the register it names
+  (`USART2.DR`, `RCC.CR`, `scs+0xd04` for the core's own system space).
+  `--trace-accesses peripherals` keeps the ones plain memory does not
+  answer, `none` none (`all` by default).
+
+Each event carries the core's cycle and the simulated time. `--trace-start
+BOUNDARY` starts recording at the first such boundary (for example
+`pend:PendSV`), and `--trace-limit N` caps the events (100 000 by default;
+the file says how many it dropped).
+
+A file ending in `.vcd` gets a value change dump at 1 ps resolution, with
+`pc`, the exception active, the last exception pended, the cycle count, and
+for the data accesses their `address`, `data`, `write` (1 for a store) and
+an `access` event. GTKWave and other waveform viewers open it. Any other name gets
+a tab-separated table.
+
+    embsim run --target emblink/nucleo_f446re --image freertos.elf --until 50ms \
+        --trace switch.vcd --trace-start pend:PendSV --trace-limit 400
 
 ## FreeRTOS tasks
 

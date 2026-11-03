@@ -1,0 +1,45 @@
+{
+  "schema_version": 1,
+  "kind": "component_test",
+  "name": "no-target",
+  "description": "A probe on its own: nothing on SD's net, no computer on its USB; the DAP is not connected and the UART is closed.",
+  "policy": "functional",
+  "until": "10ms",
+  "circuit": {
+    "components": [
+      {
+        "id": "DUT",
+        "component": "emblink/rpi_debug_probe"
+      },
+      {
+        "id": "G0",
+        "component": "emblink/gnd"
+      }
+    ],
+    "nets": {
+      "GND": [
+        "DUT.GND",
+        "DUT.GND_U",
+        "G0.GND"
+      ]
+    }
+  },
+  "expect": {
+    "output:DUT.target": {
+      "at": "5ms",
+      "equals": ""
+    },
+    "output:DUT.dap_connected": {
+      "at": "5ms",
+      "equals": false
+    },
+    "output:DUT.uart_open": {
+      "at": "5ms",
+      "equals": false
+    },
+    "output:DUT.swj_clock_hz": {
+      "at": "5ms",
+      "equals": 1000000
+    }
+  }
+}

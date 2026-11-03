@@ -38,7 +38,11 @@
       "layout": {
         "x": 240,
         "y": 100
-      }
+      },
+      "params": {
+        "bounce": false
+      },
+      "doc": "An ideal contact: the scenario changes colour every millisecond, faster than a hand and shorter than a real contact's bounce (ADR-034, examples/button-bounce)"
     },
     {
       "id": "RR",
@@ -57,7 +61,11 @@
       "layout": {
         "x": 240,
         "y": 200
-      }
+      },
+      "params": {
+        "bounce": false
+      },
+      "doc": "An ideal contact: the scenario changes colour every millisecond, faster than a hand and shorter than a real contact's bounce (ADR-034, examples/button-bounce)"
     },
     {
       "id": "RG",
@@ -76,7 +84,11 @@
       "layout": {
         "x": 240,
         "y": 300
-      }
+      },
+      "params": {
+        "bounce": false
+      },
+      "doc": "An ideal contact: the scenario changes colour every millisecond, faster than a hand and shorter than a real contact's bounce (ADR-034, examples/button-bounce)"
     },
     {
       "id": "RB",

@@ -52,7 +52,11 @@
       "layout": {
         "x": 450,
         "y": 40
-      }
+      },
+      "params": {
+        "bounce": false
+      },
+      "doc": "An ideal contact: this example shows the schematic's live controls; contact bounce (ADR-034) is examples/button-bounce"
     },
     {
       "id": "R2",
@@ -82,7 +86,11 @@
       "layout": {
         "x": 450,
         "y": 145
-      }
+      },
+      "params": {
+        "bounce": false
+      },
+      "doc": "An ideal contact: this example shows the schematic's live controls; contact bounce (ADR-034) is examples/button-bounce"
     },
     {
       "id": "R3",

@@ -1,0 +1,85 @@
+{
+  "schema_version": 1,
+  "kind": "scenario",
+  "name": "pio_dma",
+  "until": "400ms",
+  "description": "PIO0 sends serial out of GP2 (serial.pio's serial_tx, side-set start and stop bits, OUT data bits, a counted loop) and a 1 kHz square wave on GP3 (SET with delays, the clock divided); DMA copies memory, chains two channels with a completion interrupt, computes the standard CRC-32 check value with its sniffer, and is paced by UART0's, PIO0 SM0's and the ADC's requests.",
+  "assertions": [
+    {
+      "id": "pio_serial",
+      "at": "100ms",
+      "probe": "pio_terminal",
+      "expect": {
+        "contains": "pio says hello\n"
+      }
+    },
+    {
+      "id": "square",
+      "at": "100ms",
+      "probe": "terminal",
+      "expect": {
+        "matches": "square edges (\\d+) in 20 ms",
+        "min": 38,
+        "max": 42
+      }
+    },
+    {
+      "id": "copy",
+      "at": "150ms",
+      "probe": "terminal",
+      "expect": {
+        "contains": "dma copy ok"
+      }
+    },
+    {
+      "id": "chain",
+      "at": "150ms",
+      "probe": "terminal",
+      "expect": {
+        "contains": "dma chain ok, irqs 1"
+      }
+    },
+    {
+      "id": "crc",
+      "at": "150ms",
+      "probe": "terminal",
+      "expect": {
+        "contains": "crc32 cbf43926"
+      }
+    },
+    {
+      "id": "uart_dreq",
+      "at": "200ms",
+      "probe": "terminal",
+      "expect": {
+        "contains": "dma to the uart\n"
+      }
+    },
+    {
+      "id": "pio_dreq",
+      "at": "250ms",
+      "probe": "pio_terminal",
+      "expect": {
+        "contains": "dma feeds the pio\n"
+      }
+    },
+    {
+      "id": "adc_dreq",
+      "at": "350ms",
+      "probe": "terminal",
+      "expect": {
+        "matches": "adc by dma (\\d+)",
+        "min": 1220,
+        "max": 1262
+      }
+    },
+    {
+      "id": "done",
+      "at": "390ms",
+      "probe": "terminal",
+      "expect": {
+        "contains": "done"
+      }
+    }
+  ]
+}

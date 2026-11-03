@@ -37,7 +37,8 @@
  * Not modelled: autobaud (LOWPULSE, HIGHPULSE, POSPULSE, NEGPULSE and
  * RXD_CNT keep their reset values), IrDA, RS485, the AT_CMD character,
  * software flow control (XON/XOFF), the RX glitch filter, light-sleep
- * wake-up, GDMA (UHCI), the APB-to-core synchronisation delay. */
+ * wake-up, the APB-to-core synchronisation delay. UHCI (uhci.c) takes the RX
+ * FIFO's bytes and fills the TX FIFO while it is attached. */
 #include <string.h>
 
 #include "mcu/esp32c3/esp32c3.h"
@@ -254,6 +255,7 @@ static void receive(struct c3_uart *u, u32 bits, int framing_error, int brk)
     }
     clocking(u); /* the timeout counts in ticks */
     update(u);
+    esk_esp32c3_uhci_uart_event(u->s, u->unit, brk ? UHCI_EV_BREAK : UHCI_EV_RX);
 }
 
 static int ur_room(void *ctx)
@@ -353,6 +355,7 @@ static void ur_tick(void *ctx, u32 cycles)
             set_raw(u, RAW_RXFIFO_TOUT);
             u->rx_any = 0;
             update(u);
+            esk_esp32c3_uhci_uart_event(u->s, u->unit, UHCI_EV_IDLE);
         }
     }
     if (!u->busy) {
@@ -416,6 +419,57 @@ static void ur_reset(void *ctx)
     u->level = 0;
     u->cts = 0;
     update(u);
+}
+
+/* ---- UHCI's side (uhci.c) ------------------------------------------------------- */
+
+static struct c3_uart *uart_of(struct esk_mach *m, int unit)
+{
+    int i;
+    for (i = 0; m->rf; i++) {
+        struct esk_rf_periph *p = esk_rf_periph_at(m->rf, i);
+        if (!p)
+            break;
+        if (p->ops == &esk_esp32c3_uart_ops && ((struct c3_uart *)p->ctx)->unit == unit)
+            return (struct c3_uart *)p->ctx;
+    }
+    return NULL;
+}
+
+int esk_esp32c3_uart_rx_take(struct esk_mach *m, int unit, u8 *c)
+{
+    struct c3_uart *u = uart_of(m, unit);
+    if (!u || !u->nrx)
+        return 0;
+    *c = u->rx[0];
+    memmove(u->rx, u->rx + 1, (size_t)(u->nrx - 1));
+    u->nrx--;
+    update(u);
+    return 1;
+}
+
+int esk_esp32c3_uart_tx_room(struct esk_mach *m, int unit)
+{
+    struct c3_uart *u = uart_of(m, unit);
+    if (!u || (reg(u->conf0) & CONF0_TXFIFO_RST))
+        return 0;
+    return tx_cap(u) - u->ntx;
+}
+
+void esk_esp32c3_uart_tx_put(struct esk_mach *m, int unit, u8 c)
+{
+    struct c3_uart *u = uart_of(m, unit);
+    if (!u || u->ntx >= tx_cap(u))
+        return;
+    u->tx[u->ntx++] = c;
+    tx_next(u);
+    update(u);
+}
+
+u32 esk_esp32c3_uart_char_cycles(struct esk_mach *m, int unit)
+{
+    struct c3_uart *u = uart_of(m, unit);
+    return u ? bit_cycles(u) * (u32)(2 + nbits(u)) : 0u;
 }
 
 const struct esk_dev_ops esk_esp32c3_uart_ops = {

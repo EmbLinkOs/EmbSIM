@@ -2,7 +2,7 @@
   "schema_version": 1,
   "kind": "project",
   "name": "arduino-comparator",
-  "description": "An Arduino Uno timing an RC network with its analog comparator (tests/vendor/arduino/run.py puts the image beside this file as sketch.elf): D8 drives a 1 uF capacitor on AIN0 (D6) through 10 kOhm; AIN1 (D7) is held at 2.5 V by two 10 kOhm resistors; a terminal on D0/D1 at 115200 baud.",
+  "description": "An Arduino Uno timing an RC network with its analog comparator (tests/vendor/arduino/run.py puts the image beside this file as sketch.elf): D8 drives a 1 uF capacitor on AIN0 (D6) through 10 kOhm; AIN1 (D7) is held at 2.5 V by two 10 kOhm resistors; a terminal on D0/D1 at 115200 baud. Its parts are exact (settings.imperfections \"ideal\"): the check is the comparator's timing against R * C * ln 2.",
   "policy": "electrical",
   "boards": [
     {
@@ -151,5 +151,8 @@
       "target": "net:AIN1",
       "kind": "analog"
     }
-  ]
+  ],
+  "settings": {
+    "imperfections": "ideal"
+  }
 }

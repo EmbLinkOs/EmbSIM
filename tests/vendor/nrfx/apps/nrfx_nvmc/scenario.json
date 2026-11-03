@@ -1,0 +1,81 @@
+{
+  "schema_version": 1,
+  "kind": "scenario",
+  "name": "nrfx_nvmc",
+  "until": "2s",
+  "description": "Nordic's nrfx NVMC driver, unmodified, on the nRF52840 DK, each operation timed on TIMER1 at 16 MHz with the core waiting in the flash: FICR's 256 pages of 4 KiB; nrfx_nvmc_page_erase in 85 ms (tERASEPAGE, the value nrfx itself gives as NVMC_PAGE_ERASE_DURATION_MS); three words in 3 x 41 us (tWRITE) and a byte (as its word) in 41 us, read back, a word written over another ANDing with it; nrfx_nvmc_page_partial_erase_continue's 10 ms parts until the driver's sum reaches 85 ms (nine parts, the page erased); an address within a page refused with -EACCES; UICR's CUSTOMER[0] written through the NVMC, then kept through NVIC_SystemReset's reset.",
+  "assertions": [
+    {
+      "id": "geometry",
+      "at": "2s",
+      "probe": "terminal",
+      "expect": {
+        "contains": "EmbSIM nRF52840 NVMC: 256 pages of 4096 bytes, UICR CUSTOMER[0] 0xffffffff"
+      }
+    },
+    {
+      "id": "erase",
+      "at": "2s",
+      "probe": "terminal",
+      "expect": {
+        "contains": "page erase 0 in 85000 us, first word ffffffff"
+      }
+    },
+    {
+      "id": "words",
+      "at": "2s",
+      "probe": "terminal",
+      "expect": {
+        "contains": "3 words written in 124 us"
+      }
+    },
+    {
+      "id": "byte",
+      "at": "2s",
+      "probe": "terminal",
+      "expect": {
+        "contains": "a byte written in 41 us"
+      }
+    },
+    {
+      "id": "readback",
+      "at": "2s",
+      "probe": "terminal",
+      "expect": {
+        "contains": "read back 11223344 05060708 99aabbcc 5a"
+      }
+    },
+    {
+      "id": "partial",
+      "at": "2s",
+      "probe": "terminal",
+      "expect": {
+        "contains": "partial erase 0: 9 parts in 90006 us, first word ffffffff"
+      }
+    },
+    {
+      "id": "unaligned",
+      "at": "2s",
+      "probe": "terminal",
+      "expect": {
+        "contains": "an address within a page: -13"
+      }
+    },
+    {
+      "id": "uicr",
+      "at": "2s",
+      "probe": "terminal",
+      "expect": {
+        "contains": "UICR CUSTOMER[0] 0x00c0ffee; reset"
+      }
+    },
+    {
+      "id": "kept",
+      "at": "2s",
+      "probe": "terminal",
+      "expect": {
+        "contains": "second boot: CUSTOMER[0] kept, page A 11223344 99aabbcc 5a\r\ndone"
+      }
+    }
+  ]
+}

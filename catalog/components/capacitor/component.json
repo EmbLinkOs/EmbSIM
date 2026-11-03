@@ -4,7 +4,8 @@
   "id": "emblink/capacitor",
   "version": "1.0.0",
   "name": "Capacitor",
-  "category": "passives",
+  "category": "capacitors",
+  "subcategory": "generic",
   "description": "Ideal capacitor with optional ESR and initial voltage.",
   "keywords": [
     "capacitor",
@@ -34,7 +35,16 @@
       "default": "100n",
       "doc": "Capacitance",
       "min": "1f",
-      "max": "10"
+      "max": "10",
+      "spread": "tolerance"
+    },
+    "tolerance": {
+      "type": "number",
+      "unit": "%",
+      "default": 10,
+      "min": 0,
+      "max": 50,
+      "doc": "Tolerance: each part's capacitance lies within this band of the nominal, drawn from the project's seed (ADR-034). 10 % is IEC 60062's code K, the usual grade of X7R ceramic capacitors; 0 for an exact part."
     },
     "esr": {
       "type": "number",
@@ -51,14 +61,14 @@
       "doc": "Initial voltage at t=0 (pin 1 relative to pin 2)",
       "advanced": true
     }
-  },  "functional": {
+  },
+  "functional": {
     "composite": {
       "components": [],
       "nets": {},
       "ports": {}
     }
   },
-
   "model": {
     "primitive": "capacitor",
     "bind": {
@@ -99,12 +109,13 @@
       "omissions": []
     },
     "electrical": {
-      "claims": "Linear capacitance with ESR and initial condition, trapezoidal/BDF2 companion (SPEC-004 §7 capacitor).",
+      "claims": "Linear capacitance with ESR and initial condition, trapezoidal/BDF2 companion (SPEC-004 §7 capacitor); each instance's capacitance drawn uniformly inside ±tolerance of the nominal from the project's seed and its id (ADR-034; nominal with settings.imperfections \"ideal\").",
       "omissions": [
         "dielectric absorption",
         "leakage",
         "ESL",
-        "voltage coefficient"
+        "voltage coefficient",
+        "the distribution inside the tolerance band (uniform: a manufacturer guarantees the band only)"
       ],
       "range": {
         "voltage_v": [
@@ -124,5 +135,32 @@
   },
   "tests": [
     "tests/*.json"
-  ]
+  ],
+  "i18n": {
+    "fr": {
+      "source": "fa1b098467b7",
+      "description": "Condensateur idéal avec ESR et tension initiale facultatives.",
+      "fidelity": {
+        "functional": {
+          "claims": "Broches seulement : un circuit ouvert, comme un condensateur en continu (ainsi les condensateurs de découplage et de filtrage d'une carte fonctionnent sous toutes les politiques).",
+          "omissions": [
+            "la charge et les délais qu'elle donne"
+          ]
+        },
+        "timed": {
+          "claims": "Comme en électrique ; un condensateur n'a pas de sens au niveau logique."
+        },
+        "electrical": {
+          "claims": "Capacité linéaire avec ESR et condition initiale, modèle compagnon trapèze/BDF2 (SPEC-004 §7 capacitor) ; la capacité de chaque instance tirée uniformément dans ±tolerance autour de la valeur nominale à partir de la graine du projet et de son id (ADR-034 ; nominale avec settings.imperfections \"ideal\").",
+          "omissions": [
+            "l'absorption diélectrique",
+            "la fuite",
+            "l'ESL",
+            "le coefficient de tension",
+            "la répartition dans la plage de tolérance (uniforme : un fabricant ne garantit que la plage)"
+          ]
+        }
+      }
+    }
+  }
 }

@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 80 100" width="80" height="100" data-grid="10">
+  <style>.s{stroke:var(--symbol-stroke,#cdd6e4);fill:none;stroke-width:1.5;stroke-linecap:round;stroke-linejoin:round}.f{stroke:var(--symbol-stroke,#cdd6e4);fill:var(--symbol-fill,#1b2230);stroke-width:1.5;stroke-linejoin:round}.t{fill:var(--symbol-stroke,#cdd6e4);font-family:sans-serif;font-size:7px}</style>
+  <rect class="f" x="8" y="2" width="64" height="86" rx="6"/>
+  <rect class="s" x="16" y="8" width="48" height="18" rx="2"/>
+  <text class="t" x="40" y="20" text-anchor="middle">87V</text>
+  <circle class="s" cx="40" cy="46" r="11"/><path class="s" d="M40 46 L46 38"/>
+  <path class="s" d="M10 90 V100 M30 90 V100 M50 90 V100 M70 90 V100"/>
+  <text class="t" x="10" y="84" text-anchor="middle">A</text><text class="t" x="30" y="84" text-anchor="middle">mA</text>
+  <text class="t" x="50" y="84" text-anchor="middle">COM</text><text class="t" x="70" y="84" text-anchor="middle">V</text>
+</svg>

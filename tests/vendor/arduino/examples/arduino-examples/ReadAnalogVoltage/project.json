@@ -1,0 +1,75 @@
+{
+ "schema_version": 1,
+ "kind": "project",
+ "name": "arduino-lm35",
+ "description": "The IDE's ReadAnalogVoltage (Examples > 01.Basics) with an LM35DZ as the analog source: +VS on the Uno's 5 V, VOUT on A0, GND to GND; the readings printed at 9600 baud.",
+ "policy": "electrical",
+ "boards": [
+  {
+   "id": "B1",
+   "board": "emblink/arduino_uno",
+   "layout": {
+    "x": 300,
+    "y": 260
+   },
+   "firmware": {
+    "image": "sketch.elf",
+    "format": "elf"
+   }
+  }
+ ],
+ "components": [
+  {
+   "id": "USB",
+   "component": "emblink/vsource",
+   "params": {
+    "kind": "dc",
+    "dc": 5
+   },
+   "layout": {
+    "x": 720,
+    "y": 60
+   }
+  },
+  {
+   "id": "GND1",
+   "component": "emblink/gnd",
+   "layout": {
+    "x": 900,
+    "y": 200
+   }
+  },
+  {
+   "id": "U1",
+   "component": "emblink/lm35dz",
+   "layout": {
+    "x": 120,
+    "y": 600
+   }
+  }
+ ],
+ "nets": {
+  "USB5V": [
+   "USB.+",
+   "B1.5V",
+   "U1.VS"
+  ],
+  "GND": [
+   "B1.GND",
+   "GND1.GND",
+   "USB.-",
+   "U1.GND"
+  ],
+  "TEMP": [
+   "U1.OUT",
+   "B1.A0"
+  ]
+ },
+ "probes": [
+  {
+   "id": "console",
+   "target": "serial:B1",
+   "kind": "serial"
+  }
+ ]
+}

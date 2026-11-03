@@ -16,15 +16,20 @@
  *   - TXEN0 takes PD1 over as the transmitter's output (idle high) and
  *     RXEN0 takes PD0 as its input, whatever DDRD says;
  *   - the receiver takes a byte from the runtime's serial input (or the RX
- *     pin's waveform) while RXEN0 is set and UDR0 holds none: RXC0 sets, a
- *     read of UDR0 takes the byte and clears it;
+ *     pin's waveform) while RXEN0 is set: the two-level receive FIFO and
+ *     the shift register hold three; RXC0 is set while the FIFO holds one,
+ *     a read of UDR0 takes the oldest. A byte arriving with all three full
+ *     is an overrun: DOR0 sets (until UDR0 is next read) and the byte
+ *     waiting in the shift register is lost to it. A session's text waits
+ *     for UDR0 to be empty (no overrun); a host port's bytes come at the
+ *     line's rate, as the 16U2 sends them, whether the program reads or not;
  *   - the vectors: receive complete (RXC0 with RXCIE0), data register
  *     empty (UDRE0 with UDRIE0, as long as it is empty) and transmit
  *     complete (TXC0 with TXCIE0; entering it clears TXC0).
  *
- * Not modelled: synchronous and master SPI modes (UMSEL0), the error flags
- * (a byte waits for room, so DOR0 never sets), the receive FIFO's second
- * byte, multi-processor mode.
+ * Not modelled: synchronous and master SPI modes (UMSEL0), the frame and
+ * parity error flags on bytes from the session's input, multi-processor
+ * mode.
  *
  * Provenance: EmbLinkOs/EmbCC aa4f10a tools/embsim/avr-usart.c, which
  * sent a byte in no time; the frame timing and the pins are EmbSIM's. */
@@ -33,6 +38,7 @@
 #include "mcu/avr/avr.h"
 
 #define RXC 0x80u
+#define DOR 0x08u
 #define TXC 0x40u
 #define UDRE 0x20u
 #define U2X 0x02u
@@ -49,7 +55,8 @@ struct avr_usart {
     struct esk_rf_reg *a, *b, *c, *brrl, *brrh, *udr;
     int vec_rx, vec_udre, vec_tx;
     int running;
-    u8 rx;
+    u8 rxq[3]; /* the receive FIFO, then the shift register */
+    int nrx;
     int held;
     u8 hold;
     u64 left;  /* core cycles until the frame in the shift register ends */
@@ -105,8 +112,16 @@ static int us_room(void *ctx)
 static void us_put(void *ctx, int c)
 {
     struct avr_usart *u = (struct avr_usart *)ctx;
-    u->rx = (u8)c;
-    esk_rf_hw(u->a, u->a->value | RXC);
+    if (!(u->b->value & RXEN))
+        return; /* the receiver is off: the frame goes by */
+    if (u->nrx == 3) {
+        /* the FIFO full and a byte waiting: the new start bit overruns it */
+        u->rxq[2] = (u8)c;
+        esk_rf_hw(u->a, u->a->value | DOR | RXC);
+    } else {
+        u->rxq[u->nrx++] = (u8)c;
+        esk_rf_hw(u->a, u->a->value | RXC);
+    }
     esk_avr_irq_changed(u->s);
 }
 
@@ -114,9 +129,11 @@ static u32 us_read(void *ctx, u32 off, int n)
 {
     struct avr_usart *u = (struct avr_usart *)ctx;
     if (off == esk_rf_off(u->udr)) {
-        u8 v = u->rx;
-        if (!u->s->bus.debug && (u->a->value & RXC)) {
-            esk_rf_hw(u->a, u->a->value & ~(u64)RXC);
+        u8 v = u->rxq[0];
+        if (!u->s->bus.debug && u->nrx) {
+            u->nrx--;
+            memmove(u->rxq, u->rxq + 1, (size_t)u->nrx);
+            esk_rf_hw(u->a, (u->a->value & ~(u64)(RXC | DOR)) | (u->nrx ? RXC : 0));
             esk_avr_irq_changed(u->s);
         }
         return v;
@@ -144,6 +161,11 @@ static void us_write(void *ctx, u32 off, int n, u32 v)
         /* the transmitter off: nothing waits */
         u->held = 0;
         esk_rf_hw(u->a, u->a->value | UDRE);
+    }
+    if (!(u->b->value & RXEN) && u->nrx) {
+        /* the receiver off flushes its buffer */
+        u->nrx = 0;
+        esk_rf_hw(u->a, u->a->value & ~(u64)(RXC | DOR));
     }
     pins(u);
     esk_avr_irq_changed(u->s);
@@ -186,7 +208,8 @@ static void us_reset(void *ctx)
     u->held = 0;
     u->left = 0;
     u->running = 0;
-    u->rx = 0;
+    u->nrx = 0;
+    memset(u->rxq, 0, sizeof u->rxq);
     if (u->tx_on || u->rx_on) {
         u->tx_on = u->rx_on = 0;
         esk_avr_pin_force(u->s, 3, 1, -1);

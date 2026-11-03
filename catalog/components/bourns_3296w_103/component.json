@@ -4,7 +4,8 @@
   "id": "emblink/bourns_3296w_103",
   "version": "1.0.0",
   "name": "3296W-1-103LF",
-  "category": "inputs",
+  "category": "resistors",
+  "subcategory": "variable",
   "description": "Bourns 3296W linear trimmer; interactive wiper position from 0 to 1.",
   "keywords": [
     "inputs",
@@ -190,6 +191,25 @@
       "source": "KiCad library kicad-packages3D at b8b3cfd (2020-10-02, GitHub mirror of gitlab.com/kicad/libraries/kicad-packages3D): Potentiometer_THT.3dshapes/Potentiometer_Bourns_3296W_Vertical.wrl",
       "license": "CC-BY-SA 4.0 with KiCad's design exception (kicad-3d/LICENSE.md); shipped as a separate file with its attribution (ADR-029)",
       "rotation_deg": 180
+    }
+  },
+  "i18n": {
+    "fr": {
+      "source": "3c6a756e1d1f",
+      "description": "Potentiomètre d'ajustage linéaire Bourns 3296W ; position du curseur interactive de 0 à 1.",
+      "fidelity": {
+        "electrical": {
+          "claims": "Potentiomètre d'ajustage linéaire Bourns 3296W ; position du curseur interactive de 0 à 1.",
+          "omissions": [
+            "la vérification du PDF du fabricant reste à faire",
+            "le bruit et la résistance de contact du curseur",
+            "la course mécanique de 25 tours",
+            "la tolérance et la puissance nominale",
+            "les cas extrêmes des paramètres du fabricant",
+            "les dommages thermiques et les limites destructives"
+          ]
+        }
+      }
     }
   }
 }

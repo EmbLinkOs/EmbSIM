@@ -1,0 +1,57 @@
+{
+  "schema_version": 1,
+  "kind": "component_test",
+  "name": "low-range-resolution",
+  "description": "Source meter at 3.3 V into 1 Mohm: 3.3 uA, on the 200 nA-50 uA range read at its 0.2 uA resolution: 3.4 uA.",
+  "policy": "electrical",
+  "until": "2ms",
+  "circuit": {
+    "components": [
+      {
+        "id": "DUT",
+        "component": "emblink/ppk2_core",
+        "params": {
+          "mode": "source",
+          "voltage": 3.3
+        }
+      },
+      {
+        "id": "LOAD",
+        "component": "emblink/resistor",
+        "params": {
+          "resistance": 1000000.0
+        }
+      },
+      {
+        "id": "G",
+        "component": "emblink/gnd"
+      }
+    ],
+    "nets": {
+      "OUT": [
+        "DUT.VOUT",
+        "LOAD.1"
+      ],
+      "GND": [
+        "DUT.GND",
+        "LOAD.2",
+        "G.GND"
+      ]
+    }
+  },
+  "inputs": [
+    {
+      "at": "0s",
+      "target": "DUT",
+      "input": "run",
+      "value": true
+    }
+  ],
+  "expect": {
+    "output:DUT.current": {
+      "at": "2ms",
+      "min": 3.39e-06,
+      "max": 3.41e-06
+    }
+  }
+}

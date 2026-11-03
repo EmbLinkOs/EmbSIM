@@ -727,5 +727,36 @@
   },
   "tests": [
     "tests/*.json"
-  ]
+  ],
+  "i18n": {
+    "fr": {
+      "source": "1606dbe8885a",
+      "description": "La HiFive1 Rev B de SiFive : le MCU RISC-V FE310-G002 avec 4 Mio de flash QSPI, un quartz de 16 MHz, une LED RVB (rouge GPIO22, vert GPIO19, bleu GPIO21, actives à l'état bas), le bouton de réinitialisation et des connecteurs façon Arduino Uno. L'USB arrive par la broche 5V ; le port série du pont J-Link OB est la console de la session sur l'UART0.",
+      "fidelity": {
+        "functional": {
+          "claims": "Réseaux, ports, la LED RVB et le bouton de réinitialisation comme composants logiques ; le FE310 exécute son micrologiciel depuis 0x20010000 (voir sa description).",
+          "omissions": [
+            "le débogueur J-Link OB et le pont USB (la console est l'UART0 lui-même)",
+            "le module Wi-Fi ESP32-SOLO-1",
+            "le chargeur d'amorçage dans les 64 premiers Kio de la flash",
+            "le régulateur du cœur 1,8 V"
+          ]
+        },
+        "timed": {
+          "claims": "Comme en fonctionnel.",
+          "omissions": [
+            "comme en fonctionnel"
+          ]
+        },
+        "electrical": {
+          "claims": "Le régulateur 3,3 V, la LED RVB avec ses résistances série, le rappel de réinitialisation au niveau haut et le quartz en équivalent BVD ; les liaisons GPIO utilisent les modèles de broche par défaut du MCU.",
+          "omissions": [
+            "le découplage",
+            "le rail 1,8 V (la broche d'alimentation du cœur est ici à 3,3 V)",
+            "les diodes ESD"
+          ]
+        }
+      }
+    }
+  }
 }

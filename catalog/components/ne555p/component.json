@@ -1,7 +1,8 @@
 {
   "schema_version": 1,
   "kind": "component",
-  "category": "timers",
+  "category": "analog_ics",
+  "subcategory": "timers",
   "description": "NE555P PDIP-8 behavioral timer: resistor divider, SR memory, active-low reset, discharge switch and finite output drive.",
   "pins": [
     {
@@ -217,5 +218,26 @@
   },
   "artwork": {
     "svg": "artwork.svg"
+  },
+  "i18n": {
+    "fr": {
+      "source": "a85496cd803e",
+      "description": "Temporisateur comportemental NE555P en PDIP-8 : diviseur résistif, mémoire RS, réinitialisation active à l'état bas, interrupteur de décharge et sortie de commande finie.",
+      "fidelity": {
+        "electrical": {
+          "claims": "Broche de diviseur/contrôle, déclenchement au tiers et seuil aux deux tiers, priorité de la réinitialisation, transistor de décharge et état mémorisé. Les seuils sont échantillonnés aux pas acceptés du solveur. Les décisions de la bascule ne sont validées qu'après des pas acceptés ; un événement peut être en retard jusqu'à deux fois sample_interval. La valeur par défaut de 1 us vise un usage basse fréquence.",
+          "omissions": [
+            "le délai de propagation",
+            "le courant d'alimentation au-delà du diviseur",
+            "l'asymétrie de l'étage de sortie",
+            "la température",
+            "les tolérances des seuils",
+            "l'interpolation des instants de franchissement",
+            "les garanties sur la montée de l'alimentation",
+            "aucune qualification par un modèle du fabricant"
+          ]
+        }
+      }
+    }
   }
 }

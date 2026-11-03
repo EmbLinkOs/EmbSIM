@@ -1,0 +1,83 @@
+{
+  "schema_version": 1,
+  "kind": "scenario",
+  "name": "barGraph",
+  "until": "2s",
+  "description": "The pot at 0, a quarter, 55 % and full: map(reading, 0, 1023, 0, 10) lights 0, 2, 5 and all 10 segments.",
+  "inputs": [
+    {
+      "at": "0ms",
+      "target": "POT",
+      "input": "position",
+      "value": 0.0
+    },
+    {
+      "at": "500ms",
+      "target": "POT",
+      "input": "position",
+      "value": 0.25
+    },
+    {
+      "at": "1000ms",
+      "target": "POT",
+      "input": "position",
+      "value": 0.55
+    },
+    {
+      "at": "1500ms",
+      "target": "POT",
+      "input": "position",
+      "value": 1.0
+    }
+  ],
+  "assertions": [
+    {
+      "id": "zero-seg1",
+      "at": "300ms",
+      "probe": "seg1",
+      "expect": {
+        "equals": false
+      }
+    },
+    {
+      "id": "quarter-seg1",
+      "at": "800ms",
+      "probe": "seg1",
+      "expect": {
+        "equals": true
+      }
+    },
+    {
+      "id": "quarter-seg3",
+      "at": "800ms",
+      "probe": "seg3",
+      "expect": {
+        "equals": false
+      }
+    },
+    {
+      "id": "half-seg5",
+      "at": "1300ms",
+      "probe": "seg5",
+      "expect": {
+        "equals": true
+      }
+    },
+    {
+      "id": "half-seg6",
+      "at": "1300ms",
+      "probe": "seg6",
+      "expect": {
+        "equals": false
+      }
+    },
+    {
+      "id": "full-seg10",
+      "at": "1800ms",
+      "probe": "seg10",
+      "expect": {
+        "equals": true
+      }
+    }
+  ]
+}

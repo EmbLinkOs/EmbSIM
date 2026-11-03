@@ -1,0 +1,130 @@
+{
+ "schema_version": 1,
+ "kind": "project",
+ "name": "arduino-ds1307-nvram",
+ "description": "RTClib's ds1307nvram example on a Tiny RTC-style DS1307 module: the RTC on the Uno's I2C pins (A4/A5), powered from 5 V, the module's 3.3 kOhm pull-ups on SDA and SCL, no battery fitted (a new module: its oscillator halted), and a terminal on D0/D1 at 57600 baud.",
+ "policy": "electrical",
+ "boards": [
+  {
+   "id": "B1",
+   "board": "emblink/arduino_uno",
+   "layout": {
+    "x": 300,
+    "y": 260
+   },
+   "firmware": {
+    "image": "sketch.elf",
+    "format": "elf"
+   }
+  }
+ ],
+ "components": [
+  {
+   "id": "USB",
+   "component": "emblink/vsource",
+   "params": {
+    "kind": "dc",
+    "dc": 5
+   },
+   "layout": {
+    "x": 720,
+    "y": 60
+   }
+  },
+  {
+   "id": "VT1",
+   "component": "emblink/virtual_terminal",
+   "params": {
+    "baud": 57600
+   },
+   "layout": {
+    "x": 720,
+    "y": 520
+   }
+  },
+  {
+   "id": "GND1",
+   "component": "emblink/gnd",
+   "layout": {
+    "x": 900,
+    "y": 200
+   }
+  },
+  {
+   "id": "U1",
+   "component": "emblink/ds1307",
+   "layout": {
+    "x": 120,
+    "y": 700
+   }
+  },
+  {
+   "id": "RSDA",
+   "component": "emblink/resistor",
+   "params": {
+    "resistance": 3300
+   },
+   "layout": {
+    "x": 220,
+    "y": 640
+   }
+  },
+  {
+   "id": "RSCL",
+   "component": "emblink/resistor",
+   "params": {
+    "resistance": 3300
+   },
+   "layout": {
+    "x": 250,
+    "y": 640
+   }
+  }
+ ],
+ "nets": {
+  "USB5V": [
+   "USB.+",
+   "B1.5V",
+   "U1.VCC",
+   "RSDA.1",
+   "RSCL.1"
+  ],
+  "GND": [
+   "B1.GND",
+   "GND1.GND",
+   "USB.-",
+   "VT1.GND",
+   "U1.GND"
+  ],
+  "UART_TX": [
+   "B1.D1",
+   "VT1.RX"
+  ],
+  "UART_RX": [
+   "B1.D0",
+   "VT1.TX"
+  ],
+  "I2C_SDA": [
+   "B1.SDA",
+   "U1.SDA",
+   "RSDA.2"
+  ],
+  "I2C_SCL": [
+   "B1.SCL",
+   "U1.SCL",
+   "RSCL.2"
+  ]
+ },
+ "probes": [
+  {
+   "id": "terminal",
+   "target": "serial:VT1",
+   "kind": "serial"
+  },
+  {
+   "id": "time",
+   "target": "output:U1.time",
+   "kind": "value"
+  }
+ ]
+}

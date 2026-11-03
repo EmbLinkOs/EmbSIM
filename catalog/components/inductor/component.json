@@ -4,7 +4,8 @@
   "id": "emblink/inductor",
   "version": "1.0.0",
   "name": "Inductor",
-  "category": "passives",
+  "category": "inductors",
+  "subcategory": "generic",
   "description": "Ideal inductor with optional winding resistance and initial current.",
   "keywords": [
     "inductor",
@@ -35,7 +36,16 @@
       "default": "10u",
       "doc": "Inductance (motional inductances of low-frequency crystals reach kilohenries)",
       "min": "1p",
-      "max": "100k"
+      "max": "100k",
+      "spread": "tolerance"
+    },
+    "tolerance": {
+      "type": "number",
+      "unit": "%",
+      "default": 20,
+      "min": 0,
+      "max": 50,
+      "doc": "Tolerance: each part's inductance lies within this band of the nominal, drawn from the project's seed (ADR-034). 20 % is IEC 60062's code M, the usual grade of power inductors; 0 for an exact part."
     },
     "dcr": {
       "type": "number",
@@ -93,11 +103,12 @@
       "omissions": []
     },
     "electrical": {
-      "claims": "Linear inductance with series dcr and initial current; branch current is a solver unknown (SPEC-004 \u00a77 inductor).",
+      "claims": "Linear inductance with series dcr and initial current; branch current is a solver unknown (SPEC-004 §7 inductor); each instance's inductance drawn uniformly inside ±tolerance of the nominal from the project's seed and its id (ADR-034; nominal with settings.imperfections \"ideal\").",
       "omissions": [
         "saturation",
         "core loss",
-        "parasitic capacitance"
+        "parasitic capacitance",
+        "the distribution inside the tolerance band (uniform: a manufacturer guarantees the band only)"
       ],
       "range": {
         "current_a": [
@@ -117,5 +128,31 @@
   },
   "tests": [
     "tests/*.json"
-  ]
+  ],
+  "i18n": {
+    "fr": {
+      "source": "139da16ded63",
+      "description": "Inductance idéale avec résistance d'enroulement et courant initial facultatifs.",
+      "fidelity": {
+        "functional": {
+          "claims": "Un fil.",
+          "omissions": [
+            "tout ce qui est inductif"
+          ]
+        },
+        "timed": {
+          "claims": "Comme en électrique quand ses réseaux sont analogiques ; sinon un fil."
+        },
+        "electrical": {
+          "claims": "Inductance linéaire avec dcr en série et courant initial ; le courant de branche est une inconnue du solveur (SPEC-004 §7 inductor) ; l'inductance de chaque instance tirée uniformément dans ±tolerance autour de la valeur nominale à partir de la graine du projet et de son id (ADR-034 ; nominale avec settings.imperfections \"ideal\").",
+          "omissions": [
+            "la saturation",
+            "les pertes dans le noyau",
+            "la capacité parasite",
+            "la répartition dans la plage de tolérance (uniforme : un fabricant ne garantit que la plage)"
+          ]
+        }
+      }
+    }
+  }
 }

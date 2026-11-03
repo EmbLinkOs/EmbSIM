@@ -4,7 +4,9 @@ import { IndicatorEvidence } from './IndicatorEvidence';
 import { Badge, Button, EmptyState, Input, Select, SignalChip, Toggle, useToast } from '@embsim/design';
 import { type ParamDescription } from '@embsim/protocol';
 import { describeNetState } from '@embsim/scene';
-import { Layers, MousePointer2 } from 'lucide-react';
+import { Gauge, Layers, MousePointer2, PictureInPicture2 } from 'lucide-react';
+import { benchInstrumentOf, openFrontPanel } from '../run/benchInstruments';
+import { useFloating } from '../../stores/floating';
 import { useEffect, useState } from 'react';
 import { errorMessage } from '../../actions';
 import { insideOf, openInside } from '../../stores/openInside';
@@ -15,6 +17,9 @@ import { FidelityBadges } from './LibraryPanel';
 import { WireProperties } from './WireProperties';
 import { parameterValue } from './parameterEditing';
 import { SelectionProperties } from './SelectionProperties';
+import { t as tr, type MessageKey } from '../../i18n';
+import { catalogDescription, catalogFidelity } from '../../i18n/catalogText';
+import { useSettings } from '../../stores/settings';
 
 const UNIT_LABEL: Record<string, string> = { ohm: 'Ω', F: 'F', V: 'V', A: 'A', ms: 'ms', W: 'W', '%': '%' };
 
@@ -31,8 +36,8 @@ export function InspectorPanel() {
   if (id) return <ComponentInspector id={id} />;
   if (netName) return <>{selection.wires.length === 1 && <WireProperties index={selection.wires[0]!} />}<NetInspector net={netName} /></>;
   return (
-    <EmptyState icon={<MousePointer2 />} title="Nothing selected">
-      Select a component or a wire on the schematic, or a net in the nets list.
+    <EmptyState icon={<MousePointer2 />} title={tr('insp.nothing')}>
+      {tr('insp.nothingHint')}
     </EmptyState>
   );
 }
@@ -42,17 +47,38 @@ function OpenInsideButton({ id }: { id: string }) {
   const { toast } = useToast();
   if (!insideOf(id)) return null;
   return (
-    <Button size="sm" variant="ghost" icon={<Layers />} onClick={() => void openInside(id).catch((e: unknown) => toast({ kind: 'error', title: 'Open failed', description: errorMessage(e) }))}>
-      Open inside
+    <Button size="sm" variant="ghost" icon={<Layers />} onClick={() => void openInside(id).catch((e: unknown) => toast({ kind: 'error', title: tr('fail.open'), description: errorMessage(e) }))}>
+      {tr('insp.openInside')}
     </Button>
+  );
+}
+
+/** An instrument's front panel: shown in Run's dock, or in a window of its own over any perspective. */
+function FrontPanelButtons({ id }: { id: string }) {
+  const ref = useProject((s) => s.project?.components.find((c) => c.id === id)?.component);
+  const floating = useFloating((s) => s.floating.includes(id));
+  const instrument = benchInstrumentOf(ref);
+  if (!instrument) return null;
+  return (
+    <div className="es-row" style={{ gap: 'var(--space-1)' }}>
+      <Button size="sm" variant="ghost" icon={<Gauge />} onClick={() => openFrontPanel(instrument, id)}>
+        {tr('design.ctx.frontPanel')}
+      </Button>
+      {!floating && (
+        <Button size="sm" variant="ghost" icon={<PictureInPicture2 />} onClick={() => useFloating.getState().float(id)}>
+          {tr('insp.float')}
+        </Button>
+      )}
+    </div>
   );
 }
 
 function BoardInspector({ id }: { id: string }) {
   const board = useProject((s) => s.project?.boards?.find((b) => b.id === id));
   const entry = useProject((s) => (board ? s.catalog[board.board] : undefined));
+  const lang = useSettings((s) => s.language);
   if (!board) return <EmptyState title={`${id} no longer exists`} />;
-  const desc = entry?.description as { name?: string; description?: string; version?: string; mcu?: { ref?: string } } | undefined;
+  const desc = entry?.description as { name?: string; description?: string; version?: string; mcu?: { ref?: string }; i18n?: Record<string, { description?: string }> } | undefined;
   return (
     <div className="wb-inspector">
       <div className="wb-inspector__head">
@@ -62,18 +88,18 @@ function BoardInspector({ id }: { id: string }) {
       <div className="es-muted" style={{ fontSize: 'var(--text-xs)' }}>
         <span className="es-mono">{board.board}</span>
         {desc?.version && ` v${desc.version}`}
-        {desc?.description && ` — ${desc.description}`}
+        {desc?.description && ` — ${(lang !== 'en' && desc.i18n?.[lang]?.description) || desc.description}`}
       </div>
       <SelectionProperties />
-      <section className="wb-inspector__section" aria-label="Board">
+      <section className="wb-inspector__section" aria-label={tr('insp.board')}>
         <dl className="wb-inspector__facts">
           <dt>MCU</dt>
           <dd className="es-mono">{desc?.mcu?.ref ?? '—'}</dd>
-          <dt>Firmware</dt>
+          <dt>{tr('insp.firmware')}</dt>
           <dd className="es-mono">{board.firmware?.image ?? 'none'}</dd>
           {board.firmware?.toolchain && (
             <>
-              <dt>Toolchain</dt>
+              <dt>{tr('insp.toolchain')}</dt>
               <dd className="es-mono">{board.firmware.toolchain}</dd>
             </>
           )}
@@ -91,6 +117,7 @@ function ComponentInspector({ id }: { id: string }) {
   const setParam = useProject((s) => s.setParam);
   const outputs = useSession((s) => s.outputs);
   const { toast } = useToast();
+  const lang = useSettings((s) => s.language);
   if (!component) return <EmptyState title={`${id} no longer exists`} />;
   const desc = entry?.description;
   const pinNet = (pin: string) => Object.entries(nets ?? {}).find(([, pins]) => pins.includes(`${id}.${pin}`))?.[0];
@@ -108,26 +135,27 @@ function ComponentInspector({ id }: { id: string }) {
       <div className="es-muted" style={{ fontSize: 'var(--text-xs)' }}>
         <span className="es-mono">{component.component}</span>
         {desc && ` v${desc.version}`}
-        {desc?.description && ` — ${desc.description}`}
+        {desc?.description && ` — ${catalogDescription(desc, lang)}`}
       </div>
       {desc?.qualification && <IndicatorEvidence evidence={desc.qualification} />}
       <OpenInsideButton id={id} />
+      <FrontPanelButtons id={id} />
       <SelectionProperties />
       {desc?.part && (
-        <section className="wb-inspector__section" aria-label="Manufacturer part">
-          <h3>Manufacturer part</h3>
+        <section className="wb-inspector__section" aria-label={tr('insp.mpart')}>
+          <h3>{tr('insp.mpart')}</h3>
           <dl className="wb-kv">
-            <dt>Manufacturer</dt><dd>{desc.part.manufacturer}</dd>
-            <dt>Part number</dt><dd className="es-mono">{desc.part.mpn}</dd>
-            <dt>Package</dt><dd>{desc.part.package}</dd>
+            <dt>{tr('library.manufacturer')}</dt><dd>{desc.part.manufacturer}</dd>
+            <dt>{tr('insp.partNumber')}</dt><dd className="es-mono">{desc.part.mpn}</dd>
+            <dt>{tr('library.package')}</dt><dd>{desc.part.package}</dd>
           </dl>
-          <a href={desc.part.datasheet} target="_blank" rel="noopener noreferrer">Manufacturer datasheet ↗</a>
-          <p className="es-muted">Behavioral model. Read the fidelity limits before using results.</p>
+          <a href={desc.part.datasheet} target="_blank" rel="noopener noreferrer">{tr('insp.datasheetLink')}</a>
+          <p className="es-muted">{tr('insp.behavioral')}</p>
         </section>
       )}
 
-      <section className="wb-inspector__section" aria-label="Parameters">
-        <h3>Parameters</h3>
+      <section className="wb-inspector__section" aria-label={tr('insp.params')}>
+        <h3>{tr('insp.params')}</h3>
         {desc?.params && Object.keys(desc.params).length ? (
           <div className="wb-inspector__grid">
             {Object.entries(desc.params).map(([name, p]) => (
@@ -135,19 +163,19 @@ function ComponentInspector({ id }: { id: string }) {
             ))}
           </div>
         ) : (
-          <span className="es-muted">No parameters</span>
+          <span className="es-muted">{tr('insp.noParams')}</span>
         )}
       </section>
 
-      <section className="wb-inspector__section" aria-label="Pins">
-        <h3>Pins</h3>
+      <section className="wb-inspector__section" aria-label={tr('library.tab.pins')}>
+        <h3>{tr('library.tab.pins')}</h3>
         <table className="es-table wb-inspector__pins">
           <thead>
             <tr>
-              <th scope="col">Pin</th>
+              <th scope="col">{tr('insp.pin')}</th>
               <th scope="col">No.</th>
-              <th scope="col">Model</th>
-              <th scope="col">Net</th>
+              <th scope="col">{tr('objects.model')}</th>
+              <th scope="col">{tr('insp.net')}</th>
             </tr>
           </thead>
           <tbody>
@@ -156,7 +184,7 @@ function ComponentInspector({ id }: { id: string }) {
                 <td className="es-mono">{pin.name}</td>
                 <td className="es-mono">{pin.number ?? '—'}</td>
                 <td>{pin.model?.kind ?? '—'}</td>
-                <td className="es-mono">{pinNet(pin.name) ?? <span className="es-muted">unconnected</span>}</td>
+                <td className="es-mono">{pinNet(pin.name) ?? <span className="es-muted">{tr('insp.unconnected')}</span>}</td>
               </tr>
             ))}
           </tbody>
@@ -164,8 +192,8 @@ function ComponentInspector({ id }: { id: string }) {
       </section>
 
       {desc?.outputs?.length ? (
-        <section className="wb-inspector__section" aria-label="Outputs">
-          <h3>Outputs</h3>
+        <section className="wb-inspector__section" aria-label={tr('insp.outputs')}>
+          <h3>{tr('insp.outputs')}</h3>
           <dl className="wb-kv">
             {desc.outputs.map((o) => (
               <div key={o.name} style={{ display: 'contents' }}>
@@ -178,19 +206,19 @@ function ComponentInspector({ id }: { id: string }) {
       ) : null}
 
       {desc && (
-        <section className="wb-inspector__section" aria-label="Fidelity">
-          <h3>Fidelity</h3>
+        <section className="wb-inspector__section" aria-label={tr('insp.fidelity')}>
+          <h3>{tr('insp.fidelity')}</h3>
           {(['functional', 'timed', 'electrical'] as const).map((tier) => {
-            const f = desc.fidelity[tier];
+            const f = catalogFidelity(desc, tier, lang);
             return (
               <div key={tier} className="wb-fidelity-card">
                 <div className="wb-fidelity-card__title">
-                  <span>{tier}</span>
-                  <Badge tone={f ? 'accent' : 'default'}>{f ? 'provided' : 'not provided'}</Badge>
+                  <span>{tr(`policy.${tier}` as MessageKey)}</span>
+                  <Badge tone={f ? 'accent' : 'default'}>{f ? tr('library.provided') : tr('library.notProvided')}</Badge>
                 </div>
                 {f && <div>{f.claims}</div>}
-                {f?.omissions?.length ? <div className="wb-fidelity-card__omissions">Omits: {f.omissions.join(', ')}</div> : null}
-                {f?.range && <div className="wb-fidelity-card__omissions">Range: {Object.entries(f.range).map(([k, [lo, hi]]) => `${k} ${lo}…${hi}`).join('; ')}</div>}
+                {f?.omissions?.length ? <div className="wb-fidelity-card__omissions">{tr('library.limits', { list: f.omissions.join('; ') })}</div> : null}
+                {f?.range && <div className="wb-fidelity-card__omissions">{tr('insp.range', { list: Object.entries(f.range).map(([k, [lo, hi]]) => `${k} ${lo}…${hi}`).join('; ') })}</div>}
               </div>
             );
           })}
@@ -198,14 +226,14 @@ function ComponentInspector({ id }: { id: string }) {
       )}
 
       {desc && (
-        <section className="wb-inspector__section" aria-label="Provenance">
-          <h3>Provenance</h3>
+        <section className="wb-inspector__section" aria-label={tr('insp.provenance')}>
+          <h3>{tr('insp.provenance')}</h3>
           <dl className="wb-kv">
-            <dt>Author</dt>
+            <dt>{tr('insp.author')}</dt>
             <dd>{desc.provenance.author ?? '—'}</dd>
-            <dt>License</dt>
+            <dt>{tr('insp.license')}</dt>
             <dd>{desc.provenance.license ?? '—'}</dd>
-            <dt>Sources</dt>
+            <dt>{tr('insp.sources')}</dt>
             <dd>
               {desc.provenance.sources?.length
                 ? desc.provenance.sources.map((s, i) => (
@@ -234,7 +262,7 @@ function ParamField({ name, param, value, onCommit }: { name: string; param: Par
   const [text, setText] = useState(String(current ?? ''));
   useEffect(() => setText(String(current ?? '')), [current]);
   const label = `${name}${param.advanced ? ' (advanced)' : ''}`;
-  if (param.type === 'table') return <div className="es-field"><span className="es-field__label">{label}</span><pre className="wb-param-table">{JSON.stringify(current, null, 2)}</pre><span className="es-muted">Table parameter · read only</span></div>;
+  if (param.type === 'table') return <div className="es-field"><span className="es-field__label">{label}</span><pre className="wb-param-table">{JSON.stringify(current, null, 2)}</pre><span className="es-muted">{tr('insp.tableParam')}</span></div>;
   if (param.type === 'boolean') {
     return <Toggle disabled={disabled} label={label} checked={Boolean(current)} onCheckedChange={(v) => onCommit(v)} />;
   }
@@ -282,7 +310,7 @@ function NetInspector({ net }: { net: string }) {
   const { toast } = useToast();
   const [name, setName] = useState(net);
   useEffect(() => setName(net), [net]);
-  if (!pins) return <EmptyState title="Net no longer exists"><Button size="sm" onClick={() => useSelection.getState().clear()}>Clear selection</Button></EmptyState>;
+  if (!pins) return <EmptyState title={tr('insp.netGone')}><Button size="sm" onClick={() => useSelection.getState().clear()}>{tr('insp.clearSelection')}</Button></EmptyState>;
   const island = topology?.nets.find((n) => n.name === net)?.island;
   const kind = topology?.islands.find((i) => i.id === island)?.kind;
   const vis = describeNetState(state, [0, 3.3]);
@@ -290,7 +318,7 @@ function NetInspector({ net }: { net: string }) {
     if (name === net) return;
     renameNet(net, name)
       .then(() => selectNet(name))
-      .catch((e: unknown) => toast({ kind: 'error', title: 'Rename failed', description: errorMessage(e) }));
+      .catch((e: unknown) => toast({ kind: 'error', title: tr('fail.rename'), description: errorMessage(e) }));
   };
   return (
     <div className="wb-inspector">
@@ -298,9 +326,9 @@ function NetInspector({ net }: { net: string }) {
         <span className="wb-inspector__id">{net}</span>
         <Badge>net</Badge>
       </div>
-      <section className="wb-inspector__section" aria-label="Net">
+      <section className="wb-inspector__section" aria-label={tr('insp.net')}>
         <Input
-          label="Name"
+          label={tr('insp.name')}
           disabled={!store.editable || store.busy}
           mono
           value={name}
@@ -311,25 +339,25 @@ function NetInspector({ net }: { net: string }) {
           }}
         />
         <dl className="wb-kv">
-          <dt>Island</dt>
+          <dt>{tr('insp.island')}</dt>
           <dd>{island ? `${island} (${kind})` : '—'}</dd>
-          <dt>State</dt>
+          <dt>{tr('insp.state')}</dt>
           <dd>
             <SignalChip kind={vis.kind} label={vis.text} />
           </dd>
-          <dt>Pins</dt>
+          <dt>{tr('library.tab.pins')}</dt>
           <dd>{pins?.length ? pins.join(', ') : 'none'}</dd>
         </dl>
         <div className="wb-net-actions">
-          <Button size="sm" disabled={!store.editable || store.busy} onClick={() => void store.rerouteNets([net]).then((warnings) => { setSelection({ components: [], wires: [] }); selectNet(net); return toast({ kind: warnings.length ? 'warning' : 'success', title: warnings.length ? 'Routing needs attention' : 'Net routed', description: warnings.join(' ') || undefined }); }).catch((e: unknown) => toast({ kind: 'error', title: 'Route failed', description: errorMessage(e) }))}>Route net</Button>
-          <Button size="sm" variant="ghost" disabled={!store.editable || store.busy || !store.project?.layout?.wires?.some((w) => w.net === net)} onClick={() => void store.eraseWireGeometry((store.project?.layout?.wires ?? []).flatMap((w, i) => w.net === net ? [i] : [])).then(() => { setSelection({ components: [], wires: [] }); selectNet(net); }).catch((e: unknown) => toast({ kind: 'error', title: 'Remove failed', description: errorMessage(e) }))}>Clear drawing</Button>
+          <Button size="sm" disabled={!store.editable || store.busy} onClick={() => void store.rerouteNets([net]).then((warnings) => { setSelection({ components: [], wires: [] }); selectNet(net); return toast({ kind: warnings.length ? 'warning' : 'success', title: warnings.length ? tr('design.routingAttention') : tr('insp.netRouted'), description: warnings.join(' ') || undefined }); }).catch((e: unknown) => toast({ kind: 'error', title: tr('fail.route'), description: errorMessage(e) }))}>{tr('insp.routeNet')}</Button>
+          <Button size="sm" variant="ghost" disabled={!store.editable || store.busy || !store.project?.layout?.wires?.some((w) => w.net === net)} onClick={() => void store.eraseWireGeometry((store.project?.layout?.wires ?? []).flatMap((w, i) => w.net === net ? [i] : [])).then(() => { setSelection({ components: [], wires: [] }); selectNet(net); }).catch((e: unknown) => toast({ kind: 'error', title: tr('fail.remove'), description: errorMessage(e) }))}>{tr('insp.clearDrawing')}</Button>
         </div>
-        <p className="es-muted wb-net-hint">Clear drawing keeps electrical connections. Disconnect removes a terminal from this net.</p>
-        <ul className="wb-net-terminals" aria-label="Net terminals">
-          {(pins ?? []).map((pin) => <li key={pin}><button type="button" title={`Select ${pin.split('.')[0]}`} onClick={() => setSelection({ components: [pin.split('.')[0]!], wires: [] })}>{pin}</button><Button size="sm" variant="ghost" disabled={!store.editable || store.busy} aria-label={`Disconnect ${pin}`} onClick={() => void store.disconnectPin(pin).catch((e: unknown) => toast({ kind: 'error', title: 'Disconnect failed', description: errorMessage(e) }))}>Disconnect</Button></li>)}
+        <p className="es-muted wb-net-hint">{tr('insp.clearDrawingHint')}</p>
+        <ul className="wb-net-terminals" aria-label={tr('insp.netTerminals')}>
+          {(pins ?? []).map((pin) => <li key={pin}><button type="button" title={`Select ${pin.split('.')[0]}`} onClick={() => setSelection({ components: [pin.split('.')[0]!], wires: [] })}>{pin}</button><Button size="sm" variant="ghost" disabled={!store.editable || store.busy} aria-label={`Disconnect ${pin}`} onClick={() => void store.disconnectPin(pin).catch((e: unknown) => toast({ kind: 'error', title: tr('fail.disconnect'), description: errorMessage(e) }))}>{tr('insp.disconnect')}</Button></li>)}
         </ul>
         <Button size="sm" variant="ghost" onClick={() => selectNet(null)}>
-          Close
+          {tr('common.close')}
         </Button>
       </section>
     </div>

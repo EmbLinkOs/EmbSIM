@@ -262,3 +262,17 @@ void *esk_rp2040_adc_create(struct esk_mach *s, struct esk_rf_periph *p)
     *c = a;
     return c;
 }
+
+/* its DMA request (FCS.DREQ_EN): while the FIFO holds at least THRESH
+ * samples (at least one when THRESH is 0) */
+int esk_rp2040_adc_dreq(struct esk_mach *s)
+{
+    struct esk_rf_periph *p = s->rf ? esk_rf_periph(s->rf, "ADC") : 0;
+    const struct adc *a = p && p->ops == &esk_rp2040_adc_ops ? (const struct adc *)p->ctx : 0;
+    u32 fcs, thresh;
+    if (!a)
+        return 0;
+    fcs = reg(a->fcs);
+    thresh = fcs >> 24 & 15u;
+    return (fcs & 8u) && a->nq > 0 && (u32)a->nq >= (thresh ? thresh : 1u);
+}

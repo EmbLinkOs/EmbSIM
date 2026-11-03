@@ -628,6 +628,18 @@
       "connector": "J_PWR",
       "pin": 4
     },
+    "SWDIO": {
+      "net": "SWDIO",
+      "connector": "J_SWD",
+      "pin": 1,
+      "doc": "The nRF52840's SWDIO, as P18 (Debug in) carries it to an external probe"
+    },
+    "SWDCLK": {
+      "net": "SWDCLK",
+      "connector": "J_SWD",
+      "pin": 2,
+      "doc": "The nRF52840's SWDCLK, as P18 (Debug in) carries it"
+    },
     "RESET": {
       "net": "GPIO18",
       "connector": "J_PWR",
@@ -998,5 +1010,37 @@
   },
   "tests": [
     "tests/*.json"
-  ]
+  ],
+  "i18n": {
+    "fr": {
+      "source": "c9bb516eb085",
+      "description": "Le nRF52840 DK de Nordic : le nRF52840 avec ses quartz de 32 MHz et 32,768 kHz, quatre LED (P0.13-P0.16, actives à l'état bas), quatre boutons (P0.11, P0.12, P0.24, P0.25, vers la masse), le bouton de réinitialisation sur P0.18, des connecteurs façon Arduino Uno et le port COM virtuel du MCU d'interface sur P0.06 (TXD) et P0.08 (RXD). L'USB arrive par la broche 5V ; la console de la session est l'UARTE0.",
+      "fidelity": {
+        "functional": {
+          "claims": "Réseaux, ports, les LED et les boutons comme composants logiques ; le nRF52840 exécute son micrologiciel depuis la flash (voir sa description).",
+          "omissions": [
+            "le MCU d'interface (son port COM virtuel est la console de la session sur UARTE0)",
+            "l'antenne de la radio et son adaptation",
+            "la flash QSPI externe",
+            "le port USB du nRF",
+            "la mesure de courant"
+          ]
+        },
+        "timed": {
+          "claims": "Comme en fonctionnel.",
+          "omissions": [
+            "comme en fonctionnel"
+          ]
+        },
+        "electrical": {
+          "claims": "Un régulateur 3,0 V alimenté par le 5 V de l'USB, les LED avec leurs résistances série depuis VDD, les boutons vers la masse, les quartz en équivalents BVD ; les liaisons GPIO utilisent les modèles de broche par défaut du MCU.",
+          "omissions": [
+            "les convertisseurs continu-continu et l'étage REG0 (VDDH est ici sur VDD)",
+            "le découplage",
+            "les interrupteurs d'alimentation et les shunts de mesure de courant"
+          ]
+        }
+      }
+    }
+  }
 }

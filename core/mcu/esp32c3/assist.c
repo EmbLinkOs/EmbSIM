@@ -23,15 +23,7 @@ struct c3_assist {
 
 static struct c3_assist *assist_of(struct esk_mach *m)
 {
-    int i;
-    for (i = 0; m->rf; i++) {
-        struct esk_rf_periph *p = esk_rf_periph_at(m->rf, i);
-        if (!p)
-            break;
-        if (p->ops == &esk_esp32c3_assist_ops)
-            return (struct c3_assist *)p->ctx;
-    }
-    return NULL;
+    return (struct c3_assist *)esk_rf_ctx_of(m->rf, &esk_esp32c3_assist_ops);
 }
 
 static int recording(const struct c3_assist *k)

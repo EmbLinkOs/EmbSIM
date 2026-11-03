@@ -4,7 +4,8 @@
   "id": "emblink/uln2003",
   "version": "1.0.0",
   "name": "ULN2003A Darlington array",
-  "category": "power",
+  "category": "transistors",
+  "subcategory": "darlington_arrays",
   "description": "ULN2003A seven-channel Darlington transistor array: each output sinks to GND while its input is high (2.4 V or more through the part's 2.7 kOhm base resistor), with the data sheet's saturation voltage (0.9 V at 100 mA) and 0.25 us propagation delay; outputs only sink. Drives relays, lamps and the 28BYJ-48 stepper.",
   "keywords": [
     "ULN2003",
@@ -359,5 +360,41 @@
   },
   "tests": [
     "tests/*.json"
-  ]
+  ],
+  "i18n": {
+    "fr": {
+      "source": "5eed43378b76",
+      "description": "Réseau de transistors Darlington à sept canaux ULN2003A : chaque sortie absorbe vers GND tant que son entrée est haute (2,4 V ou plus à travers la résistance de base de 2,7 kOhms de la puce), avec la tension de saturation de la fiche technique (0,9 V à 100 mA) et un délai de propagation de 0,25 us ; les sorties ne font qu'absorber. Pilote relais, lampes et le moteur pas à pas 28BYJ-48.",
+      "fidelity": {
+        "functional": {
+          "claims": "Sept canaux inverseurs à collecteur ouvert : une sortie absorbe tant que son entrée est haute (2,4 V ou plus) et est libérée sinon, sans broche d'alimentation.",
+          "omissions": [
+            "les diodes d'écrêtage de chaque sortie vers COM (la surtension d'une charge inductive n'est pas simulée)",
+            "les limites de courant (500 mA par sortie) et la dissipation du boîtier",
+            "le courant d'entrée (0,93 mA à 3,85 V)",
+            "des sorties mises en parallèle se partageant le courant"
+          ]
+        },
+        "timed": {
+          "claims": "Sept canaux inverseurs à collecteur ouvert : une sortie absorbe tant que son entrée est haute (2,4 V ou plus) et est libérée sinon, sans broche d'alimentation. Les sorties basculent 0,25 us après leurs entrées.",
+          "omissions": [
+            "les diodes d'écrêtage de chaque sortie vers COM (la surtension d'une charge inductive n'est pas simulée)",
+            "les limites de courant (500 mA par sortie) et la dissipation du boîtier",
+            "le courant d'entrée (0,93 mA à 3,85 V)",
+            "des sorties mises en parallèle se partageant le courant"
+          ]
+        },
+        "electrical": {
+          "claims": "Les entrées basculent à 2,4 V ; une sortie active tient 0,7 V derrière 2 ohms (les 0,9 V à 100 mA et 1,1 V à 200 mA de la fiche technique) ; inactive, elle est ouverte. Le comportement est celui du modèle Lua.",
+          "omissions": [
+            "les diodes d'écrêtage de chaque sortie vers COM (la surtension d'une charge inductive n'est pas simulée)",
+            "les limites de courant (500 mA par sortie) et la dissipation du boîtier",
+            "le courant d'entrée (0,93 mA à 3,85 V)",
+            "des sorties mises en parallèle se partageant le courant",
+            "la hausse de la tension de saturation avec la température"
+          ]
+        }
+      }
+    }
+  }
 }

@@ -4,7 +4,8 @@
   "id": "emblink/ic_74hc595",
   "version": "1.0.0",
   "name": "74HC595 shift register",
-  "category": "logic",
+  "category": "ttl_74",
+  "subcategory": "registers",
   "description": "8-bit serial-in, parallel-out shift register with output latches (74HC595): DS shifts in on SHCP rising, STCP rising copies the register to Q0-Q7, OE_N high releases the outputs; Q7S chains to the next device.",
   "keywords": [
     "logic",
@@ -326,5 +327,36 @@
   },
   "tests": [
     "tests/*.json"
-  ]
+  ],
+  "i18n": {
+    "fr": {
+      "source": "d78a40714e33",
+      "description": "Registre à décalage 8 bits à entrée série et sortie parallèle avec verrous de sortie (74HC595) : DS entre par décalage sur front montant de SHCP, le front montant de STCP copie le registre sur Q0-Q7, OE_N haut libère les sorties ; Q7S se chaîne au composant suivant.",
+      "fidelity": {
+        "functional": {
+          "claims": "Décalage sur front montant de SHCP, verrouillage sur front montant de STCP, MR_N asynchrone efface le registre à décalage, OE_N libère Q0-Q7.",
+          "omissions": [
+            "les temps d'établissement et de maintien",
+            "le courant de sortie par broche"
+          ]
+        },
+        "timed": {
+          "claims": "Comme en fonctionnel ; délais tels qu'indiqués.",
+          "omissions": [
+            "les temps d'établissement et de maintien",
+            "le courant de sortie par broche"
+          ]
+        },
+        "electrical": {
+          "claims": "Les broches se relient aux réseaux analogiques avec les modèles de broche par défaut de la famille ; le comportement est celui du modèle Lua.",
+          "omissions": [
+            "les temps d'établissement et de maintien",
+            "le courant de sortie par broche",
+            "le courant d'alimentation",
+            "les limites de courant de sortie"
+          ]
+        }
+      }
+    }
+  }
 }

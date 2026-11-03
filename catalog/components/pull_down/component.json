@@ -4,7 +4,8 @@
   "id": "emblink/pull_down",
   "version": "1.0.0",
   "name": "Pull-down resistor",
-  "category": "passives",
+  "category": "resistors",
+  "subcategory": "pulls",
   "description": "Resistor to the ground rail; a weak 0 driver on digital nets.",
   "keywords": [
     "pull",
@@ -93,5 +94,29 @@
   },
   "tests": [
     "tests/*.json"
-  ]
+  ],
+  "i18n": {
+    "fr": {
+      "source": "e73923c557f5",
+      "description": "Résistance vers le rail de masse ; une source faible de 0 sur les réseaux numériques.",
+      "fidelity": {
+        "functional": {
+          "claims": "Une source faible (0, faible) sur son réseau (SPEC-003 §3 rappels).",
+          "omissions": [
+            "la résistance"
+          ]
+        },
+        "timed": {
+          "claims": "Comme en fonctionnel sur les réseaux numériques, comme en électrique sur les réseaux analogiques."
+        },
+        "electrical": {
+          "claims": "Résistance r du réseau vers la masse (SPEC-004 §7 pull).",
+          "omissions": [
+            "la tolérance",
+            "le bruit"
+          ]
+        }
+      }
+    }
+  }
 }

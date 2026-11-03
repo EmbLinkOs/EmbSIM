@@ -8036,12 +8036,12 @@
      "reset": "0x0000FF00",
      "fields": [
       [
-       "SD0_IN",
+       "SD1_IN",
        0,
        8
       ],
       [
-       "SD0_PRESCALE",
+       "SD1_PRESCALE",
        8,
        8
       ]
@@ -8053,12 +8053,12 @@
      "reset": "0x0000FF00",
      "fields": [
       [
-       "SD0_IN",
+       "SD2_IN",
        0,
        8
       ],
       [
-       "SD0_PRESCALE",
+       "SD2_PRESCALE",
        8,
        8
       ]
@@ -8070,12 +8070,12 @@
      "reset": "0x0000FF00",
      "fields": [
       [
-       "SD0_IN",
+       "SD3_IN",
        0,
        8
       ],
       [
-       "SD0_PRESCALE",
+       "SD3_PRESCALE",
        8,
        8
       ]
@@ -12505,6 +12505,11 @@
        "r"
       ]
      ]
+    },
+    {
+     "name": "RESERVED_18C",
+     "offset": "0x18C",
+     "fields": []
     },
     {
      "name": "RD_REPEAT_ERR4",
@@ -29808,6 +29813,26 @@
      "offset": "0x62C"
     },
     {
+     "name": "IV_MEM0",
+     "offset": "0x630",
+     "fields": []
+    },
+    {
+     "name": "IV_MEM1",
+     "offset": "0x634",
+     "fields": []
+    },
+    {
+     "name": "IV_MEM2",
+     "offset": "0x638",
+     "fields": []
+    },
+    {
+     "name": "IV_MEM3",
+     "offset": "0x63C",
+     "fields": []
+    },
+    {
      "name": "X_MEM0",
      "offset": "0x800"
     },
@@ -40889,6 +40914,26 @@
     {
      "name": "PLAIN_MEM3",
      "offset": "0x0C"
+    },
+    {
+     "name": "PLAIN_MEM4",
+     "offset": "0x10",
+     "fields": []
+    },
+    {
+     "name": "PLAIN_MEM5",
+     "offset": "0x14",
+     "fields": []
+    },
+    {
+     "name": "PLAIN_MEM6",
+     "offset": "0x18",
+     "fields": []
+    },
+    {
+     "name": "PLAIN_MEM7",
+     "offset": "0x1C",
+     "fields": []
     },
     {
      "name": "LINESIZE",

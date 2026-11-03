@@ -1,0 +1,66 @@
+{
+ "schema_version": 1,
+ "kind": "scenario",
+ "name": "nvs_encryption_hmac",
+ "until": "3s",
+ "description": "nvs_encryption_hmac, unmodified, on a new chip: no eFuse key block has the HMAC_UP purpose, so the NVS security provider generates a key, burns it into a key block with that purpose, read-protected, and derives the NVS XTS keys from it with the HMAC peripheral (the key never readable by software); the default and a custom NVS partition are then encrypted under them, and the custom one's values written and read back.",
+ "inputs": [],
+ "assertions": [
+  {
+   "id": "scheme",
+   "at": "3s",
+   "probe": "console",
+   "expect": {
+    "contains": "nvs_sec_provider: NVS Encryption - Registering HMAC-based scheme..."
+   }
+  },
+  {
+   "id": "default-encrypted",
+   "at": "3s",
+   "probe": "console",
+   "expect": {
+    "contains": "nvs: NVS partition \"nvs\" is encrypted."
+   }
+  },
+  {
+   "id": "custom-encrypted",
+   "at": "3s",
+   "probe": "console",
+   "expect": {
+    "contains": "example: NVS partition \"custom_nvs\" is encrypted."
+   }
+  },
+  {
+   "id": "u32",
+   "at": "3s",
+   "probe": "console",
+   "expect": {
+    "contains": "example: Key: u32_key | Val: 4294967295"
+   }
+  },
+  {
+   "id": "i32",
+   "at": "3s",
+   "probe": "console",
+   "expect": {
+    "contains": "example: Key: i32_key | Val: -2147483648"
+   }
+  },
+  {
+   "id": "string",
+   "at": "3s",
+   "probe": "console",
+   "expect": {
+    "contains": "example: Key: str_key | Val: Lorem ipsum dolor sit amet"
+   }
+  },
+  {
+   "id": "returned",
+   "at": "3s",
+   "probe": "console",
+   "expect": {
+    "contains": "main_task: Returned from app_main()"
+   }
+  }
+ ]
+}

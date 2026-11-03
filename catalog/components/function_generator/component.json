@@ -5,6 +5,7 @@
   "version": "0.1.0",
   "name": "Function generator (50 \u03a9 output)",
   "category": "instruments",
+  "subcategory": "generators",
   "description": "DC, sine, pulse or PWL generator with finite series output resistance. Waveform values specify the open-circuit voltage; a matched 50 \u03a9 load receives half the voltage.",
   "keywords": [
     "instrument",
@@ -221,5 +222,22 @@
   },
   "tests": [
     "tests/*.json"
-  ]
+  ],
+  "i18n": {
+    "fr": {
+      "source": "90413cb256f0",
+      "description": "Générateur continu, sinus, impulsion ou PWL avec résistance de sortie série finie. Les valeurs de la forme d'onde donnent la tension à vide ; une charge adaptée de 50 Ω reçoit la moitié de la tension.",
+      "fidelity": {
+        "electrical": {
+          "claims": "Source de Thévenin : Vborne = Vvide + Ientrant × Rout, avec points d'arrêt dc/pulse/sine/pwl. Convention d'amplitude à vide.",
+          "omissions": [
+            "L'étalonnage et la précision propres au fabricant",
+            "La limitation de courant, l'écrêtage, la bande passante et la protection",
+            "Le bruit et la distorsion",
+            "Le couplage au châssis ou à la terre ; la borne de retour doit être câblée explicitement"
+          ]
+        }
+      }
+    }
+  }
 }

@@ -4,7 +4,8 @@
   "id": "emblink/eeprom_24aa025uid",
   "version": "1.0.0",
   "name": "24AA025UID I2C EEPROM with a serial number",
-  "category": "misc",
+  "category": "memory_ics",
+  "subcategory": "eeprom_i2c",
   "description": "Microchip 24AA025UID 2-Kbit (256 x 8) serial EEPROM on I2C: the lower half writable in 16-byte pages with a self-timed write cycle (no ACK while it runs), the upper half write-protected with the manufacturer and device codes and a 32-bit serial number.",
   "keywords": [
     "memory",
@@ -243,5 +244,45 @@
   },
   "tests": [
     "tests/*.json"
-  ]
+  ],
+  "i18n": {
+    "fr": {
+      "source": "cd37b46adc1e",
+      "description": "EEPROM série Microchip 24AA025UID de 2 Kbit (256 x 8) sur I2C : la moitié basse inscriptible par pages de 16 octets avec un cycle d'écriture autotemporisé (pas d'ACK pendant qu'il s'exécute), la moitié haute protégée en écriture avec les codes du fabricant et du composant et un numéro de série de 32 bits.",
+      "fidelity": {
+        "functional": {
+          "claims": "Adresse 0x50 + A2..A0, un octet d'adresse de mot, écritures d'octets et de pages validées au STOP avec bouclage de page de 16 octets (les octets suivants écrasent les précédents), pas d'écriture après un START répété, une adresse seule déplace le pointeur, lectures séquentielles bouclant à FFh, pas d'ACK pendant le cycle d'écriture (scrutation par ACK), la moitié haute protégée en écriture (écritures acquittées, rien ne change) avec 29h, 41h et le numéro de série en FAh-FFh.",
+          "omissions": [
+            "l'endurance et la rétention",
+            "le contenu n'est pas conservé d'une session à l'autre",
+            "la limite de vitesse du bus (400 kHz) : des horloges plus rapides sont aussi décodées",
+            "si une écriture dans la moitié protégée lance un cycle d'écriture (les captures ne le montrent pas) : le modèle en lance un",
+            "la durée du cycle d'écriture est fixe (twc) ; la vraie varie avec l'exemplaire, l'alimentation et la température"
+          ]
+        },
+        "timed": {
+          "claims": "Comme en fonctionnel ; tWC tel que réglé.",
+          "omissions": [
+            "l'endurance et la rétention",
+            "le contenu n'est pas conservé d'une session à l'autre",
+            "la limite de vitesse du bus (400 kHz) : des horloges plus rapides sont aussi décodées",
+            "si une écriture dans la moitié protégée lance un cycle d'écriture (les captures ne le montrent pas) : le modèle en lance un",
+            "la durée du cycle d'écriture est fixe (twc) ; la vraie varie avec l'exemplaire, l'alimentation et la température"
+          ]
+        },
+        "electrical": {
+          "claims": "Les broches se relient aux réseaux analogiques avec les modèles de broche par défaut de la famille ; le comportement est celui du modèle Lua.",
+          "omissions": [
+            "l'endurance et la rétention",
+            "le contenu n'est pas conservé d'une session à l'autre",
+            "la limite de vitesse du bus (400 kHz) : des horloges plus rapides sont aussi décodées",
+            "si une écriture dans la moitié protégée lance un cycle d'écriture (les captures ne le montrent pas) : le modèle en lance un",
+            "la durée du cycle d'écriture est fixe (twc) ; la vraie varie avec l'exemplaire, l'alimentation et la température",
+            "le courant d'alimentation",
+            "les limites de courant de sortie"
+          ]
+        }
+      }
+    }
+  }
 }

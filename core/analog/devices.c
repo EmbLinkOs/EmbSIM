@@ -40,7 +40,10 @@ const char *const *esk_adev_pin_names(const esk_adev_ops *ops, int *n)
                              *const amp[] = { "+", "-", "OUT", "V+", "V-" }, *const reg[] = { "IN", "OUT", "GND" },
                              *const env[] = { "1", "2" }, *const opto[] = { "A", "K", "C", "E" },
                              *const relay[] = { "S+", "S-", "COM", "NC", "NO" },
-                             *const spdt[] = { "COM", "NC", "NO" }, *const one[] = { "1" };
+                             *const spdt[] = { "COM", "NC", "NO" }, *const one[] = { "1" },
+                             *const ppk[] = { "VIN", "VOUT", "GND" },
+                             *const scope[] = { "CH1", "CH2", "CH3", "CH4", "GND" },
+                             *const dmm[] = { "COM", "V", "MA", "A" };
     static const struct { const char *name; const char *const *pins; int n; } table[] = {
         { "environment_resistor", env, 2 }, { "ptc_fuse", two, 2 }, { "photodiode", dio, 2 }, { "optocoupler", opto, 4 },
         { "relay_contacts", relay, 5 }, { "spdt_contact", spdt, 3 },
@@ -48,7 +51,8 @@ const char *const *esk_adev_pin_names(const esk_adev_ops *ops, int *n)
         { "vsource", src, 2 }, { "isource", src, 2 }, { "potentiometer", pot, 3 }, { "diode", dio, 2 },
         { "led", dio, 2 }, { "rgb_led", rgb, 4 }, { "zener", dio, 2 }, { "bjt_npn", bjt, 3 }, { "bjt_pnp", bjt, 3 },
         { "nmos", mos, 3 }, { "pmos", mos, 3 }, { "opamp", amp, 5 }, { "regulator", reg, 3 }, { "pull", one, 1 },
-        { "usb_meter", reg, 3 }, { "instrument_input", src, 2 },
+        { "usb_meter", reg, 3 }, { "instrument_input", src, 2 }, { "power_profiler", ppk, 3 }, { "oscilloscope", scope, 5 },
+        { "multimeter", dmm, 4 },
     };
     size_t i;
     for (i = 0; ops && i < sizeof table / sizeof table[0]; i++)
@@ -65,7 +69,10 @@ const char *const *esk_adev_pin_names(const esk_adev_ops *ops, int *n)
 int esk_adev_preserves_open_pins(const esk_adev_ops *ops)
 {
     return ops && (!strcmp(ops->name, "led") || !strcmp(ops->name, "rgb_led") ||
-                   !strcmp(ops->name, "instrument_input") || !strcmp(ops->name, "vsource"));
+                   !strcmp(ops->name, "instrument_input") || !strcmp(ops->name, "vsource") ||
+                   !strcmp(ops->name, "power_profiler") || /* VIN is open in source meter mode */
+                   !strcmp(ops->name, "oscilloscope") ||   /* a channel with no probe on it */
+                   !strcmp(ops->name, "multimeter"));     /* a jack with no lead in it */
 }
 
 static double pd(const esk_adev *d, const char *name, double def)
@@ -836,6 +843,17 @@ static int sw_input(const esk_adev *d)
     int closed = 0;
     if (!d->comp)
         return 0;
+    {
+        /* an injected fault (ADR-034): a cut conducts until it is active, a
+         * short only while it is */
+        const char *fault = esk_comp_param_str(d->comp, "fault", NULL);
+        if (fault) {
+            int start = 0, active;
+            (void)esk_comp_param_bool(d->comp, "initially_active", &start);
+            active = esk_comp_input_bool(d->comp, "active", start);
+            return strcmp(fault, "short") ? !active : active;
+        }
+    }
     if (esk_comp_input_bool(d->comp, "pressed", 0) || esk_comp_input_bool(d->comp, "closed", 0) ||
         esk_comp_input_bool(d->comp, "state", 0))
         closed = 1;
@@ -1047,6 +1065,11 @@ typedef struct diode_state {
     double id_trial, vd_trial;
     double emission_s, emission_level;
     es_time_t emission_at;
+    /* an LED's limits (ADR-034): its junction heated by its own power */
+    esk_thermal2 th;
+    double tj_max, if_max, vr_max, p_last;
+    es_time_t t_last, wake;
+    int damaged, over_if, over_vr, thermal;
 } diode_state;
 
 /* Integral of illustrative normalized emission over accepted electrical time.
@@ -1121,6 +1144,18 @@ static es_status led_setup(esk_adev *d)
         vf = 2.0;
     s->if_nom = pd(d, "if_nom", 0.02);
     s->vf = pd(d, "vf", vf);
+    /* the absolute maximum ratings and thermal resistances (Kingbright's
+     * WP7113 5 mm parts) and the heat capacities, which no datasheet gives */
+    s->tj_max = pd(d, "tj_max", 125.0);
+    s->if_max = pd(d, "if_max", 0.030);
+    s->vr_max = pd(d, "vr_max", 5.0);
+    s->thermal = d->comp != NULL;
+    esk_thermal2_init(&s->th, d->comp ? esk_comp_input_double(d->comp, "temperature", 25.0) : 25.0,
+                      pd(d, "rth_js", 390.0), pd(d, "rth_ja", 560.0), pd(d, "cth_j", 3e-5), pd(d, "cth_s", 0.36));
+    s->t_last = d->comp ? d->comp->e->sched.now : 0;
+    s->damaged = s->over_if = s->over_vr = 0;
+    s->p_last = 0.0;
+    s->wake = 0;
     n = pd(d, "n", n);
     if (!(s->if_nom > 0.0)) {
         param_error(d, "if_nom", "must be > 0");
@@ -1161,6 +1196,15 @@ static void junction_stamp(esk_adev *d, esk_amatrix *m, diode_state *s)
 {
     int a = s->rs > 0.0 ? d->branch[0] : d->node[0], k = d->node[1];
     double vd = esk_am_v(m, a, k), vlim, id, gd;
+    if (s->kind == JN_LED && s->damaged) {
+        /* burnt out: the die or its bond wire open */
+        esk_am_stamp_g(m, a, k, 1e-12);
+        if (s->rs > 0.0)
+            esk_am_stamp_g(m, d->node[0], a, 1.0 / s->rs);
+        s->id_trial = 0.0;
+        s->vd_trial = vd;
+        return;
+    }
     if (s->has_bv && vd < -s->bv) {
         /* breakdown: a forward junction in the reverse direction */
         double vr = -(vd + s->bv), vr_lim = pnjlim(vr, s->vr_old, s->nvt, s->vcrit), idr, gdr;
@@ -1193,11 +1237,101 @@ static void diode_load(esk_adev *d, esk_amatrix *m)
     junction_stamp(d, m, (diode_state *)d->state);
 }
 
+/* the LED's junction carried from t_last to t at the power held since; it
+ * burns out (open) where the junction passes its absolute maximum */
+static int led_heat(esk_adev *d, diode_state *s, es_time_t t)
+{
+    double ta, dt, cross;
+    if (!s->thermal || s->damaged || t <= s->t_last) {
+        if (t > s->t_last)
+            s->t_last = t;
+        return 0;
+    }
+    ta = esk_comp_input_double(d->comp, "temperature", 25.0);
+    dt = ps_to_s(t - s->t_last);
+    cross = esk_thermal2_cross(&s->th, s->p_last, ta, s->tj_max);
+    s->t_last = t;
+    if (cross >= 0.0 && cross <= dt * (1.0 + 1e-9)) {
+        esk_thermal2_advance(&s->th, s->p_last, ta, cross);
+        s->damaged = 1;
+        esk_comp_diag(d->comp, ES_SEV_WARNING, "part.damaged",
+                      "%s: its junction passed %.0f C, its absolute maximum, at %.0f mW: the LED has burnt out (open); "
+                      "replace it (its replace input) after limiting its current",
+                      d->comp->id, s->tj_max, s->p_last * 1e3);
+        return 1;
+    }
+    esk_thermal2_advance(&s->th, s->p_last, ta, dt);
+    return 0;
+}
+
+static void led_schedule(esk_adev *d, diode_state *s)
+{
+    double cross;
+    if (!s->thermal || s->damaged)
+        return;
+    cross = esk_thermal2_cross(&s->th, s->p_last, esk_comp_input_double(d->comp, "temperature", 25.0), s->tj_max);
+    if (cross >= 0.0) {
+        es_time_t at = d->comp->e->sched.now + (es_time_t)(cross * 1e12) + 1;
+        if ((!s->wake || s->wake <= d->comp->e->sched.now || s->wake > at) && esk_comp_wake_at(d->comp, at, 0) == ES_OK)
+            s->wake = at;
+    }
+}
+
+static void led_accept(esk_adev *d, diode_state *s, es_time_t t)
+{
+    double v = esk_island_node_v(d->isl, d->node[0]) - esk_island_node_v(d->isl, d->node[1]);
+    int burnt = led_heat(d, s, t);
+    s->p_last = s->damaged ? 0.0 : v * s->id_trial;
+    if (s->thermal && !s->damaged) {
+        int over = s->id_trial > s->if_max * 1.0001;
+        if (over && !s->over_if)
+            esk_comp_diag(d->comp, ES_SEV_WARNING, "part.over_rating",
+                          "%s: %.1f mA forward, above its %.0f mA DC rating: it heats (%.0f mW) and dims with age; "
+                          "a series resistor limits it",
+                          d->comp->id, s->id_trial * 1e3, s->if_max * 1e3, s->p_last * 1e3);
+        s->over_if = over;
+        over = -v > s->vr_max * 1.0001;
+        if (over && !s->over_vr)
+            esk_comp_diag(d->comp, ES_SEV_WARNING, "part.over_rating",
+                          "%s: %.2f V reverse, above its %.0f V rating", d->comp->id, -v, s->vr_max);
+        s->over_vr = over;
+    }
+    if (burnt)
+        esk_island_touch(d->isl, t);
+    led_schedule(d, s);
+}
+
+static void esk_led_on_time(esk_adev *d, es_time_t now)
+{
+    diode_state *s = (diode_state *)d->state;
+    s->wake = 0;
+    if (led_heat(d, s, now))
+        esk_island_touch(d->isl, now);
+    led_schedule(d, s);
+}
+
+static void esk_led_on_input(esk_adev *d, const char *input, es_time_t now)
+{
+    diode_state *s = (diode_state *)d->state;
+    if (!strcmp(input, "replace") && esk_comp_input_bool(d->comp, "replace", 0) && s->damaged) {
+        double ta = esk_comp_input_double(d->comp, "temperature", 25.0);
+        s->damaged = 0;
+        s->th.tj = s->th.ts = ta;
+        s->t_last = now;
+        s->p_last = 0.0;
+    } else {
+        (void)led_heat(d, s, now); /* the room's temperature changed */
+    }
+    esk_island_touch(d->isl, now);
+}
+
 static void diode_accept(esk_adev *d, es_time_t t)
 {
     diode_state *s = (diode_state *)d->state;
-    if (s->kind == JN_LED)
+    if (s->kind == JN_LED) {
         emission_accept(s, t);
+        led_accept(d, s, t);
+    }
     set_pin_currents2(d, s->id_trial);
 }
 
@@ -1217,6 +1351,15 @@ static void diode_observe(esk_adev *d, esk_json *o)
         esk_json_set_number(a, o, "luminance", lum);
         esk_json_set_bool(a, o, "lit", s->id_trial > 1e-6);
         esk_json_set_number(a, o, "emission_integral", emission_integral(d, s));
+        {
+            /* the junction as of now: a quiet island has not stepped since */
+            esk_thermal2 th = s->th;
+            if (s->thermal && !s->damaged && d->comp && d->comp->e->sched.now > s->t_last)
+                esk_thermal2_advance(&th, s->p_last, esk_comp_input_double(d->comp, "temperature", 25.0),
+                                     ps_to_s(d->comp->e->sched.now - s->t_last));
+            esk_json_set_number(a, o, "tj", th.tj);
+        }
+        esk_json_set_bool(a, o, "damaged", s->damaged);
     }
 }
 
@@ -1934,7 +2077,16 @@ static const esk_adev_ops opamp_ops = {"opamp",       sizeof(opamp_state), opamp
 typedef struct reg_state {
     double vout, dropout, imax, iq, rlim;
     double vo_trial, iin_trial;
+    /* thermal limiting (ADR-034), when the part gives its thermal resistances */
+    int thermal;
+    esk_thermal2 th;
+    double tsd, p_last, ilim; /* the shutdown temperature; the power held; the current limit now */
+    double drop, vin_last;    /* IN - OUT and IN as last accepted */
+    es_time_t t_last, wake;
+    int limiting;
 } reg_state;
+
+
 
 #define REG_RREV 1e6 /* reverse (sinking) leakage resistance of the output, ohms */
 
@@ -1952,8 +2104,32 @@ static es_status reg_setup(esk_adev *d)
         s->dropout = 0.3;
         s->imax = 1.0;
     }
+    s->thermal = d->comp && pd(d, "rth_ja", 0.0) > 0.0 && pd(d, "tsd", 0.0) > 0.0;
+    s->tsd = pd(d, "tsd", 175.0);
+    s->ilim = s->imax;
+    s->p_last = 0.0;
+    s->limiting = 0;
+    s->wake = 0;
+    s->t_last = d->comp ? d->comp->e->sched.now : 0;
+    if (s->thermal)
+        esk_thermal2_init(&s->th, esk_comp_input_double(d->comp, "temperature", 25.0), pd(d, "rth_jc", 15.0),
+                          pd(d, "rth_ja", 160.0), pd(d, "cth_j", 5e-4), pd(d, "cth_s", 0.1));
     d->nbranch = 1;
     return ES_OK;
+}
+
+/* the thermal limit's current: what holds the junction at tsd above the
+ * case as it is (the loop's settled state: its own speed, the die's
+ * milliseconds, is far quicker than the case's seconds), the full limit
+ * while that is more */
+static double reg_ilim(const reg_state *s)
+{
+    double p = (s->tsd - s->th.ts) / s->th.rjs - (s->vin_last > 0.0 ? s->vin_last * s->iq : 0.0);
+    double drop = s->drop > 0.1 ? s->drop : 0.1, i;
+    if (s->th.tj < s->tsd - 1.0 && s->ilim >= s->imax)
+        return s->imax; /* not there yet */
+    i = p > 0.0 ? p / drop : 0.0;
+    return i < s->imax ? i : s->imax;
 }
 
 static void reg_load(esk_adev *d, esk_amatrix *m)
@@ -1963,7 +2139,7 @@ static void reg_load(esk_adev *d, esk_amatrix *m)
     double scale = esk_am_source_scale(m);
     double vin = esk_am_v(m, nin, ng), ib = esk_am_x(m, b);
     double avail = vin - s->dropout, vo, dvo_dvin;
-    double iout = -ib, excess = iout - s->imax, rl = 0.0;
+    double iout = -ib, excess = iout - (s->thermal ? s->ilim : s->imax), rl = 0.0;
     if (avail < 0.0) {
         vo = 0.0;
         dvo_dvin = 0.0;
@@ -2013,14 +2189,80 @@ static void reg_load(esk_adev *d, esk_amatrix *m)
     s->iin_trial = (iout > 0.0 ? iout : 0.0) + (vin >= 1.0 ? s->iq : vin > 0.0 ? s->iq * vin : 0.0);
 }
 
+/* the junction carried to t at the power held; the current limit it allows */
+static int reg_heat(esk_adev *d, reg_state *s, es_time_t t)
+{
+    double ilim;
+    if (!s->thermal)
+        return 0;
+    if (t > s->t_last)
+        esk_thermal2_advance(&s->th, s->p_last, esk_comp_input_double(d->comp, "temperature", 25.0),
+                             ps_to_s(t - s->t_last));
+    s->t_last = t;
+    ilim = reg_ilim(s);
+    if (ilim < s->imax && !s->limiting)
+        esk_comp_diag(d->comp, ES_SEV_WARNING, "part.thermal_shutdown",
+                      "%s: its die reached %.0f C dissipating %.2f W: thermal shutdown limits its output; "
+                      "it needs a heatsink, less input voltage or less load",
+                      d->comp->id, s->th.tj, s->p_last);
+    s->limiting = ilim < s->imax;
+    if (fabs(ilim - s->ilim) > 1e-3 * s->imax) {
+        s->ilim = ilim;
+        return 1;
+    }
+    return 0;
+}
+
+/* while its die is moving toward the limit, look again a tenth of the way */
+static void reg_schedule(esk_adev *d, reg_state *s)
+{
+    double ta, steady, tau, dt;
+    es_time_t at;
+    if (!s->thermal)
+        return;
+    ta = esk_comp_input_double(d->comp, "temperature", 25.0);
+    steady = esk_thermal2_steady(&s->th, s->p_last, ta);
+    if (steady < s->tsd - 5.0 && s->ilim >= s->imax && s->th.tj < s->tsd - 5.0)
+        return; /* nowhere near: a later accept looks again */
+    if (fabs(steady - s->th.tj) < 0.05 && s->ilim >= s->imax)
+        return;
+    tau = s->th.rjs * s->th.cj;
+    dt = s->th.tj > s->tsd - 10.0 ? tau : 0.1 * (s->th.rjs + s->th.rsa) * s->th.cs;
+    if (dt < 1e-3)
+        dt = 1e-3;
+    if (dt > 1.0)
+        dt = 1.0;
+    at = d->comp->e->sched.now + (es_time_t)(dt * 1e12);
+    if ((!s->wake || s->wake <= d->comp->e->sched.now || s->wake > at) && esk_comp_wake_at(d->comp, at, 0) == ES_OK)
+        s->wake = at;
+}
+
 static void reg_accept(esk_adev *d, es_time_t t)
 {
-    const reg_state *s = (const reg_state *)d->state;
+    reg_state *s = (reg_state *)d->state;
     double ib = acc_x(d, d->branch[0]);
-    ES_UNUSED(t);
+    int changed = reg_heat(d, s, t);
     d->i_last[0] = s->iin_trial;
     d->i_last[1] = ib;
     d->i_last[2] = -(s->iin_trial + ib);
+    if (s->thermal) {
+        double vin = acc_v(d, 0) - acc_v(d, 2), vo = acc_v(d, 1) - acc_v(d, 2), iout = -ib;
+        s->p_last = (iout > 0.0 ? (vin - vo) * iout : 0.0) + (vin > 0.0 ? vin * s->iq : 0.0);
+        s->drop = vin - vo;
+        s->vin_last = vin;
+        if (changed)
+            esk_island_touch(d->isl, t);
+        reg_schedule(d, s);
+    }
+}
+
+static void esk_reg_on_time(esk_adev *d, es_time_t now)
+{
+    reg_state *s = (reg_state *)d->state;
+    s->wake = 0;
+    if (reg_heat(d, s, now))
+        esk_island_touch(d->isl, now);
+    reg_schedule(d, s);
 }
 
 static void reg_observe(esk_adev *d, esk_json *o)
@@ -2028,6 +2270,17 @@ static void reg_observe(esk_adev *d, esk_json *o)
     observe_basic(d, o);
     esk_json_set_number(d->isl->a, o, "vout", acc_v(d, 1) - acc_v(d, 2));
     esk_json_set_number(d->isl->a, o, "iout", -d->i_last[1]);
+    {
+        const reg_state *s = (const reg_state *)d->state;
+        if (s->thermal) {
+            esk_thermal2 th = s->th;
+            if (d->comp && d->comp->e->sched.now > s->t_last)
+                esk_thermal2_advance(&th, s->p_last, esk_comp_input_double(d->comp, "temperature", 25.0),
+                                     ps_to_s(d->comp->e->sched.now - s->t_last));
+            esk_json_set_number(d->isl->a, o, "tj", th.tj);
+            esk_json_set_bool(d->isl->a, o, "thermal_limit", s->limiting);
+        }
+    }
 }
 
 static const esk_adev_ops regulator_ops = {"regulator", sizeof(reg_state), reg_setup, reg_load,
@@ -2082,7 +2335,8 @@ static const esk_adev_ops *const device_table[] = {
     &nmos_ops,          &pmos_ops,      &opamp_ops,    &regulator_ops, &pull_ops,
     &esk_comparator_ops, &esk_temperature_ops, &esk_timer555_ops,
     &esk_environmental_ops, &esk_photodiode_ops, &esk_optocoupler_ops, &esk_relay_contacts_ops, &esk_spdt_ops, &esk_button4_ops,
-    &esk_ptc_fuse_ops, &esk_usb_meter_ops, &instrument_ops,
+    &esk_ptc_fuse_ops, &esk_usb_meter_ops, &instrument_ops, &esk_power_profiler_ops, &esk_oscilloscope_ops,
+    &esk_multimeter_ops,
 };
 
 void esk_adev_on_time(esk_adev *d, es_time_t now)
@@ -2091,6 +2345,38 @@ void esk_adev_on_time(esk_adev *d, es_time_t now)
         esk_ptc_on_time(d, now);
     else if (d && d->ops == &esk_usb_meter_ops)
         esk_usb_meter_on_time(d, now);
+    else if (d && d->ops == &esk_oscilloscope_ops)
+        esk_oscilloscope_on_time(d, now);
+    else if (d && d->ops == &esk_environmental_ops)
+        esk_environmental_on_time(d, now);
+    else if (d && d->ops == &esk_multimeter_ops)
+        esk_multimeter_on_time(d, now);
+    else if (d && d->ops == &led_ops)
+        esk_led_on_time(d, now);
+    else if (d && d->ops == &regulator_ops)
+        esk_reg_on_time(d, now);
+}
+
+void esk_adev_on_input(esk_adev *d, const char *input, es_time_t now)
+{
+    if (d && input && d->ops == &esk_environmental_ops) {
+        esk_environmental_on_input(d, now);
+        return;
+    }
+    if (d && input && d->ops == &esk_multimeter_ops) {
+        esk_multimeter_on_input(d, input, now);
+        return;
+    }
+    if (d && input && d->ops == &led_ops) {
+        esk_led_on_input(d, input, now);
+        return;
+    }
+    if (!d || !input || strcmp(input, "run"))
+        return;
+    if (d->ops == &esk_oscilloscope_ops)
+        esk_oscilloscope_on_input(d, now);
+    else if (d->ops == &esk_power_profiler_ops)
+        esk_power_profiler_on_input(d, now);
 }
 
 const esk_adev_ops *esk_adev_find(const char *name)

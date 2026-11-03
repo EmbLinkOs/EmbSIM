@@ -1,0 +1,27 @@
+{
+  "schema_version": 1,
+  "kind": "scenario",
+  "name": "press",
+  "description": "Both buttons pressed at 10 ms and released at 60 ms. The raw line chatters: five edges after the press while the contacts bounce, and as many after the release. The debounced line changes once for each (after its power-up pulse: the capacitor starts empty, so the inverter's output is high for the first millisecond, as on a bench): the capacitor holds the Schmitt input below its 1.8 V threshold through each 0.33 ms the contacts spring open.",
+  "until": "100ms",
+  "policy": "electrical",
+  "inputs": [
+    {"at": "10ms", "target": "SW1", "input": "pressed", "value": true},
+    {"at": "10ms", "target": "SW2", "input": "pressed", "value": true},
+    {"at": "60ms", "target": "SW1", "input": "pressed", "value": false},
+    {"at": "60ms", "target": "SW2", "input": "pressed", "value": false}
+  ],
+  "assertions": [
+    {"id": "raw-idle-high", "at": "5ms", "probe": "raw", "expect": {"logic": "1"}},
+    {"id": "raw-chatters-on-press", "between": ["10ms", "15ms"], "probe": "raw", "expect": {"edges": 6}},
+    {"id": "raw-held-low", "at": "30ms", "probe": "raw", "expect": {"logic": "0"}},
+    {"id": "raw-chatters-on-release", "between": ["60ms", "65ms"], "probe": "raw", "expect": {"edges": 6}},
+    {"id": "clean-power-up-pulse", "between": ["0ms", "5ms"], "probe": "clean", "expect": {"edges": 2}},
+    {"id": "clean-idle-low", "at": "5ms", "probe": "clean", "expect": {"logic": "0"}},
+    {"id": "clean-held-high", "between": ["12ms", "60ms"], "probe": "clean", "expect": {"logic": "1"}},
+    {"id": "clean-released-low", "at": "80ms", "probe": "clean", "expect": {"logic": "0"}},
+    {"id": "clean-two-edges", "between": ["5ms", "100ms"], "probe": "clean", "expect": {"edges": 2}},
+    {"id": "rc-stays-low-while-bouncing", "between": ["10.01ms", "12ms"], "probe": "rc", "expect": {"max_v": 1.8}},
+    {"id": "converges", "always": true, "diagnostics": {"forbid": ["analog.no_convergence", "analog.timestep_too_small"]}}
+  ]
+}

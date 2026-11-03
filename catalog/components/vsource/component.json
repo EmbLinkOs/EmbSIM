@@ -4,7 +4,8 @@
   "id": "emblink/vsource",
   "version": "1.0.0",
   "name": "Voltage source",
-  "category": "sources",
+  "category": "simulator_primitives",
+  "subcategory": "sources",
   "description": "Independent voltage source: dc, pulse, sine or piecewise-linear.",
   "keywords": [
     "source",
@@ -198,5 +199,24 @@
   },
   "tests": [
     "tests/*.json"
-  ]
+  ],
+  "i18n": {
+    "fr": {
+      "source": "cdfe02d4efa7",
+      "description": "Source de tension indépendante : continue, impulsion, sinus ou linéaire par morceaux.",
+      "fidelity": {
+        "timed": {
+          "claims": "Comme en électrique."
+        },
+        "electrical": {
+          "claims": "Source idéale avec paramètres dc/pulse/sine/pwl de style SPICE ; les fronts sont signalés comme points d'arrêt (SPEC-004 §7 vsource).",
+          "omissions": [
+            "l'impédance de source",
+            "le bruit",
+            "le type exp"
+          ]
+        }
+      }
+    }
+  }
 }

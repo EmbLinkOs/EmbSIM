@@ -21,6 +21,10 @@
 
 typedef struct esk_engine esk_engine;
 typedef struct esk_net esk_net;
+/* the analog grid's period (engine.c's grid_cb): islands take a step boundary
+ * at each multiple of it; paced slices end on it */
+#define ESK_ANALOG_GRID_PS ES_PS_PER_MS
+
 typedef struct esk_pin esk_pin;
 typedef struct esk_comp esk_comp;
 typedef struct esk_island esk_island;
@@ -52,6 +56,10 @@ typedef struct esk_pin_model {
     int power_ground;      /* power: 1 for ground, 0 for supply */
     double nominal_v, tolerance;
     int has_electrical;    /* electrical parameters were given or derived from a family */
+    /* absolute maximum ratings (ADR-034), 0 when not given: the DC current
+     * through the pin either way, and how far the voltage on it may go above
+     * its supply (vabs_hi over nominal_v) and below ground (vabs_lo) */
+    double iabs_max, vabs_hi, vabs_lo;
 } esk_pin_model;
 
 struct esk_pin {

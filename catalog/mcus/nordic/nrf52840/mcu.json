@@ -19,6 +19,13 @@
     "model": "cortex-m4",
     "priority_bits": 3,
     "timing_tier": "estimated",
+    "swd": {
+      "version": 1,
+      "jtag": false,
+      "dpidr": "0x2BA01477",
+      "ap_idr": "0x24770011",
+      "ap_base": "0xE00FF003"
+    },
     "fpu": true,
     "mpu": true,
     "endian": "little"
@@ -112,11 +119,11 @@
     },
     {
       "match": "UICR",
-      "model": "storage"
+      "model": "nrf-uicr"
     },
     {
       "match": "NVMC",
-      "model": "storage"
+      "model": "nrf-nvmc"
     },
     {
       "match": "FPU",
@@ -260,8 +267,9 @@
   },
   "fidelity": {
     "functional": {
-      "claims": "Armv7E-M (Cortex-M4 with the single-precision FPU) execution by the Cortex-M core extracted from EmbCC; every register of nrf52840.svd with its reset value, shared address spaces as one peripheral; behavioural models of CLOCK (HFXO's debounce, LFCLK), the GPIO ports (direction, drive modes, pulls, SENSE, LATCH and DETECT), GPIOTE (event and task channels, PORT), UART0/UARTE0 and UARTE1 (the UART's RXD FIFO, EasyDMA buffers, SHORTS, frames at BAUDRATE's rate on their PSEL pins), TIMER0-4 (timer and counter modes, compares, shorts) and RTC0-2 (prescaled 24-bit counters, compares, overflow), extracted from EmbCC but GPIOTE; and, written for EmbSIM, SPIM0-3 (EasyDMA transfers in modes 0 to 3 at FREQUENCY's rates on their PSEL pins, ORC, END_START, SPIM3's CSN), TWIM0-1 (START, repeated START and STOP on open-drain SCL and SDA at 100, 250 or 400 kbps, EasyDMA buffers, LASTTX and LASTRX with their shorts, SUSPEND and RESUME, ERRORSRC's ANACK and DNACK), PWM0-3 (the four channels from EasyDMA sequences in the Common, Grouped, Individual and WaveForm decodings, Up and UpAndDown counting, REFRESH, ENDDELAY, LOOP and the shorts) and the SAADC (eight channels on AIN0-7, VDD and VDDH/5, single-ended and differential, the gains and references, 8 to 14 bits, oversampling and burst, the limits, scans into Data RAM at TACQ + 2 us a conversion, the local timer); FICR carries a part's factory words.",
+      "claims": "Armv7E-M (Cortex-M4 with the single-precision FPU) execution by the Cortex-M core extracted from EmbCC; every register of nrf52840.svd with its reset value, shared address spaces as one peripheral; behavioural models of CLOCK (HFXO's debounce, LFCLK), the GPIO ports (direction, drive modes, pulls, SENSE, LATCH and DETECT), GPIOTE (event and task channels, PORT), UART0/UARTE0 and UARTE1 (the UART's RXD FIFO, EasyDMA buffers, SHORTS, frames at BAUDRATE's rate on their PSEL pins), TIMER0-4 (timer and counter modes, compares, shorts) and RTC0-2 (prescaled 24-bit counters, compares, overflow), extracted from EmbCC but GPIOTE; and, written for EmbSIM, SPIM0-3 (EasyDMA transfers in modes 0 to 3 at FREQUENCY's rates on their PSEL pins, ORC, END_START, SPIM3's CSN), TWIM0-1 (START, repeated START and STOP on open-drain SCL and SDA at 100, 250 or 400 kbps, EasyDMA buffers, LASTTX and LASTRX with their shorts, SUSPEND and RESUME, ERRORSRC's ANACK and DNACK), PWM0-3 (the four channels from EasyDMA sequences in the Common, Grouped, Individual and WaveForm decodings, Up and UpAndDown counting, REFRESH, ENDDELAY, LOOP and the shorts) and the SAADC (eight channels on AIN0-7, VDD and VDDH/5, single-ended and differential, the gains and references, 8 to 14 bits, oversampling and burst, the limits, scans into Data RAM at TACQ + 2 us a conversion, the local timer); FICR carries a part's factory words. The NVMC: CONFIG's read, write and erase modes, word writes to the flash and the UICR (bits only to 0), ERASEPAGE, ERASEPCR0, ERASEALL, ERASEUICR and ERASEPAGEPARTIAL with ERASEPAGEPARTIALCFG's duration, READY and READYNEXT for the Product Specification's maxima (a page 85 ms, a word 41 us, ERASEALL 169 ms) with a program in the flash halted until the operation ends; the UICR kept through resets, an image's UICR segment loaded into it. The core's halting debug as a probe drives it through the debug port (ARM DDI 0419E C1 / DDI 0403E C1): DHCSR's halt, step and restart with C_MASKINTS, DCRSR and DCRDR for every core register, DEMCR's reset vector catch and fault catches, DFSR, BKPT halting a debugged core, the FPB's six code comparators and the DWT's four comparators as watchpoints; a halted core runs nothing while the clocks and peripherals go on, and a system reset keeps the debug domain (a power-on clears it). The serial wire as a probe drives it, clock by clock (ARM IHI 0031F B4): an SW-DP (DPIDR 0x2BA01477, SWD only) with the line reset, packets, CTRL/STAT's power-up handshake and sticky flags, ABORT, SELECT, RDBUFF; the AHB-AP (IDR 0x24770011, BASE 0xE00FF003) with its posted reads; the CTRL-AP at APSEL 1 as OpenOCD's nrf52_recover drives it (IDR 0x02880000, RESET holding the part in a system reset, ERASEALL erasing the flash and the UICR for ERASEALL's time whatever CONFIG says, ERASEALLSTATUS, APPROTECTSTATUS); UICR.APPROTECT's PALL, as the last reset found it, locks the AHB-AP (DeviceEn 0, its accesses refused) until a reset after the erase.",
       "omissions": [
+        "the debug monitor exception (DEMCR's MON_ bits), C_SNAPSTALL, the FPB's flash patching (FP_REMAP), the DWT's counters other than CYCCNT, PC sampling, data value matching and linked comparators, the trace pin: the ITM and TPIU are there (cortexm/itm.c) but no debug component gives a pin TRACESWO (the F1's DBGMCU_CR TRACE_IOEN, the nRF52840's TRACECONFIG are not modelled), so no SWO leaves the part; the ITM's timestamp and the DWT's packets; a halted core draws its sleep current",
         "the radio",
         "PPI and the DPPI-like EGUs",
         "SPIS, TWIS, the legacy SPI and TWI, PDM, I2S, QDEC, COMP (plain registers)",
@@ -269,7 +277,7 @@
         "USBD",
         "QSPI",
         "the CryptoCell",
-        "the NVMC's flash writes",
+        "the NVMC's word write (41 us) and ERASEALL (169 ms) times are the Product Specification's maxima as recalled, not checked against it (its page erase, 85 ms, is the value nrfx gives); the times' spread, nWRITE, a partially erased page's undefined contents, the ACLs, the hardware APPROTECT of build code F and later (APPROTECT.DISABLE; the UICR's APPROTECT is the earlier builds'), the debug port's WAIT, overrun detection and TRNCNT, the instruction cache's IHIT and IMISS, the UICR across a power cycle",
         "POWER's sleep modes (System OFF)",
         "UARTE flow control and errors"
       ],
@@ -280,13 +288,15 @@
       ]
     },
     "timed": {
-      "claims": "Instruction timing estimated from EmbCC's Cortex-M4 cost table (ADR-015); the core at 64 MHz; TIMERs at 16 MHz / 2^PRESCALER and RTCs at 32.768 kHz exactly against it.",
+      "claims": "Instruction timing estimated from EmbCC's Cortex-M4 cost table (ADR-015); the core at 64 MHz; TIMERs at 16 MHz / 2^PRESCALER and RTCs at 32.768 kHz exactly against it. Exception entry (12 cycles), return (12), tail-chaining (6) and late arrival are timed as the Cortex-M4 TRM (ARM DDI 0439B 3.9.1) gives them at zero wait states.",
       "omissions": [
         "flash wait states and the instruction cache",
-        "the HFXO's power-up time"
+        "the HFXO's power-up time",
+        "the extended (FP) frame's and lazy stacking's cycles",
+        "an interrupt during unstacking (taken after the return)"
       ],
       "validation": [
-        "repo:tests/unit/test_nrf52.c"
+        "repo:tests/unit/test_nrf52.c", "repo:tests/unit/test_cm_timing.c"
       ]
     },
     "electrical": {
@@ -327,5 +337,45 @@
       }
     ],
     "notes": "registers.json is converted from Nordic's nrf52840.svd under its BSD-3-Clause licence (LICENSES/); the rest is written for EmbSIM."
+  },
+  "i18n": {
+    "fr": {
+      "source": "10f6390aeb45",
+      "description": "Nordic Semiconductor nRF52840 : un Arm Cortex-M4F à 64 MHz avec 1 Mio de flash et 256 Kio de RAM, une radio multiprotocole à 2,4 GHz (Bluetooth LE, 802.15.4), l'USB ; le MCU du nRF52840 DK.",
+      "fidelity": {
+        "functional": {
+          "claims": "Exécution Armv7E-M (Cortex-M4 avec FPU simple précision) par le cœur Cortex-M extrait d'EmbCC ; chaque registre de nrf52840.svd avec sa valeur de réinitialisation, les espaces d'adresses partagés comme un seul périphérique ; des modèles de comportement de CLOCK (l'anti-rebond du HFXO, LFCLK), des ports GPIO (sens, modes de commande, rappels, SENSE, LATCH et DETECT), de GPIOTE (canaux d'événements et de tâches, PORT), d'UART0/UARTE0 et d'UARTE1 (la FIFO RXD de l'UART, les tampons EasyDMA, SHORTS, trames au débit de BAUDRATE sur leurs broches PSEL), de TIMER0-4 (modes timer et compteur, comparaisons, raccourcis) et de RTC0-2 (compteurs 24 bits prédivisés, comparaisons, débordement), extraits d'EmbCC sauf GPIOTE ; et, écrits pour EmbSIM, de SPIM0-3 (transferts EasyDMA en modes 0 à 3 aux débits de FREQUENCY sur leurs broches PSEL, ORC, END_START, le CSN de SPIM3), de TWIM0-1 (START, START répété et STOP sur SCL et SDA à drain ouvert à 100, 250 ou 400 kbit/s, tampons EasyDMA, LASTTX et LASTRX avec leurs raccourcis, SUSPEND et RESUME, ANACK et DNACK d'ERRORSRC), de PWM0-3 (les quatre canaux à partir de séquences EasyDMA dans les décodages Common, Grouped, Individual et WaveForm, comptage Up et UpAndDown, REFRESH, ENDDELAY, LOOP et les raccourcis) et du SAADC (huit canaux sur AIN0-7, VDD et VDDH/5, simples et différentiels, les gains et les références, 8 à 14 bits, suréchantillonnage et rafale, les limites, balayages vers la Data RAM à TACQ + 2 us par conversion, le timer local) ; FICR porte les mots d'usine d'une puce. Le NVMC : les modes lecture, écriture et effacement de CONFIG, les écritures de mots dans la flash et l'UICR (bits seulement vers 0), ERASEPAGE, ERASEPCR0, ERASEALL, ERASEUICR et ERASEPAGEPARTIAL avec la durée d'ERASEPAGEPARTIALCFG, READY et READYNEXT pour les maxima de la Product Specification (une page 85 ms, un mot 41 us, ERASEALL 169 ms) avec un programme en flash arrêté jusqu'à la fin de l'opération ; l'UICR gardé à travers les réinitialisations, le segment UICR d'une image chargé dedans. Le débogage avec arrêt du cœur tel qu'une sonde le pilote par le port de débogage (ARM DDI 0419E C1 / DDI 0403E C1) : l'arrêt, le pas à pas et la relance de DHCSR avec C_MASKINTS, DCRSR et DCRDR pour chaque registre du cœur, la capture du vecteur de réinitialisation et les captures de fautes de DEMCR, DFSR, BKPT arrêtant un cœur débogué, les six comparateurs de code du FPB et les quatre comparateurs du DWT comme points d'observation ; un cœur arrêté n'exécute rien pendant que les horloges et les périphériques continuent, et une réinitialisation système garde le domaine de débogage (une mise sous tension l'efface). Le fil série tel qu'une sonde le pilote, coup d'horloge par coup d'horloge (ARM IHI 0031F B4) : un SW-DP (DPIDR 0x2BA01477, SWD seulement) avec la réinitialisation de ligne, les paquets, la poignée de main de mise sous tension et les drapeaux persistants de CTRL/STAT, ABORT, SELECT, RDBUFF ; l'AHB-AP (IDR 0x24770011, BASE 0xE00FF003) avec ses lectures différées ; le CTRL-AP en APSEL 1 tel que le pilote nrf52_recover d'OpenOCD (IDR 0x02880000, RESET maintenant la puce en réinitialisation système, ERASEALL effaçant la flash et l'UICR pendant la durée d'ERASEALL quoi que dise CONFIG, ERASEALLSTATUS, APPROTECTSTATUS) ; le PALL d'UICR.APPROTECT, tel que la dernière réinitialisation l'a trouvé, verrouille l'AHB-AP (DeviceEn à 0, ses accès refusés) jusqu'à une réinitialisation après l'effacement.",
+          "omissions": [
+            "l'exception de moniteur de débogage (bits MON_ de DEMCR), C_SNAPSTALL, le remappage de la flash par le FPB (FP_REMAP), les compteurs du DWT autres que CYCCNT, l'échantillonnage du PC, la comparaison de valeurs de données et les comparateurs liés, la broche de trace : l'ITM et le TPIU sont là (cortexm/itm.c) mais aucun composant de débogage ne donne de broche TRACESWO (TRACE_IOEN de DBGMCU_CR du F1 et TRACECONFIG du nRF52840 ne sont pas modélisés), donc aucun SWO ne sort de la puce ; l'horodatage de l'ITM et les paquets du DWT ; un cœur arrêté consomme son courant de veille",
+            "la radio",
+            "le PPI et les EGU de type DPPI",
+            "SPIS, TWIS, les anciens SPI et TWI, PDM, I2S, QDEC, COMP (simples registres)",
+            "les listes EasyDMA de SPIM et TWIM, l'étirement d'horloge par un esclave I2C, l'arbitrage ; les échelles de résistances du SAADC, sa charge sur le circuit, le bruit et les erreurs de décalage et de gain",
+            "l'USBD",
+            "le QSPI",
+            "la CryptoCell",
+            "les durées d'écriture d'un mot (41 us) et d'ERASEALL (169 ms) du NVMC sont les maxima de la Product Specification de mémoire, non vérifiés sur elle (son effacement de page, 85 ms, est la valeur que donne nrfx) ; la dispersion des temps, nWRITE, le contenu indéfini d'une page partiellement effacée, les ACL, l'APPROTECT matériel des versions F et suivantes (APPROTECT.DISABLE ; l'APPROTECT de l'UICR est celui des versions antérieures), le WAIT du port de débogage, la détection de débordement et TRNCNT, IHIT et IMISS du cache d'instructions, l'UICR à travers une coupure d'alimentation",
+            "les modes de veille de POWER (System OFF)",
+            "le contrôle de flux et les erreurs de l'UARTE"
+          ]
+        },
+        "timed": {
+          "claims": "Durée des instructions estimée à partir de la table de coûts Cortex-M4 d'EmbCC (ADR-015) ; le cœur à 64 MHz ; les TIMER à 16 MHz / 2^PRESCALER et les RTC à 32,768 kHz exactement par rapport à lui. L'entrée en exception (12 cycles), le retour (12), l'enchaînement (6) et l'arrivée tardive sont temporisés comme le TRM du Cortex-M4 (ARM DDI 0439B 3.9.1) les donne sans état d'attente.",
+          "omissions": [
+            "les états d'attente de la flash et le cache d'instructions",
+            "le temps de démarrage du HFXO",
+            "les cycles de la trame étendue (FP) et de l'empilement paresseux",
+            "une interruption pendant le dépilement (prise après le retour)"
+          ]
+        },
+        "electrical": {
+          "claims": "Modèles de broche GPIO par défaut à 3,0 V tirés de la spécification produit (commande standard, rappels de 13 k).",
+          "omissions": [
+            "la forte intensité (H0, H1)",
+            "les structures de protection ESD"
+          ]
+        }
+      }
+    }
   }
 }

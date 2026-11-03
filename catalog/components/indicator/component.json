@@ -4,7 +4,8 @@
   "id": "emblink/indicator",
   "version": "1.0.0",
   "name": "Indicator",
-  "category": "indicators",
+  "category": "optoelectronics",
+  "subcategory": "indicators",
   "description": "Functional LED-like probe: lit when its anode net is 1 and its cathode net is 0. No electrical model.",
   "keywords": [
     "indicator",
@@ -99,5 +100,23 @@
   },
   "tests": [
     "tests/*.json"
-  ]
+  ],
+  "i18n": {
+    "fr": {
+      "source": "e794937d3797",
+      "description": "Sonde fonctionnelle façon LED : allumée quand son réseau d'anode vaut 1 et son réseau de cathode 0. Pas de modèle électrique.",
+      "fidelity": {
+        "functional": {
+          "claims": "allumé = (A == 1) et (K == 0) ; X ou Z sur l'une des broches n'allume pas (SPEC-003 §5 indicator).",
+          "omissions": [
+            "le courant",
+            "la luminosité"
+          ]
+        },
+        "timed": {
+          "claims": "Comme en fonctionnel ; mis à jour au même cycle delta que ses entrées."
+        }
+      }
+    }
+  }
 }

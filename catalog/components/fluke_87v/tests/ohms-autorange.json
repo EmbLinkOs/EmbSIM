@@ -1,0 +1,57 @@
+{
+  "schema_version": 1,
+  "kind": "component_test",
+  "name": "ohms-autorange",
+  "description": "A 4.7 kOhm resistor on ohms: the meter steps down from 50 MOhm a range an update and settles on 4.700 kOhm.",
+  "policy": "electrical",
+  "until": "2500ms",
+  "circuit": {
+    "components": [
+      {
+        "id": "DUT",
+        "component": "emblink/fluke_87v"
+      },
+      {
+        "id": "G",
+        "component": "emblink/gnd"
+      },
+      {
+        "id": "R1",
+        "component": "emblink/resistor",
+        "params": {
+          "resistance": "4.7k",
+          "tolerance": 0
+        }
+      }
+    ],
+    "nets": {
+      "A": [
+        "R1.1",
+        "DUT.V"
+      ],
+      "GND": [
+        "R1.2",
+        "DUT.COM",
+        "G.GND"
+      ]
+    }
+  },
+  "expect": {
+    "output:DUT.display": {
+      "at": "2500ms",
+      "equals": "4.700"
+    },
+    "output:DUT.unit": {
+      "at": "2500ms",
+      "equals": "kohm"
+    }
+  },
+  "inputs": [
+    {
+      "at": "0s",
+      "target": "DUT",
+      "input": "function",
+      "value": "ohm"
+    }
+  ]
+}

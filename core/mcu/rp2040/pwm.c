@@ -42,6 +42,7 @@ struct slice {
 
 struct pwm {
     struct esk_mach *s;
+    void *dma; /* the DMA controller, for its requests at the wraps (found when first needed) */
     struct esk_rf_periph *p;
     struct slice sl[NSLICE];
     struct esk_rf_reg *en, *intr, *inte, *intf, *ints;
@@ -116,11 +117,13 @@ static void count(struct pwm *w, int i, u32 n)
                     ctr = 0;
                     c->down = 0;
                     esk_rf_hw(w->intr, reg(w->intr) | 1u << i);
+                    esk_rp2040_dreq_pulse(w->s, &w->dma, 24 + i); /* the slice's DMA request: a wrap */
                     latch(c);
                 }
             } else {
                 ctr = 0; /* the wrap */
                 esk_rf_hw(w->intr, reg(w->intr) | 1u << i);
+                    esk_rp2040_dreq_pulse(w->s, &w->dma, 24 + i); /* the slice's DMA request: a wrap */
                 latch(c);
             }
         } else {
@@ -133,6 +136,7 @@ static void count(struct pwm *w, int i, u32 n)
             ctr = 0; /* the wrap, at the bottom */
             c->down = 0;
             esk_rf_hw(w->intr, reg(w->intr) | 1u << i);
+                    esk_rp2040_dreq_pulse(w->s, &w->dma, 24 + i); /* the slice's DMA request: a wrap */
             latch(c);
             if (n) {
                 n--;

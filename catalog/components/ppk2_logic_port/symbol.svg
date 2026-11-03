@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 60 100" width="60" height="100" data-grid="10">
+  <style>.s{stroke:var(--symbol-stroke,#cdd6e4);fill:none;stroke-width:1.5;stroke-linecap:round;stroke-linejoin:round}.f{stroke:var(--symbol-stroke,#cdd6e4);fill:var(--symbol-fill,#1b2230);stroke-width:1.5;stroke-linejoin:round}.t{fill:var(--symbol-stroke,#cdd6e4);font-family:sans-serif;font-size:7px}</style>
+  <path class="s" d="M0 10 H12 M0 20 H12 M0 30 H12 M0 40 H12 M0 50 H12 M0 60 H12 M0 70 H12 M0 80 H12 M30 0 V6 M30 94 V100"/>
+  <rect class="f" x="12" y="6" width="40" height="88" rx="3"/>
+  <text class="t" x="32" y="52" text-anchor="middle">LOGIC</text>
+</svg>

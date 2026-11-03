@@ -4,7 +4,8 @@
   "id": "emblink/logic_level",
   "version": "1.0.0",
   "name": "Logic level",
-  "category": "sources",
+  "category": "simulator_primitives",
+  "subcategory": "stimuli",
   "description": "Constant logic level driver (0 or 1).",
   "keywords": [
     "logic",
@@ -88,5 +89,25 @@
   },
   "tests": [
     "tests/*.json"
-  ]
+  ],
+  "i18n": {
+    "fr": {
+      "source": "1c8e8419bd5d",
+      "description": "Source de niveau logique constant (0 ou 1).",
+      "fidelity": {
+        "functional": {
+          "claims": "Impose (level, fort) en permanence (SPEC-003 §5 logic_level)."
+        },
+        "timed": {
+          "claims": "Comme en fonctionnel."
+        },
+        "electrical": {
+          "claims": "OUT se relie aux réseaux analogiques avec les valeurs par défaut du modèle de broche cmos_3v3.",
+          "omissions": [
+            "la variation de l'intensité de commande"
+          ]
+        }
+      }
+    }
+  }
 }

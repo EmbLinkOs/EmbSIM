@@ -1,0 +1,65 @@
+{
+  "schema_version": 1,
+  "kind": "component_test",
+  "name": "set-time-12h",
+  "description": "A burst write from 00h sets 11:59:58 PM (hours 72h: 12-hour mode, PM, 11), Sunday (day 1), 31/12/26, CH clear: two seconds later the clock reads 2027-01-01 00:00:00 (midnight, the new year).",
+  "policy": "functional",
+  "until": "2600ms",
+  "circuit": {
+    "components": [
+      {
+        "id": "PG",
+        "component": "emblink/pattern_generator",
+        "params": {
+          "pattern": "3,2,0,1,3,1,1,3,1,0,2,0,1,3,1,0,2,0,0,2,0,0,2,0,0,2,0,1,3,1,0,2,0,0,2,0,0,2,0,0,2,0,0,2,0,0,2,0,0,2,0,0,2,0,1,3,1,0,2,0,1,3,1,0,2,0,1,3,1,1,3,1,0,2,0,0,2,0,0,2,0,1,3,1,0,2,0,1,3,1,0,2,0,1,3,1,1,3,1,0,2,0,0,2,0,1,3,1,1,3,1,0,2,0,1,3,1,1,3,1,1,3,1,0,2,0,0,2,0,0,2,0,1,3,1,1,3,1,0,2,0,0,2,0,0,2,0,0,2,0,0,2,0,0,2,0,0,2,0,1,3,1,1,3,1,0,2,0,0,2,0,1,3,1,1,3,1,0,2,0,0,2,0,0,2,0,1,3,1,1,3,1,0,2,0,0,2,0,0,2,0,1,3,1,0,2,0,0,2,0,1,3,1,0,2,0,1,3,1,0,2,0,0,2,0,1,3,1,0,2,0,0,2,0,1,3,1,1,3,1,0,2,0,1,3,1,0,2,3",
+          "period": "1u",
+          "drive": "open_drain",
+          "idle": 3,
+          "start": "100m"
+        }
+      },
+      {
+        "id": "PU1",
+        "component": "emblink/pull_up"
+      },
+      {
+        "id": "PU2",
+        "component": "emblink/pull_up"
+      },
+      {
+        "id": "PU3",
+        "component": "emblink/pull_up"
+      },
+      {
+        "id": "DUT",
+        "component": "emblink/ds1307"
+      }
+    ],
+    "nets": {
+      "SDA": [
+        "PG.OUT0",
+        "DUT.SDA",
+        "PU1.1"
+      ],
+      "SCL": [
+        "PG.OUT1",
+        "DUT.SCL",
+        "PU2.1"
+      ],
+      "SQW": [
+        "DUT.SQW",
+        "PU3.1"
+      ]
+    }
+  },
+  "expect": {
+    "output:DUT.time": {
+      "at": "2200ms",
+      "equals": "2027-01-01 00:00:00"
+    },
+    "output:DUT.weekday": {
+      "at": "2200ms",
+      "equals": 2
+    }
+  }
+}

@@ -1,6 +1,7 @@
 {
   "schema_version": 1,
   "kind": "mcu",
+  "fuses": {"factory": {"low": "0x62", "high": "0xD9", "extended": "0xFF", "lock": "0xFF"}},
   "id": "microchip/atmega328p",
   "version": "1.0.0",
   "name": "ATmega328P",
@@ -149,7 +150,10 @@
       "rpull": 35000,
       "leak_a": 1e-06,
       "ioh_max": 0.04,
-      "iol_max": 0.04
+      "iol_max": 0.04,
+      "iabs_max": 0.04,
+      "vabs_hi": 0.5,
+      "vabs_lo": 0.5
     },
     "analog": {
       "PC0": "ADC0",
@@ -197,8 +201,9 @@
   },
   "fidelity": {
     "functional": {
-      "claims": "AVR5 instruction execution extracted from EmbCC (every instruction of the ATmega328P with SREG's flags, refereed there against QEMU), interrupts through the vector table with their priorities, SLEEP; every register of the datasheet's I/O space with its reset value and access; behavioural models of PORTB/C/D (DDR, PORT, PIN with the pull-ups and PUD), INT0/INT1 and the pin-change interrupts, Timer/Counter0, 1 and 2 (every waveform mode, double-buffered compare registers, the six OC pins switching at their clock), Timer/Counter1's input capture (ICP1 or the comparator, either edge, the noise canceler, ICR1 at the edge's clock), USART0 (frames at the baud rate on PD1, from PD0 and the session's serial input), the 10-bit ADC from the pins' voltages, the SPI as a master (modes 0 to 3, DORD, SPR and SPI2X, WCOL, SPIF cleared by SPSR then SPDR or by its vector, SS's mode fault) on PB2 to PB5, the TWI as a master (the datasheet's master transmitter and receiver statuses, repeated START, STOP with START, TWWC, TWBR and the prescaler's SCL) open-drain on PC4 and PC5, the 1 KiB EEPROM, the clock prescaler, and the watchdog (WDP's time-outs on its 128 kHz oscillator, WDR, interrupt and system reset modes, safety level 1's timed sequence, WDRF in MCUSR through its reset), MCUSR's reset flags (PORF at power-on; EXTRF from the RESET pin, the others kept), and the analog comparator (AIN0 or the bandgap against AIN1 or the ADC multiplexer's pin with ACME, ACO, ACI on its toggle, falling or rising edge, its vector, ACD; on an analog net each input pin is a threshold at the other's voltage, crossed in the analog solver at its time).",
+      "claims": "AVR5 instruction execution extracted from EmbCC (every instruction of the ATmega328P with SREG's flags, refereed there against QEMU), interrupts through the vector table with their priorities, SLEEP; every register of the datasheet's I/O space with its reset value and access; behavioural models of PORTB/C/D (DDR, PORT, PIN with the pull-ups and PUD), INT0/INT1 and the pin-change interrupts, Timer/Counter0, 1 and 2 (every waveform mode, double-buffered compare registers, the six OC pins switching at their clock), Timer/Counter1's input capture (ICP1 or the comparator, either edge, the noise canceler, ICR1 at the edge's clock), USART0 (frames at the baud rate on PD1, from PD0 and the session's serial input; the two-level receive FIFO and shift register, DOR0 on an overrun of a host port's bytes), the 10-bit ADC from the pins' voltages, the SPI as a master (modes 0 to 3, DORD, SPR and SPI2X, WCOL, SPIF cleared by SPSR then SPDR or by its vector, SS's mode fault) on PB2 to PB5, the TWI as a master (the datasheet's master transmitter and receiver statuses, repeated START, STOP with START, TWWC, TWBR and the prescaler's SCL) open-drain on PC4 and PC5, the 1 KiB EEPROM, the clock prescaler, and the watchdog (WDP's time-outs on its 128 kHz oscillator, WDR, interrupt and system reset modes, safety level 1's timed sequence, WDRF in MCUSR through its reset), MCUSR's reset flags (PORF at power-on; EXTRF from the RESET pin, the others kept), boot loader support (the fuses as the board programs them: BOOTSZ's boot section, BOOTRST's reset vector, CKDIV8; MCUCR's IVSEL with IVCE's timed sequence; SPM from the boot section: the temporary page buffer, page erase and write in 4.1 ms, the RWW section running on with RWWSB until RWWSRE, the NRWW section halting the core, the boot lock bits refusing writes, the SPM Ready interrupt, the signature row and the fuse and lock bits read by LPM; erased flash running through to address 0; what the program wrote kept through a power cycle), and the I/O pins' absolute maximum ratings (a pin.over_current warning past 40 mA through a pin, a pin.over_voltage one outside -0.5 V to VCC + 0.5 V, datasheet section 28.1) and their protection diodes (a pin held about a diode drop past its rail, as Microchip's AVR182 relies on), and the analog comparator (AIN0 or the bandgap against AIN1 or the ADC multiplexer's pin with ACME, ACO, ACI on its toggle, falling or rising edge, its vector, ACD; on an analog net each input pin is a threshold at the other's voltage, crossed in the analog solver at its time).",
       "omissions": [
+        "damage past the absolute maximum ratings (the datasheet names no point where it happens: warnings only), the 200 mA limit on VCC and GND, and the protection diodes' current going into VCC (they clamp to the nominal supply: an unpowered part is not powered through its pins)",
         "SPI slave mode",
         "TWI slave mode, arbitration and bus errors",
         "the watchdog oscillator's spread (exactly 128 kHz) and safety level 2 (WDTON)",
@@ -206,14 +211,16 @@
         "the input capture synchroniser's constant delay",
         "the external clock inputs T0 and T1",
         "timer 2's asynchronous clock",
-        "self-programming (SPM)",
-        "fuses and lock bits",
+        "LPM's read protection by the boot lock bits and the interrupts they hold off; reading or running the RWW section while RWWSB is set (undefined on the part: LPM reads 0xff and warns, code runs as flash holds it)",
+        "the low fuse's clock selection (CKSEL, SUT: the board's description gives the clock) and the lock bits LB1 and LB2 (they guard external programming, not modelled)",
+        "frame and parity errors on bytes from the session's input",
         "brown-out detection"
       ],
       "validation": [
         "repo:tests/unit/test_avr.c",
         "repo:examples/uno-blink-serial",
-        "repo:tests/vendor/arduino/sketches/spi_wire"
+        "repo:tests/vendor/arduino/sketches/spi_wire",
+        "repo:tests/vendor/arduino/optiboot.py"
       ]
     },
     "timed": {
@@ -265,5 +272,46 @@
       }
     ],
     "notes": "The register description is written for EmbSIM from the datasheet; no vendor file is shipped (ADR-020)."
+  },
+  "i18n": {
+    "fr": {
+      "source": "2b39e86a8eb7",
+      "description": "Microchip (Atmel) ATmega328P : AVR 8 bits jusqu'à 20 MHz, 32 Kio de flash, 2 Kio de SRAM, 1 Kio d'EEPROM ; le MCU de l'Arduino Uno.",
+      "fidelity": {
+        "functional": {
+          "claims": "Exécution des instructions AVR5 extraite d'EmbCC (chaque instruction de l'ATmega328P avec les drapeaux de SREG, validée là-bas face à QEMU), interruptions par la table des vecteurs avec leurs priorités, SLEEP ; chaque registre de l'espace d'E/S de la fiche technique avec sa valeur de réinitialisation et son accès ; des modèles de comportement de PORTB/C/D (DDR, PORT, PIN avec les rappels au niveau haut et PUD), d'INT0/INT1 et des interruptions sur changement de broche, des Timer/Counter0, 1 et 2 (tous les modes de forme d'onde, registres de comparaison à double tampon, les six broches OC basculant à leur horloge), de la capture d'entrée du Timer/Counter1 (ICP1 ou le comparateur, l'un ou l'autre front, le réducteur de bruit, ICR1 à l'horloge du front), de l'USART0 (trames au débit sur PD1, depuis PD0 et l'entrée série de la session ; la FIFO de réception à deux niveaux et le registre à décalage, DOR0 sur un débordement des octets d'un port hôte), de l'ADC 10 bits à partir des tensions des broches, du SPI en maître (modes 0 à 3, DORD, SPR et SPI2X, WCOL, SPIF effacé par SPSR puis SPDR ou par son vecteur, la faute de mode de SS) sur PB2 à PB5, du TWI en maître (les états maître émetteur et récepteur de la fiche technique, START répété, STOP avec START, TWWC, TWBR et le SCL du prédiviseur) en drain ouvert sur PC4 et PC5, de l'EEPROM de 1 Kio, du prédiviseur d'horloge, et du chien de garde (les délais de WDP sur son oscillateur de 128 kHz, WDR, modes interruption et réinitialisation système, la séquence temporisée du niveau de sûreté 1, WDRF dans MCUSR à travers sa réinitialisation), des drapeaux de réinitialisation de MCUSR (PORF à la mise sous tension ; EXTRF par la broche RESET, les autres gardés), de la prise en charge du chargeur d'amorçage (les fusibles tels que la carte les programme : la section d'amorçage de BOOTSZ, le vecteur de réinitialisation de BOOTRST, CKDIV8 ; IVSEL de MCUCR avec la séquence temporisée d'IVCE ; SPM depuis la section d'amorçage : le tampon de page temporaire, l'effacement et l'écriture d'une page en 4,1 ms, la section RWW continuant avec RWWSB jusqu'à RWWSRE, la section NRWW arrêtant le cœur, les bits de verrouillage d'amorçage refusant les écritures, l'interruption SPM Ready, la ligne de signature et les bits de fusibles et de verrouillage lus par LPM ; une flash effacée parcourue jusqu'à l'adresse 0 ; ce que le programme a écrit gardé à travers une coupure d'alimentation), et des valeurs maximales absolues des broches d'E/S (un avertissement pin.over_current au-delà de 40 mA dans une broche, un pin.over_voltage hors de -0,5 V à VCC + 0,5 V, section 28.1 de la fiche technique) et de leurs diodes de protection (une broche maintenue à environ une chute de diode au-delà de son rail, comme le suppose l'AVR182 de Microchip), et du comparateur analogique (AIN0 ou la référence de bande interdite face à AIN1 ou à la broche du multiplexeur de l'ADC avec ACME, ACO, ACI sur son basculement, son front descendant ou montant, son vecteur, ACD ; sur un réseau analogique chaque broche d'entrée est un seuil à la tension de l'autre, franchi dans le solveur analogique à son instant).",
+          "omissions": [
+            "les dommages au-delà des valeurs maximales absolues (la fiche technique ne dit pas où ils surviennent : avertissements seulement), la limite de 200 mA sur VCC et GND, et le courant des diodes de protection allant dans VCC (elles écrêtent à l'alimentation nominale : une puce non alimentée ne l'est pas par ses broches)",
+            "le mode SPI esclave",
+            "le mode TWI esclave, l'arbitrage et les erreurs de bus",
+            "la dispersion de l'oscillateur du chien de garde (exactement 128 kHz) et le niveau de sûreté 2 (WDTON)",
+            "le délai de synchronisation, le décalage et l'hystérésis du comparateur analogique",
+            "le délai constant du synchroniseur de capture d'entrée",
+            "les entrées d'horloge externe T0 et T1",
+            "l'horloge asynchrone du timer 2",
+            "la protection en lecture de LPM par les bits de verrouillage d'amorçage et les interruptions qu'ils retiennent ; la lecture ou l'exécution de la section RWW tant que RWWSB est positionné (indéfini sur la puce : LPM se lit 0xff avec un avertissement, le code s'exécute tel que la flash le contient)",
+            "le choix d'horloge du fusible bas (CKSEL, SUT : la description de la carte donne l'horloge) et les bits de verrouillage LB1 et LB2 (ils protègent la programmation externe, non modélisée)",
+            "les erreurs de trame et de parité sur les octets venant de l'entrée de la session",
+            "la détection de baisse de tension"
+          ]
+        },
+        "timed": {
+          "claims": "Durée des instructions exacte au cycle tirée du résumé du jeu d'instructions de la fiche technique (ADR-015) : un branchement pris et les sauts coûtent leurs cycles supplémentaires, l'entrée d'une interruption 4 (8 depuis SLEEP) ; les timers, l'USART, l'ADC, le SCK du SPI et le SCL du TWI comptent ces cycles à travers leurs prédiviseurs.",
+          "omissions": [
+            "la latence du synchroniseur d'entrée",
+            "l'arrêt du cœur pendant une lecture de l'EEPROM",
+            "la temporisation de l'échantillonneur-bloqueur de l'ADC"
+          ]
+        },
+        "electrical": {
+          "claims": "Modèles de broche GPIO par défaut à 5 V tirés de la fiche technique : voh/vol à 20 mA, seuils d'entrée 0,3/0,6 Vcc avec hystérésis, rappels de 35 k.",
+          "omissions": [
+            "les structures de protection ESD",
+            "le courant d'alimentation",
+            "l'impédance d'entrée de l'ADC"
+          ]
+        }
+      }
+    }
   }
 }

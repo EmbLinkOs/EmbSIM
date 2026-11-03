@@ -104,8 +104,8 @@ static void schedule(esk_adev *d, es_time_t now)
     if (h < 1e-5)
         h = 1e-5;
     t = now + (es_time_t)(h * 1e12);
-    if (s->wake > now && s->wake <= t)
-        return;
+    if (s->wake >= now && s->wake <= t)
+        return; /* (a look due now is kept: a step clipped at it is accepted before it runs) */
     if (esk_comp_wake_at(d->comp, t, PTC_WAKE) == ES_OK)
         s->wake = t;
 }

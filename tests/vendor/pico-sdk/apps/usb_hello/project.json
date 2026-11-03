@@ -1,0 +1,85 @@
+{
+  "schema_version": 1,
+  "kind": "project",
+  "name": "pico-sdk-usb",
+  "description": "A Raspberry Pi Pico running an application built with the unmodified Pico SDK and TinyUSB (sketch.elf), on a computer's USB port: the port powers it, enumerates it and opens its CDC ACM serial port as a terminal does.",
+  "policy": "electrical",
+  "boards": [
+    {
+      "id": "B1",
+      "board": "emblink/pico",
+      "layout": {
+        "x": 300,
+        "y": 260
+      },
+      "firmware": {
+        "image": "sketch.elf",
+        "format": "elf"
+      }
+    }
+  ],
+  "components": [
+    {
+      "id": "PC",
+      "component": "emblink/usb_host",
+      "layout": {
+        "x": 720,
+        "y": 260
+      }
+    },
+    {
+      "id": "G",
+      "component": "emblink/gnd",
+      "layout": {
+        "x": 720,
+        "y": 420
+      }
+    }
+  ],
+  "nets": {
+    "VBUS": [
+      "PC.VBUS",
+      "B1.VBUS"
+    ],
+    "DP": [
+      "PC.DP",
+      "B1.USB_DP"
+    ],
+    "DM": [
+      "PC.DM",
+      "B1.USB_DM"
+    ],
+    "GND": [
+      "PC.GND",
+      "B1.GND",
+      "G.GND"
+    ]
+  },
+  "probes": [
+    {
+      "id": "vid",
+      "target": "output:PC.HOST.vid",
+      "kind": "value"
+    },
+    {
+      "id": "pid",
+      "target": "output:PC.HOST.pid",
+      "kind": "value"
+    },
+    {
+      "id": "product",
+      "target": "output:PC.HOST.product",
+      "kind": "value"
+    },
+    {
+      "id": "cdc_open",
+      "target": "output:PC.HOST.cdc_open",
+      "kind": "value"
+    },
+    {
+      "id": "cdc_text",
+      "target": "output:PC.HOST.cdc_text",
+      "kind": "value"
+    }
+  ]
+}

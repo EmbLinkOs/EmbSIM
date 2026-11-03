@@ -1,0 +1,138 @@
+{
+ "schema_version": 1,
+ "kind": "scenario",
+ "name": "memprot",
+ "until": "3s",
+ "description": "ESP-IDF's tools/test_apps/system/memprot, unmodified, as Espressif's pytest runs it on the ESP32-C3: memory protection set with its split line at the end of the IRAM text, then for each of IRAM0's SRAM, DRAM0's SRAM and the RTC memory a read, a write and (IRAM0, RTC) an execution in the area below and the area above the line, each giving a violation in the monitor exactly where the area forbids it; an execution blocked reads an illegal instruction, which the app catches.",
+ "inputs": [],
+ "assertions": [
+  {
+   "id": "iram0-sram-read-low",
+   "at": "3s",
+   "probe": "console",
+   "expect": {
+    "contains": "IRAM0_SRAM read low: OK"
+   }
+  },
+  {
+   "id": "iram0-sram-read-high",
+   "at": "3s",
+   "probe": "console",
+   "expect": {
+    "contains": "IRAM0_SRAM read high: OK"
+   }
+  },
+  {
+   "id": "iram0-sram-write-low",
+   "at": "3s",
+   "probe": "console",
+   "expect": {
+    "contains": "IRAM0_SRAM write low: OK"
+   }
+  },
+  {
+   "id": "iram0-sram-write-high",
+   "at": "3s",
+   "probe": "console",
+   "expect": {
+    "contains": "IRAM0_SRAM write high: OK"
+   }
+  },
+  {
+   "id": "iram0-sram-exec-low",
+   "at": "3s",
+   "probe": "console",
+   "expect": {
+    "contains": "IRAM0_SRAM exec low: OK"
+   }
+  },
+  {
+   "id": "iram0-sram-exec-high",
+   "at": "3s",
+   "probe": "console",
+   "expect": {
+    "contains": "IRAM0_SRAM exec high: OK"
+   }
+  },
+  {
+   "id": "dram0-sram-read-low",
+   "at": "3s",
+   "probe": "console",
+   "expect": {
+    "contains": "DRAM0_SRAM read low: OK"
+   }
+  },
+  {
+   "id": "dram0-sram-read-high",
+   "at": "3s",
+   "probe": "console",
+   "expect": {
+    "contains": "DRAM0_SRAM read high: OK"
+   }
+  },
+  {
+   "id": "dram0-sram-write-low",
+   "at": "3s",
+   "probe": "console",
+   "expect": {
+    "contains": "DRAM0_SRAM write low: OK"
+   }
+  },
+  {
+   "id": "dram0-sram-write-high",
+   "at": "3s",
+   "probe": "console",
+   "expect": {
+    "contains": "DRAM0_SRAM write high: OK"
+   }
+  },
+  {
+   "id": "iram0-rtcfast-read-low",
+   "at": "3s",
+   "probe": "console",
+   "expect": {
+    "contains": "IRAM0_RTCFAST read low: OK"
+   }
+  },
+  {
+   "id": "iram0-rtcfast-read-high",
+   "at": "3s",
+   "probe": "console",
+   "expect": {
+    "contains": "IRAM0_RTCFAST read high: OK"
+   }
+  },
+  {
+   "id": "iram0-rtcfast-write-low",
+   "at": "3s",
+   "probe": "console",
+   "expect": {
+    "contains": "IRAM0_RTCFAST write low: OK"
+   }
+  },
+  {
+   "id": "iram0-rtcfast-write-high",
+   "at": "3s",
+   "probe": "console",
+   "expect": {
+    "contains": "IRAM0_RTCFAST write high: OK"
+   }
+  },
+  {
+   "id": "iram0-rtcfast-exec-low",
+   "at": "3s",
+   "probe": "console",
+   "expect": {
+    "contains": "IRAM0_RTCFAST exec low: OK"
+   }
+  },
+  {
+   "id": "iram0-rtcfast-exec-high",
+   "at": "3s",
+   "probe": "console",
+   "expect": {
+    "contains": "IRAM0_RTCFAST exec high: OK"
+   }
+  }
+ ]
+}

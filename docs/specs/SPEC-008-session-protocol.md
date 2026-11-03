@@ -118,6 +118,12 @@ Notation: `method(params) -> result`. Params and results are objects.
   - A board whose `console.bridge.dtr_reset` names a component (SPEC-006) has that component's `pressed` held for `ms` when a program opens the port. This is DTR's reset through the Uno's 100 nF capacitor, also a recorded input.
 - `embsim serve PROJECT --serial B1` opens the port when the session starts and prints its path.
 
+### stlink (the bench's ST-LINK probes on the host, docs/engineering/debug-probes.md)
+- `stlink.serve({host?, port?}) -> {port, probes: [{id, serial}]}`: the session serves its ST-LINK probes (`emblink/st_link_v21`, the NUCLEO's `U2`) as ST's stlink-server does, a TCP service on `host` (default `127.0.0.1`) and `port` (default 7184, 0 for any free port; the bound one is returned). STM32CubeIDE's stlink-server clients and OpenOCD 0.12 (`hla_stlink_backend tcp PORT` after `interface/stlink.cfg`) reach the probe through it, and through the probe the target's debug port. Serving again returns the same port. Error `-32008` when it cannot listen.
+- `usbip.serve({host?, port?}) -> {port, devices: [{id, busid}]}`: the session serves the bench's USB devices that no host part holds (a NUCLEO's ST-LINK with its CN1 free) over USB/IP, the protocol Linux's usbip-host speaks to a computer's vhci-hcd, on `host` (default `127.0.0.1`) and `port` (default 3240, usbipd's; 0 for any). A computer then attaches the device (`usbip attach -r HOST -b BUSID`) and its tools open it as a local USB device. `usbip.stop()` ends it. Error `-32008` when it cannot listen.
+- `stlink.stop({}) -> {}`: closes the service and its clients' connections.
+- Requests are answered at each run slice while the session runs. A paused session holds them (a client waiting more than its time-out, 1 s for OpenOCD, gives up), as a probe's host would.
+
 ### probe and waveform
 - `probe.add({target, kind, rate_hz?, decode?: {protocol, params}}) -> {probe, stream?}`
 - `probe.remove({probe}) -> {}`
@@ -125,7 +131,7 @@ Notation: `method(params) -> result`. Params and results are objects.
   Probe entries include `unit` from the declared output/native electrical
   quantity and actual `rate_hz` (zero for an event-driven probe).
 - `probe.read({probe, from_ps?, to_ps?, max?}) -> {samples: [[time_ps, value], ...], gap?}`
-- `instrument.read({part, since?, max?}) -> {state, sample_rate, start_ps, period_ps, trigger, end, channels, first, since, next, full, transitions: [[sample, bits], ...]}`:
+- `instrument.read({part, since?, max?}) -> {kind: "logic", state, sample_rate, start_ps, period_ps, trigger, end, channels, first, since, next, full, transitions: [[sample, bits], ...]}`:
   a logic analyzer part's capture (`docs/engineering/bench-instruments.md`)
   from sequence number `since`; `sample` counts from the capture's start
   (`start_ps`, `period_ps` apart), `bits` holds channel n in bit n, and the
@@ -135,6 +141,15 @@ Notation: `method(params) -> result`. Params and results are objects.
   the sequence number of its first record, which moves on (that record's
   sample moving to the window's start), and a reader starts over from
   `first` when it changes.
+- `instrument.read({part, since?, max?}) -> {kind: "power", state, mode, sample_rate, start_ps, period_ps, first, since, next, samples: [amperes, ...]}`:
+  a power profiler's measurement core (a PPK2's `METER`): one sample per
+  `period_ps` (10 µs) from `start_ps`, each the current averaged over its
+  window at its range's resolution; `first` is the oldest still held.
+- `instrument.read({part, since?}) -> {kind: "scope", status, seq, trigger_ps?, x0_ps?, dx_ps?, sample_rate?, memory_points?, forced?, channels: [{channel, on, points?}]}`:
+  an oscilloscope's last acquisition: `seq` counts them, and when it is
+  above `since` the screen's points come with it (volts, at the 8-bit
+  codes, `dx_ps` apart from `x0_ps` across 12 divisions); `status` is the
+  screen's WAIT, T'D, AUTO or STOP.
 - `waveform.subscribe({probes: [...], max_rate_hz?}) -> {stream}`; samples arrive as `waveform.samples` notifications (`base64`) or binary frames; `waveform.unsubscribe({stream})`.
 - Sample encodings: digital `u8` (`0,1,2=Z,3=X`), analog `f32`, serial bytes, value `f64`; each frame is monotonic in time; a `gap` marker reports dropped frames.
 - Native JSON waveform frames carry `through_time_ps`, the producer's completed

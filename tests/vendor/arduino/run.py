@@ -246,6 +246,10 @@ def runs(libs: Path) -> list:
         if not d.is_dir() or libs is None:
             continue
         ex = libs / d.parent.name / "examples" / d.name
+        if not ex.is_dir():
+            # the IDE's built-in examples (arduino-examples) file each under a
+            # category folder: examples/02.Digital/toneMelody
+            ex = next((c for c in sorted((libs / d.parent.name / "examples").glob(f"*/{d.name}")) if c.is_dir()), ex)
         # .pde is the sketch extension from before Arduino 1.0; the IDE still builds it
         ino = next((f for f in (ex / f"{d.name}.ino", ex / f"{d.name}.pde") if f.is_file()), ex / f"{d.name}.ino")
         own = d / "project.json"

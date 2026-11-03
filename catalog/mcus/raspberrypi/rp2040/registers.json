@@ -5,7 +5,7 @@
  "version": "1.0.0",
  "device": "RP2040",
  "description": "RP2040 peripheral registers at their addresses, reset values and field access, and its interrupt numbers, converted by tools/importers/svd2regs.py from Raspberry Pi's RP2040.svd (pico-sdk 2.0.0, src/rp2040/hardware_regs/RP2040.svd), Copyright (c) 2024 Raspberry Pi Ltd., SPDX-License-Identifier: BSD-3-Clause (LICENSES/BSD-3-Clause.txt). PPB (the Cortex-M0+'s own system space) is left out: the core models it. Where the SVD's reset values are not the part's, the models correct them (core/mcu/rp2040).",
- "source": "RP2040.svd from raspberrypi/pico-sdk 2.0.0, converted by tools/importers/svd2regs.py",
+ "source": "RP2040.svd from raspberrypi/pico-sdk 2.0.0, converted by tools/importers/svd2regs.py; USB_DPRAM's buffers (0x100 to 0xFFF, the datasheet's 4.1.2.5) reserved for the controller's model, as the SVD lists only the control words",
  "interrupts": {
   "TIMER_IRQ_0": 0,
   "TIMER_IRQ_1": 1,
@@ -28225,6 +28225,12 @@
       ]
      ]
     }
+   ],
+   "reserved": [
+    [
+     "0x100",
+     "0xF00"
+    ]
    ]
   },
   {

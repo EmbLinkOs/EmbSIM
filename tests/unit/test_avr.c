@@ -819,6 +819,192 @@ static void test_disassembler(void)
     CHECK_STR(t, "reti");
 }
 
+/* ---- boot loader support -------------------------------------------------------- */
+
+static u16 mov(int d, int r) { return (u16)(0x2C00 | ((r & 0x10) << 5) | (d << 4) | (r & 0xF)); }
+static u16 lpm(int d) { return (u16)(0x9004 | (d << 4)); }
+static u16 sbrc(int r, int b) { return (u16)(0xFC00 | (r << 4) | b); }
+#define SPM 0x95E8
+#define SPMCSR_IO 0x37
+
+/* r1:r0 = v, Z = z, then SPMCSR = op and SPM; with wait, the loop on SELFPRGEN */
+static size_t spm_op(u16 *p, size_t n, int z, int v, int op, int wait)
+{
+    p[n++] = ldi(30, z & 0xff);
+    p[n++] = ldi(31, z >> 8);
+    p[n++] = ldi(16, v & 0xff);
+    p[n++] = mov(0, 16);
+    p[n++] = ldi(16, v >> 8);
+    p[n++] = mov(1, 16);
+    p[n++] = ldi(18, op);
+    p[n++] = out(SPMCSR_IO, 18);
+    p[n++] = SPM;
+    if (wait) {
+        p[n++] = in_(19, SPMCSR_IO);
+        p[n++] = sbrc(19, 0);
+        p[n++] = rjmp(-3);
+    }
+    return n;
+}
+
+static void boot_open(uno *u, u8 hfuse, u8 lock, const u16 *code, size_t n, u32 at_word)
+{
+    size_t i;
+    CHECK(uno_open(u, NULL, 0));
+    u->m.has_fuses = 1;
+    u->m.fuse[0] = 0xFF;
+    u->m.fuse[1] = hfuse;
+    u->m.fuse[2] = 0xFD;
+    u->m.fuse[3] = lock;
+    for (i = 0; i < n; i++)
+        CHECK_EQ(esk_bus_debug_write(&u->m.bus, (u32)(2 * (at_word + i)), 2, code[i]), 0);
+    esk_mach_reset(&u->m);
+}
+
+static u8 flash_at(uno *u, u32 a)
+{
+    u32 v = 0;
+    (void)esk_bus_debug_read(&u->m.bus, a, 1, &v);
+    return (u8)v;
+}
+
+static void run_cycles(uno *u, u64 cycles)
+{
+    u64 end = u->m.cycles + cycles;
+    while (u->m.cycles < end && u->m.state == ESK_MACH_RUN && !u->m.asleep)
+        esk_mach_run(&u->m, end - u->m.cycles, 0);
+}
+
+static void test_boot_loader_spm(void)
+{
+    /* the Uno's fuses: BOOTSZ 11 (256 words at 0x3F00), BOOTRST programmed */
+    u16 p[160];
+    size_t n = 0;
+    u32 page_cycles = 65600; /* 4.1 ms at 16 MHz */
+    u64 c0;
+    uno u;
+    n = spm_op(p, n, 0, 0x1234, 0x01, 0); /* page buffer, word 0 */
+    n = spm_op(p, n, 2, 0x5678, 0x01, 0); /* word 1 */
+    n = spm_op(p, n, 2, 0xAAAA, 0x01, 0); /* word 1 again: once until erased */
+    n = spm_op(p, n, 0, 0, 0x03, 1);      /* erase page 0 */
+    n = spm_op(p, n, 0, 0, 0x05, 0);      /* write it */
+    p[n++] = in_(24, SPMCSR_IO);          /* busy: SELFPRGEN, RWWSB */
+    p[n++] = in_(19, SPMCSR_IO);
+    p[n++] = sbrc(19, 0);
+    p[n++] = rjmp(-3);
+    p[n++] = in_(25, SPMCSR_IO);          /* done: RWWSB alone */
+    n = spm_op(p, n, 0, 0, 0x11, 0);      /* RWWSRE */
+    p[n++] = in_(26, SPMCSR_IO);
+    p[n++] = ldi(30, 2);
+    p[n++] = lpm(20);                     /* the page as written: word 1's low byte */
+    p[n++] = ldi(30, 4);
+    p[n++] = ldi(18, 0x21);               /* SIGRD */
+    p[n++] = out(SPMCSR_IO, 18);
+    p[n++] = lpm(21);
+    p[n++] = ldi(30, 3);
+    p[n++] = ldi(18, 0x09);               /* BLBSET: Z 3 the high fuse */
+    p[n++] = out(SPMCSR_IO, 18);
+    p[n++] = lpm(22);
+    p[n++] = ldi(30, 3);
+    p[n++] = ldi(18, 0x09);
+    p[n++] = out(SPMCSR_IO, 18);
+    p[n++] = NOP;                         /* LPM 4 cycles after: flash again */
+    p[n++] = NOP;
+    p[n++] = NOP;
+    p[n++] = NOP;
+    p[n++] = lpm(23);
+    p[n++] = rjmp(-1);
+    CHECK(n < 160);
+    boot_open(&u, 0xDE, 0xFF, p, n, 0x3F00);
+    CHECK_EQ(u.m.cpu->ops->pc(u.m.cpu), 0x7E00u); /* BOOTRST: the boot section */
+    c0 = u.m.cycles;
+    run_cycles(&u, 3u * page_cycles);
+    CHECK_EQ(flash_at(&u, 0), 0x34);
+    CHECK_EQ(flash_at(&u, 1), 0x12);
+    CHECK_EQ(flash_at(&u, 2), 0x78);
+    CHECK_EQ(flash_at(&u, 3), 0x56);
+    CHECK_EQ(flash_at(&u, 4), 0xFF); /* the rest of the page erased */
+    CHECK_EQ(flash_at(&u, 127), 0xFF);
+    CHECK_EQ(reg(&u, 24), 0x40 | 0x05); /* RWWSB, PGWRT, SELFPRGEN while busy */
+    CHECK_EQ(reg(&u, 25), 0x40);
+    CHECK_EQ(reg(&u, 26), 0x00);
+    CHECK_EQ(reg(&u, 20), 0x78);
+    CHECK_EQ(reg(&u, 21), 0x0F); /* the ATmega328P's third signature byte */
+    CHECK_EQ(reg(&u, 22), 0xDE);
+    CHECK_EQ(reg(&u, 23), 0x56); /* the window shut: flash at 3, word 1 high byte */
+    CHECK(u.m.cycles - c0 >= 2u * page_cycles);
+    uno_close(&u);
+}
+
+static void test_boot_loader_rules(void)
+{
+    u16 p[64];
+    size_t n = 0;
+    u64 c0;
+    uno u;
+    /* SPM from the application section does nothing (no BOOTRST: start at 0) */
+    n = spm_op(p, n, 0x100, 0, 0x03, 0); /* erase page 2 */
+    p[n++] = rjmp(-1);
+    boot_open(&u, 0xDF, 0xFF, p, n, 0);
+    CHECK_EQ(u.m.cpu->ops->pc(u.m.cpu), 0u);
+    CHECK_EQ(esk_bus_debug_write(&u.m.bus, 0x100, 2, 0x1234), 0);
+    run_cycles(&u, 70000);
+    CHECK_EQ(flash_at(&u, 0x100), 0x34);
+    uno_close(&u);
+
+    /* the boot lock bits (the Uno's 0xCF: BLB1 mode 3) refuse a write to the boot section */
+    n = 0;
+    n = spm_op(p, n, 0x7C00, 0, 0x03, 1); /* erase the page at word 0x3E00 (BOOTSZ 10: boot) */
+    p[n++] = rjmp(-1);
+    boot_open(&u, 0xDC, 0xCF, p, n, 0x3E00);
+    CHECK_EQ(u.m.cpu->ops->pc(u.m.cpu), 0x7C00u);
+    run_cycles(&u, 70000);
+    CHECK_EQ(flash_at(&u, 0x7C00), 0xE0); /* the program itself (LDI r30), untouched */
+    uno_close(&u);
+
+    /* an erase in the NRWW section halts the core for 4.1 ms; the page after the program */
+    n = 0;
+    n = spm_op(p, n, 0x7F00, 0, 0x03, 0);
+    p[n++] = in_(24, SPMCSR_IO); /* the next instruction: the erase is over */
+    p[n++] = rjmp(-1);
+    boot_open(&u, 0xDE, 0xFF, p, n, 0x3F00);
+    CHECK_EQ(esk_bus_debug_write(&u.m.bus, 0x7F00, 2, 0x1234), 0);
+    c0 = u.m.cycles;
+    esk_mach_run(&u.m, 0xffffff, 10); /* nine to SPM, then IN */
+    CHECK(u.m.cycles - c0 >= 65600u);
+    CHECK_EQ(reg(&u, 24), 0x00);
+    CHECK_EQ(flash_at(&u, 0x7F00), 0xFF);
+    uno_close(&u);
+}
+
+static void test_ivsel(void)
+{
+    /* IVCE then IVSEL within four cycles moves the vectors to the boot
+     * section; the timer 0 overflow then enters at 0x3F00 + 2 * 16 */
+    u16 p[64];
+    size_t n = 0;
+    uno u;
+    p[n++] = ldi(16, 0x01);
+    p[n++] = out(0x35, 16); /* MCUCR = IVCE */
+    p[n++] = ldi(16, 0x02);
+    p[n++] = out(0x35, 16); /* MCUCR = IVSEL */
+    p[n++] = ldi(16, 0x01);
+    p[n++] = sts0(16);
+    p[n++] = 0x6E;          /* TIMSK0 = TOIE0 */
+    p[n++] = ldi(16, 0x01);
+    p[n++] = out(0x25, 16); /* TCCR0B = clk/1 */
+    p[n++] = SEI;
+    p[n++] = rjmp(-1);
+    boot_open(&u, 0xDE, 0xFF, p, n, 0x3F00);
+    CHECK_EQ(esk_bus_debug_write(&u.m.bus, 2 * (0x3F00 + 32), 2, 0x9488), 0); /* CLC... */
+    CHECK_EQ(esk_bus_debug_write(&u.m.bus, 2 * (0x3F00 + 33), 2, 0xE5A5), 0); /* LDI r26, 0x55 */
+    CHECK_EQ(esk_bus_debug_write(&u.m.bus, 2 * (0x3F00 + 34), 2, rjmp(-1)), 0);
+    run_cycles(&u, 2000);
+    CHECK_EQ(reg(&u, 26), 0x55);
+    CHECK_EQ(data(&u, 0x55) & 0x02, 0x02); /* MCUCR.IVSEL */
+    uno_close(&u);
+}
+
 TEST_MAIN_BEGIN
 RUN(test_flags_and_cycles);
 RUN(test_timer0_interrupt);
@@ -832,4 +1018,7 @@ RUN(test_wdt);
 RUN(test_ac);
 RUN(test_input_capture);
 RUN(test_disassembler);
+RUN(test_boot_loader_spm);
+RUN(test_boot_loader_rules);
+RUN(test_ivsel);
 TEST_MAIN_END

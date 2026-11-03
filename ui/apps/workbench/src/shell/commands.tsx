@@ -15,6 +15,8 @@ import {
   FilePlus,
   FlaskConical,
   FolderOpen,
+  LayoutPanelLeft,
+  Settings as SettingsIcon,
   Moon,
   Pause,
   PenTool,
@@ -29,6 +31,8 @@ import {
   Zap,
 } from 'lucide-react';
 import { useEffect, useMemo } from 'react';
+import { t as tr, type MessageKey } from '../i18n';
+import { useSettings } from '../stores/settings';
 import { create } from 'zustand';
 import { controls, errorMessage } from '../actions';
 import { getClient, mockDev } from '../connection';
@@ -73,7 +77,7 @@ const PERSPECTIVE_META: Record<Perspective, { label: string; icon: React.ReactNo
 };
 
 export function perspectiveMeta(p: Perspective) {
-  return PERSPECTIVE_META[p];
+  return { ...PERSPECTIVE_META[p], label: tr(`perspective.${p}` as MessageKey) };
 }
 
 /** All commands, global ones plus the registered extras. */
@@ -87,10 +91,11 @@ export function useCommands(theme: { resolved: 'dark' | 'light'; setPreference: 
   const commandsStack = useProject((s) => s.commands);
   const { canUndo, canRedo, undoLabel, redoLabel } = useCommandStack(commandsStack);
   const { toast } = useToast();
+  const lang = useSettings((s) => s.language);
 
   return useMemo(() => {
     const guard = (fn: () => Promise<void>) => () => {
-      fn().catch((e: unknown) => toast({ kind: 'error', title: 'Command failed', description: errorMessage(e) }));
+      fn().catch((e: unknown) => toast({ kind: 'error', title: tr('toast.commandFailed'), description: errorMessage(e) }));
     };
     /** Downloads the project's JSON as it now stands. */
     const saveCopy = async () => {
@@ -98,18 +103,18 @@ export function useCommands(theme: { resolved: 'dark' | 'light'; setPreference: 
       if (!project) return;
       const p = await platform();
       const where = await p.saveTextFile(`${project.name}.json`, `${JSON.stringify(project, null, 2)}\n`, 'application/json');
-      if (where) toast({ kind: 'success', title: `Saved ${where}` });
+      if (where) toast({ kind: 'success', title: tr('toast.saved', { where }) });
     };
     const list: Command[] = [
-      { id: 'control.run', label: running ? 'Pause' : 'Run', group: 'Control', icon: running ? <Pause /> : <Play />, shortcut: 'F5', keywords: ['start', 'stop'], run: guard(controls.toggle) },
-      { id: 'control.step', label: 'Step one event', group: 'Control', icon: <StepForward />, shortcut: 'F6', run: guard(() => controls.step('event')) },
-      { id: 'control.advance', label: `Advance by ${advanceBy}`, group: 'Control', icon: <SkipForward />, shortcut: 'F7', disabled: (() => { try { return running || parseDuration(advanceBy) <= 0n; } catch { return true; } })(), run: guard(() => controls.advance(advanceBy)) },
-      { id: 'control.advance10', label: 'Advance 10 ms', group: 'Control', icon: <SkipForward />, run: guard(() => controls.advance('10ms')) },
-      { id: 'control.reset', label: 'Reset session', group: 'Control', icon: <RotateCcw />, run: guard(controls.reset) },
+      { id: 'control.run', label: running ? tr('transport.pause') : tr('transport.run'), group: tr('cmd.group.control'), icon: running ? <Pause /> : <Play />, shortcut: 'F5', keywords: ['start', 'stop'], run: guard(controls.toggle) },
+      { id: 'control.step', label: tr('transport.step'), group: tr('cmd.group.control'), icon: <StepForward />, shortcut: 'F6', run: guard(() => controls.step('event')) },
+      { id: 'control.advance', label: tr('transport.advanceBy', { amount: advanceBy }), group: tr('cmd.group.control'), icon: <SkipForward />, shortcut: 'F7', disabled: (() => { try { return running || parseDuration(advanceBy) <= 0n; } catch { return true; } })(), run: guard(() => controls.advance(advanceBy)) },
+      { id: 'control.advance10', label: tr('cmd.advance10'), group: tr('cmd.group.control'), icon: <SkipForward />, run: guard(() => controls.advance('10ms')) },
+      { id: 'control.reset', label: tr('cmd.resetSession'), group: tr('cmd.group.control'), icon: <RotateCcw />, run: guard(controls.reset) },
       ...(['design', 'run', 'debug', 'verify'] as Perspective[]).map((p) => ({
         id: `perspective.${p}`,
-        label: `${PERSPECTIVE_META[p].label} perspective`,
-        group: 'Perspective',
+        label: tr('perspective.switchTo', { name: tr(`perspective.${p}` as MessageKey) }),
+        group: tr('cmd.group.perspective'),
         icon: PERSPECTIVE_META[p].icon,
         shortcut: PERSPECTIVE_META[p].shortcut,
         disabled: perspective === p,
@@ -117,8 +122,8 @@ export function useCommands(theme: { resolved: 'dark' | 'light'; setPreference: 
       })),
       {
         id: 'edit.undo',
-        label: undoLabel ? `Undo ${undoLabel}` : 'Undo',
-        group: 'Edit',
+        label: undoLabel ? tr('edit.undoWhat', { what: undoLabel }) : tr('edit.undo'),
+        group: tr('cmd.group.edit'),
         icon: <Undo2 />,
         shortcut: 'Ctrl+Z',
         disabled: !canUndo,
@@ -126,8 +131,8 @@ export function useCommands(theme: { resolved: 'dark' | 'light'; setPreference: 
       },
       {
         id: 'edit.redo',
-        label: redoLabel ? `Redo ${redoLabel}` : 'Redo',
-        group: 'Edit',
+        label: redoLabel ? tr('edit.redoWhat', { what: redoLabel }) : tr('edit.redo'),
+        group: tr('cmd.group.edit'),
         icon: <Redo2 />,
         shortcut: 'Ctrl+Shift+Z',
         disabled: !canRedo,
@@ -135,34 +140,36 @@ export function useCommands(theme: { resolved: 'dark' | 'light'; setPreference: 
       },
       {
         id: 'view.theme.dark',
-        label: 'Dark theme',
-        group: 'View',
+        label: tr('cmd.themeDark'),
+        group: tr('cmd.group.view'),
         icon: <Moon />,
         disabled: theme.resolved === 'dark',
         run: () => theme.setPreference('dark'),
       },
       {
         id: 'view.theme.light',
-        label: 'Light theme',
-        group: 'View',
+        label: tr('cmd.themeLight'),
+        group: tr('cmd.group.view'),
         icon: <Sun />,
         disabled: theme.resolved === 'light',
         run: () => theme.setPreference('light'),
       },
-      { id: 'view.theme.system', label: 'Follow system theme', group: 'View', icon: <Sun />, run: () => theme.setPreference('system') },
-      { id: 'view.gallery', label: 'Open component gallery', group: 'View', icon: <FlaskConical />, run: () => window.open('#/gallery', '_blank') },
+      { id: 'view.theme.system', label: tr('cmd.themeSystem'), group: tr('cmd.group.view'), icon: <Sun />, run: () => theme.setPreference('system') },
+      { id: 'view.gallery', label: tr('cmd.gallery'), group: tr('cmd.group.view'), icon: <FlaskConical />, run: () => window.open('#/gallery', '_blank') },
+      { id: 'view.settings', label: tr('cmd.settings'), group: tr('cmd.group.view'), icon: <SettingsIcon />, shortcut: 'Ctrl+,', keywords: ['preferences', 'language', 'langue', 'paramètres'], run: () => useSettings.getState().setSettingsOpen(true) },
+      { id: 'view.reset-layout', label: tr('cmd.resetLayout'), group: tr('cmd.group.view'), icon: <LayoutPanelLeft />, run: () => { useSettings.getState().resetLayout(); toast({ kind: 'success', title: tr('toast.layoutReset') }); } },
       {
         id: 'project.new',
-        label: 'New project…',
-        group: 'Project',
+        label: tr('cmd.newProject'),
+        group: tr('cmd.group.project'),
         icon: <FilePlus />,
         keywords: ['blank', 'board', 'start'],
         run: () => useLayout.getState().setNewProjectOpen(true),
       },
       {
         id: 'project.open',
-        label: 'Open project…',
-        group: 'Project',
+        label: tr('cmd.openProject'),
+        group: tr('cmd.group.project'),
         icon: <FolderOpen />,
         shortcut: 'Ctrl+O',
         run: guard(async () => {
@@ -171,13 +178,13 @@ export function useCommands(theme: { resolved: 'dark' | 'light'; setPreference: 
           if (!file) return;
           const json = JSON.parse(file.text);
           await useProject.getState().loadProjectJson(json);
-          toast({ kind: 'success', title: `Loaded ${file.name}` });
+          toast({ kind: 'success', title: tr('toast.loaded', { name: file.name }) });
         }),
       },
       {
         id: 'project.save',
-        label: 'Save project',
-        group: 'Project',
+        label: tr('cmd.saveProject'),
+        group: tr('cmd.group.project'),
         icon: <Save />,
         shortcut: 'Ctrl+S',
         run: guard(async () => {
@@ -185,7 +192,7 @@ export function useCommands(theme: { resolved: 'dark' | 'light'; setPreference: 
           // (the demo, a project opened from the browser) downloads a copy
           try {
             const { path } = await getClient().project.save({});
-            toast({ kind: 'success', title: `Saved ${path}` });
+            toast({ kind: 'success', title: tr('toast.saved', { where: path }) });
           } catch (e) {
             if (!(e instanceof JsonRpcError)) throw e;
             await saveCopy();
@@ -194,27 +201,27 @@ export function useCommands(theme: { resolved: 'dark' | 'light'; setPreference: 
       },
       {
         id: 'project.save-as',
-        label: 'Save a copy of the project…',
-        group: 'Project',
+        label: tr('cmd.saveCopy'),
+        group: tr('cmd.group.project'),
         icon: <Save />,
         run: guard(saveCopy),
       },
       {
         id: 'project.copy-time',
-        label: 'Copy virtual time',
-        group: 'Project',
+        label: tr('cmd.copyTime'),
+        group: tr('cmd.group.project'),
         run: guard(async () => {
           const now = useSession.getState().now;
           await (await platform()).writeClipboard(now.toString());
-          toast({ title: `Copied ${formatTime(now)} (${now} ps)` });
+          toast({ title: tr('toast.copiedTime', { time: formatTime(now), ps: now.toString() }) });
         }),
       },
     ];
     if (isDemo) {
       list.push({
         id: 'dev.contention',
-        label: 'Demo: raise a contention diagnostic',
-        group: 'Developer',
+        label: tr('cmd.demoContention'),
+        group: tr('cmd.group.developer'),
         icon: <Zap />,
         keywords: ['mock', 'diagnostics', 'warning'],
         run: () => mockDev()?.raiseContention(),
@@ -222,7 +229,9 @@ export function useCommands(theme: { resolved: 'dark' | 'light'; setPreference: 
     }
     for (const owner of Object.keys(extra).sort()) list.push(...(extra[owner] ?? []));
     return list;
-  }, [running, advanceBy, isDemo, perspective, setPerspective, canUndo, canRedo, undoLabel, redoLabel, commandsStack, theme, toast, extra]);
+    // lang: the labels are translated with tr(), which reads the language from the store
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [running, advanceBy, isDemo, perspective, setPerspective, canUndo, canRedo, undoLabel, redoLabel, commandsStack, theme, toast, extra, lang]);
 }
 
 function isEditable(el: Element | null): boolean {
@@ -261,6 +270,12 @@ export function useGlobalShortcuts(commands: Command[]): void {
       if (mod && !isEditable(document.activeElement) && e.key.toLowerCase() === 'c' && !e.shiftKey && !window.getSelection()?.toString()) return run('canvas.copy');
       if (mod && !isEditable(document.activeElement) && e.key.toLowerCase() === 'v' && !e.shiftKey) return run('canvas.paste');
       if (mod && !isEditable(document.activeElement) && e.key.toLowerCase() === 'd') return run('canvas.duplicate');
+      if (mod && e.key === ',') {
+        e.preventDefault();
+        const s = useSettings.getState();
+        s.setSettingsOpen(!s.settingsOpen);
+        return;
+      }
       if (mod && e.key === 'o') return run('project.open');
       if (mod && e.key === 's') return run('project.save');
       if (mod && ['1', '2', '3', '4'].includes(e.key)) return run(`perspective.${(['design', 'run', 'debug', 'verify'] as const)[Number(e.key) - 1]}`);

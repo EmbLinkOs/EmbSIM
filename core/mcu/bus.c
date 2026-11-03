@@ -157,7 +157,10 @@ static struct esk_device *device_of(struct esk_bus *b, u32 a)
 
 static int rd(struct esk_bus *b, u32 a, int n, u32 *v)
 {
-    struct esk_region *r = esk_bus_region(b, a, (u32)n);
+    struct esk_region *r;
+    if (b->arb && !b->debug && !b->dap)
+        b->arb(b->arb_ctx, a);
+    r = esk_bus_region(b, a, (u32)n);
     if (r) {
         *v = esk_mem_rd_le(r->mem + (a - r->base), n);
         return 0;
@@ -194,6 +197,8 @@ static int wr(struct esk_bus *b, u32 a, int n, u32 v, int debug)
 {
     if (!debug && b->snoop)
         b->snoop(b->snoop_ctx, a);
+    if (b->arb && !debug && !b->dap)
+        b->arb(b->arb_ctx, a);
     struct esk_region *r = esk_bus_region(b, a, (u32)n);
     if (r) {
         if (!r->rom || debug)
@@ -202,6 +207,11 @@ static int wr(struct esk_bus *b, u32 a, int n, u32 v, int debug)
             b->rom_write(b->rom_write_ctx, r, a, n, v);
         if (r->rom && debug)
             esk_bus_code_changed(b);
+        if (b->dev_fault) { /* the flash interface refused the store */
+            b->dev_fault = 0;
+            b->fail_addr = a;
+            return -1;
+        }
         return 0;
     }
     u32 t, byte;
@@ -254,6 +264,15 @@ int esk_bus_watch_check(struct esk_bus *b, u32 a, int n, int write)
         }
     }
     return 0;
+}
+
+const char *esk_bus_device_name(struct esk_bus *b, u32 a, u32 *off)
+{
+    struct esk_device *d = device_of(b, a);
+    if (!d || !d->ops || !d->ops->type)
+        return NULL;
+    *off = a - d->base;
+    return d->ops->type;
 }
 
 int esk_bus_read(struct esk_bus *b, u32 a, int n, u32 *v)

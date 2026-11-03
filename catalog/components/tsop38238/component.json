@@ -4,7 +4,8 @@
   "id": "emblink/tsop38238",
   "version": "1.0.0",
   "name": "TSOP38238 IR receiver with NEC remote",
-  "category": "sensors",
+  "category": "optoelectronics",
+  "subcategory": "ir_receivers",
   "description": "Vishay TSOP38238 38 kHz IR receiver module (OUT active low with its own 30 kOhm pull-up, the data sheet's output delay and pulse width) with the 21-key NEC remote sold with Arduino kits pointed at it: pressing a key sends its NEC frame, holding it sends repeat codes every 108 ms.",
   "keywords": [
     "IR",
@@ -193,5 +194,46 @@
   },
   "tests": [
     "tests/*.json"
-  ]
+  ],
+  "i18n": {
+    "fr": {
+      "source": "5e0974e92918",
+      "description": "Module récepteur IR 38 kHz Vishay TSOP38238 (OUT active à l'état bas avec son propre rappel de 30 kOhms, le délai de sortie et la largeur d'impulsion de la fiche technique) avec la télécommande NEC à 21 touches vendue avec les kits Arduino pointée vers lui : appuyer sur une touche envoie sa trame NEC, la maintenir envoie des codes de répétition toutes les 108 ms.",
+      "fidelity": {
+        "functional": {
+          "claims": "OUT active à l'état bas avec le rappel de 30 kOhms de la puce : à l'état bas 10 périodes de porteuse (263 us) après le début de chaque salve à 38 kHz, pendant la durée de la salve ; les trames NEC de la télécommande du kit (en-tête de 9 ms + 4,5 ms, adresse et complément, commande et complément LSB en premier, salves de 562,5 us avec des espaces de 562,5 ou 1687,5 us, une salve de fin) et des codes de répétition toutes les 108 ms tant qu'une touche est maintenue ; aucune sortie sous 2,0 V.",
+          "omissions": [
+            "la distance, l'angle et la pile de la télécommande (chaque trame arrive)",
+            "la lumière ambiante, l'AGC et les impulsions parasites",
+            "la dispersion du délai de sortie (7 à 13 périodes de porteuse) et de la largeur d'impulsion (+-5 périodes) entre exemplaires",
+            "les protocoles autres que NEC et les autres fréquences porteuses",
+            "le rebond des touches de la télécommande elle-même",
+            "le courant d'alimentation"
+          ]
+        },
+        "timed": {
+          "claims": "OUT active à l'état bas avec le rappel de 30 kOhms de la puce : à l'état bas 10 périodes de porteuse (263 us) après le début de chaque salve à 38 kHz, pendant la durée de la salve ; les trames NEC de la télécommande du kit (en-tête de 9 ms + 4,5 ms, adresse et complément, commande et complément LSB en premier, salves de 562,5 us avec des espaces de 562,5 ou 1687,5 us, une salve de fin) et des codes de répétition toutes les 108 ms tant qu'une touche est maintenue ; aucune sortie sous 2,0 V.",
+          "omissions": [
+            "la distance, l'angle et la pile de la télécommande (chaque trame arrive)",
+            "la lumière ambiante, l'AGC et les impulsions parasites",
+            "la dispersion du délai de sortie (7 à 13 périodes de porteuse) et de la largeur d'impulsion (+-5 périodes) entre exemplaires",
+            "les protocoles autres que NEC et les autres fréquences porteuses",
+            "le rebond des touches de la télécommande elle-même",
+            "le courant d'alimentation"
+          ]
+        },
+        "electrical": {
+          "claims": "OUT se relie à son réseau : basse aux 0,1 V de la fiche technique, haute par le rappel de 30 kOhms ; VS sous 2,0 V la garde haute ; le comportement est celui du modèle Lua.",
+          "omissions": [
+            "la distance, l'angle et la pile de la télécommande (chaque trame arrive)",
+            "la lumière ambiante, l'AGC et les impulsions parasites",
+            "la dispersion du délai de sortie (7 à 13 périodes de porteuse) et de la largeur d'impulsion (+-5 périodes) entre exemplaires",
+            "les protocoles autres que NEC et les autres fréquences porteuses",
+            "le rebond des touches de la télécommande elle-même",
+            "le courant d'alimentation"
+          ]
+        }
+      }
+    }
+  }
 }

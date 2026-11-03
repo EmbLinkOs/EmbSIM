@@ -4,7 +4,8 @@
   "id": "emblink/push_button",
   "version": "1.0.0",
   "name": "Push button",
-  "category": "switches",
+  "category": "switches_relays",
+  "subcategory": "push_buttons",
   "description": "Momentary tactile switch, normally open; closed while pressed.",
   "keywords": [
     "button",
@@ -53,8 +54,9 @@
     },
     "bounce": {
       "type": "boolean",
-      "default": false,
-      "doc": "Model contact bounce on press and release"
+      "default": true,
+      "doc": "Contact bounce on press and release, on by default as on a real part (ADR-034); off for an ideal contact",
+      "imperfection": true
     },
     "bounce_ms": {
       "type": "number",
@@ -155,7 +157,7 @@
       ]
     },
     "timed": {
-      "claims": "Optional bounce as a burst of toggles spread over bounce_ms on press and release.",
+      "claims": "Bounce (on by default, ADR-034) as a burst of toggles spread over bounce_ms on press and release.",
       "omissions": [
         "wear",
         "temperature"
@@ -190,5 +192,34 @@
   },
   "tests": [
     "tests/*.json"
-  ]
+  ],
+  "i18n": {
+    "fr": {
+      "source": "f78747b5242c",
+      "description": "Bouton tactile momentané, normalement ouvert ; fermé tant qu'il est appuyé.",
+      "fidelity": {
+        "functional": {
+          "claims": "Ouvert ou fermé selon l'entrée pressed ; pas de temporisation (SPEC-003 §5 push_button).",
+          "omissions": [
+            "le rebond"
+          ]
+        },
+        "timed": {
+          "claims": "Rebond (actif par défaut, ADR-034) sous forme d'une rafale de basculements répartie sur bounce_ms à l'appui et au relâchement.",
+          "omissions": [
+            "l'usure",
+            "la température"
+          ]
+        },
+        "electrical": {
+          "claims": "Résistance ron fermé, roff ouvert ; le rebond génère des points d'arrêt (SPEC-004 §7 switch).",
+          "omissions": [
+            "la capacité de contact",
+            "les arcs",
+            "l'usure"
+          ]
+        }
+      }
+    }
+  }
 }

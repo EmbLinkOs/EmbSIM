@@ -5,6 +5,7 @@
   "version": "1.1.0",
   "name": "Pin header",
   "category": "connectors",
+  "subcategory": "headers",
   "description": "Pin header of up to 80 positions (single or double row: an ST morpho header is 2 x 35); the pins are isolated attachment points with no behaviour.",
   "keywords": [
     "header",
@@ -1124,5 +1125,26 @@
   },
   "tests": [
     "tests/*.json"
-  ]
+  ],
+  "i18n": {
+    "fr": {
+      "source": "f47337385ecb",
+      "description": "Connecteur à broches jusqu'à 80 positions (une ou deux rangées : un connecteur morpho ST fait 2 x 35) ; les broches sont des points de raccordement isolés sans comportement.",
+      "fidelity": {
+        "functional": {
+          "claims": "Aucun comportement ; chaque broche est un point de raccordement à un réseau."
+        },
+        "timed": {
+          "claims": "Aucun comportement."
+        },
+        "electrical": {
+          "claims": "Aucun comportement ; la résistance de contact est ignorée.",
+          "omissions": [
+            "la résistance de contact",
+            "la capacité"
+          ]
+        }
+      }
+    }
+  }
 }

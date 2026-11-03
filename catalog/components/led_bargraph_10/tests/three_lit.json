@@ -1,0 +1,99 @@
+{
+  "schema_version": 1,
+  "kind": "component_test",
+  "name": "three-lit",
+  "description": "Segments 1 to 3 fed from 5 V through 220 Ohm each, their cathodes to ground: they light; segment 4, its anode open, and segment 10, its anode grounded, stay dark.",
+  "policy": "electrical",
+  "until": "1ms",
+  "circuit": {
+    "components": [
+      {
+        "id": "V",
+        "component": "emblink/vsource",
+        "params": {
+          "dc": 5
+        }
+      },
+      {
+        "id": "G",
+        "component": "emblink/gnd"
+      },
+      {
+        "id": "R1",
+        "component": "emblink/resistor",
+        "params": {
+          "resistance": 220,
+          "tolerance": 0
+        }
+      },
+      {
+        "id": "R2",
+        "component": "emblink/resistor",
+        "params": {
+          "resistance": 220,
+          "tolerance": 0
+        }
+      },
+      {
+        "id": "R3",
+        "component": "emblink/resistor",
+        "params": {
+          "resistance": 220,
+          "tolerance": 0
+        }
+      },
+      {
+        "id": "DUT",
+        "component": "emblink/led_bargraph_10"
+      }
+    ],
+    "nets": {
+      "VCC": [
+        "V.+",
+        "R1.1",
+        "R2.1",
+        "R3.1"
+      ],
+      "S1": [
+        "R1.2",
+        "DUT.A1"
+      ],
+      "S2": [
+        "R2.2",
+        "DUT.A2"
+      ],
+      "S3": [
+        "R3.2",
+        "DUT.A3"
+      ],
+      "GND": [
+        "V.-",
+        "G.GND",
+        "DUT.K1",
+        "DUT.K2",
+        "DUT.K3",
+        "DUT.K4",
+        "DUT.K10",
+        "DUT.A10"
+      ]
+    }
+  },
+  "expect": {
+    "output:DUT.D1.luminance": {
+      "at": "0.5ms",
+      "min": 0.1
+    },
+    "output:DUT.D3.luminance": {
+      "at": "0.5ms",
+      "min": 0.1
+    },
+    "output:DUT.D4.luminance": {
+      "at": "0.5ms",
+      "max": 1e-06
+    },
+    "output:DUT.D10.luminance": {
+      "at": "0.5ms",
+      "max": 1e-06
+    }
+  }
+}

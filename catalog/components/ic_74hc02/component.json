@@ -4,7 +4,8 @@
   "id": "emblink/ic_74hc02",
   "version": "1.0.0",
   "name": "74HC02 quad 2-input NOR",
-  "category": "logic",
+  "category": "ttl_74",
+  "subcategory": "gates",
   "description": "74HC02 quad 2-input NOR in its 14-pin package: 4 independent NOR gates (emblink/nor2) sharing VCC (14) and GND (7).",
   "keywords": [
     "logic",
@@ -311,5 +312,33 @@
   },
   "tests": [
     "tests/*.json"
-  ]
+  ],
+  "i18n": {
+    "fr": {
+      "source": "1ed14485bb36",
+      "description": "74HC02 quadruple NON-OU à 2 entrées dans son boîtier à 14 broches : 4 portes NON-OU indépendantes (emblink/nor2) partageant VCC (14) et GND (7).",
+      "fidelity": {
+        "functional": {
+          "claims": "Chaque porte comme emblink/nor2.",
+          "omissions": [
+            "le courant d'alimentation partagé",
+            "les limites thermiques du boîtier"
+          ]
+        },
+        "timed": {
+          "claims": "Le tpd de chaque porte comme emblink/nor2.",
+          "omissions": [
+            "la variation du délai avec l'alimentation"
+          ]
+        },
+        "electrical": {
+          "claims": "Chaque porte comme emblink/nor2 ; les broches se relient avec les valeurs par défaut cmos_3v3.",
+          "omissions": [
+            "le courant d'alimentation partagé",
+            "le rebond de masse"
+          ]
+        }
+      }
+    }
+  }
 }

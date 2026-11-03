@@ -4,7 +4,8 @@
   "id": "emblink/eeprom_24lc256",
   "version": "1.0.0",
   "name": "24LC256 I2C EEPROM",
-  "category": "misc",
+  "category": "memory_ics",
+  "subcategory": "eeprom_i2c",
   "description": "256-kbit (32768 x 8) serial EEPROM on I2C (Microchip 24LC256): two address bytes, byte and 64-byte page writes with a self-timed write cycle during which it does not acknowledge, sequential reads, address from A0-A2, write protect.",
   "keywords": [
     "memory",
@@ -232,5 +233,42 @@
   },
   "tests": [
     "tests/*.json"
-  ]
+  ],
+  "i18n": {
+    "fr": {
+      "source": "d7957b8d5835",
+      "description": "EEPROM série de 256 kbit (32768 x 8) sur I2C (Microchip 24LC256) : deux octets d'adresse, écritures d'octets et de pages de 64 octets avec un cycle d'écriture autotemporisé pendant lequel elle n'acquitte pas, lectures séquentielles, adresse tirée de A0-A2, protection en écriture.",
+      "fidelity": {
+        "functional": {
+          "claims": "Adresse 0x50 + A2..A0, deux octets d'adresse (A15 indifférent), écritures d'octets et de pages validées au STOP avec bouclage de page de 64 octets, pas de cycle d'écriture après un START répété, lectures séquentielles et à l'adresse courante bouclant à 7FFF, pas d'ACK pendant le cycle d'écriture (scrutation par ACK), WP haut bloque les écritures mais exécute quand même le cycle.",
+          "omissions": [
+            "l'endurance et la rétention",
+            "le contenu n'est pas conservé d'une session à l'autre",
+            "les limites de vitesse du bus (400 kHz à 2,5 V, 1 MHz pour le 24FC256) : des horloges plus rapides sont aussi décodées",
+            "la durée du cycle d'écriture vaut toujours twr (le maximum de la fiche technique), pas la valeur typique plus courte"
+          ]
+        },
+        "timed": {
+          "claims": "Comme en fonctionnel ; tWR tel que réglé.",
+          "omissions": [
+            "l'endurance et la rétention",
+            "le contenu n'est pas conservé d'une session à l'autre",
+            "les limites de vitesse du bus (400 kHz à 2,5 V, 1 MHz pour le 24FC256) : des horloges plus rapides sont aussi décodées",
+            "la durée du cycle d'écriture vaut toujours twr (le maximum de la fiche technique), pas la valeur typique plus courte"
+          ]
+        },
+        "electrical": {
+          "claims": "Les broches se relient aux réseaux analogiques avec les modèles de broche par défaut de la famille ; le comportement est celui du modèle Lua.",
+          "omissions": [
+            "l'endurance et la rétention",
+            "le contenu n'est pas conservé d'une session à l'autre",
+            "les limites de vitesse du bus (400 kHz à 2,5 V, 1 MHz pour le 24FC256) : des horloges plus rapides sont aussi décodées",
+            "la durée du cycle d'écriture vaut toujours twr (le maximum de la fiche technique), pas la valeur typique plus courte",
+            "le courant d'alimentation",
+            "les limites de courant de sortie"
+          ]
+        }
+      }
+    }
+  }
 }
