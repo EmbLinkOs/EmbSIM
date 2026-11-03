@@ -40,6 +40,8 @@ PDF's text. The fixtures then hold the model to the same table's limits.
 | `bjt_bc546` | onsemi BC546B, BC547A, BC547B, BC547C, BC548B, BC548C (NPN), TO-92 | BC546/D | IC within the hFE group's limits at 2 mA and VBE(on) inside 0.55 to 0.7 V; VCE(sat) at 10 mA; ICES |
 | `bjt_bc556` | onsemi BC556B, BC557A, BC557B, BC557C, BC558B (PNP), TO-92 | BC556B/D | the same, with the PNP's limits |
 | `leds_kingbright` | Kingbright 5 mm WP7113 and 3 mm WP710A10 LEDs in their colours and lenses (23), one datasheet each | each part's | VF at the datasheet's test current under its maximum; IR at 5 V |
+| `transformers_triad_f`, `transformers_triad_f_ct` | Triad Magnetics F series 115 V chassis-mount power transformers, plain and centre-tapped (13) | each part's | the secondary's peak at full load (sqrt 2 of the rated voltage, within 5 %) |
+| `optocouplers_sfh617a`, `optocouplers_cny17`, `optocouplers_4n35` | Vishay SFH617A-1 to -4 (DIP-4), CNY17-1 to -4 and 4N35 to 4N37 (DIP-6, base brought out) (11) | 83740, 83606, 81181 | the CTR within its rank at 10 mA; VF; VCE(sat) |
 | `regulators_mc7800` | onsemi MC7805 to MC7824 in the B, C and AC grades (21), TO-220 | MC7800/D | VO within the 25 C limits at the table's Vin and 500 mA, and at 1.0 A; the 2.0 V dropout; quiescent current under its maximum |
 | `resistors_ccf55` | Vishay CCF55, 1 %, 100 ppm/K: every E96 value from 10 ohm to 3.01 Mohm (527) | 31015 | the nominal resistance (a divider read to 0.1 %) |
 | `resistors_ccf07` | Vishay CCF07, E24 from 10 ohm to 1 Mohm at 2 % and 5 %, and 1.1 to 2 Mohm at 5 % (249) | 31013 | the same |

@@ -108,6 +108,8 @@ ranges, from the description (SPEC-005 §4).
 | `resistor` | `r` (Ω, required), `tc1`, `tc2` (0), `temp` (27 °C) | linear; `r` must be > 0 |
 | `capacitor` | `c` (F, required), `ic` (V, none), `esr` (0) | trapezoidal/BDF2 companion |
 | `inductor` | `l` (H, required), `ic` (A, none), `dcr` (0) | branch current unknown |
+| `transformer` | `lp`, `ls` (H), `k` (coupling, 0 to < 1, 0.99), `rp`, `rs` (winding resistances, 0); pins P1 P2 S1 S2, P1 and S1 the dotted ends | two branch currents; fluxes Lp i1 + M i2 and M i1 + Ls i2, M = k sqrt(Lp Ls) |
+| `transformer_ct` | as `transformer`, the secondary centre-tapped: pins P1 P2 S1 CT S2 | three windings, S1-CT and CT-S2 each Ls/4 and Rs/2, all pairs coupled by k |
 | `vsource` | `kind`: `dc`, `pulse`, `sine`, `pwl`, `exp`; standard SPICE parameters | reports breakpoints; `dc` default |
 | `isource` | same kinds | |
 | `vcvs`, `vccs`, `cccs`, `ccvs` | `gain` | linear dependent sources |

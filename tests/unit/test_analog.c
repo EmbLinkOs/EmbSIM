@@ -475,6 +475,87 @@ static void test_cap_esr(void)
     esk_engine_free(&e);
 }
 
+/* A transformer (SPEC-004 §7): Lp = 1 H, Ls = 0.01 H is a 10:1 turns ratio;
+ * 10 V peak at 50 Hz on the primary gives about 1 V on an open secondary
+ * (k = 0.999), less with a load, and nothing at DC once the primary current
+ * has settled through its copper resistance. */
+static void test_transformer(void)
+{
+    esk_engine e;
+    double vmax = 0.0, vmin = 0.0;
+    int i;
+    engine_open(&e);
+    add_power(&e, "G", "gnd", 0.0);
+    add_dev2(&e, "vsource", "V1", "{\"kind\": \"sine\", \"vo\": 0, \"va\": 10, \"freq\": 50}", "pri", "gnd");
+    {
+        const char *pins[4] = { "pri", "gnd", "sec", "gnd" };
+        add_dev(&e, "transformer", "T1", "{\"lp\": 1, \"ls\": 0.01, \"k\": 0.999, \"rp\": 1, \"rs\": 0.01}", pins, 4);
+    }
+    add_dev2(&e, "resistor", "RL", "{\"r\": \"1meg\"}", "sec", "gnd");
+    engine_run(&e);
+    for (i = 0; i < 400; i++) {
+        double v;
+        CHECK(esk_engine_advance(&e, (es_time_t)(i + 1) * 100 * ES_PS_PER_US) == ES_OK);
+        v = v_of(&e, "sec");
+        if (i >= 200) {
+            vmax = v > vmax ? v : vmax;
+            vmin = v < vmin ? v : vmin;
+        }
+    }
+    CHECK_NEAR(vmax, 1.0, 0.02);
+    CHECK_NEAR(vmin, -1.0, 0.02);
+    CHECK_EQ(diag_errors, 0);
+    esk_engine_free(&e);
+}
+
+/* the centre-tapped secondary: each half has half the secondary's voltage */
+static void test_transformer_ct(void)
+{
+    esk_engine e;
+    double va = 0.0, vb = 0.0;
+    int i;
+    engine_open(&e);
+    add_power(&e, "G", "gnd", 0.0);
+    add_dev2(&e, "vsource", "V1", "{\"kind\": \"sine\", \"vo\": 0, \"va\": 10, \"freq\": 50}", "pri", "gnd");
+    {
+        const char *pins[5] = { "pri", "gnd", "sa", "gnd", "sb" };
+        add_dev(&e, "transformer_ct", "T1", "{\"lp\": 1, \"ls\": 0.04, \"k\": 0.999}", pins, 5);
+    }
+    add_dev2(&e, "resistor", "RA", "{\"r\": \"1meg\"}", "sa", "gnd");
+    add_dev2(&e, "resistor", "RB", "{\"r\": \"1meg\"}", "sb", "gnd");
+    engine_run(&e);
+    for (i = 0; i < 400; i++) {
+        CHECK(esk_engine_advance(&e, (es_time_t)(i + 1) * 100 * ES_PS_PER_US) == ES_OK);
+        if (i >= 200) {
+            double a = v_of(&e, "sa"), b = v_of(&e, "sb");
+            va = a > va ? a : va;
+            vb = -b > vb ? -b : vb; /* the far end is in antiphase */
+        }
+    }
+    CHECK_NEAR(va, 1.0, 0.02); /* sqrt(0.04 / 4 / 1) of 10 V */
+    CHECK_NEAR(vb, 1.0, 0.02);
+    CHECK_EQ(diag_errors, 0);
+    esk_engine_free(&e);
+}
+
+static void test_transformer_dc(void)
+{
+    esk_engine e;
+    engine_open(&e);
+    add_power(&e, "G", "gnd", 0.0);
+    add_dev2(&e, "vsource", "V1", "{\"dc\": 5}", "pri", "gnd");
+    {
+        const char *pins[4] = { "pri", "gnd", "sec", "gnd" };
+        add_dev(&e, "transformer", "T1", "{\"lp\": 0.1, \"ls\": 0.001, \"k\": 0.99, \"rp\": 10, \"rs\": 0.1}", pins, 4);
+    }
+    add_dev2(&e, "resistor", "RL", "{\"r\": 100}", "sec", "gnd");
+    engine_run(&e);
+    CHECK(esk_engine_advance(&e, 200 * ES_PS_PER_MS) == ES_OK);
+    CHECK_NEAR(v_of(&e, "sec"), 0.0, 1e-3); /* a transformer passes no DC */
+    CHECK_EQ(diag_errors, 0);
+    esk_engine_free(&e);
+}
+
 static void test_rl(void)
 {
     esk_engine e;
@@ -1803,6 +1884,9 @@ RUN(test_rgb_emission_integrals);
 RUN(test_scope_input_refinement);
 RUN(test_rc_with_ic);
 RUN(test_cap_esr);
+RUN(test_transformer);
+RUN(test_transformer_ct);
+RUN(test_transformer_dc);
 RUN(test_rl);
 RUN(test_rl_transient);
 RUN(test_diode_curve);

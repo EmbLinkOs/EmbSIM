@@ -55,6 +55,17 @@ versions follow semantic versioning. There is no release yet.
   ratings (ADR-034), its colour its dominant wavelength's. And Vishay's
   W005G to W10G bridge rectifiers, four junctions in a composite with their
   own bridge symbol.
+- Transformers: a `transformer` primitive (SPEC-004 §7), two coupled
+  windings with their copper resistances, and `transformer_ct` with a
+  centre-tapped secondary (`test_analog`'s ratio, centre-tap and DC tests);
+  13 Triad Magnetics F series power transformers built on them at their
+  datasheets' no-load ratio and regulation. And 11 Vishay phototransistor
+  optocouplers by CTR rank (SFH617A-1 to -4, CNY17-1 to -4, 4N35 to 4N37)
+  on a generic `emblink/optocoupler`.
+- An analog part with only some of its pins wired lost the open ones'
+  places: an optocoupler failed to load and a transformer's free centre tap
+  was grounded. Both now keep their terminals and leave the open ones
+  floating, as a real part's do.
 - The capacitor primitive's `esr` (SPEC-004 §7) is applied: it was read
   and ignored, so a capacitor had no series resistance whatever its
   description said. The capacitance now sits behind an internal node, the

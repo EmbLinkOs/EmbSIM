@@ -1,0 +1,73 @@
+{
+  "schema_version": 1,
+  "kind": "component_test",
+  "name": "ctr",
+  "description": "IF = 10 mA, the collector at 10 V through 100 ohm: the collector current, read across the resistor, within the rank's CTR",
+  "policy": "electrical",
+  "until": "100us",
+  "settings": {
+    "imperfections": "ideal"
+  },
+  "circuit": {
+    "components": [
+      {
+        "id": "IF",
+        "component": "emblink/isource",
+        "params": {
+          "dc": 0.01
+        }
+      },
+      {
+        "id": "VC",
+        "component": "emblink/vsource",
+        "params": {
+          "dc": 10
+        }
+      },
+      {
+        "id": "RC",
+        "component": "emblink/resistor",
+        "params": {
+          "resistance": 100,
+          "tolerance": 0
+        }
+      },
+      {
+        "id": "DUT",
+        "component": "emblink/opto_4n35"
+      },
+      {
+        "id": "G",
+        "component": "emblink/gnd"
+      }
+    ],
+    "nets": {
+      "AN": [
+        "IF.-",
+        "DUT.A"
+      ],
+      "VCC": [
+        "VC.+",
+        "RC.1"
+      ],
+      "COL": [
+        "RC.2",
+        "DUT.C"
+      ],
+      "GND": [
+        "IF.+",
+        "DUT.K",
+        "VC.-",
+        "DUT.E",
+        "G.GND"
+      ]
+    }
+  },
+  "expect": {
+    "net:COL": {
+      "at": "50us",
+      "min_v": 0.0,
+      "max_v": 9.0
+    }
+  }
+}

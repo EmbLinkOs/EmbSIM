@@ -1,0 +1,187 @@
+{
+  "schema_version": 1,
+  "kind": "component",
+  "id": "emblink/sfh617a_1",
+  "version": "1.0.0",
+  "name": "SFH617A-1",
+  "category": "optoelectronics",
+  "subcategory": "optocouplers",
+  "description": "Vishay SFH617A-1, a phototransistor optocoupler in DIP-4: CTR 40 to 80 % at 10 mA and 5 V, VF 1.35 V typical at 60 mA (at most 1.65 V), VCE(sat) at most 0.4 V. The model's CTR is 56.6 %, the geometric middle of its rank.",
+  "keywords": [
+    "Vishay",
+    "SFH617A-1",
+    "SFH617A",
+    "optocoupler",
+    "optoisolator",
+    "phototransistor",
+    "DIP-4",
+    "isolation"
+  ],
+  "pins": [
+    {
+      "name": "A",
+      "number": 1,
+      "model": {
+        "kind": "passive"
+      },
+      "doc": "LED anode"
+    },
+    {
+      "name": "K",
+      "number": 2,
+      "model": {
+        "kind": "passive"
+      },
+      "doc": "LED cathode"
+    },
+    {
+      "name": "E",
+      "number": 3,
+      "model": {
+        "kind": "passive"
+      },
+      "doc": "Phototransistor emitter"
+    },
+    {
+      "name": "C",
+      "number": 4,
+      "model": {
+        "kind": "passive"
+      },
+      "doc": "Phototransistor collector"
+    }
+  ],
+  "params": {
+    "ctr": {
+      "type": "number",
+      "unit": "A/A",
+      "default": 0.5657,
+      "doc": "Current transfer ratio in the unsaturated region: the geometric middle of its rank",
+      "min": 0,
+      "max": 10
+    },
+    "vf": {
+      "type": "number",
+      "unit": "V",
+      "default": 1.05,
+      "doc": "LED knee: the datasheet's 1.35 V at 60 mA less r_led's drop",
+      "min": 0,
+      "max": 5,
+      "advanced": true
+    },
+    "r_led": {
+      "type": "number",
+      "unit": "ohm",
+      "default": 5,
+      "doc": "LED slope resistance above vf",
+      "min": 0.01,
+      "max": 10000,
+      "advanced": true
+    },
+    "r_off": {
+      "type": "number",
+      "unit": "ohm",
+      "default": "10G",
+      "doc": "Collector-emitter leakage resistance with the LED off",
+      "min": 1,
+      "advanced": true
+    },
+    "r_sat": {
+      "type": "number",
+      "unit": "ohm",
+      "default": 100,
+      "doc": "Saturation resistance: the datasheet's typical VCE(sat) at its test current",
+      "min": 0.01,
+      "max": 10000,
+      "advanced": true
+    }
+  },
+  "model": {
+    "primitive": "optocoupler"
+  },
+  "symbol": {
+    "svg": "symbol.svg",
+    "width": 160,
+    "height": 60,
+    "pins": {
+      "A": {
+        "x": 0,
+        "y": 20,
+        "side": "left"
+      },
+      "K": {
+        "x": 0,
+        "y": 40,
+        "side": "left"
+      },
+      "C": {
+        "x": 160,
+        "y": 20,
+        "side": "right"
+      },
+      "E": {
+        "x": 160,
+        "y": 40,
+        "side": "right"
+      }
+    }
+  },
+  "fidelity": {
+    "functional": null,
+    "timed": null,
+    "electrical": {
+      "claims": "Piecewise-linear LED input (knee and slope fitted to the datasheet's typical VF), a collector current of CTR times the LED current, saturating through r_sat (the typical VCE(sat)), no galvanic path between input and output; fixtures for the CTR within its rank, VF and VCE(sat) from the datasheet's tables.",
+      "omissions": [
+        "the CTR's dependence on the LED current and on temperature (the datasheet's figures)",
+        "switching times, the phototransistor's capacitances and bandwidth",
+        "CTR degradation over life",
+        "the isolation voltage and creepage: no breakdown",
+        "the absolute maximum ratings: no damage"
+      ],
+      "validation": [
+        "tests/*.json"
+      ]
+    }
+  },
+  "provenance": {
+    "author": "EmbSIM",
+    "license": "Apache-2.0",
+    "sources": [
+      {
+        "title": "Vishay SFH617A datasheet (document 83740)",
+        "url": "https://www.vishay.com/docs/83740/sfh617a.pdf",
+        "rev": "current at retrieval",
+        "date": "2026-11-03",
+        "hash": "sha256:5664f321e22a575766524001c200d1c2c7aaaf123d5a1185b359e5b491873115",
+        "notes": "Electrical characteristics (VF at 60 mA, VCEsat at 10 mA and 2.5 mA) and the CTR ranks -1 to -4 at IF = 10 mA, VCE = 5 V; DIP-4. generated from catalog/families/optocouplers_sfh617a/family.json by tools/catalog/families.py; edit the family, not this file"
+      }
+    ]
+  },
+  "tests": [
+    "tests/*.json"
+  ],
+  "part": {
+    "manufacturer": "Vishay",
+    "mpn": "SFH617A-1",
+    "package": "DIP-4",
+    "datasheet": "https://www.vishay.com/docs/83740/sfh617a.pdf"
+  },
+  "i18n": {
+    "fr": {
+      "source": "9964f7f91ac4",
+      "description": "Vishay SFH617A-1, un optocoupleur à phototransistor en DIP-4: CTR de 40 à 80 % à 10 mA et 5 V, VF de 1,35 V typique à 60 mA (au plus 1,65 V), VCE(sat) d'au plus 0,4 V. Le CTR du modèle est de 56,6 %, le milieu géométrique de son rang.",
+      "fidelity": {
+        "electrical": {
+          "claims": "Entrée DEL linéaire par morceaux (coude et pente ajustés sur la VF typique de la fiche technique), un courant de collecteur égal au CTR fois le courant de la DEL, saturant à travers r_sat (la VCE(sat) typique), aucun chemin galvanique entre entrée et sortie ; cas de test pour le CTR dans son rang, la VF et la VCE(sat) tirés des tableaux de la fiche technique.",
+          "omissions": [
+            "la dépendance du CTR au courant de la DEL et à la température (les figures de la fiche technique)",
+            "les temps de commutation, les capacités et la bande passante du phototransistor",
+            "la dégradation du CTR au cours de la vie",
+            "la tension d'isolement et les lignes de fuite : pas de claquage",
+            "les valeurs limites absolues : pas de dommages"
+          ]
+        }
+      }
+    }
+  }
+}

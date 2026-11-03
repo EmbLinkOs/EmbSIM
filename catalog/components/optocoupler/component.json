@@ -1,0 +1,179 @@
+{
+  "schema_version": 1,
+  "kind": "component",
+  "id": "emblink/optocoupler",
+  "version": "1.0.0",
+  "name": "Optocoupler",
+  "category": "optoelectronics",
+  "subcategory": "optocouplers",
+  "description": "A phototransistor optocoupler: an LED and a phototransistor in one package with no galvanic path between them, its current transfer ratio, LED knee and saturation set by its parameters. The generic part named optocouplers are built on.",
+  "keywords": [
+    "optocoupler",
+    "optoisolator",
+    "phototransistor",
+    "isolation",
+    "generic"
+  ],
+  "pins": [
+    {
+      "name": "A",
+      "number": 1,
+      "model": {
+        "kind": "passive"
+      },
+      "doc": "A"
+    },
+    {
+      "name": "K",
+      "number": 2,
+      "model": {
+        "kind": "passive"
+      },
+      "doc": "K"
+    },
+    {
+      "name": "C",
+      "number": 4,
+      "model": {
+        "kind": "passive"
+      },
+      "doc": "C"
+    },
+    {
+      "name": "E",
+      "number": 3,
+      "model": {
+        "kind": "passive"
+      },
+      "doc": "E"
+    }
+  ],
+  "params": {
+    "ctr": {
+      "type": "number",
+      "default": 1.0,
+      "doc": "Current transfer ratio in the unsaturated collector region",
+      "unit": "A/A",
+      "min": 0,
+      "max": 10
+    },
+    "vf": {
+      "type": "number",
+      "default": 1.1,
+      "doc": "Forward knee voltage of the piecewise-linear input diode approximation.",
+      "unit": "V",
+      "min": 0,
+      "max": 5
+    },
+    "r_led": {
+      "type": "number",
+      "default": 20,
+      "doc": "LED forward slope resistance above vf.",
+      "unit": "ohm",
+      "min": 0.01,
+      "max": 10000
+    },
+    "r_off": {
+      "type": "number",
+      "default": 10000000000.0,
+      "doc": "Collector-emitter leakage resistance with no LED drive.",
+      "unit": "ohm",
+      "min": 1,
+      "max": 1000000000000000.0
+    },
+    "r_sat": {
+      "type": "number",
+      "default": 30,
+      "min": 0.01,
+      "max": 10000,
+      "unit": "ohm",
+      "doc": "Collector saturation resistance: the collector current is limited by VCE / r_sat"
+    }
+  },
+  "model": {
+    "primitive": "optocoupler"
+  },
+  "inputs": [],
+  "outputs": [
+    {
+      "name": "led_current",
+      "type": "number",
+      "unit": "A"
+    },
+    {
+      "name": "vce",
+      "type": "number",
+      "unit": "V"
+    }
+  ],
+  "symbol": {
+    "svg": "symbol.svg",
+    "width": 160,
+    "height": 60,
+    "pins": {
+      "A": {
+        "x": 0,
+        "y": 20,
+        "side": "left"
+      },
+      "K": {
+        "x": 0,
+        "y": 40,
+        "side": "left"
+      },
+      "C": {
+        "x": 160,
+        "y": 20,
+        "side": "right"
+      },
+      "E": {
+        "x": 160,
+        "y": 40,
+        "side": "right"
+      }
+    }
+  },
+  "fidelity": {
+    "functional": null,
+    "timed": null,
+    "electrical": {
+      "claims": "Piecewise-linear LED input (knee vf, slope r_led), a collector current of ctr times the LED current saturating through r_sat, leakage r_off, no galvanic path between input and output.",
+      "omissions": [
+        "the CTR's dependence on the LED current and on temperature",
+        "switching times and capacitances",
+        "CTR degradation over life",
+        "isolation breakdown",
+        "damage past absolute maximum ratings"
+      ],
+      "validation": [
+        "tests/*.json"
+      ]
+    }
+  },
+  "provenance": {
+    "author": "EmbSIM",
+    "license": "Apache-2.0",
+    "sources": []
+  },
+  "tests": [
+    "tests/*.json"
+  ],
+  "i18n": {
+    "fr": {
+      "source": "6cdc2271f20e",
+      "description": "Un optocoupleur à phototransistor : une DEL et un phototransistor dans un même boîtier sans chemin galvanique entre eux, son rapport de transfert en courant, le coude de sa DEL et sa saturation fixés par ses paramètres. Le composant générique sur lequel reposent les optocoupleurs nommés.",
+      "fidelity": {
+        "electrical": {
+          "claims": "Entrée DEL linéaire par morceaux (coude vf, pente r_led), un courant de collecteur égal à ctr fois le courant de la DEL saturant à travers r_sat, une fuite r_off, aucun chemin galvanique entre entrée et sortie.",
+          "omissions": [
+            "la dépendance du CTR au courant de la DEL et à la température",
+            "les temps de commutation et les capacités",
+            "la dégradation du CTR au cours de la vie",
+            "le claquage de l'isolement",
+            "les dommages au-delà des valeurs limites absolues"
+          ]
+        }
+      }
+    }
+  }
+}

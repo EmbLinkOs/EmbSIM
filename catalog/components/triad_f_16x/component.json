@@ -1,0 +1,203 @@
+{
+  "schema_version": 1,
+  "kind": "component",
+  "id": "emblink/triad_f_16x",
+  "version": "1.0.0",
+  "name": "F-16X",
+  "category": "inductors",
+  "subcategory": "transformers",
+  "description": "Triad Magnetics F-16X, a 18.9 VA chassis-mount power transformer: 115 V 50/60 Hz primary, 6.3 V centre-tapped secondary at 3 A, 15 % regulation (7.245 V at no load). The model is a pair of coupled windings at the no-load ratio, their copper resistance the regulation's drop split between them, its magnetising inductance an assumption the datasheet does not give.",
+  "keywords": [
+    "Triad",
+    "Triad Magnetics",
+    "F-16X",
+    "transformer",
+    "power",
+    "mains",
+    "115 V",
+    "6.3 V",
+    "center tap",
+    "centre tap",
+    "CT"
+  ],
+  "pins": [
+    {
+      "name": "P1",
+      "number": 1,
+      "model": {
+        "kind": "passive"
+      },
+      "doc": "Primary, black lead (the dotted end); 1 to 5 numbering is an ECAD convention, the leads are colour-coded"
+    },
+    {
+      "name": "P2",
+      "number": 2,
+      "model": {
+        "kind": "passive"
+      },
+      "doc": "Primary, black lead"
+    },
+    {
+      "name": "S1",
+      "number": 3,
+      "model": {
+        "kind": "passive"
+      },
+      "doc": "Secondary, green lead (the dotted end)"
+    },
+    {
+      "name": "CT",
+      "number": 4,
+      "model": {
+        "kind": "passive"
+      },
+      "doc": "Secondary centre tap, green/yellow lead"
+    },
+    {
+      "name": "S2",
+      "number": 5,
+      "model": {
+        "kind": "passive"
+      },
+      "doc": "Secondary, green lead"
+    }
+  ],
+  "params": {
+    "lp": {
+      "type": "number",
+      "unit": "H",
+      "default": 37.12,
+      "doc": "Primary (magnetising) inductance: set so the magnetising current is 5 % of the rated primary current (not in the datasheet)",
+      "min": "1u",
+      "advanced": true
+    },
+    "ls": {
+      "type": "number",
+      "unit": "H",
+      "default": 0.1473,
+      "doc": "Secondary inductance: lp times the no-load voltage ratio squared",
+      "min": "1n",
+      "advanced": true
+    },
+    "k": {
+      "type": "number",
+      "unit": "",
+      "default": 0.999,
+      "doc": "Coupling coefficient",
+      "min": 0,
+      "max": 0.9999,
+      "advanced": true
+    },
+    "rp": {
+      "type": "number",
+      "unit": "ohm",
+      "default": 39.68,
+      "doc": "Primary winding resistance: half the regulation's drop, referred to the primary",
+      "min": 0,
+      "advanced": true
+    },
+    "rs": {
+      "type": "number",
+      "unit": "ohm",
+      "default": 0.1575,
+      "doc": "Secondary winding resistance (whole winding): half the regulation's drop",
+      "min": 0,
+      "advanced": true
+    }
+  },
+  "model": {
+    "primitive": "transformer_ct"
+  },
+  "symbol": {
+    "svg": "symbol.svg",
+    "width": 60,
+    "height": 40,
+    "pins": {
+      "P1": {
+        "x": 0,
+        "y": 0,
+        "side": "left"
+      },
+      "P2": {
+        "x": 0,
+        "y": 40,
+        "side": "left"
+      },
+      "S1": {
+        "x": 60,
+        "y": 0,
+        "side": "right"
+      },
+      "S2": {
+        "x": 60,
+        "y": 40,
+        "side": "right"
+      },
+      "CT": {
+        "x": 60,
+        "y": 20,
+        "side": "right"
+      }
+    }
+  },
+  "fidelity": {
+    "functional": null,
+    "timed": null,
+    "electrical": {
+      "claims": "Coupled windings (SPEC-004 transformer_ct) at the datasheet's no-load voltage ratio (its full-load secondary voltage raised by its regulation), with copper resistance giving that regulation at the rated current; galvanic isolation between primary and secondary; no DC transfer. A full-load fixture from the datasheet's rating.",
+      "omissions": [
+        "the magnetising inductance: the datasheet gives no no-load current, so it is set for a magnetising current of 5 % of the rated primary current",
+        "core saturation, hysteresis and eddy losses: the core is linear and lossless",
+        "leakage inductance beyond k = 0.999 and the inter-winding capacitance",
+        "the temperature rise and the thermal limits (Class B insulation, 130 C): no heating and no damage",
+        "the 2500 V hipot isolation: the windings never break down",
+        "50 Hz operation's higher magnetising current where only 60 Hz is rated"
+      ],
+      "validation": [
+        "tests/*.json"
+      ]
+    }
+  },
+  "provenance": {
+    "author": "EmbSIM",
+    "license": "Apache-2.0",
+    "sources": [
+      {
+        "title": "Triad Magnetics F-16X datasheet",
+        "url": "https://catalog.triadmagnetics.com/Asset/F-16X.pdf",
+        "rev": "current at retrieval",
+        "date": "2026-11-03",
+        "hash": "sha256:deb99105f82b12b62cacaa0f40d3b2a9f4e21b8611a647e917f46b72a756ffc3",
+        "notes": "Electrical specifications: maximum power (VA), the 115 V primary, the secondary's voltage at its rated current, the voltage regulation from full load to no load; construction, dimensions, lead colours. generated from catalog/families/transformers_triad_f_ct/family.json by tools/catalog/families.py; edit the family, not this file"
+      }
+    ]
+  },
+  "tests": [
+    "tests/*.json"
+  ],
+  "part": {
+    "manufacturer": "Triad Magnetics",
+    "mpn": "F-16X",
+    "package": "Chassis mount, flying leads",
+    "datasheet": "https://catalog.triadmagnetics.com/Asset/F-16X.pdf"
+  },
+  "i18n": {
+    "fr": {
+      "source": "bf585d8be1bf",
+      "description": "Triad Magnetics F-16X, un transformateur d'alimentation de 18,9 VA à fixation sur châssis : primaire 115 V 50/60 Hz, secondaire à point milieu de 6,3 V à 3 A, régulation de 15 % (7,245 V à vide). Le modèle est une paire d'enroulements couplés au rapport à vide, leur résistance de cuivre la chute de la régulation répartie entre eux, son inductance magnétisante une hypothèse que la fiche technique ne donne pas.",
+      "fidelity": {
+        "electrical": {
+          "claims": "Enroulements couplés (transformer_ct de SPEC-004) au rapport de tension à vide de la fiche technique (sa tension secondaire à pleine charge augmentée de sa régulation), avec une résistance de cuivre donnant cette régulation au courant nominal ; isolement galvanique entre primaire et secondaire ; aucun transfert de continu. Un cas de test à pleine charge tiré des valeurs nominales de la fiche technique.",
+          "omissions": [
+            "l'inductance magnétisante : la fiche technique ne donne pas de courant à vide, elle est donc fixée pour un courant magnétisant de 5 % du courant primaire nominal",
+            "la saturation du noyau, l'hystérésis et les courants de Foucault : le noyau est linéaire et sans pertes",
+            "l'inductance de fuite au-delà de k = 0,999 et la capacité entre enroulements",
+            "l'échauffement et les limites thermiques (isolation classe B, 130 °C) : ni échauffement ni dommages",
+            "l'isolement de 2500 V à l'essai diélectrique : les enroulements ne claquent jamais",
+            "le fonctionnement à 50 Hz et son courant magnétisant plus élevé là où seuls 60 Hz sont spécifiés"
+          ]
+        }
+      }
+    }
+  }
+}

@@ -43,7 +43,9 @@ const char *const *esk_adev_pin_names(const esk_adev_ops *ops, int *n)
                              *const spdt[] = { "COM", "NC", "NO" }, *const one[] = { "1" },
                              *const ppk[] = { "VIN", "VOUT", "GND" },
                              *const scope[] = { "CH1", "CH2", "CH3", "CH4", "GND" },
-                             *const dmm[] = { "COM", "V", "MA", "A" };
+                             *const dmm[] = { "COM", "V", "MA", "A" },
+                             *const xfmr[] = { "P1", "P2", "S1", "S2" },
+                             *const xfmr_ct[] = { "P1", "P2", "S1", "CT", "S2" };
     static const struct { const char *name; const char *const *pins; int n; } table[] = {
         { "environment_resistor", env, 2 }, { "ptc_fuse", two, 2 }, { "photodiode", dio, 2 }, { "optocoupler", opto, 4 },
         { "relay_contacts", relay, 5 }, { "spdt_contact", spdt, 3 },
@@ -52,7 +54,7 @@ const char *const *esk_adev_pin_names(const esk_adev_ops *ops, int *n)
         { "led", dio, 2 }, { "rgb_led", rgb, 4 }, { "zener", dio, 2 }, { "bjt_npn", bjt, 3 }, { "bjt_pnp", bjt, 3 },
         { "nmos", mos, 3 }, { "pmos", mos, 3 }, { "opamp", amp, 5 }, { "regulator", reg, 3 }, { "pull", one, 1 },
         { "usb_meter", reg, 3 }, { "instrument_input", src, 2 }, { "power_profiler", ppk, 3 }, { "oscilloscope", scope, 5 },
-        { "multimeter", dmm, 4 },
+        { "multimeter", dmm, 4 }, { "transformer", xfmr, 4 }, { "transformer_ct", xfmr_ct, 5 },
     };
     size_t i;
     for (i = 0; ops && i < sizeof table / sizeof table[0]; i++)
@@ -72,7 +74,9 @@ int esk_adev_preserves_open_pins(const esk_adev_ops *ops)
                    !strcmp(ops->name, "instrument_input") || !strcmp(ops->name, "vsource") ||
                    !strcmp(ops->name, "power_profiler") || /* VIN is open in source meter mode */
                    !strcmp(ops->name, "oscilloscope") ||   /* a channel with no probe on it */
-                   !strcmp(ops->name, "multimeter"));     /* a jack with no lead in it */
+                   !strcmp(ops->name, "multimeter") ||    /* a jack with no lead in it */
+                   !strcmp(ops->name, "transformer") || !strcmp(ops->name, "transformer_ct") || /* a lead left free (an unused centre tap) */
+                   !strcmp(ops->name, "optocoupler"));    /* an LED or a phototransistor not yet wired */
 }
 
 static double pd(const esk_adev *d, const char *name, double def)
@@ -544,6 +548,168 @@ static double ind_lte(esk_adev *d, const esk_integ *in)
 static const esk_adev_ops inductor_ops = {"inductor",  sizeof(ind_state), ind_setup, ind_load_dc,
                                           ind_load_tr, ind_accept,        NULL,      NULL,
                                           ind_lte,     observe_basic,     NULL};
+
+/* ---- transformers: coupled inductors ------------------------------------- */
+
+/* Windings w = 0..nw-1, each a branch current (into its first, dotted pin),
+ * their fluxes phi_w = sum_v M_wv i_v with M_ww = L_w and M_wv =
+ * k sqrt(L_w L_v), each with its copper resistance in series. At DC every
+ * winding is its resistance. `transformer`: primary P1-P2 (lp, rp) and
+ * secondary S1-S2 (ls, rs). `transformer_ct`: the secondary centre-tapped,
+ * S1-CT and CT-S2 each half its turns, so a quarter of ls and half of rs. */
+#define XFMR_MAXW 3
+typedef struct xfmr_state {
+    int nw;
+    double l[XFMR_MAXW], r[XFMR_MAXW], m[XFMR_MAXW][XFMR_MAXW];
+    double phi_prev[XFMR_MAXW], v_prev[XFMR_MAXW], v_prev2[XFMR_MAXW];
+    double phi_trial[XFMR_MAXW], v_trial[XFMR_MAXW];
+    int nhist, trial_first, trial_negligible;
+} xfmr_state;
+
+static es_status xfmr_setup_n(esk_adev *d, int ct)
+{
+    xfmr_state *s = (xfmr_state *)d->state;
+    double k = pd(d, "k", 0.99), lp = pd(d, "lp", 1.0), ls = pd(d, "ls", 0.01);
+    double rp = pd(d, "rp", 0.0), rs = pd(d, "rs", 0.0);
+    int w, v;
+    if (!(lp > 0.0) || !(ls > 0.0)) {
+        param_error(d, "lp/ls", "must be > 0");
+        lp = 1.0;
+        ls = 0.01;
+    }
+    /* k = 1 makes the inductance matrix singular: an ideal transformer has
+     * no magnetising current to define it */
+    if (!(k >= 0.0 && k < 1.0)) {
+        param_error(d, "k", "must be >= 0 and < 1");
+        k = 0.99;
+    }
+    if (rp < 0.0 || rs < 0.0) {
+        param_error(d, "rp/rs", "must be >= 0");
+        rp = rs = 0.0;
+    }
+    s->nw = ct ? 3 : 2;
+    s->l[0] = lp;
+    s->r[0] = rp;
+    for (w = 1; w < s->nw; w++) {
+        s->l[w] = ct ? ls / 4.0 : ls;
+        s->r[w] = ct ? rs / 2.0 : rs;
+    }
+    for (w = 0; w < s->nw; w++)
+        for (v = 0; v < s->nw; v++)
+            s->m[w][v] = w == v ? s->l[w] : k * sqrt(s->l[w] * s->l[v]);
+    d->nbranch = s->nw;
+    return ES_OK;
+}
+
+static es_status xfmr_setup(esk_adev *d) { return xfmr_setup_n(d, 0); }
+static es_status xfmr_ct_setup(esk_adev *d) { return xfmr_setup_n(d, 1); }
+
+/* winding w's pins: P1-P2, then S1-S2, or S1-CT and CT-S2 */
+static void xfmr_pins(const esk_adev *d, const xfmr_state *s, int w, int *a, int *b)
+{
+    if (w == 0) {
+        *a = d->node[0];
+        *b = d->node[1];
+    } else if (s->nw == 2) {
+        *a = d->node[2];
+        *b = d->node[3];
+    } else {
+        *a = d->node[w == 1 ? 2 : 3];
+        *b = d->node[w == 1 ? 3 : 4];
+    }
+}
+
+static void xfmr_load(esk_adev *d, esk_amatrix *m, const esk_integ *in)
+{
+    xfmr_state *s = (xfmr_state *)d->state;
+    double i[XFMR_MAXW];
+    int w, v;
+    for (w = 0; w < s->nw; w++)
+        i[w] = esk_am_x(m, d->branch[w]);
+    for (w = 0; w < s->nw; w++) {
+        int a, b, br = d->branch[w];
+        double phi = 0.0, alpha = 0.0, vl = 0.0;
+        for (v = 0; v < s->nw; v++)
+            phi += s->m[w][v] * i[v];
+        if (in) /* with c = 1 the companion's conductance is the integration's d/dt factor */
+            esk_integ_companion(in, phi, s->phi_prev[w], s->v_prev[w], 1.0, &alpha, &vl);
+        xfmr_pins(d, s, w, &a, &b);
+        esk_am_stamp_j(m, a, br, 1.0);
+        esk_am_stamp_j(m, b, br, -1.0);
+        esk_am_stamp_f(m, a, i[w]);
+        esk_am_stamp_f(m, b, -i[w]);
+        esk_am_stamp_j(m, br, a, 1.0);
+        esk_am_stamp_j(m, br, b, -1.0);
+        for (v = 0; v < s->nw; v++)
+            esk_am_stamp_j(m, br, d->branch[v], -(alpha * s->m[w][v] + (v == w ? s->r[w] : 0.0)));
+        esk_am_stamp_f(m, br, esk_am_v(m, a, b) - vl - s->r[w] * i[w]);
+        s->phi_trial[w] = phi;
+        s->v_trial[w] = vl;
+    }
+    s->trial_first = in ? esk_integ_first_order(in) : 1;
+    s->trial_negligible = in ? esk_integ_negligible(in) : 0;
+}
+
+static void xfmr_load_dc(esk_adev *d, esk_amatrix *m) { xfmr_load(d, m, NULL); }
+static void xfmr_load_tr(esk_adev *d, esk_amatrix *m, const esk_integ *in) { xfmr_load(d, m, in); }
+
+static void xfmr_accept(esk_adev *d, es_time_t t)
+{
+    xfmr_state *s = (xfmr_state *)d->state;
+    int w, k;
+    ES_UNUSED(t);
+    if (s->trial_first) {
+        s->nhist = 1;
+        for (w = 0; w < s->nw; w++)
+            s->v_prev2[w] = s->v_prev[w];
+    } else if (!(s->trial_negligible && s->nhist >= 1)) {
+        if (s->nhist < 2)
+            s->nhist++;
+        for (w = 0; w < s->nw; w++)
+            s->v_prev2[w] = s->v_prev[w];
+    }
+    for (w = 0; w < s->nw; w++) {
+        s->v_prev[w] = s->v_trial[w];
+        s->phi_prev[w] = s->phi_trial[w];
+    }
+    for (k = 0; k < d->nnodes; k++)
+        d->i_last[k] = 0.0;
+    for (w = 0; w < s->nw; w++) {
+        double iw = acc_x(d, d->branch[w]);
+        int pa = w == 0 ? 0 : s->nw == 2 ? 2 : (w == 1 ? 2 : 3), pb = w == 0 ? 1 : s->nw == 2 ? 3 : (w == 1 ? 3 : 4);
+        d->i_last[pa] += iw;
+        d->i_last[pb] -= iw;
+    }
+}
+
+static double xfmr_lte(esk_adev *d, const esk_integ *in)
+{
+    const xfmr_state *s = (const xfmr_state *)d->state;
+    double e = 0.0;
+    int w;
+    for (w = 0; w < s->nw; w++) {
+        double ew = reactive_lte(in, s->v_trial[w], s->v_prev[w], s->v_prev2[w], s->nhist) / (s->l[w] * IND_LTE_SCALE_A);
+        e = ew > e ? ew : e;
+    }
+    return e;
+}
+
+static void xfmr_observe(esk_adev *d, esk_json *o)
+{
+    const xfmr_state *s = (const xfmr_state *)d->state;
+    observe_basic(d, o);
+    esk_json_set_number(d->isl->a, o, "vp", acc_v(d, 0) - acc_v(d, 1));
+    esk_json_set_number(d->isl->a, o, "vs", acc_v(d, 2) - acc_v(d, s->nw == 2 ? 3 : 4));
+    esk_json_set_number(d->isl->a, o, "ip", acc_x(d, d->branch[0]));
+    esk_json_set_number(d->isl->a, o, "is", acc_x(d, d->branch[1]));
+}
+
+static const esk_adev_ops transformer_ops = {"transformer", sizeof(xfmr_state), xfmr_setup, xfmr_load_dc,
+                                             xfmr_load_tr,  xfmr_accept,        NULL,       NULL,
+                                             xfmr_lte,      xfmr_observe,       NULL};
+static const esk_adev_ops transformer_ct_ops = {"transformer_ct", sizeof(xfmr_state), xfmr_ct_setup, xfmr_load_dc,
+                                                xfmr_load_tr,     xfmr_accept,        NULL,          NULL,
+                                                xfmr_lte,         xfmr_observe,       NULL};
 
 /* ---- independent sources --------------------------------------------------------- */
 
@@ -2349,7 +2515,7 @@ static const esk_adev_ops pull_ops = {"pull", sizeof(pull_state), pull_setup, pu
 /* ---- registry ------------------------------------------------------------------------------- */
 
 static const esk_adev_ops *const device_table[] = {
-    &resistor_ops,      &capacitor_ops, &inductor_ops, &vsource_ops,   &isource_ops, &switch_ops,
+    &resistor_ops,      &capacitor_ops, &inductor_ops, &transformer_ops, &transformer_ct_ops, &vsource_ops,   &isource_ops, &switch_ops,
     &potentiometer_ops, &diode_ops,     &led_ops, &rgb_ops,      &zener_ops,     &bjt_npn_ops, &bjt_pnp_ops,
     &nmos_ops,          &pmos_ops,      &opamp_ops,    &regulator_ops, &pull_ops,
     &esk_comparator_ops, &esk_temperature_ops, &esk_timer555_ops,

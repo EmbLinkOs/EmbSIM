@@ -77,7 +77,7 @@ POWER_SIGNAL_RE = re.compile(r"^(V(DD|SS|CC|BAT|DDA|SSA|REF\+?|REF-?|CAP[0-9]*)|
 GPIO_RE = re.compile(r"^P([A-Z])([0-9]+)$")
 
 PRIMITIVE_PINS = {
-    "resistor": ["1", "2"], "capacitor": ["1", "2"], "inductor": ["1", "2"],
+    "resistor": ["1", "2"], "capacitor": ["1", "2"], "inductor": ["1", "2"], "transformer": ["P1", "P2", "S1", "S2"], "transformer_ct": ["P1", "P2", "S1", "CT", "S2"],
     "instrument_input": ["+", "-"], "vsource": ["+", "-"], "isource": ["+", "-"], "switch": ["1", "2"],
     "potentiometer": ["1", "W", "2"], "diode": ["A", "K"], "led": ["A", "K"], "rgb_led": ["R", "COM", "G", "B"], "rgb_indicator": ["R", "COM", "G", "B"], "zener": ["A", "K"],
     "bjt_npn": ["C", "B", "E"], "bjt_pnp": ["C", "B", "E"], "nmos": ["D", "G", "S"],
