@@ -1,0 +1,221 @@
+{
+ "schema_version": 1,
+ "kind": "project",
+ "name": "stm32cubef4-nucleo-f446ze-usb-host-msc",
+ "description": "A NUCLEO-F446ZE running STM32CubeF4's USB_Host/MSC_Standalone, built from ST's unmodified sources (tests/vendor/stm32cubef4/run.py --board nucleo_f446ze puts the image beside this file as sketch.elf), on its ST-LINK's USB power, Adafruit's 1.8\" TFT shield on the Arduino connectors (its LCD on SPI1) and a USB flash drive on CN13, powered by U12 when the firmware drives PG6 high.",
+ "policy": "electrical",
+ "boards": [
+  {
+   "id": "B1",
+   "board": "emblink/nucleo_f446ze",
+   "layout": {
+    "x": 360,
+    "y": 120
+   },
+   "firmware": {
+    "image": "sketch.elf",
+    "format": "elf"
+   }
+  }
+ ],
+ "components": [
+  {
+   "id": "USB",
+   "component": "emblink/vsource",
+   "params": {
+    "kind": "dc",
+    "dc": 5
+   },
+   "layout": {
+    "x": 120,
+    "y": 160
+   }
+  },
+  {
+   "id": "GND1",
+   "component": "emblink/gnd",
+   "layout": {
+    "x": 120,
+    "y": 320
+   }
+  },
+  {
+   "id": "SHIELD",
+   "component": "emblink/adafruit_tft_shield18",
+   "layout": {
+    "x": 620,
+    "y": 80
+   }
+  },
+  {
+   "id": "DRIVE",
+   "component": "emblink/usb_flash_drive",
+   "layout": {
+    "x": 120,
+    "y": 480
+   }
+  }
+ ],
+ "nets": {
+  "USB5V": [
+   "USB.+",
+   "B1.U5V"
+  ],
+  "GND": [
+   "USB.-",
+   "GND1.GND",
+   "B1.GND",
+   "SHIELD.GND",
+   "DRIVE.GND"
+  ],
+  "OTG_VBUS": [
+   "DRIVE.VBUS",
+   "B1.USB_VBUS"
+  ],
+  "OTG_DM": [
+   "DRIVE.DM",
+   "B1.USB_DM"
+  ],
+  "OTG_DP": [
+   "DRIVE.DP",
+   "B1.USB_DP"
+  ],
+  "SH_5V": [
+   "SHIELD.5V",
+   "B1.5V"
+  ],
+  "SH_3V3": [
+   "SHIELD.3V3",
+   "B1.3V3"
+  ],
+  "SH_RESET": [
+   "SHIELD.RESET",
+   "B1.RESET"
+  ],
+  "SH_SCK": [
+   "SHIELD.D13",
+   "B1.D13"
+  ],
+  "SH_MISO": [
+   "SHIELD.D12",
+   "B1.D12"
+  ],
+  "SH_MOSI": [
+   "SHIELD.D11",
+   "B1.D11"
+  ],
+  "SH_CS": [
+   "SHIELD.D10",
+   "B1.D10"
+  ],
+  "SH_DC": [
+   "SHIELD.D8",
+   "B1.D8"
+  ],
+  "SH_SDCS": [
+   "SHIELD.D4",
+   "B1.D4"
+  ],
+  "SH_JOY": [
+   "SHIELD.A3",
+   "B1.A3"
+  ]
+ },
+ "probes": [
+  {
+   "id": "console",
+   "target": "serial:B1",
+   "kind": "serial"
+  },
+  {
+   "id": "led",
+   "target": "net:B1.PB0",
+   "kind": "digital"
+  },
+  {
+   "id": "led2",
+   "target": "net:B1.PB7",
+   "kind": "digital"
+  },
+  {
+   "id": "led3",
+   "target": "net:B1.PB14",
+   "kind": "digital"
+  },
+  {
+   "id": "button",
+   "target": "net:B1.PC13",
+   "kind": "digital"
+  },
+  {
+   "id": "vbus_sense",
+   "target": "net:B1.PA9",
+   "kind": "analog"
+  },
+  {
+   "id": "ld8",
+   "target": "net:B1.USB_VBUS",
+   "kind": "analog"
+  },
+  {
+   "id": "lcd_on",
+   "target": "output:SHIELD.TFT.on",
+   "kind": "value"
+  },
+  {
+   "id": "lcd_writes",
+   "target": "output:SHIELD.TFT.ram_writes",
+   "kind": "value"
+  },
+  {
+   "id": "vbus",
+   "target": "net:B1.USB_VBUS",
+   "kind": "analog"
+  },
+  {
+   "id": "pg6",
+   "target": "net:B1.PG6",
+   "kind": "digital"
+  },
+  {
+   "id": "joy",
+   "target": "net:B1.PF3",
+   "kind": "analog"
+  },
+  {
+   "id": "drive_state",
+   "target": "output:DRIVE.state",
+   "kind": "value"
+  },
+  {
+   "id": "drive_address",
+   "target": "output:DRIVE.address",
+   "kind": "value"
+  },
+  {
+   "id": "drive_files",
+   "target": "output:DRIVE.files",
+   "kind": "value"
+  },
+  {
+   "id": "drive_commands",
+   "target": "output:DRIVE.commands",
+   "kind": "value"
+  },
+  {
+   "id": "drive_last",
+   "target": "output:DRIVE.last_command",
+   "kind": "value"
+  },
+  {
+   "id": "drive_read",
+   "target": "output:DRIVE.sectors_read",
+   "kind": "value"
+  },
+  {
+   "id": "drive_written",
+   "target": "output:DRIVE.sectors_written",
+   "kind": "value"
+  }
+ ]
+}

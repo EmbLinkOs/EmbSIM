@@ -1,8 +1,8 @@
 /* SPDX-License-Identifier: Apache-2.0 */
 /* Copyright 2026 Junior Deogracias */
 /* otg_fs.c -- the STM32F4's USB on-the-go full-speed controller (RM0390
- * 30, the Synopsys DWC2 core) in device mode, over the register file's
- * OTGFS block (tools/importers/dwc2_regs.py), with the host on its cable
+ * 30, the Synopsys DWC2 core) in device and host mode, over the register
+ * file's OTGFS block (tools/importers/dwc2_regs.py), with the host on its cable
  * (engine/usb.h, ADR-031: the bus as transactions).
  *
  * As the core does it:
@@ -52,12 +52,48 @@
  *   - the OTG_FS interrupt is a level: GAHBCFG's GINT and any GINTSTS bit
  *     GINTMSK lets through (DAINT, DAINTMSK and the endpoints' masks
  *     behind IEPINT and OEPINT).
+ *
+ * As a host (CMOD 1: GUSBCFG's FHMOD), as RM0390 30.5 and the HAL's HCD
+ * driver have it:
+ *   - the port: with PPWR set, the pull-up of the device on the cable
+ *     (engine/usb.h) is a connection (PCSTS, PCDET and HPRTINT), its end a
+ *     disconnection (DISCINT, the port disabled, PENCHNG); PRST drives the
+ *     reset's SE0 for as long as it is set, and its end enables the port
+ *     (PENA, PENCHNG) at the device's speed (PSPD 1 full, 2 low); PENA
+ *     written 1 disables it; PSUSP stops the frames, PRES drives resume
+ *     (K) until it is cleared; PLSTS the line's state;
+ *   - the frames: an SOF (a low-speed device's keep-alive) every HFIR's
+ *     FRIVL clocks of HCFG's PHY clock (48 MHz full speed, 6 MHz low
+ *     speed), GINTSTS's SOF and HFNUM's frame number and time left;
+ *   - twelve channels: SETUP (DPID 3), OUT and IN transactions at the bus's
+ *     bit time, OUT's packet once all its words are in the channel's
+ *     transmit FIFO (the non-periodic one, or the periodic one for an
+ *     interrupt or isochronous channel; HNPTXSTS and HPTXSTS their words
+ *     free), one IN token for each CHENA (the HAL re-enables after each
+ *     packet) with room for its packet in the receive FIFO; the device's
+ *     ACK (the data toggle, PKTCNT and XFRSIZ counted down, XFRC and CHENA
+ *     cleared after the last OUT packet), NAK, STALL, no answer (TXERR),
+ *     more than MPSIZ (BBERR), a toggle not expected (DTERR); the channel
+ *     stops after any answer but ACK until the program halts it or
+ *     enables it again; an IN packet's data in the receive FIFO with
+ *     status 2 and, after the last or a short one, status 3, whose taking
+ *     is XFRC; CHDIS with CHENA halts the channel (CHH) once the bus is
+ *     done with it, flushing what it had queued; an interrupt channel
+ *     goes once a frame, in the frames of the parity ODDFRM asks, before
+ *     the non-periodic ones; a transaction starts only if it fits in what
+ *     is left of the frame;
+ *   - HAINT, HAINTMSK, GINTSTS's HCINT, HPRTINT, NPTXFE and PTXFE (TXFELVL
+ *     and PTXFELVL), the interrupt level as in device mode.
  * Inside: the transactions come whole at the time the host part sends
- * them (engine/usb.h); the device's turnaround is not seen. Not yet: host
- * mode (the host channel registers are storage), the ID pin and OTG's SRP
- * and HNP, isochronous endpoints' frame parity and incomplete-transfer
- * interrupts, LPM, the battery-charging detection of GCCFG, the
- * OTG_FS_WKUP interrupt through
+ * them, or this core sends them as a host (engine/usb.h); the device's
+ * turnaround is not seen; a host channel's OUT words are kept per channel
+ * (the core keeps them in its shared FIFO in order: the words free are
+ * the same). Not yet: the ID pin and OTG's SRP and HNP, split
+ * transactions through a hub (one device on a cable), isochronous
+ * endpoints' frame parity and incomplete-transfer interrupts and a host's
+ * isochronous channels' timing, FRMOR, LPM, the battery-charging
+ * detection of GCCFG, the over-current input (the F446 has none: a
+ * board's switch reports it on a GPIO), the OTG_FS_WKUP interrupt through
  * EXTI line 18, the SOF pulse on PA8, DMA (the F446's OTG_FS has none). */
 #include <string.h>
 
@@ -105,6 +141,19 @@
 #define DOEPINT(n) (0xB08u + 0x20u * (u32)(n))
 #define DOEPTSIZ(n) (0xB10u + 0x20u * (u32)(n))
 #define PCGCCTL 0xE00u
+#define HNPTXSTS 0x02Cu
+#define HPTXFSIZ 0x100u
+#define HCFG 0x400u
+#define HFIR 0x404u
+#define HFNUM 0x408u
+#define HPTXSTS 0x410u
+#define HAINT 0x414u
+#define HAINTMSK 0x418u
+#define HPRT 0x440u
+#define HCCHAR(n) (0x500u + 0x20u * (u32)(n))
+#define HCINT(n) (0x508u + 0x20u * (u32)(n))
+#define HCINTMSK(n) (0x50Cu + 0x20u * (u32)(n))
+#define HCTSIZ(n) (0x510u + 0x20u * (u32)(n))
 
 /* bits */
 #define BVALOEN (1u << 6)
@@ -164,11 +213,71 @@
 #define PKT_OUT_DATA 2u
 #define PKT_OUT_DONE 3u
 #define PKT_SETUP_DATA 6u
+/* host mode */
+#define NCH 12
+#define I_NPTXFE (1u << 5)
+#define I_HPRTINT (1u << 24)
+#define I_HCINT (1u << 25)
+#define I_PTXFE (1u << 26)
+#define I_DISCINT (1u << 29)
+#define I_RO_HOST (I_CMOD | I_OTGINT | I_RXFLVL | I_NPTXFE | I_HPRTINT | I_HCINT | I_PTXFE)
+#define PTXFELVL (1u << 8)
+#define FSLSS (1u << 2)
+#define PCSTS (1u << 0)
+#define PCDET (1u << 1)
+#define PENA (1u << 2)
+#define PENCHNG (1u << 3)
+#define POCCHNG (1u << 5)
+#define PRES (1u << 6)
+#define PSUSP (1u << 7)
+#define PRST (1u << 8)
+#define PPWR (1u << 12)
+#define CH_EPDIR (1u << 15)
+#define CH_ODDFRM (1u << 29)
+#define CH_CHDIS (1u << 30)
+#define CH_CHENA (1u << 31)
+#define HC_XFRC (1u << 0)
+#define HC_CHH (1u << 1)
+#define HC_STALL (1u << 3)
+#define HC_NAK (1u << 4)
+#define HC_ACK (1u << 5)
+#define HC_TXERR (1u << 7)
+#define HC_BBERR (1u << 8)
+#define HC_DTERR (1u << 10)
+#define PKT_IN_DATA 2u
+#define PKT_IN_DONE 3u
+#define EPTYP_CTRL 0u
+#define EPTYP_ISOC 1u
+#define EPTYP_INTR 3u
+#define DPID_DATA0 0u
+#define DPID_DATA1 2u
+#define DPID_SETUP 3u
 #define STPPCLK (1u << 0)
 #define GATEHCLK (1u << 1)
 
 struct txq {
     u32 rd, used; /* words, within the FIFO's place in the RAM */
+};
+
+/* a host channel: its OUT data as written to its FIFO window (the core
+ * keeps it in the shared FIFO, in order: the program's view, the words
+ * free, is the same) */
+struct hch {
+    u32 w[FIFO_WORDS];
+    u32 rd, used;
+    int req;      /* IN: a token asked for (each CHENA, one packet) */
+    int stopped;  /* NAK, STALL, an error: no tokens until re-enabled */
+    int halting;  /* CHDIS with CHENA: CHH once the bus is done with it */
+    u32 sent;     /* the frame a periodic channel last went in */
+    int sent_ok;
+};
+
+/* the transaction on the bus: its answer, posted when its bits end */
+struct hxact {
+    int ch, kind, ans; /* kind: 0 SETUP, 1 OUT, 2 IN */
+    u32 len, words;
+    int data1;
+    u8 data[1024];
 };
 
 struct otg {
@@ -195,6 +304,17 @@ struct otg {
     u32 mode_want; /* CMOD once mode_ps has passed */
     int mode_wait;
     int warned_fifo, warned_rx;
+    /* host mode: the port and the bus it drives */
+    struct hch ch[NCH];
+    struct hxact x;
+    int h_on;            /* host mode as last seen */
+    int h_conn, h_speed; /* a device's pull-up seen (PCSTS), its speed */
+    int h_ena, h_rst, h_susp, h_res;
+    u32 h_frame;
+    u64 h_frame_ps;      /* into the frame */
+    u64 h_busy_ps;       /* the transaction on the bus: its bits still to go */
+    int h_busy, h_rr;
+    int h_kick; /* the program changed something: the bus looks again */
 };
 
 /* ---- registers --------------------------------------------------------- */
@@ -386,6 +506,10 @@ static u32 out_mps(const struct otg *o, int ep)
     return ep == 0 ? ep0[rv(o, DIEPCTL(0)) & 3u] : rv(o, DOEPCTL(ep)) & 0x7ffu;
 }
 
+static void host_refresh(struct otg *o);
+static void port_check(struct otg *o);
+static int host_clock(const struct otg *o);
+
 /* the read-only bits that follow the core's state, and the interrupt */
 static void refresh(struct otg *o)
 {
@@ -395,6 +519,10 @@ static void refresh(struct otg *o)
         rbits(o, GOTGINT, SEDET, 0); /* the session ended */
     o->session = session;
     rset(o, GOTGCTL, (rv(o, GOTGCTL) & ~(CIDSTS | BSVLD | (1u << 18) | (1u << 17))) | CIDSTS | (session ? BSVLD : 0u));
+    if (!device_mode(o)) {
+        host_refresh(o);
+        return;
+    }
     rbits(o, DOEPCTL(0), rv(o, DIEPCTL(0)) & 3u, 3u);
     for (ep = 0; ep < NEP; ep++) {
         u32 d, s0, free = tx_free(o, ep), emp, iin;
@@ -444,7 +572,7 @@ static void refresh(struct otg *o)
  * bus's idle time towards a suspend */
 static void clock_check(struct otg *o)
 {
-    int on = o->mode_wait || (o->pulled && !o->suspended);
+    int on = o->mode_wait || (o->pulled && !o->suspended) || host_clock(o);
     if (on && !o->running)
         o->since = o->s->cycles;
     esk_rf_clock(o->p, &o->running, on);
@@ -452,10 +580,479 @@ static void clock_check(struct otg *o)
 
 static void after(struct otg *o)
 {
+    port_check(o);
     refresh(o);
     tell_host(o);
     refresh(o);
     clock_check(o);
+}
+
+/* ---- host mode: the port ---------------------------------------------------- */
+
+static int host_mode(const struct otg *o) { return (rv(o, GINTSTS) & I_CMOD) != 0; }
+
+static int host_live(const struct otg *o) { return o->h_ena && !o->h_susp && !o->h_rst; }
+
+static int ch_periodic(const struct otg *o, int n)
+{
+    u32 t = (rv(o, HCCHAR(n)) >> 18) & 3u;
+    return t == EPTYP_INTR || t == EPTYP_ISOC;
+}
+
+static int host_clock(const struct otg *o)
+{
+    int n;
+    if (!host_mode(o))
+        return 0;
+    if (host_live(o) || o->h_busy || o->h_kick)
+        return 1;
+    for (n = 0; n < NCH; n++)
+        if (o->ch[n].halting)
+            return 1;
+    return 0;
+}
+
+/* the bus state the port drives, to the device on the cable */
+static void h_bus(struct otg *o, int ev)
+{
+    if (o->s->host.usbh_bus)
+        o->s->host.usbh_bus(o->s->host.ctx, ev, o->h_frame & 0x7ffu);
+}
+
+/* the frame: HFIR's FRIVL clocks of the PHY's (HCFG's FSLSPCS: 48 MHz
+ * for full speed, 6 MHz for low speed; 0, the 30/60 MHz of an external
+ * PHY's, is taken as 60) */
+static u32 phy_mhz(const struct otg *o)
+{
+    u32 cs = rv(o, HCFG) & 3u;
+    return cs == 1u ? 48u : cs == 2u ? 6u : 60u;
+}
+
+static u64 frame_len(const struct otg *o)
+{
+    u64 f = rv(o, HFIR) & 0xffffu;
+    return (f ? f : 1u) * 1000000ull / phy_mhz(o);
+}
+
+static void new_frame(struct otg *o)
+{
+    o->h_frame_ps = 0;
+    o->h_frame = (o->h_frame + 1u) & 0x3fffu;
+    rbits(o, GINTSTS, I_SOF, 0);
+    h_bus(o, ESK_USB_SOF); /* an SOF at full speed, a keep-alive at low */
+}
+
+static void host_drop(struct otg *o)
+{
+    o->h_conn = o->h_ena = o->h_rst = o->h_susp = o->h_res = 0;
+    o->h_busy = 0;
+}
+
+/* the device's pull-up while the port is powered: a connection (PCDET)
+ * or its end (DISCINT; the port is disabled) */
+static void port_check(struct otg *o)
+{
+    int p = ESK_USB_DETACHED;
+    if (!host_mode(o)) {
+        if (o->h_on)
+            host_drop(o);
+        o->h_on = 0;
+        return;
+    }
+    o->h_on = 1;
+    if ((rv(o, HPRT) & PPWR) && !esk_rf_gated(o->p) && o->s->host.usbh_pullup)
+        p = o->s->host.usbh_pullup(o->s->host.ctx);
+    if (p != ESK_USB_DETACHED && !o->h_conn) {
+        o->h_conn = 1;
+        o->h_speed = p;
+        rbits(o, HPRT, PCDET, 0);
+    } else if (p == ESK_USB_DETACHED && o->h_conn) {
+        if (o->h_ena)
+            rbits(o, HPRT, PENCHNG, 0);
+        host_drop(o);
+        rbits(o, GINTSTS, I_DISCINT, 0);
+    }
+}
+
+static void hprt_write(struct otg *o, u32 v, u32 old)
+{
+    u32 r = rv(o, HPRT);
+    if ((v & PENA) && o->h_ena) {
+        /* PENA written 1: the program disables the port */
+        o->h_ena = o->h_susp = 0;
+        rbits(o, HPRT, PENCHNG, 0);
+    }
+    port_check(o); /* PPWR */
+    if ((r & PRST) && !o->h_rst && o->h_conn) {
+        /* the reset's SE0: the port is disabled while it lasts */
+        o->h_rst = 1;
+        o->h_ena = o->h_susp = o->h_res = 0;
+        h_bus(o, ESK_USB_RESET);
+    } else if (!(r & PRST) && o->h_rst) {
+        int p = o->s->host.usbh_pullup ? o->s->host.usbh_pullup(o->s->host.ctx) : ESK_USB_DETACHED;
+        o->h_rst = 0;
+        h_bus(o, ESK_USB_RESET_END);
+        if (p != ESK_USB_DETACHED) {
+            /* enabled at the speed the device's pull-up says */
+            o->h_speed = p;
+            o->h_ena = 1;
+            rbits(o, HPRT, PENCHNG, 0);
+            new_frame(o);
+        }
+    }
+    if ((v & PSUSP) && o->h_ena && !o->h_susp)
+        o->h_susp = 1; /* no more SOFs: the device suspends after 3 ms */
+    if ((r & PRES) && !(old & PRES) && o->h_conn && !o->h_res) {
+        o->h_res = 1;
+        h_bus(o, ESK_USB_RESUME);
+    } else if (!(r & PRES) && o->h_res) {
+        o->h_res = 0;
+        h_bus(o, ESK_USB_RESUME_END);
+        if (o->h_susp) {
+            o->h_susp = 0;
+            new_frame(o);
+        }
+    }
+    rbits(o, HPRT, 0, PSUSP);
+}
+
+/* ---- host mode: the channels ------------------------------------------------ */
+
+/* the non-periodic (0) or periodic (1) transmit FIFO: its depth, the words
+ * in it */
+static u32 htx_depth(const struct otg *o, int per)
+{
+    u32 d = (per ? rv(o, HPTXFSIZ) : rv(o, DIEPTXF0)) >> 16;
+    return d < 16u ? 16u : d;
+}
+
+static u32 htx_used(const struct otg *o, int per)
+{
+    u32 n = 0;
+    int c;
+    for (c = 0; c < NCH; c++)
+        if (ch_periodic(o, c) == per)
+            n += o->ch[c].used;
+    return n;
+}
+
+static void hch_push(struct otg *o, int n, u32 w)
+{
+    struct hch *h = &o->ch[n];
+    int per = ch_periodic(o, n);
+    if (htx_used(o, per) >= htx_depth(o, per) || h->used >= FIFO_WORDS)
+        return; /* the FIFO is full: the word is lost, as on the part */
+    h->w[(h->rd + h->used) % FIFO_WORDS] = w;
+    h->used++;
+}
+
+static void hch_drop(struct otg *o, int n)
+{
+    o->ch[n].rd = o->ch[n].used = 0;
+}
+
+static void hch_halted(struct otg *o, int n)
+{
+    struct hch *h = &o->ch[n];
+    h->halting = h->req = h->stopped = 0;
+    hch_drop(o, n); /* its requests and the data still queued are flushed */
+    rbits(o, HCCHAR(n), 0, CH_CHENA | CH_CHDIS);
+    rbits(o, HCINT(n), HC_CHH, 0);
+}
+
+static void hcchar_write(struct otg *o, int n, u32 old)
+{
+    u32 c = rv(o, HCCHAR(n));
+    struct hch *h = &o->ch[n];
+    if ((c & CH_CHDIS) && (c & CH_CHENA)) {
+        h->halting = 1; /* CHENA stays set until the halt is done */
+    } else if ((c & CH_CHENA) && !h->halting) {
+        h->stopped = 0;
+        if (c & CH_EPDIR)
+            h->req = 1; /* one IN token per enable (the HAL's re-enable) */
+        if (!(old & CH_CHENA))
+            h->sent_ok = 0;
+    }
+}
+
+static es_time_t hx_time(const struct otg *o, int len, int hs)
+{
+    return o->h_speed == ESK_USB_LOW_SPEED ? esk_usb_ls_time(len, hs) : esk_usb_fs_time(len, hs);
+}
+
+/* the channel's next transaction, if it can go: its kind and length */
+static int ch_ready(const struct otg *o, int n, int *kind, u32 *len)
+{
+    u32 c = rv(o, HCCHAR(n)), t = rv(o, HCTSIZ(n)), mps = c & 0x7ffu;
+    u32 pkt = (t >> 19) & 0x3ffu, xfr = t & 0x7ffffu;
+    const struct hch *h = &o->ch[n];
+    if (!(c & CH_CHENA) || (c & CH_CHDIS) || h->halting || h->stopped || !pkt)
+        return 0;
+    if (ch_periodic(o, n)) {
+        /* once a frame, in the frames of the parity ODDFRM asks */
+        if (((o->h_frame & 1u) != 0) != ((c & CH_ODDFRM) != 0))
+            return 0;
+        if (h->sent_ok && h->sent == o->h_frame)
+            return 0;
+    }
+    if (c & CH_EPDIR) {
+        if (!h->req || o->rx_used + 2u + (mps + 3u) / 4u > rx_depth(o))
+            return 0; /* no token without room for the packet */
+        *kind = 2;
+        *len = mps;
+    } else if (((t >> 29) & 3u) == DPID_SETUP) {
+        *kind = 0;
+        *len = 8;
+        if (h->used < 2u)
+            return 0;
+    } else {
+        *kind = 1;
+        *len = xfr < mps ? xfr : mps;
+        if (h->used < (*len + 3u) / 4u)
+            return 0; /* the packet is not all in the FIFO yet */
+    }
+    return 1;
+}
+
+static void hx_start(struct otg *o, int n, int kind, u32 len)
+{
+    struct hxact *x = &o->x;
+    struct hch *h = &o->ch[n];
+    u32 c = rv(o, HCCHAR(n)), t = rv(o, HCTSIZ(n)), i;
+    int addr = (int)((c >> 22) & 0x7fu), ep = (int)((c >> 11) & 0xfu), dlen;
+    struct esk_mach_host *hs = &o->s->host;
+    x->ch = n;
+    x->kind = kind;
+    x->len = len;
+    x->data1 = 0;
+    x->ans = ESK_USB_NONE;
+    if (kind != 2) {
+        for (i = 0; i < len; i++)
+            x->data[i] = (u8)(h->w[(h->rd + i / 4u) % FIFO_WORDS] >> (8u * (i & 3u)));
+        if (kind == 0 && hs->usbh_setup)
+            x->ans = hs->usbh_setup(hs->ctx, addr, ep, x->data);
+        else if (kind == 1 && hs->usbh_out)
+            x->ans = hs->usbh_out(hs->ctx, addr, ep, ((t >> 29) & 3u) == DPID_DATA1, x->data, len);
+        dlen = (int)len;
+    } else {
+        u32 got = 0;
+        int d1 = 0;
+        if (hs->usbh_in)
+            x->ans = hs->usbh_in(hs->ctx, addr, ep, x->data, sizeof x->data, &got, &d1);
+        x->len = got;
+        x->data1 = d1;
+        dlen = x->ans == ESK_USB_ACK ? (int)got : -1;
+    }
+    if (ch_periodic(o, n)) {
+        h->sent = o->h_frame;
+        h->sent_ok = 1;
+    }
+    o->h_busy = 1;
+    o->h_busy_ps = hx_time(o, dlen, x->ans != ESK_USB_NONE);
+    if (!o->h_busy_ps)
+        o->h_busy_ps = 1;
+}
+
+/* the transaction's bits are done: its answer on the channel */
+static void hx_end(struct otg *o)
+{
+    struct hxact *x = &o->x;
+    int n = x->ch;
+    struct hch *h = &o->ch[n];
+    u32 c = rv(o, HCCHAR(n)), t = rv(o, HCTSIZ(n)), mps = c & 0x7ffu;
+    u32 pkt = (t >> 19) & 0x3ffu, xfr = t & 0x7ffffu, dpid = (t >> 29) & 3u, words;
+    o->h_busy = 0;
+    if (x->ans != ESK_USB_ACK) {
+        h->stopped = 1;
+        h->req = 0;
+        rbits(o, HCINT(n), x->ans == ESK_USB_NAK ? HC_NAK : x->ans == ESK_USB_STALL ? HC_STALL : HC_TXERR, 0);
+        return;
+    }
+    if (x->kind == 2) {
+        h->req = 0;
+        if (x->len > mps) {
+            h->stopped = 1; /* babble: more than MPSIZ */
+            rbits(o, HCINT(n), HC_BBERR, 0);
+            return;
+        }
+        if ((x->data1 != 0) != (dpid == DPID_DATA1)) {
+            h->stopped = 1; /* the PID the channel did not expect */
+            rbits(o, HCINT(n), HC_DTERR, 0);
+            return;
+        }
+        (void)rx_push(o, (u32)n | x->len << 4 | dpid << 15 | PKT_IN_DATA << 17, x->data, x->len);
+        dpid = dpid == DPID_DATA1 ? DPID_DATA0 : DPID_DATA1;
+        pkt--;
+        xfr = xfr > x->len ? xfr - x->len : 0;
+        rbits(o, HCINT(n), HC_ACK, 0);
+        if (!pkt || x->len < mps) /* XFRC when this status is taken */
+            (void)rx_push(o, (u32)n | dpid << 15 | PKT_IN_DONE << 17, 0, 0);
+    } else {
+        words = (x->len + 3u) / 4u;
+        h->rd = (h->rd + words) % FIFO_WORDS;
+        h->used = h->used > words ? h->used - words : 0;
+        rbits(o, HCINT(n), HC_ACK, 0);
+        if (x->kind == 0)
+            dpid = DPID_DATA1; /* the data stage starts at DATA1 */
+        else
+            dpid = dpid == DPID_DATA1 ? DPID_DATA0 : DPID_DATA1;
+        pkt--;
+        xfr = xfr > x->len ? xfr - x->len : 0;
+        if (!pkt) {
+            rbits(o, HCINT(n), HC_XFRC, 0);
+            rbits(o, HCCHAR(n), 0, CH_CHENA);
+        }
+    }
+    rset(o, HCTSIZ(n), (t & ~(0x3ffu << 19) & ~0x7ffffu & ~(3u << 29)) | pkt << 19 | xfr | dpid << 29);
+}
+
+/* the bus is free: the halts asked for, then the next transaction, the
+ * periodic channels first */
+static void host_pick(struct otg *o)
+{
+    int n, k, per, kind;
+    u32 len;
+    for (n = 0; n < NCH; n++)
+        if (o->ch[n].halting && !(o->h_busy && o->x.ch == n))
+            hch_halted(o, n);
+    if (o->h_busy || !host_live(o))
+        return;
+    for (per = 1; per >= 0; per--)
+        for (k = 0; k < NCH; k++) {
+            n = (o->h_rr + k) % NCH;
+            if (ch_periodic(o, n) != per || !ch_ready(o, n, &kind, &len))
+                continue;
+            if (o->h_frame_ps + (u64)hx_time(o, (int)len, 1) > frame_len(o))
+                continue; /* not in what is left of the frame */
+            o->h_rr = (n + 1) % NCH;
+            hx_start(o, n, kind, len);
+            return;
+        }
+}
+
+/* the host's time: transactions' ends and frames */
+static int host_run(struct otg *o, u64 ps)
+{
+    int ev = 0, guard;
+    if (o->h_kick) {
+        o->h_kick = 0;
+        host_pick(o);
+        ev = 1;
+    }
+    for (guard = 0; guard < 100000; guard++) {
+        int live = host_live(o);
+        u64 fl = frame_len(o), step = ~0ull;
+        if (live)
+            step = fl > o->h_frame_ps ? fl - o->h_frame_ps : 0;
+        if (o->h_busy && o->h_busy_ps < step)
+            step = o->h_busy_ps;
+        if (step == ~0ull)
+            break;
+        if (step > ps) {
+            if (live)
+                o->h_frame_ps += ps;
+            if (o->h_busy)
+                o->h_busy_ps -= ps;
+            break;
+        }
+        ps -= step;
+        if (live)
+            o->h_frame_ps += step;
+        if (o->h_busy) {
+            o->h_busy_ps -= step;
+            if (!o->h_busy_ps)
+                hx_end(o);
+        }
+        if (live && o->h_frame_ps >= fl)
+            new_frame(o);
+        host_pick(o);
+        ev = 1;
+    }
+    return ev;
+}
+
+static u64 host_next(const struct otg *o)
+{
+    u64 left = ~0ull, fl;
+    if (!host_mode(o))
+        return left;
+    if (o->h_kick)
+        return 0;
+    if (host_live(o)) {
+        fl = frame_len(o);
+        left = fl > o->h_frame_ps ? fl - o->h_frame_ps : 0;
+    }
+    if (o->h_busy && o->h_busy_ps < left)
+        left = o->h_busy_ps;
+    return left;
+}
+
+static void host_refresh(struct otg *o)
+{
+    u32 haint = 0, st, hprt, lvl, used, d, ft;
+    int n, np_empty, p_empty;
+    u64 fl = frame_len(o);
+    for (n = 0; n < NCH; n++)
+        if (rv(o, HCINT(n)) & rv(o, HCINTMSK(n)))
+            haint |= 1u << n;
+    rset(o, HAINT, haint);
+    /* the transmit FIFOs' words free; the request queues never fill (the
+     * HAL's halt reads their space) */
+    used = htx_used(o, 0);
+    d = htx_depth(o, 0);
+    rset(o, HNPTXSTS, (used >= d ? 0u : d - used) | 8u << 16);
+    np_empty = (rv(o, GAHBCFG) & TXFELVL) ? used == 0 : used <= d / 2u;
+    used = htx_used(o, 1);
+    d = htx_depth(o, 1);
+    rset(o, HPTXSTS, (used >= d ? 0u : d - used) | 8u << 16);
+    p_empty = (rv(o, GAHBCFG) & PTXFELVL) ? used == 0 : used <= d / 2u;
+    rbits(o, HCFG, FSLSS, 0); /* FS and LS only */
+    ft = host_live(o) && fl > o->h_frame_ps ? (u32)((fl - o->h_frame_ps) * phy_mhz(o) / 1000000ull) : 0u;
+    rset(o, HFNUM, (o->h_frame & 0xffffu) | (ft & 0xffffu) << 16);
+    hprt = rv(o, HPRT) & ~(PCSTS | PENA | PSUSP | (3u << 10) | (3u << 17));
+    if (o->h_conn) {
+        u32 j = o->h_speed == ESK_USB_LOW_SPEED ? 2u : 1u; /* J: D- high at low speed, D+ at full */
+        hprt |= PCSTS | (o->h_speed == ESK_USB_LOW_SPEED ? 2u : 1u) << 17;
+        if (!o->h_rst)
+            hprt |= (o->h_res ? 3u - j : j) << 10;
+    }
+    if (o->h_ena)
+        hprt |= PENA;
+    if (o->h_susp)
+        hprt |= PSUSP;
+    rset(o, HPRT, hprt);
+    st = rv(o, GINTSTS) & ~I_RO_HOST;
+    st |= I_CMOD;
+    if (rv(o, GOTGINT))
+        st |= I_OTGINT;
+    if (o->rx_statuses && !o->rx_left)
+        st |= I_RXFLVL;
+    if (np_empty)
+        st |= I_NPTXFE;
+    if (p_empty)
+        st |= I_PTXFE;
+    if (hprt & (PCDET | PENCHNG | POCCHNG))
+        st |= I_HPRTINT;
+    if (haint & rv(o, HAINTMSK))
+        st |= I_HCINT;
+    rset(o, GINTSTS, st);
+    lvl = (rv(o, GAHBCFG) & GINT) && (st & rv(o, GINTMSK));
+    esk_rf_irq_level(o->p, o->irq, (int)lvl, &o->level);
+}
+
+static void host_changed(void *ctx)
+{
+    struct otg *o = (struct otg *)ctx;
+    o->h_kick = host_mode(o);
+    after(o);
+}
+
+static void host_wakeup(void *ctx)
+{
+    struct otg *o = (struct otg *)ctx;
+    if (host_mode(o) && o->h_susp)
+        rbits(o, GINTSTS, I_WKUINT, 0); /* the device's remote wakeup (K) */
+    after(o);
 }
 
 /* ---- the core's resets --------------------------------------------------- */
@@ -497,6 +1094,17 @@ static void core_soft_reset(struct otg *o)
     o->setup_done = 0;
     o->addr = 0;
     o->addr_pending = 0;
+    /* the host channels; the port follows its line */
+    for (ep = 0; ep < NCH; ep++) {
+        rset(o, HCCHAR(ep), 0);
+        rset(o, HCINT(ep), 0);
+        rset(o, HCINTMSK(ep), 0);
+        rset(o, HCTSIZ(ep), 0);
+        memset(&o->ch[ep], 0, sizeof o->ch[ep]);
+    }
+    rset(o, HAINT, 0);
+    rset(o, HAINTMSK, 0);
+    o->h_busy = 0;
 }
 
 /* CSRST completes once the 48 MHz clock runs: the PHY's domain resets
@@ -516,6 +1124,16 @@ static void take_status(struct otg *o, u32 st)
     int ep = (int)(st & 0xfu);
     u32 pkt = (st >> 17) & 0xfu, bcnt = (st >> 4) & 0x7ffu;
     o->rx_statuses--;
+    if (host_mode(o)) {
+        /* a channel's IN data (2), its transfer done (3): XFRC */
+        o->rx_left = pkt == PKT_IN_DATA ? (bcnt + 3u) / 4u : 0;
+        if (pkt == PKT_IN_DONE && ep < NCH) {
+            rbits(o, HCINT(ep), HC_XFRC, 0);
+            rbits(o, HCCHAR(ep), 0, CH_CHENA);
+        }
+        o->h_kick = 1; /* room in the receive FIFO */
+        return;
+    }
     o->rx_left = pkt == PKT_OUT_DATA || pkt == PKT_SETUP_DATA ? (bcnt + 3u) / 4u : 0;
     if (ep >= NEP)
         return;
@@ -634,7 +1252,11 @@ static void otg_write(void *ctx, u32 off, int n, u32 v)
     int ep;
     if (off >= WIN_BASE && off < WIN_END) {
         ep = (int)((off - WIN_BASE) >> 12);
-        if (ep < NEP)
+        if (host_mode(o)) {
+            if (ep < NCH)
+                hch_push(o, ep, v);
+            o->h_kick = 1;
+        } else if (ep < NEP)
             tx_push(o, ep, v);
         after(o);
         return;
@@ -704,7 +1326,14 @@ static void otg_write(void *ctx, u32 off, int n, u32 v)
         if (((rv(o, DCFG) ^ old) >> 4) & 0x7fu)
             o->addr_pending = 1;
         break;
+    case HPRT:
+        if (host_mode(o))
+            hprt_write(o, v, old);
+        break;
     default:
+        for (ep = 0; ep < NCH; ep++)
+            if (a == HCCHAR(ep) && host_mode(o))
+                hcchar_write(o, ep, old);
         for (ep = 0; ep < NEP; ep++) {
             if (a == DIEPCTL(ep))
                 ctl_in(o, ep, v, old);
@@ -713,6 +1342,8 @@ static void otg_write(void *ctx, u32 off, int n, u32 v)
         }
         break;
     }
+    if (host_mode(o))
+        o->h_kick = 1;
     after(o);
 }
 
@@ -951,6 +1582,8 @@ static void otg_tick(void *ctx, u32 cycles)
             changed = 1;
         }
     }
+    if (host_mode(o) && host_run(o, ps))
+        changed = 1;
     if (o->pulled && !o->suspended && !o->reset_on && !o->resume_on) {
         o->idle_ps += ps;
         if (o->idle_ps >= SUSPEND_PS) {
@@ -976,9 +1609,11 @@ static int otg_next(void *ctx, u32 *cycles)
         left = MODE_PS - o->mode_ps;
     if (o->pulled && !o->suspended && !o->reset_on && !o->resume_on && SUSPEND_PS - o->idle_ps < left)
         left = SUSPEND_PS - o->idle_ps;
+    if (host_next(o) < left)
+        left = host_next(o);
     if (left == ~0ull)
         return 0;
-    c = left / 1000000ull * (core_hz(o) / 1000000u) + 1u;
+    c = left / 1000000ull * (core_hz(o) / 1000000u) + (left % 1000000ull) * (core_hz(o) / 1000000u) / 1000000ull + 1u;
     *cycles = c > 0xffffffffu ? 0xffffffffu : (u32)c;
     return 1;
 }
@@ -1004,6 +1639,12 @@ static void otg_reset(void *ctx)
     o->level = 0;
     o->warned_fifo = o->warned_rx = 0;
     o->pulled = 0;
+    memset(o->ch, 0, sizeof o->ch);
+    host_drop(o);
+    o->h_on = o->h_kick = 0;
+    o->h_frame = 0;
+    o->h_frame_ps = o->h_busy_ps = 0;
+    o->h_rr = 0;
     if (o->s->host.pin_watch)
         (void)o->s->host.pin_watch(o->s->host.ctx, 0, 9, 0, VBUS_VALID_V);
     if (was && o->s->host.usb_changed)
@@ -1047,5 +1688,7 @@ void *esk_stm32_otg_fs_create(struct esk_mach *m, struct esk_rf_periph *p)
     m->usb.setup = usb_setup;
     m->usb.out = usb_out;
     m->usb.in = usb_in;
+    m->usb.host_changed = host_changed;
+    m->usb.host_wakeup = host_wakeup;
     return o;
 }

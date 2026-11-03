@@ -1,0 +1,70 @@
+{
+ "schema_version": 1,
+ "kind": "component_test",
+ "name": "joy-down",
+ "description": "DOWN pressed: A3 inside the window ST's BSP reads as JOY_DOWN (ADC codes 50 to 130 at 3.3 V).",
+ "policy": "electrical",
+ "until": "4ms",
+ "circuit": {
+  "components": [
+   {
+    "id": "V33",
+    "component": "emblink/vsource",
+    "params": {
+     "kind": "dc",
+     "dc": 3.3
+    }
+   },
+   {
+    "id": "V5",
+    "component": "emblink/vsource",
+    "params": {
+     "kind": "dc",
+     "dc": 5.0
+    }
+   },
+   {
+    "id": "DUT",
+    "component": "emblink/adafruit_tft_shield18"
+   },
+   {
+    "id": "G",
+    "component": "emblink/gnd"
+   }
+  ],
+  "nets": {
+   "P33": [
+    "V33.+",
+    "DUT.3V3"
+   ],
+   "P5": [
+    "V5.+",
+    "DUT.5V"
+   ],
+   "GND": [
+    "V33.-",
+    "V5.-",
+    "DUT.GND",
+    "G.GND"
+   ],
+   "A3": [
+    "DUT.A3"
+   ]
+  }
+ },
+ "expect": {
+  "net:A3": {
+   "at": "3ms",
+   "min_v": 0.040293040293040296,
+   "max_v": 0.10476190476190476
+  }
+ },
+ "inputs": [
+  {
+   "at": "1ms",
+   "target": "DUT.DOWN",
+   "input": "pressed",
+   "value": true
+  }
+ ]
+}

@@ -1,0 +1,68 @@
+{
+ "schema_version": 1,
+ "kind": "component_test",
+ "name": "bgr-inverted",
+ "description": "MADCTL's BGR bit swaps red and blue on the panel, and INVON inverts: a pure red pixel (F800) at frame memory (0, 0), the panel's bottom right, shows as the inverse of blue, FFE0.",
+ "policy": "functional",
+ "until": "20ms",
+ "circuit": {
+  "components": [
+   {
+    "id": "PG",
+    "component": "emblink/pattern_generator",
+    "params": {
+     "pattern": "0,1,0,1,0,1,2,3,0,1,0,1,0,1,2,3,9,0,1,0,1,2,3,0,1,2,3,0,1,0,1,2,3,9,0,1,0,1,2,3,2,3,2,3,0,1,2,3,0,1,9,4,5,4,5,4,5,4,5,4,5,6,7,4,5,6,7,d,0,1,0,1,2,3,2,3,0,1,2,3,2,3,0,1,9,4,5,4,5,4,5,4,5,6,7,4,5,4,5,4,5,d,0,1,0,1,2,3,0,1,0,1,0,1,0,1,2,3,9,0,1,0,1,2,3,0,1,2,3,0,1,2,3,0,1,9,4,5,4,5,4,5,4,5,4,5,4,5,4,5,4,5,4,5,4,5,4,5,4,5,4,5,4,5,4,5,4,5,4,5,4,5,4,5,4,5,4,5,4,5,4,5,4,5,4,5,4,5,4,5,4,5,4,5,4,5,4,5,4,5,d,0,1,0,1,2,3,0,1,2,3,0,1,2,3,2,3,9,4,5,4,5,4,5,4,5,4,5,4,5,4,5,4,5,4,5,4,5,4,5,4,5,4,5,4,5,4,5,4,5,4,5,4,5,4,5,4,5,4,5,4,5,4,5,4,5,4,5,4,5,4,5,4,5,4,5,4,5,4,5,4,5,d,0,1,0,1,2,3,0,1,2,3,2,3,0,1,0,1,9,6,7,6,7,6,7,6,7,6,7,4,5,4,5,4,5,4,5,4,5,4,5,4,5,4,5,4,5,4,5,4,5,d",
+     "period": 1e-07,
+     "start": 0.006,
+     "idle": 9
+    }
+   },
+   {
+    "id": "DUT",
+    "component": "emblink/st7735_tft18"
+   }
+  ],
+  "nets": {
+   "SCK": [
+    "PG.OUT0",
+    "DUT.SCK"
+   ],
+   "SDA": [
+    "PG.OUT1",
+    "DUT.SDA"
+   ],
+   "DC": [
+    "PG.OUT2",
+    "DUT.DC"
+   ],
+   "CS": [
+    "PG.OUT3",
+    "DUT.CS"
+   ]
+  }
+ },
+ "expect": {
+  "output:DUT.probe": {
+   "at": "19ms",
+   "equals": 65504
+  },
+  "output:DUT.inverted": {
+   "at": "19ms",
+   "equals": true
+  }
+ },
+ "inputs": [
+  {
+   "at": "18ms",
+   "target": "DUT",
+   "input": "probe_x",
+   "value": 127
+  },
+  {
+   "at": "18ms",
+   "target": "DUT",
+   "input": "probe_y",
+   "value": 159
+  }
+ ]
+}

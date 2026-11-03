@@ -600,6 +600,14 @@ export const TAXONOMY: { categories: TaxonomyCategory[]; legacy: Record<string, 
             "fr": "Injection de défauts",
             "es": "Inyección de fallos"
           }
+        },
+        {
+          "id": "usb_devices",
+          "name": {
+            "en": "USB devices",
+            "fr": "Périphériques USB",
+            "es": "Dispositivos USB"
+          }
         }
       ]
     },

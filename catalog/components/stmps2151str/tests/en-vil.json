@@ -1,0 +1,68 @@
+{
+  "schema_version": 1,
+  "kind": "component_test",
+  "name": "en-vil",
+  "description": "0.8 V on EN (the datasheet's VIL with 5 V on IN): off, the 10 ohm load sees nothing.",
+  "policy": "electrical",
+  "until": "2ms",
+  "circuit": {
+    "components": [
+      {
+        "id": "VS",
+        "component": "emblink/vsource",
+        "params": {
+          "dc": 5.0
+        }
+      },
+      {
+        "id": "VE",
+        "component": "emblink/vsource",
+        "params": {
+          "dc": 0.8
+        }
+      },
+      {
+        "id": "DUT",
+        "component": "emblink/stmps2151str"
+      },
+      {
+        "id": "RL",
+        "component": "emblink/resistor",
+        "params": {
+          "resistance": 10.0
+        }
+      },
+      {
+        "id": "G0",
+        "component": "emblink/gnd"
+      }
+    ],
+    "nets": {
+      "IN": [
+        "VS.+",
+        "DUT.IN"
+      ],
+      "EN": [
+        "VE.+",
+        "DUT.EN"
+      ],
+      "OUT": [
+        "DUT.OUT",
+        "RL.1"
+      ],
+      "GND": [
+        "VS.-",
+        "VE.-",
+        "RL.2",
+        "DUT.GND",
+        "G0.GND"
+      ]
+    }
+  },
+  "expect": {
+    "net:OUT": {
+      "at": "1ms",
+      "max_v": 0.01
+    }
+  }
+}

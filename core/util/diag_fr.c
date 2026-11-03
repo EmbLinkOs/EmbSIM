@@ -43,6 +43,11 @@ static const fr_row rows[] = {
       "une adresse de périphérique va de 1 à 127" },
     { "usb_host.reset", "a port reset lasts at least 10 ms (USB 2.0 7.1.7.5)",
       "une réinitialisation de port dure au moins 10 ms (USB 2.0 7.1.7.5)" },
+    { "st7735.reset_wait",
+      "a byte came within 5 ms of the controller's reset (RESX, SWRESET or power-up): the "
+      "ST7735R's reset cancel time is up to 5 ms, so a part may miss it",
+      "un octet est arrivé moins de 5 ms après la réinitialisation du contrôleur (RESX, SWRESET ou mise sous tension) : "
+      "le temps d'annulation de réinitialisation du ST7735R va jusqu'à 5 ms, un exemplaire peut donc le manquer" },
     { "web_server.body", "the body is at most %d bytes",
       "le corps fait au plus %d octets" },
     { "web_server.params", "an IPv4 address, a latency of 0 to 2000 ms and a port of 1 to 65535",

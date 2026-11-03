@@ -31,6 +31,12 @@ extern const esk_model_ops esk_wifi_scanner_ops;
 extern const esk_model_ops esk_air_sniffer_ops;
 /* a computer's USB port: the host on a USB cable (usb_host.c) */
 extern const esk_model_ops esk_usb_host_ops;
+/* a USB mouse, a low-speed HID boot mouse (usb_mouse.c) */
+extern const esk_model_ops esk_usb_mouse_ops;
+/* a Sitronix ST7735R TFT controller and its 128 x 160 panel (st7735.c) */
+extern const esk_model_ops esk_st7735_ops;
+/* a USB flash drive: Bulk-Only mass storage, SCSI, a FAT16 medium (usb_flash_drive.c) */
+extern const esk_model_ops esk_usb_flash_drive_ops;
 /* its CDC ACM serial port, for a host port (session/hostport.c): the bytes
  * come so far (the last *len of *total), whether it is open, room to send,
  * what is sent, and the terminal's side of the line (a program holds the
