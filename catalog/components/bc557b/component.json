@@ -6,15 +6,17 @@
   "name": "BC557B",
   "category": "transistors",
   "subcategory": "bipolar_pnp",
-  "description": "BC557B (TO-92). Parameterized bjt_pnp approximation for low-frequency circuit development; not a vendor SPICE model.",
+  "description": "onsemi BC557B, a PNP general-purpose amplifier transistor in TO-92 (C1, B2, E3): VCEO 45 V, 100 mA, 625 mW, hFE group B: 180 to 460 at 2 mA and 5 V. The model's gain is the group's typical 290 and its VBE(on) 0.62 V at 2 mA, inside the datasheet's 0.55 to 0.7 V.",
   "keywords": [
     "onsemi",
     "BC557B",
     "TO-92",
+    "PNP",
+    "BJT",
     "transistor",
-    "bjt",
-    "pnp",
-    "2N3906",
+    "small signal",
+    "amplifier",
+    "switch",
     "BC557"
   ],
   "pins": [
@@ -47,7 +49,7 @@
     "is": {
       "type": "number",
       "unit": "A",
-      "default": "1.0e-14",
+      "default": 7.68e-14,
       "doc": "Transport saturation current",
       "min": "1e-20",
       "max": "1m",
@@ -56,7 +58,7 @@
     "bf": {
       "type": "number",
       "unit": "",
-      "default": 220,
+      "default": 290,
       "doc": "Forward current gain",
       "min": 1,
       "max": 2000
@@ -68,15 +70,6 @@
       "doc": "Reverse current gain",
       "min": 0.01,
       "max": 100,
-      "advanced": true
-    },
-    "vaf": {
-      "type": "number",
-      "unit": "V",
-      "default": 50,
-      "doc": "Forward Early voltage",
-      "min": 1,
-      "max": 1000,
       "advanced": true
     },
     "rb": {
@@ -133,19 +126,16 @@
     "functional": null,
     "timed": null,
     "electrical": {
-      "claims": "Parameterized bjt_pnp approximation; DC/low-frequency fixture coverage only.",
+      "claims": "Ebers-Moll transistor whose forward gain is the hFE group's typical value and whose VBE(on) at 2 mA falls inside the datasheet's limits; saturation under the datasheet's VCE(sat) maximum at 10 mA; leakage under its ICES maximum. DC and low-frequency fixtures from the datasheet's table.",
       "omissions": [
-        "junction capacitances",
-        "transit time",
-        "temperature",
-        "breakdown",
-        "quasi-saturation",
-        "manufacturer min/max tolerances",
-        "thermal or destructive behavior",
-        "device-to-device spread",
-        "unverified high-frequency behavior",
-        "no manufacturer model qualification",
-        "charge storage and reverse recovery"
+        "the Early effect (output conductance): the datasheet gives none, so the collector current does not rise with VCE",
+        "the fall of hFE at high current (180 typical at 100 mA for the B series)",
+        "breakdown (VCEO 45 V, VCBO, VEBO 5 V) and damage past the 100 mA and 625 mW ratings",
+        "capacitances (Cobo, Cibo) and fT, so no switching times or bandwidth",
+        "temperature dependence",
+        "device-to-device spread within the hFE group",
+        "noise",
+        "no manufacturer model qualification"
       ],
       "validation": [
         "tests/*.json"
@@ -157,12 +147,12 @@
     "license": "Apache-2.0",
     "sources": [
       {
-        "title": "onsemi BC556B/D manufacturer datasheet",
+        "title": "onsemi BC556B, BC557A, B, C, BC558B datasheet (BC556B/D)",
         "url": "https://www.onsemi.com/pdf/datasheet/bc556b-d.pdf",
         "rev": "3, March 2007",
-        "date": "2026-10-16",
-        "hash": "sha256:31320e9bd66cfb411793400a59db09238c6e144f3a7483a82005b1c954527c65",
-        "notes": "Retrieved and reviewed 2026-10-16. PDF pages 1, 8. TO-92 case 29 style 17: C1, B2, E3. Package/source review only; electrical model is not manufacturer-qualified."
+        "date": "2026-11-03",
+        "hash": "sha256:66f3d052c66a603e3c1188452e193d0391041b61e0dac8295e260123e5ad92f4",
+        "notes": "Pages 1 and 2: VCEO and VCBO per type, IC 100 mA, PD 625 mW, ICES, hFE per series at -2 mA, VCE(sat), VBE(on) -0.55, -0.62, -0.7 V at -2 mA. TO-92 case 29 style 17: C1, B2, E3. generated from catalog/families/bjt_bc556/family.json by tools/catalog/families.py; edit the family, not this file"
       },
       {
         "title": "KiCad family/package reference, revision 4e17d759",
@@ -170,9 +160,6 @@
       }
     ]
   },
-  "tests": [
-    "tests/*.json"
-  ],
   "part": {
     "manufacturer": "onsemi",
     "mpn": "BC557B",
@@ -182,25 +169,25 @@
   "artwork": {
     "svg": "artwork.svg"
   },
+  "tests": [
+    "tests/*.json"
+  ],
   "i18n": {
     "fr": {
-      "source": "c905cb181bff",
-      "description": "BC557B (TO-92). Approximation paramétrée par bjt_pnp pour la conception de circuits basse fréquence ; pas un modèle SPICE du fabricant.",
+      "source": "b3ef1e3aec12",
+      "description": "onsemi BC557B, un transistor amplificateur PNP d'usage général en TO-92 (C1, B2, E3) : VCEO 45 V, 100 mA, 625 mW, groupe de gain B : 180 à 460 à 2 mA et 5 V. Le gain du modèle est la valeur typique du groupe, 290, et sa VBE(on) 0,62 V à 2 mA, entre les 0,55 et 0,7 V de la fiche technique.",
       "fidelity": {
         "electrical": {
-          "claims": "Approximation paramétrée par bjt_pnp ; couverture par des cas de test en continu et basse fréquence uniquement.",
+          "claims": "Transistor d'Ebers-Moll dont le gain direct est la valeur typique du groupe de hFE et dont la VBE(on) à 2 mA tombe dans les limites de la fiche technique ; saturation sous le maximum de VCE(sat) de la fiche technique à 10 mA ; fuite sous son maximum d'ICES. Cas de test en continu et basse fréquence tirés du tableau de la fiche technique.",
           "omissions": [
-            "les capacités de jonction",
-            "le temps de transit",
-            "la température",
-            "le claquage",
-            "la quasi-saturation",
-            "les tolérances min/max du fabricant",
-            "le comportement thermique ou destructif",
-            "la dispersion d'un exemplaire à l'autre",
-            "le comportement à haute fréquence, non vérifié",
-            "aucune qualification par un modèle du fabricant",
-            "le stockage de charge et la recouvrement inverse"
+            "l'effet Early (la conductance de sortie) : la fiche technique n'en donne pas, le courant de collecteur ne croît donc pas avec VCE",
+            "la baisse de hFE à fort courant (180 typique à 100 mA pour le groupe B)",
+            "le claquage (VCEO 45 V, VCBO, VEBO 5 V) et les dommages au-delà des 100 mA et 625 mW nominaux",
+            "les capacités (Cobo, Cibo) et fT, donc ni temps de commutation ni bande passante",
+            "la dépendance à la température",
+            "la dispersion d'un exemplaire à l'autre dans le groupe de hFE",
+            "le bruit",
+            "aucune qualification par un modèle du fabricant"
           ]
         }
       }

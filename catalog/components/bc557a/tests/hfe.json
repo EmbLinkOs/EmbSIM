@@ -1,0 +1,62 @@
+{
+  "schema_version": 1,
+  "kind": "component_test",
+  "name": "hfe",
+  "description": "IC = -2 mA at VCE = -5 V: the collector current within the hFE group's minimum and maximum",
+  "policy": "electrical",
+  "until": "100us",
+  "circuit": {
+    "components": [
+      {
+        "id": "VE",
+        "component": "emblink/vsource",
+        "params": {
+          "dc": 5
+        }
+      },
+      {
+        "id": "IB",
+        "component": "emblink/isource",
+        "params": {
+          "dc": 1.17647e-05
+        }
+      },
+      {
+        "id": "DUT",
+        "component": "emblink/bc557a"
+      },
+      {
+        "id": "G",
+        "component": "emblink/gnd"
+      }
+    ],
+    "nets": {
+      "EMIT": [
+        "VE.+",
+        "DUT.E"
+      ],
+      "BASE": [
+        "IB.+",
+        "DUT.B"
+      ],
+      "GND": [
+        "VE.-",
+        "IB.-",
+        "DUT.C",
+        "G.GND"
+      ]
+    }
+  },
+  "expect": {
+    "device:DUT.ic": {
+      "at": "50us",
+      "min": -0.00258824,
+      "max": -0.00141176
+    },
+    "net:BASE": {
+      "at": "50us",
+      "min_v": 4.3,
+      "max_v": 4.45
+    }
+  }
+}

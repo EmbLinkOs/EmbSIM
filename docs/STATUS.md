@@ -13,10 +13,20 @@ their sub-categories in English, French and Spanish, every one of the 205
 components has both, and the validator rejects what the taxonomy does not
 list while still loading the older names with a warning. The library browses
 the tree with counts and searches category names in the interface's
-language (`libraryFilters.test.ts`, ctest `taxonomy_ui`). Not yet: most of
-the taxonomy's sub-categories are empty; the families of real parts that
-fill them (rectifier and zener diodes, small-signal transistors, MOSFETs,
-op-amps, regulators, 74HC and CD4000 functions) come next.
+language (`libraryFilters.test.ts`, ctest `taxonomy_ui`).
+
+Part families fill it from datasheet tables (`catalog/families`,
+`tools/catalog/families.py`): 146 parts in eight families so far (347
+components in all): Vishay's 1N400x and 1N540x rectifiers, 1N581x Schottky
+rectifiers, BZX55 C and B zeners and 1N4728A to 1N4761A zeners; onsemi's
+1N914, 1N916, 1N4148 and 1N4448 switching diodes; onsemi's BC546 to BC548
+NPN and BC556 to BC558 PNP transistors. Every row is found in its
+datasheet's text by `families.py verify` (146 rows, 7 datasheets, sha256
+checked) and every part is held to its table's limits by its fixtures
+(ctest `catalog_fixtures`, 1096 fixtures). Not yet: MOSFETs, power
+transistors, op-amps, regulators and the 74HC and CD4000 functions as
+families; the transistors' Early effect, breakdown and capacitances; the
+zeners' soft knee and dynamic resistance and every diode's capacitance and recovery.
 
 ## AI assistants: the MCP server (2026-11-02)
 

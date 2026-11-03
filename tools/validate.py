@@ -51,6 +51,7 @@ KIND_SCHEMAS = {
     "library": "library.schema.json",
     "registers": "registers.schema.json",
     "taxonomy": "taxonomy.schema.json",
+    "family": "family.schema.json",
     "board_reference": "board-reference.schema.json",
 }
 
@@ -1943,6 +1944,7 @@ CHECKS: dict[str, Callable[[Report, Path, dict, Index], Any]] = {
     "registers": check_registers,
     "library": check_library,
     "taxonomy": lambda report, path, doc, index: None,
+    "family": lambda report, path, doc, index: None,  # tools/catalog/families.py check
     "board_reference": lambda report, path, doc, index: _check_reference_home(report, path, doc),
 }
 

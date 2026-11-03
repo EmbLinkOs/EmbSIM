@@ -70,6 +70,9 @@ if(Python3_Interpreter_FOUND)
   # the workbench's copy of the catalog's taxonomy is current
   add_test(NAME taxonomy_ui COMMAND ${Python3_EXECUTABLE} ${CMAKE_SOURCE_DIR}/tools/catalog/gen_taxonomy.py --check
            WORKING_DIRECTORY ${CMAKE_SOURCE_DIR})
+  # the part families' catalog entries are what their families generate
+  add_test(NAME catalog_families COMMAND ${Python3_EXECUTABLE} ${CMAKE_SOURCE_DIR}/tools/catalog/families.py check
+           WORKING_DIRECTORY ${CMAKE_SOURCE_DIR})
   # every catalog entry's text in French, made from its English as it now stands
   add_test(NAME catalog_fr COMMAND ${Python3_EXECUTABLE} ${CMAKE_SOURCE_DIR}/tools/i18n/catalog_text.py check
            WORKING_DIRECTORY ${CMAKE_SOURCE_DIR})

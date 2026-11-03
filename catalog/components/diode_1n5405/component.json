@@ -1,0 +1,157 @@
+{
+  "schema_version": 1,
+  "kind": "component",
+  "id": "emblink/diode_1n5405",
+  "version": "1.0.0",
+  "name": "1N5405",
+  "category": "diodes",
+  "subcategory": "rectifiers",
+  "description": "Vishay 1N5405, a 3.0 A general-purpose rectifier in DO-201AD blocking 500 V (VRRM, its DC blocking voltage). The forward curve is a fit (20 nA, n = 1.8, 30 mohm) giving 0.97 V at 3.0 A, under the datasheet's 1.2 V maximum; the reverse current at VRRM stays under its 5.0 uA. The nine parts of the family share one die and differ in their blocking voltage.",
+  "keywords": [
+    "Vishay",
+    "1N5405",
+    "DO-201AD",
+    "diode",
+    "rectifier",
+    "1N540x",
+    "3 A",
+    "power supply"
+  ],
+  "pins": [
+    {
+      "name": "A",
+      "number": 2,
+      "model": {
+        "kind": "passive"
+      },
+      "doc": "Anode"
+    },
+    {
+      "name": "K",
+      "number": 1,
+      "model": {
+        "kind": "passive"
+      },
+      "doc": "Cathode"
+    }
+  ],
+  "params": {
+    "is": {
+      "type": "number",
+      "unit": "A",
+      "default": "20n",
+      "doc": "Saturation current",
+      "min": "1e-20",
+      "max": "1m",
+      "advanced": true
+    },
+    "n": {
+      "type": "number",
+      "unit": "",
+      "default": 1.8,
+      "doc": "Emission coefficient",
+      "min": 0.5,
+      "max": 5,
+      "advanced": true
+    },
+    "rs": {
+      "type": "number",
+      "unit": "ohm",
+      "default": 0.03,
+      "doc": "Series resistance",
+      "min": 0,
+      "advanced": true
+    }
+  },
+  "model": {
+    "primitive": "diode"
+  },
+  "symbol": {
+    "svg": "symbol.svg",
+    "width": 60,
+    "height": 20,
+    "pins": {
+      "A": {
+        "x": 0,
+        "y": 10,
+        "side": "left"
+      },
+      "K": {
+        "x": 60,
+        "y": 10,
+        "side": "right"
+      }
+    }
+  },
+  "fidelity": {
+    "functional": null,
+    "timed": null,
+    "electrical": {
+      "claims": "Shockley junction with series resistance fitted under the datasheet's maximum forward voltage (1.2 V at 3.0 A); blocking to VRRM with less than its 5.0 uA reverse current. DC and low-frequency fixtures from the datasheet's limits.",
+      "omissions": [
+        "avalanche breakdown above VRRM: the datasheet gives no breakdown voltage, so the model blocks at any reverse voltage",
+        "the 30 pF junction capacitance",
+        "reverse recovery",
+        "temperature dependence (the 125 C leakage)",
+        "surge ratings (IFSM, I2t) and damage",
+        "the typical forward curve of the datasheet's figure 3: only the table's maximum is checked",
+        "device-to-device spread",
+        "no manufacturer model qualification"
+      ],
+      "validation": [
+        "tests/*.json"
+      ]
+    }
+  },
+  "provenance": {
+    "author": "EmbSIM",
+    "license": "Apache-2.0",
+    "sources": [
+      {
+        "title": "Vishay 1N5400 to 1N5408 datasheet (document 88516)",
+        "url": "https://www.vishay.com/docs/88516/1n5400.pdf",
+        "rev": "19 December 2025",
+        "date": "2026-11-03",
+        "hash": "sha256:98702135fe01fa7a238afc5752bdb1c749f4e85ac88891baea245d79b6d1f1b2",
+        "notes": "Pages 1 and 2: VRRM and VDC per part, VF 1.2 V max at 3.0 A, IR 5.0 uA at VDC and 25 C, CJ 30 pF typical. DO-201AD, the band at the cathode; A2/K1 numbering is an ECAD convention. generated from catalog/families/rectifiers_1n540x/family.json by tools/catalog/families.py; edit the family, not this file"
+      },
+      {
+        "title": "KiCad family/package reference, revision 4e17d759",
+        "url": "https://github.com/KiCad/kicad-symbols/blob/4e17d7595f9691d45d97aea8ad64572652fb5bed/Diode.lib"
+      }
+    ]
+  },
+  "tests": [
+    "tests/*.json"
+  ],
+  "part": {
+    "manufacturer": "Vishay",
+    "mpn": "1N5405",
+    "package": "DO-201AD",
+    "datasheet": "https://www.vishay.com/docs/88516/1n5400.pdf"
+  },
+  "artwork": {
+    "svg": "artwork.svg"
+  },
+  "i18n": {
+    "fr": {
+      "source": "d4b93f2ce093",
+      "description": "Vishay 1N5405, un redresseur d'usage général de 3,0 A en DO-201AD bloquant 500 V (VRRM, sa tension de blocage continue). La courbe directe est un ajustement (20 nA, n = 1,8, 30 mohm) donnant 0,97 V à 3,0 A, sous le maximum de 1,2 V de la fiche technique ; le courant inverse à VRRM reste sous ses 5,0 uA. Les neuf composants de la famille partagent une même puce et ne diffèrent que par leur tension de blocage.",
+      "fidelity": {
+        "electrical": {
+          "claims": "Jonction de Shockley avec résistance série ajustée sous la tension directe maximale de la fiche technique (1,2 V à 3,0 A) ; blocage jusqu'à VRRM avec moins de ses 5,0 uA de courant inverse. Cas de test en continu et basse fréquence tirés des limites de la fiche technique.",
+          "omissions": [
+            "le claquage par avalanche au-delà de VRRM : la fiche technique ne donne pas de tension de claquage, le modèle bloque donc à toute tension inverse",
+            "la capacité de jonction de 30 pF",
+            "le recouvrement inverse",
+            "la dépendance à la température (la fuite à 125 °C)",
+            "les surintensités nominales (IFSM, I2t) et les dommages",
+            "la courbe directe typique de la figure 3 de la fiche technique : seul le maximum du tableau est vérifié",
+            "la dispersion d'un exemplaire à l'autre",
+            "aucune qualification par un modèle du fabricant"
+          ]
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,45 @@
+{
+  "schema_version": 1,
+  "kind": "component_test",
+  "name": "breakdown",
+  "description": "100 uA in reverse: at least the 100 V minimum (the model sits at it)",
+  "policy": "electrical",
+  "until": "100us",
+  "circuit": {
+    "components": [
+      {
+        "id": "I1",
+        "component": "emblink/isource",
+        "params": {
+          "dc": "-100u"
+        }
+      },
+      {
+        "id": "DUT",
+        "component": "emblink/diode_1n916a"
+      },
+      {
+        "id": "G",
+        "component": "emblink/gnd"
+      }
+    ],
+    "nets": {
+      "VD": [
+        "I1.-",
+        "DUT.A"
+      ],
+      "GND": [
+        "I1.+",
+        "DUT.K",
+        "G.GND"
+      ]
+    }
+  },
+  "expect": {
+    "net:VD": {
+      "at": "50us",
+      "min_v": -101,
+      "max_v": -99.5
+    }
+  }
+}

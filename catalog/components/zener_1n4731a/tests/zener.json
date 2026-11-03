@@ -1,0 +1,45 @@
+{
+  "schema_version": 1,
+  "kind": "component_test",
+  "name": "zener",
+  "description": "IZT in reverse: the voltage within the series' 5 % of the nominal VZ",
+  "policy": "electrical",
+  "until": "100us",
+  "circuit": {
+    "components": [
+      {
+        "id": "I1",
+        "component": "emblink/isource",
+        "params": {
+          "dc": 0.058
+        }
+      },
+      {
+        "id": "DUT",
+        "component": "emblink/zener_1n4731a"
+      },
+      {
+        "id": "G",
+        "component": "emblink/gnd"
+      }
+    ],
+    "nets": {
+      "VZ": [
+        "I1.-",
+        "DUT.K"
+      ],
+      "GND": [
+        "I1.+",
+        "DUT.A",
+        "G.GND"
+      ]
+    }
+  },
+  "expect": {
+    "net:VZ": {
+      "at": "50us",
+      "min_v": 4.085,
+      "max_v": 4.515
+    }
+  }
+}

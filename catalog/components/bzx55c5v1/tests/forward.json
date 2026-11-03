@@ -2,22 +2,16 @@
   "schema_version": 1,
   "kind": "component_test",
   "name": "forward",
+  "description": "200 mA forward: under the datasheet's 1.5 V",
   "policy": "electrical",
   "until": "100us",
   "circuit": {
     "components": [
       {
-        "id": "V1",
-        "component": "emblink/vsource",
+        "id": "I1",
+        "component": "emblink/isource",
         "params": {
-          "dc": 3.3
-        }
-      },
-      {
-        "id": "R1",
-        "component": "emblink/resistor",
-        "params": {
-          "resistance": "1k"
+          "dc": 0.2
         }
       },
       {
@@ -30,16 +24,12 @@
       }
     ],
     "nets": {
-      "VIN": [
-        "V1.+",
-        "R1.1"
-      ],
       "VD": [
-        "R1.2",
+        "I1.-",
         "DUT.A"
       ],
       "GND": [
-        "V1.-",
+        "I1.+",
         "DUT.K",
         "G.GND"
       ]
@@ -48,8 +38,8 @@
   "expect": {
     "net:VD": {
       "at": "50us",
-      "min_v": 0.45,
-      "max_v": 0.95
+      "min_v": 0.6,
+      "max_v": 1.5
     }
   }
 }

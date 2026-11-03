@@ -11,6 +11,32 @@ its omissions. Electrical fixtures check stated nominal behavior; they do not
 certify datasheet limits, temperature corners, destructive limits, RF behavior,
 or suitability for safety-critical designs.
 
+## Part families
+
+Most real parts come in families: one datasheet, one table, many part
+numbers. `catalog/families/<family>/family.json` holds such a table as the
+datasheet gives it, one row per part number, beside a component template and
+fixtures written with `${var}` placeholders; `tools/catalog/families.py
+generate` expands it into ordinary entries under `components/` (French
+text included) and `check` (ctest `catalog_families`) fails when an entry
+differs from its family. Edit the family, never the generated entry.
+
+Each row's values are read from the datasheet, and `families.py verify`
+proves it: it downloads each datasheet, checks the sha256 the family
+records and finds every row's `evidence` (its table line, its column) in the
+PDF's text. The fixtures then hold the model to the same table's limits.
+
+| Family | Parts | Datasheet | Fixtures |
+|---|---|---|---|
+| `rectifiers_1n400x` | Vishay 1N4001 to 1N4007, 1 A, DO-41 | 88503 | VF at 1.0 A under 1.1 V; IR at VRRM under 5 uA |
+| `rectifiers_1n540x` | Vishay 1N5400 to 1N5408, 3 A, DO-201AD | 88516 | VF at 3.0 A under 1.2 V; IR at VRRM under 5 uA |
+| `schottky_1n581x` | Vishay 1N5817, 1N5818, 1N5819 | 88525 | VF at 1.0 A and 3.1 A under each part's maxima; IR at VRRM under 1 mA |
+| `zeners_bzx55` | Vishay BZX55C2V4 to C75 and B2V4 to B75 (74), 500 mW, DO-35 | 85604 | VZ at IZT within the table's minimum and maximum; IR at VR; VF at 200 mA |
+| `zeners_1n47xx` | Vishay 1N4728A to 1N4761A (34), 1.3 W, DO-41 | 85816 | VZ at IZT within 5 %; IR at VR; VF at 200 mA |
+| `switching_1n914` | onsemi 1N914, 1N914A, 1N914B, 1N916, 1N916A, 1N916B, 1N4148, 1N4448, DO-35 | 1N914/D | each grade's VF window or maximum at its test currents; IR at 20 V and 75 V; breakdown at the 100 V minimum |
+| `bjt_bc546` | onsemi BC546B, BC547A, BC547B, BC547C, BC548B, BC548C (NPN), TO-92 | BC546/D | IC within the hFE group's limits at 2 mA and VBE(on) inside 0.55 to 0.7 V; VCE(sat) at 10 mA; ICES |
+| `bjt_bc556` | onsemi BC556B, BC557A, BC557B, BC557C, BC558B (PNP), TO-92 | BC556B/D | the same, with the PNP's limits |
+
 ## Interactive library batch
 
 The library now includes 164 components, 44 named entries and 410 component

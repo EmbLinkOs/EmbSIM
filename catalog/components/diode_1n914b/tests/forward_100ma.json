@@ -1,0 +1,45 @@
+{
+  "schema_version": 1,
+  "kind": "component_test",
+  "name": "forward_100ma",
+  "description": "100 mA: at most 1.0 V",
+  "policy": "electrical",
+  "until": "100us",
+  "circuit": {
+    "components": [
+      {
+        "id": "I1",
+        "component": "emblink/isource",
+        "params": {
+          "dc": "0.1"
+        }
+      },
+      {
+        "id": "DUT",
+        "component": "emblink/diode_1n914b"
+      },
+      {
+        "id": "G",
+        "component": "emblink/gnd"
+      }
+    ],
+    "nets": {
+      "VD": [
+        "I1.-",
+        "DUT.A"
+      ],
+      "GND": [
+        "I1.+",
+        "DUT.K",
+        "G.GND"
+      ]
+    }
+  },
+  "expect": {
+    "net:VD": {
+      "at": "50us",
+      "min_v": 0.6,
+      "max_v": 1.0
+    }
+  }
+}

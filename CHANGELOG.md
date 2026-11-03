@@ -13,10 +13,25 @@ versions follow semantic versioning. There is no release yet.
   Series, Analog ICs, Data Converters, Memory ICs, Microprocessor ICs,
   Optoelectronics, Transducers, Switches & Relays, Connectors, ...) and
   their sub-categories, named in English, French and Spanish in
-  `catalog/taxonomy.json` (SPEC-005 §2). All 205 components are filed
+  `catalog/taxonomy.json` (SPEC-005 §2). All the components are filed
   under it; the validator rejects a category or sub-category it does not
   list and warns on the names used before (`passives`, `logic`, ...),
   which still load.
+- Part families (SPEC-005 §2): one datasheet table, one row per real part
+  number, expanded into catalog entries by `tools/catalog/families.py`,
+  whose `verify` finds every row's values in the datasheet's text and whose
+  `check` (ctest `catalog_families`) keeps the entries in step. The first
+  first eight families hold 146 parts (142 new; the 1N4007, BZX55C5V1,
+  BC547B and BC557B now generated): Vishay's 1N4001 to 1N4007 and 1N5400 to
+  1N5408 rectifiers, 1N5817 to 1N5819 Schottky rectifiers (fitted under
+  both of each part's VF maxima), the 74 BZX55 zeners of the C and B grades
+  and the 34 1N4728A to 1N4761A zeners; onsemi's 1N914, 1N916, 1N4148 and
+  1N4448 switching diodes by grade; onsemi's BC546 to BC548 NPN and BC556
+  to BC558 PNP transistors by hFE group. Each part has fixtures holding it
+  to its datasheet's limits (VF, IR, VZ; hFE, VBE(on), VCE(sat), ICES).
+  BC547B and BC557B now take their group's typical gain (290) and no
+  longer have an Early voltage the datasheet does not give. The bench draws an axial part by its
+  package (DO-35, DO-41, DO-201AD).
 - The library's browser is the category tree: a category opens its
   sub-categories with their counts, search matches category and
   sub-category names, and `embsim catalog show` prints both.

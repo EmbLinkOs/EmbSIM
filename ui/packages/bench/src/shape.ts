@@ -163,6 +163,14 @@ const AXIAL: Record<string, { span: number; body: [number, number]; color: strin
   ferrite_bead: { span: 10.16, body: [3.5, 3.5], color: '#4b4b4b' },
 };
 
+/** axial packages by the name a datasheet gives them (JEDEC outlines): the
+ *  body's length and diameter, the lead span a breadboard takes it at */
+const AXIAL_PACKAGES: Record<string, { span: number; body: [number, number]; color: string }> = {
+  'DO-35': { span: 7.62, body: [3.8, 1.8], color: '#d35400' }, // glass, 4.25 mm x 1.85 mm max
+  'DO-41': { span: 10.16, body: [5.2, 2.7], color: '#1d1d1d' }, // moulded, 5.2 mm x 2.7 mm max
+  'DO-201AD': { span: 15.24, body: [9.5, 5.3], color: '#1d1d1d' }, // moulded, 9.5 mm x 5.3 mm max
+};
+
 const RADIAL: Record<string, { span: number; dia: number; h: number; color: string }> = {
   capacitor: { span: 2.54, dia: 4.5, h: 6, color: '#e1a33c' },
   electrolytic_capacitor: { span: 2.54, dia: 5, h: 11, color: '#1f3a93' },
@@ -437,7 +445,7 @@ function deriveShape(desc: Desc, params?: Record<string, unknown>, artwork?: str
     const spacing = names.length > 1 ? Math.min(7.62, (box.size[0] - 4) / (names.length - 1)) : 0;
     return { package: 'box', size: box.size, pins: inRow(names, box.size, spacing, box.size[1] - 4), color: box.color, label: box.label };
   }
-  const ax = AXIAL[short];
+  const ax = AXIAL[short] ?? AXIAL_PACKAGES[(desc as { part?: { package?: string } }).part?.package ?? ''];
   if (ax && names.length === 2) {
     const size: [number, number, number] = [ax.span, ax.body[1], ax.body[1]];
     return { package: 'axial', size, pins: inRow(names, size, ax.span, ax.body[1] / 2), color: ax.color };

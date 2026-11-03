@@ -1,0 +1,46 @@
+{
+  "schema_version": 1,
+  "kind": "component_test",
+  "name": "ices",
+  "description": "VCE = -40 V with VBE = 0: the collector current under the datasheet's 100 nA ICES",
+  "policy": "electrical",
+  "until": "100us",
+  "circuit": {
+    "components": [
+      {
+        "id": "VE",
+        "component": "emblink/vsource",
+        "params": {
+          "dc": 40
+        }
+      },
+      {
+        "id": "DUT",
+        "component": "emblink/bc556b"
+      },
+      {
+        "id": "G",
+        "component": "emblink/gnd"
+      }
+    ],
+    "nets": {
+      "EMIT": [
+        "VE.+",
+        "DUT.E",
+        "DUT.B"
+      ],
+      "GND": [
+        "VE.-",
+        "DUT.C",
+        "G.GND"
+      ]
+    }
+  },
+  "expect": {
+    "device:DUT.ic": {
+      "at": "50us",
+      "min": -1e-07,
+      "max": 1e-07
+    }
+  }
+}

@@ -1,0 +1,360 @@
+{
+  "schema_version": 1,
+  "kind": "family",
+  "name": "1N5817 to 1N5819 Schottky rectifiers",
+  "datasheets": {
+    "vishay-88525": {
+      "title": "Vishay 1N5817, 1N5818, 1N5819 datasheet (document 88525)",
+      "url": "https://www.vishay.com/docs/88525/1n5817.pdf",
+      "rev": "1 July 2020",
+      "date": "2026-11-03",
+      "hash": "sha256:4465c825da3be36cc8a180c252d5d80e7651d9dc237cd3d09822a759f39c970b",
+      "notes": "Page 1: VRRM per part, VF max at 1.0 A and 3.1 A per part (300 us pulses), IR 1.0 mA at VDC and 25 C, CJ typical. DO-41, the band at the cathode; A2/K1 numbering is an ECAD convention."
+    }
+  },
+  "evidence": [
+    "1N5817, 1N5818, 1N5819",
+    "Schottky Barrier Plastic Rectifier",
+    "SYMBOL 1N5817 1N5818 1N5819 UNIT",
+    "Maximum repetitive peak reverse voltage VRRM (?:\\d+ ){#{col}}${vrrm} ",
+    "Maximum instantaneous forward voltage 1\\.0 VF \\(1\\) (?:[\\d.]+ ){#{col}}${vf1} ",
+    "Maximum instantaneous forward voltage 3\\.1 VF \\(1\\) (?:[\\d.]+ ){#{col}}${vf3} ",
+    "TA = 25 °C 1\\.0 IR \\(1\\) mA"
+  ],
+  "template": {
+    "schema_version": 1,
+    "kind": "component",
+    "id": "emblink/${short}",
+    "version": "1.0.0",
+    "name": "${mpn}",
+    "category": "diodes",
+    "subcategory": "schottky",
+    "description": "Vishay ${mpn}, a 1.0 A Schottky barrier rectifier in DO-41 blocking ${vrrm} V. Its forward curve is fitted 3 % under the datasheet's two maxima, ${vf1} V at 1.0 A and ${vf3} V at 3.1 A (n = 1, ${is_a} A, ${rs} ohm); the reverse current at VRRM stays under its 1.0 mA.",
+    "keywords": [
+      "Vishay",
+      "${mpn}",
+      "DO-41",
+      "Schottky",
+      "diode",
+      "rectifier",
+      "1N581x",
+      "low drop",
+      "reverse polarity"
+    ],
+    "pins": [
+      {
+        "name": "A",
+        "number": 2,
+        "model": {
+          "kind": "passive"
+        },
+        "doc": "Anode"
+      },
+      {
+        "name": "K",
+        "number": 1,
+        "model": {
+          "kind": "passive"
+        },
+        "doc": "Cathode"
+      }
+    ],
+    "params": {
+      "is": {
+        "type": "number",
+        "unit": "A",
+        "default": "${is_a}",
+        "doc": "Saturation current",
+        "min": "1e-20",
+        "max": "1m",
+        "advanced": true
+      },
+      "n": {
+        "type": "number",
+        "unit": "",
+        "default": 1,
+        "doc": "Emission coefficient",
+        "min": 0.5,
+        "max": 5,
+        "advanced": true
+      },
+      "rs": {
+        "type": "number",
+        "unit": "ohm",
+        "default": "${rs}",
+        "doc": "Series resistance",
+        "min": 0,
+        "advanced": true
+      }
+    },
+    "model": {
+      "primitive": "diode"
+    },
+    "symbol": {
+      "svg": "symbol.svg",
+      "width": 60,
+      "height": 20,
+      "pins": {
+        "A": {
+          "x": 0,
+          "y": 10,
+          "side": "left"
+        },
+        "K": {
+          "x": 60,
+          "y": 10,
+          "side": "right"
+        }
+      }
+    },
+    "fidelity": {
+      "functional": null,
+      "timed": null,
+      "electrical": {
+        "claims": "Shockley junction with series resistance fitted 3 % under the datasheet's maximum forward voltages at 1.0 A and 3.1 A; blocking to VRRM with less than its 1.0 mA reverse current. DC and low-frequency fixtures from the datasheet's limits.",
+        "omissions": [
+          "avalanche above VRRM and the VRSM rating: the model blocks at any reverse voltage",
+          "the junction capacitance (${cj} pF typical)",
+          "the strong temperature dependence of a Schottky's leakage (10 mA at 100 C)",
+          "surge ratings (IFSM) and damage",
+          "the typical curves of the datasheet's figures: only the table's maxima are fitted",
+          "device-to-device spread",
+          "no manufacturer model qualification"
+        ],
+        "validation": [
+          "tests/*.json"
+        ]
+      }
+    },
+    "provenance": {
+      "author": "EmbSIM",
+      "license": "Apache-2.0",
+      "sources": [
+        {
+          "title": "KiCad family/package reference, revision 4e17d759",
+          "url": "https://github.com/KiCad/kicad-symbols/blob/4e17d7595f9691d45d97aea8ad64572652fb5bed/Diode.lib"
+        }
+      ]
+    },
+    "tests": [
+      "tests/*.json"
+    ],
+    "part": {
+      "manufacturer": "Vishay",
+      "mpn": "${mpn}",
+      "package": "DO-41",
+      "datasheet": "${datasheet_url}"
+    },
+    "artwork": {
+      "svg": "artwork.svg"
+    },
+    "i18n": {
+      "fr": {
+        "description": "Vishay ${mpn}, un redresseur Schottky de 1,0 A en DO-41 bloquant ${vrrm} V. Sa courbe directe est ajustée 3 % sous les deux maxima de la fiche technique, ${vf1} V à 1,0 A et ${vf3} V à 3,1 A (n = 1, ${is_a} A, ${rs} ohm) ; le courant inverse à VRRM reste sous son 1,0 mA.",
+        "fidelity": {
+          "electrical": {
+            "claims": "Jonction de Shockley avec résistance série ajustée 3 % sous les tensions directes maximales de la fiche technique à 1,0 A et 3,1 A ; blocage jusqu'à VRRM avec moins de son 1,0 mA de courant inverse. Cas de test en continu et basse fréquence tirés des limites de la fiche technique.",
+            "omissions": [
+              "l'avalanche au-delà de VRRM et la valeur VRSM : le modèle bloque à toute tension inverse",
+              "la capacité de jonction (${cj} pF typique)",
+              "la forte dépendance à la température de la fuite d'une Schottky (10 mA à 100 °C)",
+              "les surintensités nominales (IFSM) et les dommages",
+              "les courbes typiques des figures de la fiche technique : seuls les maxima du tableau sont ajustés",
+              "la dispersion d'un exemplaire à l'autre",
+              "aucune qualification par un modèle du fabricant"
+            ]
+          }
+        }
+      }
+    }
+  },
+  "tests": {
+    "forward": {
+      "schema_version": 1,
+      "kind": "component_test",
+      "name": "forward",
+      "description": "1.0 A forward: at most the datasheet's maximum VF",
+      "policy": "electrical",
+      "until": "100us",
+      "circuit": {
+        "components": [
+          {
+            "id": "I1",
+            "component": "emblink/isource",
+            "params": {
+              "dc": 1.0
+            }
+          },
+          {
+            "id": "DUT",
+            "component": "emblink/${short}"
+          },
+          {
+            "id": "G",
+            "component": "emblink/gnd"
+          }
+        ],
+        "nets": {
+          "VD": [
+            "I1.-",
+            "DUT.A"
+          ],
+          "GND": [
+            "I1.+",
+            "DUT.K",
+            "G.GND"
+          ]
+        }
+      },
+      "expect": {
+        "net:VD": {
+          "at": "50us",
+          "min_v": 0.2,
+          "max_v": "${vf1}"
+        }
+      }
+    },
+    "reverse": {
+      "schema_version": 1,
+      "kind": "component_test",
+      "name": "reverse",
+      "description": "VRRM across it through 100 ohm: under the datasheet's 1.0 mA (IR at 25 C), so under 0.1 V across the resistor",
+      "policy": "electrical",
+      "until": "100us",
+      "circuit": {
+        "components": [
+          {
+            "id": "V1",
+            "component": "emblink/vsource",
+            "params": {
+              "dc": "${vrrm}"
+            }
+          },
+          {
+            "id": "R1",
+            "component": "emblink/resistor",
+            "params": {
+              "resistance": 100
+            }
+          },
+          {
+            "id": "DUT",
+            "component": "emblink/${short}"
+          },
+          {
+            "id": "G",
+            "component": "emblink/gnd"
+          }
+        ],
+        "nets": {
+          "VIN": [
+            "V1.+",
+            "R1.1"
+          ],
+          "VK": [
+            "R1.2",
+            "DUT.K"
+          ],
+          "GND": [
+            "V1.-",
+            "DUT.A",
+            "G.GND"
+          ]
+        }
+      },
+      "expect": {
+        "net:VK": {
+          "at": "50us",
+          "min_v": "${vk_min}",
+          "max_v": "${vrrm}"
+        }
+      }
+    },
+    "forward_3a": {
+      "schema_version": 1,
+      "kind": "component_test",
+      "name": "forward_3a",
+      "description": "3.1 A forward: at most the datasheet's maximum VF",
+      "policy": "electrical",
+      "until": "100us",
+      "circuit": {
+        "components": [
+          {
+            "id": "I1",
+            "component": "emblink/isource",
+            "params": {
+              "dc": 3.1
+            }
+          },
+          {
+            "id": "DUT",
+            "component": "emblink/${short}"
+          },
+          {
+            "id": "G",
+            "component": "emblink/gnd"
+          }
+        ],
+        "nets": {
+          "VD": [
+            "I1.-",
+            "DUT.A"
+          ],
+          "GND": [
+            "I1.+",
+            "DUT.K",
+            "G.GND"
+          ]
+        }
+      },
+      "expect": {
+        "net:VD": {
+          "at": "50us",
+          "min_v": 0.3,
+          "max_v": "${vf3}"
+        }
+      }
+    }
+  },
+  "rows": [
+    {
+      "mpn": "1N5817",
+      "short": "diode_1n5817",
+      "vrrm": 20,
+      "vk_min": 19.9,
+      "col": 0,
+      "vf1": 0.45,
+      "vf3": 0.75,
+      "is_a": 5.77e-06,
+      "rs": 0.1246,
+      "cj": 125,
+      "datasheet": "vishay-88525"
+    },
+    {
+      "mpn": "1N5818",
+      "short": "diode_1n5818",
+      "vrrm": 30,
+      "vk_min": 29.9,
+      "col": 1,
+      "vf1": 0.55,
+      "vf3": 0.875,
+      "is_a": 2.12e-07,
+      "rs": 0.1362,
+      "cj": 110,
+      "datasheet": "vishay-88525"
+    },
+    {
+      "mpn": "1N5819",
+      "short": "diode_1n5819",
+      "vrrm": 40,
+      "vk_min": 39.9,
+      "col": 2,
+      "vf1": 0.6,
+      "vf3": 0.9,
+      "is_a": 2.07e-08,
+      "rs": 0.1246,
+      "cj": 110,
+      "datasheet": "vishay-88525"
+    }
+  ]
+}
