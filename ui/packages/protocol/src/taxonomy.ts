@@ -1050,6 +1050,22 @@ export const TAXONOMY: { categories: TaxonomyCategory[]; legacy: Record<string, 
           }
         },
         {
+          "id": "darlington_npn",
+          "name": {
+            "en": "Darlington NPN",
+            "fr": "Darlington NPN",
+            "es": "Darlington NPN"
+          }
+        },
+        {
+          "id": "darlington_pnp",
+          "name": {
+            "en": "Darlington PNP",
+            "fr": "Darlington PNP",
+            "es": "Darlington PNP"
+          }
+        },
+        {
           "id": "darlington_arrays",
           "name": {
             "en": "Darlington arrays",

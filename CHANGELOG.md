@@ -84,6 +84,14 @@ versions follow semantic versioning. There is no release yet.
   drop at its rated current and its L/R time constant; the library files
   them under new Inductors sub-categories (fixed, power) and the bench
   draws them as sleeved drum cores at their datasheet size.
+- Power transistors: onsemi's TIP31A/B/C and TIP32A/B/C, BD135/137/139 and
+  BD136/138/140 by gain group, 2N3055 and MJ2955 (17), each at a constant
+  gain inside its datasheet's hFE limits with the collector and emitter
+  resistances of its high-current VCE(sat) and VBE(on), held to hFE at the
+  datasheet's currents, VCE(sat) and VBE(on); and the TIP120 to TIP127
+  Darlingtons (6) as the datasheet's circuit, two transistors with the
+  8 kohm and 120 ohm base-emitter shunts and the collector-emitter diode.
+  The library gains Transistors > Darlington NPN and PNP.
 - An analog island asked to advance a picosecond past its last step (the
   scheduler's minimum) solved a step already at h_min; a centre-tapped
   transformer with its tap open, whose nearly singular inductance matrix

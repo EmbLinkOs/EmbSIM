@@ -1,0 +1,185 @@
+{
+  "schema_version": 1,
+  "kind": "component",
+  "id": "emblink/bd139g",
+  "version": "1.0.0",
+  "name": "BD139G",
+  "category": "transistors",
+  "subcategory": "bipolar_npn",
+  "description": "onsemi BD139G, a NPN medium-power transistor in TO-225 (E1, C2, B3, tab C): VCEO 80 V, 1.5 A, 12.5 W at 25 C case; hFE at least 25 at 5 mA and 500 mA and 40 to 250 at 150 mA, VCE(sat) 0.5 V maximum at 0.5 A, VBE(on) 1 V maximum at 0.5 A. The model's gain is 100, the middle of the 150 mA limits.",
+  "keywords": [
+    "onsemi",
+    "BD139G",
+    "BD139",
+    "NPN",
+    "BJT",
+    "transistor",
+    "power transistor",
+    "TO-225"
+  ],
+  "pins": [
+    {
+      "name": "E",
+      "number": 1,
+      "model": {
+        "kind": "passive"
+      },
+      "doc": "Emitter"
+    },
+    {
+      "name": "C",
+      "number": 2,
+      "model": {
+        "kind": "passive"
+      },
+      "doc": "Collector (and the tab)"
+    },
+    {
+      "name": "B",
+      "number": 3,
+      "model": {
+        "kind": "passive"
+      },
+      "doc": "Base"
+    }
+  ],
+  "params": {
+    "is": {
+      "type": "number",
+      "unit": "A",
+      "default": 1e-14,
+      "doc": "Transport saturation current",
+      "min": "1e-20",
+      "max": "1m",
+      "advanced": true
+    },
+    "bf": {
+      "type": "number",
+      "unit": "",
+      "default": 100,
+      "doc": "Forward current gain",
+      "min": 1,
+      "max": 2000
+    },
+    "br": {
+      "type": "number",
+      "unit": "",
+      "default": 1,
+      "doc": "Reverse current gain",
+      "min": 0.01,
+      "max": 100,
+      "advanced": true
+    },
+    "rb": {
+      "type": "number",
+      "unit": "ohm",
+      "default": 0,
+      "doc": "Base resistance",
+      "min": 0,
+      "advanced": true
+    },
+    "rc": {
+      "type": "number",
+      "unit": "ohm",
+      "default": 0.3,
+      "doc": "Collector resistance",
+      "min": 0,
+      "advanced": true
+    },
+    "re": {
+      "type": "number",
+      "unit": "ohm",
+      "default": 0.1,
+      "doc": "Emitter resistance",
+      "min": 0,
+      "advanced": true
+    }
+  },
+  "model": {
+    "primitive": "bjt_npn"
+  },
+  "symbol": {
+    "svg": "symbol.svg",
+    "width": 40,
+    "height": 40,
+    "pins": {
+      "B": {
+        "x": 0,
+        "y": 20,
+        "side": "left"
+      },
+      "C": {
+        "x": 40,
+        "y": 0,
+        "side": "top"
+      },
+      "E": {
+        "x": 40,
+        "y": 40,
+        "side": "bottom"
+      }
+    }
+  },
+  "fidelity": {
+    "functional": null,
+    "timed": null,
+    "electrical": {
+      "claims": "Ebers-Moll transistor at a constant gain of 100 (the geometric middle of the datasheet's 40 to 250 at 150 mA), collector and emitter resistances for VCE(sat) and VBE(on); fixtures for the gain at 5 mA, 150 mA and 500 mA, VCE(sat) and VBE(on) at 0.5 A.",
+      "omissions": [
+        "the gain's fall at low and high current: it stays 100",
+        "the Early effect: the collector current does not rise with VCE",
+        "capacitances and fT, so no switching times",
+        "temperature: VBE's -2 mV/C and the gain's rise",
+        "second breakdown, the safe operating area and damage past the ratings",
+        "device-to-device spread within the gain limits",
+        "no manufacturer model qualification"
+      ],
+      "validation": [
+        "tests/*.json"
+      ]
+    }
+  },
+  "provenance": {
+    "author": "EmbSIM",
+    "license": "Apache-2.0",
+    "sources": [
+      {
+        "title": "onsemi BD135G, BD137G, BD139G datasheet (BD135/D)",
+        "url": "https://www.onsemi.com/download/data-sheet/pdf/bd135-d.pdf",
+        "rev": "current at retrieval",
+        "date": "2026-11-03",
+        "hash": "sha256:8be156345b845cc60959fd159ea1667b7be2df3a3432403a1418b95baf20979c",
+        "notes": "Maximum ratings (VCEO 45, 60, 80 V, IC 1.5 A, PD 12.5 W at 25 C case); hFE 25 minimum at 5 mA and 500 mA, 40 to 250 at 150 mA; VCE(sat) 0.5 V at 0.5 A, 50 mA; VBE(on) 1 V at 0.5 A; TO-225 E1 C2 B3; the ordering information. generated from catalog/families/bjt_onsemi_bd135/family.json by tools/catalog/families.py; edit the family, not this file"
+      }
+    ]
+  },
+  "part": {
+    "manufacturer": "onsemi",
+    "mpn": "BD139G",
+    "package": "TO-225",
+    "datasheet": "https://www.onsemi.com/download/data-sheet/pdf/bd135-d.pdf"
+  },
+  "tests": [
+    "tests/*.json"
+  ],
+  "i18n": {
+    "fr": {
+      "source": "20a4e9ebb7ae",
+      "description": "onsemi BD139G, un transistor de moyenne puissance NPN en TO-225 (E1, C2, B3, languette C) : VCEO 80 V, 1,5 A, 12,5 W à 25 °C de boîtier ; hFE d'au moins 25 à 5 mA et 500 mA et de 40 à 250 à 150 mA, VCE(sat) de 0,5 V au maximum à 0,5 A, VBE(on) de 1 V au maximum à 0,5 A. Le gain du modèle est 100, au milieu des limites à 150 mA.",
+      "fidelity": {
+        "electrical": {
+          "claims": "Transistor d'Ebers-Moll à un gain constant de 100 (le milieu géométrique des 40 à 250 de la fiche technique à 150 mA), résistances de collecteur et d'émetteur pour VCE(sat) et VBE(on) ; cas de test pour le gain à 5 mA, 150 mA et 500 mA, VCE(sat) et VBE(on) à 0,5 A.",
+          "omissions": [
+            "la baisse du gain à faible et fort courant : il reste 100",
+            "l'effet Early : le courant de collecteur ne croît pas avec VCE",
+            "les capacités et fT, donc pas de temps de commutation",
+            "la température : les -2 mV/°C de VBE et la hausse du gain",
+            "le second claquage, l'aire de sécurité et les dommages au-delà des valeurs nominales",
+            "la dispersion d'un exemplaire à l'autre dans les limites de gain",
+            "aucune qualification par un modèle du fabricant"
+          ]
+        }
+      }
+    }
+  }
+}
