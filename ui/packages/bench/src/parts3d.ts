@@ -294,6 +294,14 @@ function radial(shape: BenchShape, look: PartLook): THREE.Group {
     const cap = electrolytic(d, h, shape.color ?? '#1f3a93', Math.atan2(-minus[1], minus[0]));
     cap.position.y = lift;
     g.add(cap);
+  } else if (kind === 'inductor') {
+    // a drum-core inductor in its shrink sleeve, the ferrite's end showing on top
+    const sleeve = mesh(new THREE.CylinderGeometry(d / 2, d / 2, h * 0.92, 32), standard(shape.color ?? '#2a2a2a', 0.7));
+    sleeve.position.y = lift + (h * 0.92) / 2;
+    g.add(sleeve);
+    const core = mesh(new THREE.CylinderGeometry(d / 2 - 0.15, d / 2 - 0.15, h * 0.08, 32), standard('#5a5652', 0.45));
+    core.position.y = lift + h * 0.96;
+    g.add(core);
   } else if (short === 'crystal') {
     const can = mesh(new RoundedBoxGeometry(11, h, d, 2, d / 2 - 0.1), METAL);
     can.position.y = lift + h / 2;

@@ -75,6 +75,15 @@ versions follow semantic versioning. There is no release yet.
   gfs's minimum, a drain resistance, the body diode at its VSD maximum and
   Cgs, Cgd and Cds from Ciss, Crss and Coss; fixtures for off, RDS(on),
   VGS(th) at 250 uA, the body diode and the input time constant.
+- Texas Instruments' LM324, LM224 and LM2902 quad op-amps (23 orderables,
+  classic and B versions) on a four-amplifier composite with its own symbol,
+  held to a follower, the swing, the slew rate and the bandwidth on its four
+  channels. And 203 Bourns RLB radial lead inductors (RLB0608 to RLB1314,
+  1 uH to 100 mH), each the inductance with its maximum DC resistance and a
+  parallel capacitance at its minimum self-resonant frequency, held to the
+  drop at its rated current and its L/R time constant; the library files
+  them under new Inductors sub-categories (fixed, power) and the bench
+  draws them as sleeved drum cores at their datasheet size.
 - An analog part with only some of its pins wired lost the open ones'
   places: an optocoupler failed to load and a transformer's free centre tap
   was grounded. Both now keep their terminals and leave the open ones

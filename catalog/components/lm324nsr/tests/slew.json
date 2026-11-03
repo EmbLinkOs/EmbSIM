@@ -1,0 +1,82 @@
+{
+  "schema_version": 1,
+  "kind": "component_test",
+  "name": "slew",
+  "description": "Channel 3 as a follower given a 2 V step: the output slews at the datasheet's 0.5 V/us, 1.5 V a microsecond after the step",
+  "policy": "electrical",
+  "until": "40us",
+  "settings": {
+    "imperfections": "ideal"
+  },
+  "circuit": {
+    "components": [
+      {
+        "id": "VI",
+        "component": "emblink/vsource",
+        "params": {
+          "kind": "pulse",
+          "v1": 1.0,
+          "v2": 3.0,
+          "td": "10u",
+          "tr": "10n",
+          "tf": "10n",
+          "pw": "1m",
+          "per": "2m"
+        }
+      },
+      {
+        "id": "VS",
+        "component": "emblink/vsource",
+        "params": {
+          "kind": "dc",
+          "dc": 5
+        }
+      },
+      {
+        "id": "DUT",
+        "component": "emblink/lm324nsr"
+      },
+      {
+        "id": "G",
+        "component": "emblink/gnd"
+      },
+      {
+        "id": "RL",
+        "component": "emblink/resistor",
+        "params": {
+          "resistance": "10k",
+          "tolerance": 0
+        }
+      }
+    ],
+    "nets": {
+      "IN": [
+        "VI.+",
+        "DUT.3IN+"
+      ],
+      "VCC": [
+        "VS.+",
+        "DUT.VCC+"
+      ],
+      "GND": [
+        "VI.-",
+        "VS.-",
+        "DUT.VCC-",
+        "G.GND",
+        "RL.2"
+      ],
+      "OUT": [
+        "DUT.3OUT",
+        "DUT.3IN-",
+        "RL.1"
+      ]
+    }
+  },
+  "expect": {
+    "net:OUT": {
+      "at": "11us",
+      "min_v": 1.425,
+      "max_v": 1.575
+    }
+  }
+}

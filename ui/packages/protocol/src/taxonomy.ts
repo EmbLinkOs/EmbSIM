@@ -402,6 +402,22 @@ export const TAXONOMY: { categories: TaxonomyCategory[]; legacy: Record<string, 
           }
         },
         {
+          "id": "fixed",
+          "name": {
+            "en": "Fixed (leaded)",
+            "fr": "Fixes (à fils)",
+            "es": "Fijos (con terminales)"
+          }
+        },
+        {
+          "id": "power",
+          "name": {
+            "en": "Power (SMD)",
+            "fr": "De puissance (CMS)",
+            "es": "De potencia (SMD)"
+          }
+        },
+        {
           "id": "ferrite_beads",
           "name": {
             "en": "Ferrite beads",

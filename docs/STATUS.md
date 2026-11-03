@@ -16,23 +16,23 @@ the tree with counts and searches category names in the interface's
 language (`libraryFilters.test.ts`, ctest `taxonomy_ui`).
 
 Part families fill it from datasheet tables (`catalog/families`,
-`tools/catalog/families.py`): 1903 parts in 28 families so far (2109
+`tools/catalog/families.py`): 2129 parts in 30 families so far (2335
 components in all): Vishay's 1N400x and 1N540x rectifiers, 1N581x Schottky
 rectifiers, BZX55 C and B, 1N4728A to 1N4761A and 1N5221 to 1N5267 zeners; onsemi's BZX79 zeners; onsemi's
 1N914, 1N916, 1N4148 and 1N4448 switching diodes; onsemi's BC546 to BC548
 NPN and BC556 to BC558 PNP transistors; onsemi's MC7805 to MC7824
 regulators; Vishay's CCF55 (E96, 1 %) and CCF07 (E24, 2 % and 5 %) metal
 film resistors; Nichicon's UVR and UHE aluminium electrolytic capacitors
-(323); Vishay's K series radial MLCCs (385); Kingbright's 5 mm and 3 mm LEDs (23); Vishay's W0xG bridges; Triad's F series power transformers on the new transformer primitives (13); Vishay's SFH617A, CNY17 and 4N35 optocouplers (11); TI's LM358, LM258, LM2904, TL072 and NE5532 dual op-amps (40); Vishay's IRF, IRFZ and IRL N-channel and IRF95/96 and IRF9Z P-channel power MOSFETs (43). Every row is found in its datasheet's text by
-`families.py verify` (1903 rows, 102 datasheets, sha256 checked) and every
+(323); Vishay's K series radial MLCCs (385); Kingbright's 5 mm and 3 mm LEDs (23); Vishay's W0xG bridges; Triad's F series power transformers on the new transformer primitives (13); Vishay's SFH617A, CNY17 and 4N35 optocouplers (11); TI's LM358, LM258, LM2904, TL072 and NE5532 dual op-amps (40) and LM324, LM224 and LM2902 quad op-amps (23); Bourns' RLB radial inductors (203); Vishay's IRF, IRFZ and IRL N-channel and IRF95/96 and IRF9Z P-channel power MOSFETs (43). Every row is found in its datasheet's text by
+`families.py verify` (2129 rows, 104 datasheets, sha256 checked) and every
 part is held to its table's limits by its fixtures (ctest
-`catalog_fixtures`; `catalog validate`: 3831 fixtures).
+`catalog_fixtures`; `catalog validate`: 4329 fixtures).
 Not yet: power bipolar transistors, comparators and quad op-amps, negative regulators (the
 regulator primitive has no negative polarity), film capacitors and
 the 74HC and CD4000 functions as families; the transistors' Early effect,
 breakdown and capacitances; the MOSFETs' voltage-dependent capacitances (so the gate charge), avalanche and temperature; the op-amps' offset, bias, input range and noise; the zeners' soft knee and dynamic resistance
 and every diode's capacitance and recovery; a resistor's power rating
-and self-heating; a transformer's core (saturation, losses) and magnetising inductance (no datasheet gives it); a capacitor's leakage, its ESR's frequency dependence and an X7R's DC-bias and temperature loss.
+and self-heating; an inductor's saturation, core losses and tolerance; a transformer's core (saturation, losses) and magnetising inductance (no datasheet gives it); a capacitor's leakage, its ESR's frequency dependence and an X7R's DC-bias and temperature loss.
 
 ## AI assistants: the MCP server (2026-11-02)
 

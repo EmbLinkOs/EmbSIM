@@ -55,8 +55,8 @@ export interface BenchShape {
   textured?: boolean;
   /** a small-outline part drawn on its SO-to-DIP breakout (the DIP's pins are the breakout's) */
   smallOutline?: SmallOutline;
-  /** a radial part's body: an electrolytic can or a dipped ceramic */
-  radial?: 'electrolytic' | 'ceramic';
+  /** a radial part's body: an electrolytic can, a dipped ceramic or a sleeved drum-core inductor */
+  radial?: 'electrolytic' | 'ceramic' | 'inductor';
   /** an axial part's body: a resistor (with its colour bands), a glass or a moulded diode */
   axial?: 'resistor' | 'glass' | 'moulded';
   /** a resistor's nominal resistance, ohms (its description's default: the instance's value wins) */
@@ -507,8 +507,9 @@ function deriveShape(desc: Desc, params?: Record<string, unknown>, artwork?: str
   const rad = RADIAL[short] ?? radialPackage(radPkg) ?? mlccPackage(radPkg);
   if (rad && names.length === 2) {
     const size: [number, number, number] = [Math.max(rad.dia, rad.span + 1), rad.dia, rad.h];
-    const kind = short === 'electrolytic_capacitor' || /^Radial /.test(radPkg ?? '') ? 'electrolytic' : short === 'capacitor' || /^MLCC /.test(radPkg ?? '') ? 'ceramic' : undefined;
-    return { package: 'radial', size, pins: inRow(names, size, rad.span, rad.dia / 2), color: rad.color, ...(kind ? { radial: kind } : {}) };
+    const inductor = desc.category === 'inductors' && /^Radial /.test(radPkg ?? '');
+    const kind = inductor ? 'inductor' : short === 'electrolytic_capacitor' || /^Radial /.test(radPkg ?? '') ? 'electrolytic' : short === 'capacitor' || /^MLCC /.test(radPkg ?? '') ? 'ceramic' : undefined;
+    return { package: 'radial', size, pins: inRow(names, size, rad.span, rad.dia / 2), color: kind === 'inductor' ? '#2a2a2a' : rad.color, ...(kind ? { radial: kind } : {}) };
   }
   const pkg = (desc as { part?: { package?: string } }).part?.package ?? '';
   if ((TO92.has(short) || /^TO-92\b/.test(pkg)) && names.length === 3) {

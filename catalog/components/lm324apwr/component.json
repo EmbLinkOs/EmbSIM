@@ -1,0 +1,350 @@
+{
+  "schema_version": 1,
+  "kind": "component",
+  "id": "emblink/lm324apwr",
+  "version": "1.0.0",
+  "name": "LM324APWR",
+  "category": "operational_amplifiers",
+  "subcategory": "quad",
+  "description": "Texas Instruments LM324APWR, the LM324A quadruple operational amplifier in TSSOP-14 (0 to 70 C, up to 32 V): 100 V/mV open-loop gain, 1.2 MHz gain-bandwidth, 0.5 V/us slew rate, the classic version: its output 1.5 V below the positive rail with 2 kohm and within 5 mV of ground. Four channels on the industry-standard quad pinout, VCC+ on pin 4 and VCC- on pin 11.",
+  "keywords": [
+    "Texas Instruments",
+    "TI",
+    "LM324APWR",
+    "LM324A",
+    "LM324",
+    "op-amp",
+    "operational amplifier",
+    "quad",
+    "TSSOP-14",
+    "single supply"
+  ],
+  "pins": [
+    {
+      "name": "1OUT",
+      "number": 1,
+      "model": {
+        "kind": "analog"
+      }
+    },
+    {
+      "name": "1IN-",
+      "number": 2,
+      "model": {
+        "kind": "analog"
+      }
+    },
+    {
+      "name": "1IN+",
+      "number": 3,
+      "model": {
+        "kind": "analog"
+      }
+    },
+    {
+      "name": "VCC+",
+      "number": 4,
+      "model": {
+        "kind": "analog"
+      },
+      "doc": "Positive supply"
+    },
+    {
+      "name": "2IN+",
+      "number": 5,
+      "model": {
+        "kind": "analog"
+      }
+    },
+    {
+      "name": "2IN-",
+      "number": 6,
+      "model": {
+        "kind": "analog"
+      }
+    },
+    {
+      "name": "2OUT",
+      "number": 7,
+      "model": {
+        "kind": "analog"
+      }
+    },
+    {
+      "name": "3OUT",
+      "number": 8,
+      "model": {
+        "kind": "analog"
+      }
+    },
+    {
+      "name": "3IN-",
+      "number": 9,
+      "model": {
+        "kind": "analog"
+      }
+    },
+    {
+      "name": "3IN+",
+      "number": 10,
+      "model": {
+        "kind": "analog"
+      }
+    },
+    {
+      "name": "VCC-",
+      "number": 11,
+      "model": {
+        "kind": "analog"
+      },
+      "doc": "Negative supply or ground"
+    },
+    {
+      "name": "4IN+",
+      "number": 12,
+      "model": {
+        "kind": "analog"
+      }
+    },
+    {
+      "name": "4IN-",
+      "number": 13,
+      "model": {
+        "kind": "analog"
+      }
+    },
+    {
+      "name": "4OUT",
+      "number": 14,
+      "model": {
+        "kind": "analog"
+      }
+    }
+  ],
+  "params": {},
+  "model": {
+    "composite": {
+      "components": [
+        {
+          "id": "A1",
+          "component": "emblink/opamp",
+          "params": {
+            "gain": "100k",
+            "gbw": "1.2meg",
+            "rout": 30,
+            "headroom_high": 1.5,
+            "headroom_low": 0.005,
+            "slew": 0.5
+          }
+        },
+        {
+          "id": "A2",
+          "component": "emblink/opamp",
+          "params": {
+            "gain": "100k",
+            "gbw": "1.2meg",
+            "rout": 30,
+            "headroom_high": 1.5,
+            "headroom_low": 0.005,
+            "slew": 0.5
+          }
+        },
+        {
+          "id": "A3",
+          "component": "emblink/opamp",
+          "params": {
+            "gain": "100k",
+            "gbw": "1.2meg",
+            "rout": 30,
+            "headroom_high": 1.5,
+            "headroom_low": 0.005,
+            "slew": 0.5
+          }
+        },
+        {
+          "id": "A4",
+          "component": "emblink/opamp",
+          "params": {
+            "gain": "100k",
+            "gbw": "1.2meg",
+            "rout": 30,
+            "headroom_high": 1.5,
+            "headroom_low": 0.005,
+            "slew": 0.5
+          }
+        }
+      ],
+      "nets": {
+        "VCC+": [
+          "A1.V+",
+          "A2.V+",
+          "A3.V+",
+          "A4.V+"
+        ],
+        "VCC-": [
+          "A1.V-",
+          "A2.V-",
+          "A3.V-",
+          "A4.V-"
+        ]
+      },
+      "ports": {
+        "1OUT": "A1.OUT",
+        "1IN-": "A1.-",
+        "1IN+": "A1.+",
+        "2OUT": "A2.OUT",
+        "2IN-": "A2.-",
+        "2IN+": "A2.+",
+        "3OUT": "A3.OUT",
+        "3IN-": "A3.-",
+        "3IN+": "A3.+",
+        "4OUT": "A4.OUT",
+        "4IN-": "A4.-",
+        "4IN+": "A4.+",
+        "VCC+": "A1.V+",
+        "VCC-": "A1.V-"
+      }
+    }
+  },
+  "symbol": {
+    "svg": "symbol.svg",
+    "width": 100,
+    "height": 240,
+    "pins": {
+      "1IN+": {
+        "x": 0,
+        "y": 20,
+        "side": "left"
+      },
+      "1IN-": {
+        "x": 0,
+        "y": 40,
+        "side": "left"
+      },
+      "1OUT": {
+        "x": 100,
+        "y": 30,
+        "side": "right"
+      },
+      "2IN+": {
+        "x": 0,
+        "y": 80,
+        "side": "left"
+      },
+      "2IN-": {
+        "x": 0,
+        "y": 100,
+        "side": "left"
+      },
+      "2OUT": {
+        "x": 100,
+        "y": 90,
+        "side": "right"
+      },
+      "3IN+": {
+        "x": 0,
+        "y": 140,
+        "side": "left"
+      },
+      "3IN-": {
+        "x": 0,
+        "y": 160,
+        "side": "left"
+      },
+      "3OUT": {
+        "x": 100,
+        "y": 150,
+        "side": "right"
+      },
+      "4IN+": {
+        "x": 0,
+        "y": 200,
+        "side": "left"
+      },
+      "4IN-": {
+        "x": 0,
+        "y": 220,
+        "side": "left"
+      },
+      "4OUT": {
+        "x": 100,
+        "y": 210,
+        "side": "right"
+      },
+      "VCC+": {
+        "x": 50,
+        "y": 0,
+        "side": "top"
+      },
+      "VCC-": {
+        "x": 50,
+        "y": 240,
+        "side": "bottom"
+      }
+    }
+  },
+  "fidelity": {
+    "functional": null,
+    "timed": null,
+    "electrical": {
+      "claims": "Four op-amps (SPEC-004 opamp) at the datasheet's typical open-loop gain (100 V/mV), a single pole at its 1.2 MHz gain-bandwidth, its 0.5 V/us slew rate and its output swing from each rail; fixtures for a follower, the positive swing, the slew rate and the bandwidth, on different channels.",
+      "omissions": [
+        "input offset voltage, bias and offset currents, and their drift",
+        "the common-mode input range (to VCC+ minus 1.5 V): inputs above it are not diagnosed",
+        "further poles, the phase margin and the capacitive-load stability",
+        "the output current limit (20 to 60 mA), the class-B output's crossover distortion and its 50 uA pull-down sink at the negative rail",
+        "noise (35 nV/rtHz)",
+        "supply current (0.7 mA for the four)",
+        "temperature dependence",
+        "device-to-device spread"
+      ],
+      "validation": [
+        "tests/*.json"
+      ]
+    }
+  },
+  "provenance": {
+    "author": "EmbSIM",
+    "license": "Apache-2.0",
+    "sources": [
+      {
+        "title": "Texas Instruments LMx24, LMx24x, LM2902x quadruple operational amplifiers datasheet (SLOS066AE)",
+        "url": "https://www.ti.com/lit/ds/symlink/lm324.pdf",
+        "rev": "AE, September 2025",
+        "date": "2026-11-03",
+        "hash": "sha256:8161ad748420ae0594ad1919a34b34acd4858b822c04a8066b5fc95ddbda8963",
+        "notes": "The LM324B and LM2902B tables (AOL 100 V/mV, GBW 1.2 MHz, SR 0.5 V/us, the positive swing 1.35 V at 50 uA); the LM324, LM2902 and LM324A tables (AVD 100 V/mV, VOH VCC - 1.5 V at 2 kohm, VOL 5 mV) and operating characteristics (SR 0.5 V/us, B1 1.2 MHz); the pin functions; the packaging information's orderable part numbers. generated from catalog/families/opamps_ti_lm324/family.json by tools/catalog/families.py; edit the family, not this file"
+      }
+    ]
+  },
+  "part": {
+    "manufacturer": "Texas Instruments",
+    "mpn": "LM324APWR",
+    "package": "TSSOP-14",
+    "datasheet": "https://www.ti.com/lit/ds/symlink/lm324.pdf"
+  },
+  "tests": [
+    "tests/*.json"
+  ],
+  "i18n": {
+    "fr": {
+      "source": "57f8406446f3",
+      "description": "Texas Instruments LM324APWR, l'amplificateur opérationnel quadruple LM324A en TSSOP-14 (0 à 70 °C, jusqu'à 32 V) : gain en boucle ouverte de 100 V/mV, produit gain-bande de 1,2 MHz, vitesse de balayage de 0,5 V/us, la version classique : sa sortie 1,5 V sous le rail positif sur 2 kohm et à 5 mV de la masse. Quatre canaux sur le brochage quadruple standard, VCC+ en broche 4 et VCC- en broche 11.",
+      "fidelity": {
+        "electrical": {
+          "claims": "Quatre amplificateurs opérationnels (opamp de SPEC-004) au gain en boucle ouverte typique de la fiche technique (100 V/mV), un pôle unique à son produit gain-bande de 1,2 MHz, sa vitesse de balayage de 0,5 V/us et l'excursion de sa sortie depuis chaque rail ; cas de test pour un suiveur, l'excursion positive, la vitesse de balayage et la bande passante, sur des canaux différents.",
+          "omissions": [
+            "la tension de décalage d'entrée, les courants de polarisation et de décalage, et leur dérive",
+            "la plage d'entrée en mode commun (jusqu'à VCC+ moins 1,5 V) : une entrée au-delà n'est pas signalée",
+            "les pôles suivants, la marge de phase et la stabilité sur charge capacitive",
+            "la limite de courant de sortie (20 à 60 mA), la distorsion de croisement de la sortie classe B et son puits de 50 uA au rail négatif",
+            "le bruit (35 nV/rtHz)",
+            "le courant d'alimentation (0,7 mA pour les quatre)",
+            "la dépendance à la température",
+            "la dispersion d'un exemplaire à l'autre"
+          ]
+        }
+      }
+    }
+  }
+}

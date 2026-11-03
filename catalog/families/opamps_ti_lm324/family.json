@@ -1,0 +1,1258 @@
+{
+  "schema_version": 1,
+  "kind": "family",
+  "name": "Texas Instruments LM324, LM224 and LM2902 quad op-amps",
+  "datasheets": {
+    "ti-lm324": {
+      "title": "Texas Instruments LMx24, LMx24x, LM2902x quadruple operational amplifiers datasheet (SLOS066AE)",
+      "url": "https://www.ti.com/lit/ds/symlink/lm324.pdf",
+      "rev": "AE, September 2025",
+      "date": "2026-11-03",
+      "hash": "sha256:8161ad748420ae0594ad1919a34b34acd4858b822c04a8066b5fc95ddbda8963",
+      "notes": "The LM324B and LM2902B tables (AOL 100 V/mV, GBW 1.2 MHz, SR 0.5 V/us, the positive swing 1.35 V at 50 uA); the LM324, LM2902 and LM324A tables (AVD 100 V/mV, VOH VCC - 1.5 V at 2 kohm, VOL 5 mV) and operating characteristics (SR 0.5 V/us, B1 1.2 MHz); the pin functions; the packaging information's orderable part numbers."
+    }
+  },
+  "evidence": [
+    "GBW Gain-bandwidth product RL = 1M., CL = 20pF \\(see Figure 6-1 for test circuit\\) 1\\.2 MHz SR Slew rate RL = 1M., CL = 30pF, VI = ±10V \\(see Figure 6-1 for test circuit\\) 0\\.5 V/μs",
+    "IOUT = –50µA 1\\.35 1\\.5",
+    "SR Slew rate at unity gain RL = 1M., CL = 30pF, VI = ±10V \\(see Figure 7-1\\) 0\\.5 V/μs B1 Unity-gain bandwidth RL = 1M., CL = 20pF \\(see Figure 7-1\\) 1\\.2 MHz",
+    "VOL Low-level output voltage RL . 10k. Full range 5 20 5 20 mV",
+    "VCC – 1\\.5"
+  ],
+  "template": {
+    "schema_version": 1,
+    "kind": "component",
+    "id": "emblink/${short}",
+    "version": "1.0.0",
+    "name": "${mpn}",
+    "category": "operational_amplifiers",
+    "subcategory": "quad",
+    "description": "Texas Instruments ${mpn}, the ${device} quadruple operational amplifier in ${pkg} (${temp}, up to ${vmax} V): 100 V/mV open-loop gain, 1.2 MHz gain-bandwidth, 0.5 V/us slew rate, ${note}. Four channels on the industry-standard quad pinout, VCC+ on pin 4 and VCC- on pin 11.",
+    "keywords": [
+      "Texas Instruments",
+      "TI",
+      "${mpn}",
+      "${device}",
+      "LM324",
+      "op-amp",
+      "operational amplifier",
+      "quad",
+      "${pkg}",
+      "single supply"
+    ],
+    "pins": [
+      {
+        "name": "1OUT",
+        "number": 1,
+        "model": {
+          "kind": "analog"
+        }
+      },
+      {
+        "name": "1IN-",
+        "number": 2,
+        "model": {
+          "kind": "analog"
+        }
+      },
+      {
+        "name": "1IN+",
+        "number": 3,
+        "model": {
+          "kind": "analog"
+        }
+      },
+      {
+        "name": "VCC+",
+        "number": 4,
+        "model": {
+          "kind": "analog"
+        },
+        "doc": "Positive supply"
+      },
+      {
+        "name": "2IN+",
+        "number": 5,
+        "model": {
+          "kind": "analog"
+        }
+      },
+      {
+        "name": "2IN-",
+        "number": 6,
+        "model": {
+          "kind": "analog"
+        }
+      },
+      {
+        "name": "2OUT",
+        "number": 7,
+        "model": {
+          "kind": "analog"
+        }
+      },
+      {
+        "name": "3OUT",
+        "number": 8,
+        "model": {
+          "kind": "analog"
+        }
+      },
+      {
+        "name": "3IN-",
+        "number": 9,
+        "model": {
+          "kind": "analog"
+        }
+      },
+      {
+        "name": "3IN+",
+        "number": 10,
+        "model": {
+          "kind": "analog"
+        }
+      },
+      {
+        "name": "VCC-",
+        "number": 11,
+        "model": {
+          "kind": "analog"
+        },
+        "doc": "Negative supply or ground"
+      },
+      {
+        "name": "4IN+",
+        "number": 12,
+        "model": {
+          "kind": "analog"
+        }
+      },
+      {
+        "name": "4IN-",
+        "number": 13,
+        "model": {
+          "kind": "analog"
+        }
+      },
+      {
+        "name": "4OUT",
+        "number": 14,
+        "model": {
+          "kind": "analog"
+        }
+      }
+    ],
+    "params": {},
+    "model": {
+      "composite": {
+        "components": [
+          {
+            "id": "A1",
+            "component": "emblink/opamp",
+            "params": {
+              "gain": "100k",
+              "gbw": "1.2meg",
+              "rout": 30,
+              "headroom_high": "${hh}",
+              "headroom_low": 0.005,
+              "slew": 0.5
+            }
+          },
+          {
+            "id": "A2",
+            "component": "emblink/opamp",
+            "params": {
+              "gain": "100k",
+              "gbw": "1.2meg",
+              "rout": 30,
+              "headroom_high": "${hh}",
+              "headroom_low": 0.005,
+              "slew": 0.5
+            }
+          },
+          {
+            "id": "A3",
+            "component": "emblink/opamp",
+            "params": {
+              "gain": "100k",
+              "gbw": "1.2meg",
+              "rout": 30,
+              "headroom_high": "${hh}",
+              "headroom_low": 0.005,
+              "slew": 0.5
+            }
+          },
+          {
+            "id": "A4",
+            "component": "emblink/opamp",
+            "params": {
+              "gain": "100k",
+              "gbw": "1.2meg",
+              "rout": 30,
+              "headroom_high": "${hh}",
+              "headroom_low": 0.005,
+              "slew": 0.5
+            }
+          }
+        ],
+        "nets": {
+          "VCC+": [
+            "A1.V+",
+            "A2.V+",
+            "A3.V+",
+            "A4.V+"
+          ],
+          "VCC-": [
+            "A1.V-",
+            "A2.V-",
+            "A3.V-",
+            "A4.V-"
+          ]
+        },
+        "ports": {
+          "1OUT": "A1.OUT",
+          "1IN-": "A1.-",
+          "1IN+": "A1.+",
+          "2OUT": "A2.OUT",
+          "2IN-": "A2.-",
+          "2IN+": "A2.+",
+          "3OUT": "A3.OUT",
+          "3IN-": "A3.-",
+          "3IN+": "A3.+",
+          "4OUT": "A4.OUT",
+          "4IN-": "A4.-",
+          "4IN+": "A4.+",
+          "VCC+": "A1.V+",
+          "VCC-": "A1.V-"
+        }
+      }
+    },
+    "symbol": {
+      "svg": "symbol.svg",
+      "width": 100,
+      "height": 240,
+      "pins": {
+        "1IN+": {
+          "x": 0,
+          "y": 20,
+          "side": "left"
+        },
+        "1IN-": {
+          "x": 0,
+          "y": 40,
+          "side": "left"
+        },
+        "1OUT": {
+          "x": 100,
+          "y": 30,
+          "side": "right"
+        },
+        "2IN+": {
+          "x": 0,
+          "y": 80,
+          "side": "left"
+        },
+        "2IN-": {
+          "x": 0,
+          "y": 100,
+          "side": "left"
+        },
+        "2OUT": {
+          "x": 100,
+          "y": 90,
+          "side": "right"
+        },
+        "3IN+": {
+          "x": 0,
+          "y": 140,
+          "side": "left"
+        },
+        "3IN-": {
+          "x": 0,
+          "y": 160,
+          "side": "left"
+        },
+        "3OUT": {
+          "x": 100,
+          "y": 150,
+          "side": "right"
+        },
+        "4IN+": {
+          "x": 0,
+          "y": 200,
+          "side": "left"
+        },
+        "4IN-": {
+          "x": 0,
+          "y": 220,
+          "side": "left"
+        },
+        "4OUT": {
+          "x": 100,
+          "y": 210,
+          "side": "right"
+        },
+        "VCC+": {
+          "x": 50,
+          "y": 0,
+          "side": "top"
+        },
+        "VCC-": {
+          "x": 50,
+          "y": 240,
+          "side": "bottom"
+        }
+      }
+    },
+    "fidelity": {
+      "functional": null,
+      "timed": null,
+      "electrical": {
+        "claims": "Four op-amps (SPEC-004 opamp) at the datasheet's typical open-loop gain (100 V/mV), a single pole at its 1.2 MHz gain-bandwidth, its 0.5 V/us slew rate and its output swing from each rail; fixtures for a follower, the positive swing, the slew rate and the bandwidth, on different channels.",
+        "omissions": [
+          "input offset voltage, bias and offset currents, and their drift",
+          "the common-mode input range (to VCC+ minus 1.5 V): inputs above it are not diagnosed",
+          "further poles, the phase margin and the capacitive-load stability",
+          "the output current limit (20 to 60 mA), the class-B output's crossover distortion and its 50 uA pull-down sink at the negative rail",
+          "noise (35 nV/rtHz)",
+          "supply current (0.7 mA for the four)",
+          "temperature dependence",
+          "device-to-device spread"
+        ],
+        "validation": [
+          "tests/*.json"
+        ]
+      }
+    },
+    "provenance": {
+      "author": "EmbSIM",
+      "license": "Apache-2.0",
+      "sources": []
+    },
+    "part": {
+      "manufacturer": "Texas Instruments",
+      "mpn": "${mpn}",
+      "package": "${pkg}",
+      "datasheet": "${datasheet_url}"
+    },
+    "tests": [
+      "tests/*.json"
+    ],
+    "i18n": {
+      "fr": {
+        "description": "Texas Instruments ${mpn}, l'amplificateur opérationnel quadruple ${device} en ${pkg} (${temp_fr}, jusqu'à ${vmax} V) : gain en boucle ouverte de 100 V/mV, produit gain-bande de 1,2 MHz, vitesse de balayage de 0,5 V/us, ${note_fr}. Quatre canaux sur le brochage quadruple standard, VCC+ en broche 4 et VCC- en broche 11.",
+        "fidelity": {
+          "electrical": {
+            "claims": "Quatre amplificateurs opérationnels (opamp de SPEC-004) au gain en boucle ouverte typique de la fiche technique (100 V/mV), un pôle unique à son produit gain-bande de 1,2 MHz, sa vitesse de balayage de 0,5 V/us et l'excursion de sa sortie depuis chaque rail ; cas de test pour un suiveur, l'excursion positive, la vitesse de balayage et la bande passante, sur des canaux différents.",
+            "omissions": [
+              "la tension de décalage d'entrée, les courants de polarisation et de décalage, et leur dérive",
+              "la plage d'entrée en mode commun (jusqu'à VCC+ moins 1,5 V) : une entrée au-delà n'est pas signalée",
+              "les pôles suivants, la marge de phase et la stabilité sur charge capacitive",
+              "la limite de courant de sortie (20 à 60 mA), la distorsion de croisement de la sortie classe B et son puits de 50 uA au rail négatif",
+              "le bruit (35 nV/rtHz)",
+              "le courant d'alimentation (0,7 mA pour les quatre)",
+              "la dépendance à la température",
+              "la dispersion d'un exemplaire à l'autre"
+            ]
+          }
+        }
+      }
+    }
+  },
+  "tests": {
+    "follower": {
+      "schema_version": 1,
+      "kind": "component_test",
+      "name": "follower",
+      "description": "Channel 1 as a follower at 2.5 V on 5 V: its output 2.5 V",
+      "policy": "electrical",
+      "until": "40us",
+      "settings": {
+        "imperfections": "ideal"
+      },
+      "circuit": {
+        "components": [
+          {
+            "id": "VI",
+            "component": "emblink/vsource",
+            "params": {
+              "kind": "dc",
+              "dc": 2.5
+            }
+          },
+          {
+            "id": "VS",
+            "component": "emblink/vsource",
+            "params": {
+              "kind": "dc",
+              "dc": 5
+            }
+          },
+          {
+            "id": "DUT",
+            "component": "emblink/${short}"
+          },
+          {
+            "id": "G",
+            "component": "emblink/gnd"
+          },
+          {
+            "id": "RL",
+            "component": "emblink/resistor",
+            "params": {
+              "resistance": "10k",
+              "tolerance": 0
+            }
+          }
+        ],
+        "nets": {
+          "IN": [
+            "VI.+",
+            "DUT.1IN+"
+          ],
+          "VCC": [
+            "VS.+",
+            "DUT.VCC+"
+          ],
+          "GND": [
+            "VI.-",
+            "VS.-",
+            "DUT.VCC-",
+            "G.GND",
+            "RL.2"
+          ],
+          "OUT": [
+            "DUT.1OUT",
+            "DUT.1IN-",
+            "RL.1"
+          ]
+        }
+      },
+      "expect": {
+        "net:OUT": {
+          "at": "20us",
+          "min_v": 2.49,
+          "max_v": 2.51
+        }
+      }
+    },
+    "headroom": {
+      "schema_version": 1,
+      "kind": "component_test",
+      "name": "headroom",
+      "description": "Channel 2 as a comparator driven high on 5 V: its output ${hh} V below the positive rail, the datasheet's typical swing",
+      "policy": "electrical",
+      "until": "40us",
+      "settings": {
+        "imperfections": "ideal"
+      },
+      "circuit": {
+        "components": [
+          {
+            "id": "VI",
+            "component": "emblink/vsource",
+            "params": {
+              "kind": "dc",
+              "dc": 2.6
+            }
+          },
+          {
+            "id": "VR",
+            "component": "emblink/vsource",
+            "params": {
+              "kind": "dc",
+              "dc": 2.4
+            }
+          },
+          {
+            "id": "VS",
+            "component": "emblink/vsource",
+            "params": {
+              "kind": "dc",
+              "dc": 5
+            }
+          },
+          {
+            "id": "DUT",
+            "component": "emblink/${short}"
+          },
+          {
+            "id": "G",
+            "component": "emblink/gnd"
+          },
+          {
+            "id": "RL",
+            "component": "emblink/resistor",
+            "params": {
+              "resistance": "10k",
+              "tolerance": 0
+            }
+          }
+        ],
+        "nets": {
+          "IN": [
+            "VI.+",
+            "DUT.2IN+"
+          ],
+          "REF": [
+            "VR.+",
+            "DUT.2IN-"
+          ],
+          "VCC": [
+            "VS.+",
+            "DUT.VCC+"
+          ],
+          "GND": [
+            "VI.-",
+            "VR.-",
+            "VS.-",
+            "DUT.VCC-",
+            "G.GND",
+            "RL.2"
+          ],
+          "OUT": [
+            "DUT.2OUT",
+            "RL.1"
+          ]
+        }
+      },
+      "expect": {
+        "net:OUT": {
+          "at": "30us",
+          "min_v": "${vtop_min}",
+          "max_v": "${vtop_max}"
+        }
+      }
+    },
+    "slew": {
+      "schema_version": 1,
+      "kind": "component_test",
+      "name": "slew",
+      "description": "Channel 3 as a follower given a 2 V step: the output slews at the datasheet's 0.5 V/us, ${slew_v} V a microsecond after the step",
+      "policy": "electrical",
+      "until": "40us",
+      "settings": {
+        "imperfections": "ideal"
+      },
+      "circuit": {
+        "components": [
+          {
+            "id": "VI",
+            "component": "emblink/vsource",
+            "params": {
+              "kind": "pulse",
+              "v1": 1.0,
+              "v2": 3.0,
+              "td": "10u",
+              "tr": "10n",
+              "tf": "10n",
+              "pw": "1m",
+              "per": "2m"
+            }
+          },
+          {
+            "id": "VS",
+            "component": "emblink/vsource",
+            "params": {
+              "kind": "dc",
+              "dc": 5
+            }
+          },
+          {
+            "id": "DUT",
+            "component": "emblink/${short}"
+          },
+          {
+            "id": "G",
+            "component": "emblink/gnd"
+          },
+          {
+            "id": "RL",
+            "component": "emblink/resistor",
+            "params": {
+              "resistance": "10k",
+              "tolerance": 0
+            }
+          }
+        ],
+        "nets": {
+          "IN": [
+            "VI.+",
+            "DUT.3IN+"
+          ],
+          "VCC": [
+            "VS.+",
+            "DUT.VCC+"
+          ],
+          "GND": [
+            "VI.-",
+            "VS.-",
+            "DUT.VCC-",
+            "G.GND",
+            "RL.2"
+          ],
+          "OUT": [
+            "DUT.3OUT",
+            "DUT.3IN-",
+            "RL.1"
+          ]
+        }
+      },
+      "expect": {
+        "net:OUT": {
+          "at": "11us",
+          "min_v": "${slew_min}",
+          "max_v": "${slew_max}"
+        }
+      }
+    },
+    "bandwidth": {
+      "schema_version": 1,
+      "kind": "component_test",
+      "name": "bandwidth",
+      "description": "Channel 4 at a gain of 11 given a 10 mV step, too small to slew: one pole, its time constant 11 / (2 pi 1.2 MHz), 63 % of the 110 mV step then",
+      "policy": "electrical",
+      "until": "40us",
+      "settings": {
+        "imperfections": "ideal"
+      },
+      "circuit": {
+        "components": [
+          {
+            "id": "VI",
+            "component": "emblink/vsource",
+            "params": {
+              "kind": "pulse",
+              "v1": 0.1,
+              "v2": 0.11,
+              "td": "10u",
+              "tr": "10n",
+              "tf": "10n",
+              "pw": "1m",
+              "per": "2m"
+            }
+          },
+          {
+            "id": "VS",
+            "component": "emblink/vsource",
+            "params": {
+              "kind": "dc",
+              "dc": 5
+            }
+          },
+          {
+            "id": "DUT",
+            "component": "emblink/${short}"
+          },
+          {
+            "id": "G",
+            "component": "emblink/gnd"
+          },
+          {
+            "id": "RF",
+            "component": "emblink/resistor",
+            "params": {
+              "resistance": "10k",
+              "tolerance": 0
+            }
+          },
+          {
+            "id": "RG",
+            "component": "emblink/resistor",
+            "params": {
+              "resistance": "1k",
+              "tolerance": 0
+            }
+          }
+        ],
+        "nets": {
+          "IN": [
+            "VI.+",
+            "DUT.4IN+"
+          ],
+          "VCC": [
+            "VS.+",
+            "DUT.VCC+"
+          ],
+          "GND": [
+            "VI.-",
+            "VS.-",
+            "DUT.VCC-",
+            "G.GND",
+            "RG.2"
+          ],
+          "OUT": [
+            "DUT.4OUT",
+            "RF.1"
+          ],
+          "FB": [
+            "DUT.4IN-",
+            "RF.2",
+            "RG.1"
+          ]
+        }
+      },
+      "expect": {
+        "net:OUT": {
+          "at": "${bw_at}",
+          "min_v": "${bw_min}",
+          "max_v": "${bw_max}"
+        }
+      }
+    }
+  },
+  "rows": [
+    {
+      "mpn": "LM324N",
+      "short": "lm324n",
+      "device": "LM324",
+      "pkg": "PDIP-14",
+      "temp": "0 to 70 C",
+      "temp_fr": "0 à 70 °C",
+      "vmax": 32,
+      "hh": 1.5,
+      "note": "the classic version: its output 1.5 V below the positive rail with 2 kohm and within 5 mV of ground",
+      "note_fr": "la version classique : sa sortie 1,5 V sous le rail positif sur 2 kohm et à 5 mV de la masse",
+      "slew_v": 1.5,
+      "slew_min": 1.425,
+      "slew_max": 1.575,
+      "bw_at": "11.459us",
+      "bw_min": 1.1626,
+      "bw_max": 1.1765,
+      "vtop_min": 3.4,
+      "vtop_max": 3.6,
+      "datasheet": "ti-lm324",
+      "evidence": [
+        "LM324N Active Production"
+      ]
+    },
+    {
+      "mpn": "LM324DR",
+      "short": "lm324dr",
+      "device": "LM324",
+      "pkg": "SOIC-14",
+      "temp": "0 to 70 C",
+      "temp_fr": "0 à 70 °C",
+      "vmax": 32,
+      "hh": 1.5,
+      "note": "the classic version: its output 1.5 V below the positive rail with 2 kohm and within 5 mV of ground",
+      "note_fr": "la version classique : sa sortie 1,5 V sous le rail positif sur 2 kohm et à 5 mV de la masse",
+      "slew_v": 1.5,
+      "slew_min": 1.425,
+      "slew_max": 1.575,
+      "bw_at": "11.459us",
+      "bw_min": 1.1626,
+      "bw_max": 1.1765,
+      "vtop_min": 3.4,
+      "vtop_max": 3.6,
+      "datasheet": "ti-lm324",
+      "evidence": [
+        "LM324DR Active Production"
+      ]
+    },
+    {
+      "mpn": "LM324PWR",
+      "short": "lm324pwr",
+      "device": "LM324",
+      "pkg": "TSSOP-14",
+      "temp": "0 to 70 C",
+      "temp_fr": "0 à 70 °C",
+      "vmax": 32,
+      "hh": 1.5,
+      "note": "the classic version: its output 1.5 V below the positive rail with 2 kohm and within 5 mV of ground",
+      "note_fr": "la version classique : sa sortie 1,5 V sous le rail positif sur 2 kohm et à 5 mV de la masse",
+      "slew_v": 1.5,
+      "slew_min": 1.425,
+      "slew_max": 1.575,
+      "bw_at": "11.459us",
+      "bw_min": 1.1626,
+      "bw_max": 1.1765,
+      "vtop_min": 3.4,
+      "vtop_max": 3.6,
+      "datasheet": "ti-lm324",
+      "evidence": [
+        "LM324PWR Active Production"
+      ]
+    },
+    {
+      "mpn": "LM324NSR",
+      "short": "lm324nsr",
+      "device": "LM324",
+      "pkg": "SO-14 (NS)",
+      "temp": "0 to 70 C",
+      "temp_fr": "0 à 70 °C",
+      "vmax": 32,
+      "hh": 1.5,
+      "note": "the classic version: its output 1.5 V below the positive rail with 2 kohm and within 5 mV of ground",
+      "note_fr": "la version classique : sa sortie 1,5 V sous le rail positif sur 2 kohm et à 5 mV de la masse",
+      "slew_v": 1.5,
+      "slew_min": 1.425,
+      "slew_max": 1.575,
+      "bw_at": "11.459us",
+      "bw_min": 1.1626,
+      "bw_max": 1.1765,
+      "vtop_min": 3.4,
+      "vtop_max": 3.6,
+      "datasheet": "ti-lm324",
+      "evidence": [
+        "LM324NSR Active Production"
+      ]
+    },
+    {
+      "mpn": "LM324AN",
+      "short": "lm324an",
+      "device": "LM324A",
+      "pkg": "PDIP-14",
+      "temp": "0 to 70 C",
+      "temp_fr": "0 à 70 °C",
+      "vmax": 32,
+      "hh": 1.5,
+      "note": "the classic version: its output 1.5 V below the positive rail with 2 kohm and within 5 mV of ground",
+      "note_fr": "la version classique : sa sortie 1,5 V sous le rail positif sur 2 kohm et à 5 mV de la masse",
+      "slew_v": 1.5,
+      "slew_min": 1.425,
+      "slew_max": 1.575,
+      "bw_at": "11.459us",
+      "bw_min": 1.1626,
+      "bw_max": 1.1765,
+      "vtop_min": 3.4,
+      "vtop_max": 3.6,
+      "datasheet": "ti-lm324",
+      "evidence": [
+        "LM324AN Active Production"
+      ]
+    },
+    {
+      "mpn": "LM324ADR",
+      "short": "lm324adr",
+      "device": "LM324A",
+      "pkg": "SOIC-14",
+      "temp": "0 to 70 C",
+      "temp_fr": "0 à 70 °C",
+      "vmax": 32,
+      "hh": 1.5,
+      "note": "the classic version: its output 1.5 V below the positive rail with 2 kohm and within 5 mV of ground",
+      "note_fr": "la version classique : sa sortie 1,5 V sous le rail positif sur 2 kohm et à 5 mV de la masse",
+      "slew_v": 1.5,
+      "slew_min": 1.425,
+      "slew_max": 1.575,
+      "bw_at": "11.459us",
+      "bw_min": 1.1626,
+      "bw_max": 1.1765,
+      "vtop_min": 3.4,
+      "vtop_max": 3.6,
+      "datasheet": "ti-lm324",
+      "evidence": [
+        "LM324ADR Active Production"
+      ]
+    },
+    {
+      "mpn": "LM324APWR",
+      "short": "lm324apwr",
+      "device": "LM324A",
+      "pkg": "TSSOP-14",
+      "temp": "0 to 70 C",
+      "temp_fr": "0 à 70 °C",
+      "vmax": 32,
+      "hh": 1.5,
+      "note": "the classic version: its output 1.5 V below the positive rail with 2 kohm and within 5 mV of ground",
+      "note_fr": "la version classique : sa sortie 1,5 V sous le rail positif sur 2 kohm et à 5 mV de la masse",
+      "slew_v": 1.5,
+      "slew_min": 1.425,
+      "slew_max": 1.575,
+      "bw_at": "11.459us",
+      "bw_min": 1.1626,
+      "bw_max": 1.1765,
+      "vtop_min": 3.4,
+      "vtop_max": 3.6,
+      "datasheet": "ti-lm324",
+      "evidence": [
+        "LM324APWR Active Production"
+      ]
+    },
+    {
+      "mpn": "LM324KN",
+      "short": "lm324kn",
+      "device": "LM324K",
+      "pkg": "PDIP-14",
+      "temp": "0 to 70 C",
+      "temp_fr": "0 à 70 °C",
+      "vmax": 32,
+      "hh": 1.5,
+      "note": "the classic version: its output 1.5 V below the positive rail with 2 kohm and within 5 mV of ground",
+      "note_fr": "la version classique : sa sortie 1,5 V sous le rail positif sur 2 kohm et à 5 mV de la masse",
+      "slew_v": 1.5,
+      "slew_min": 1.425,
+      "slew_max": 1.575,
+      "bw_at": "11.459us",
+      "bw_min": 1.1626,
+      "bw_max": 1.1765,
+      "vtop_min": 3.4,
+      "vtop_max": 3.6,
+      "datasheet": "ti-lm324",
+      "evidence": [
+        "LM324KN Active Production"
+      ]
+    },
+    {
+      "mpn": "LM324KDR",
+      "short": "lm324kdr",
+      "device": "LM324K",
+      "pkg": "SOIC-14",
+      "temp": "0 to 70 C",
+      "temp_fr": "0 à 70 °C",
+      "vmax": 32,
+      "hh": 1.5,
+      "note": "the classic version: its output 1.5 V below the positive rail with 2 kohm and within 5 mV of ground",
+      "note_fr": "la version classique : sa sortie 1,5 V sous le rail positif sur 2 kohm et à 5 mV de la masse",
+      "slew_v": 1.5,
+      "slew_min": 1.425,
+      "slew_max": 1.575,
+      "bw_at": "11.459us",
+      "bw_min": 1.1626,
+      "bw_max": 1.1765,
+      "vtop_min": 3.4,
+      "vtop_max": 3.6,
+      "datasheet": "ti-lm324",
+      "evidence": [
+        "LM324KDR Active Production"
+      ]
+    },
+    {
+      "mpn": "LM224N",
+      "short": "lm224n",
+      "device": "LM224",
+      "pkg": "PDIP-14",
+      "temp": "-25 to 85 C",
+      "temp_fr": "-25 à 85 °C",
+      "vmax": 32,
+      "hh": 1.5,
+      "note": "the classic version: its output 1.5 V below the positive rail with 2 kohm and within 5 mV of ground",
+      "note_fr": "la version classique : sa sortie 1,5 V sous le rail positif sur 2 kohm et à 5 mV de la masse",
+      "slew_v": 1.5,
+      "slew_min": 1.425,
+      "slew_max": 1.575,
+      "bw_at": "11.459us",
+      "bw_min": 1.1626,
+      "bw_max": 1.1765,
+      "vtop_min": 3.4,
+      "vtop_max": 3.6,
+      "datasheet": "ti-lm324",
+      "evidence": [
+        "LM224N Active Production"
+      ]
+    },
+    {
+      "mpn": "LM224DR",
+      "short": "lm224dr",
+      "device": "LM224",
+      "pkg": "SOIC-14",
+      "temp": "-25 to 85 C",
+      "temp_fr": "-25 à 85 °C",
+      "vmax": 32,
+      "hh": 1.5,
+      "note": "the classic version: its output 1.5 V below the positive rail with 2 kohm and within 5 mV of ground",
+      "note_fr": "la version classique : sa sortie 1,5 V sous le rail positif sur 2 kohm et à 5 mV de la masse",
+      "slew_v": 1.5,
+      "slew_min": 1.425,
+      "slew_max": 1.575,
+      "bw_at": "11.459us",
+      "bw_min": 1.1626,
+      "bw_max": 1.1765,
+      "vtop_min": 3.4,
+      "vtop_max": 3.6,
+      "datasheet": "ti-lm324",
+      "evidence": [
+        "LM224DR Active Production"
+      ]
+    },
+    {
+      "mpn": "LM224AN",
+      "short": "lm224an",
+      "device": "LM224A",
+      "pkg": "PDIP-14",
+      "temp": "-25 to 85 C",
+      "temp_fr": "-25 à 85 °C",
+      "vmax": 32,
+      "hh": 1.5,
+      "note": "the classic version: its output 1.5 V below the positive rail with 2 kohm and within 5 mV of ground",
+      "note_fr": "la version classique : sa sortie 1,5 V sous le rail positif sur 2 kohm et à 5 mV de la masse",
+      "slew_v": 1.5,
+      "slew_min": 1.425,
+      "slew_max": 1.575,
+      "bw_at": "11.459us",
+      "bw_min": 1.1626,
+      "bw_max": 1.1765,
+      "vtop_min": 3.4,
+      "vtop_max": 3.6,
+      "datasheet": "ti-lm324",
+      "evidence": [
+        "LM224AN Active Production"
+      ]
+    },
+    {
+      "mpn": "LM224ADR",
+      "short": "lm224adr",
+      "device": "LM224A",
+      "pkg": "SOIC-14",
+      "temp": "-25 to 85 C",
+      "temp_fr": "-25 à 85 °C",
+      "vmax": 32,
+      "hh": 1.5,
+      "note": "the classic version: its output 1.5 V below the positive rail with 2 kohm and within 5 mV of ground",
+      "note_fr": "la version classique : sa sortie 1,5 V sous le rail positif sur 2 kohm et à 5 mV de la masse",
+      "slew_v": 1.5,
+      "slew_min": 1.425,
+      "slew_max": 1.575,
+      "bw_at": "11.459us",
+      "bw_min": 1.1626,
+      "bw_max": 1.1765,
+      "vtop_min": 3.4,
+      "vtop_max": 3.6,
+      "datasheet": "ti-lm324",
+      "evidence": [
+        "LM224ADR Active Production"
+      ]
+    },
+    {
+      "mpn": "LM2902N",
+      "short": "lm2902n",
+      "device": "LM2902",
+      "pkg": "PDIP-14",
+      "temp": "-40 to 125 C",
+      "temp_fr": "-40 à 125 °C",
+      "vmax": 26,
+      "hh": 1.5,
+      "note": "the classic version: its output 1.5 V below the positive rail with 2 kohm and within 5 mV of ground",
+      "note_fr": "la version classique : sa sortie 1,5 V sous le rail positif sur 2 kohm et à 5 mV de la masse",
+      "slew_v": 1.5,
+      "slew_min": 1.425,
+      "slew_max": 1.575,
+      "bw_at": "11.459us",
+      "bw_min": 1.1626,
+      "bw_max": 1.1765,
+      "vtop_min": 3.4,
+      "vtop_max": 3.6,
+      "datasheet": "ti-lm324",
+      "evidence": [
+        "LM2902N Active Production"
+      ]
+    },
+    {
+      "mpn": "LM2902DR",
+      "short": "lm2902dr",
+      "device": "LM2902",
+      "pkg": "SOIC-14",
+      "temp": "-40 to 125 C",
+      "temp_fr": "-40 à 125 °C",
+      "vmax": 26,
+      "hh": 1.5,
+      "note": "the classic version: its output 1.5 V below the positive rail with 2 kohm and within 5 mV of ground",
+      "note_fr": "la version classique : sa sortie 1,5 V sous le rail positif sur 2 kohm et à 5 mV de la masse",
+      "slew_v": 1.5,
+      "slew_min": 1.425,
+      "slew_max": 1.575,
+      "bw_at": "11.459us",
+      "bw_min": 1.1626,
+      "bw_max": 1.1765,
+      "vtop_min": 3.4,
+      "vtop_max": 3.6,
+      "datasheet": "ti-lm324",
+      "evidence": [
+        "LM2902DR Active Production"
+      ]
+    },
+    {
+      "mpn": "LM2902PWR",
+      "short": "lm2902pwr",
+      "device": "LM2902",
+      "pkg": "TSSOP-14",
+      "temp": "-40 to 125 C",
+      "temp_fr": "-40 à 125 °C",
+      "vmax": 26,
+      "hh": 1.5,
+      "note": "the classic version: its output 1.5 V below the positive rail with 2 kohm and within 5 mV of ground",
+      "note_fr": "la version classique : sa sortie 1,5 V sous le rail positif sur 2 kohm et à 5 mV de la masse",
+      "slew_v": 1.5,
+      "slew_min": 1.425,
+      "slew_max": 1.575,
+      "bw_at": "11.459us",
+      "bw_min": 1.1626,
+      "bw_max": 1.1765,
+      "vtop_min": 3.4,
+      "vtop_max": 3.6,
+      "datasheet": "ti-lm324",
+      "evidence": [
+        "LM2902PWR Active Production"
+      ]
+    },
+    {
+      "mpn": "LM2902KVQDR",
+      "short": "lm2902kvqdr",
+      "device": "LM2902KV",
+      "pkg": "SOIC-14",
+      "temp": "-40 to 125 C (automotive)",
+      "temp_fr": "-40 à 125 °C (automobile)",
+      "vmax": 32,
+      "hh": 1.5,
+      "note": "the classic version: its output 1.5 V below the positive rail with 2 kohm and within 5 mV of ground",
+      "note_fr": "la version classique : sa sortie 1,5 V sous le rail positif sur 2 kohm et à 5 mV de la masse",
+      "slew_v": 1.5,
+      "slew_min": 1.425,
+      "slew_max": 1.575,
+      "bw_at": "11.459us",
+      "bw_min": 1.1626,
+      "bw_max": 1.1765,
+      "vtop_min": 3.4,
+      "vtop_max": 3.6,
+      "datasheet": "ti-lm324",
+      "evidence": [
+        "LM2902KVQDR Active Production"
+      ]
+    },
+    {
+      "mpn": "LM2902KAVQDR",
+      "short": "lm2902kavqdr",
+      "device": "LM2902KAV",
+      "pkg": "SOIC-14",
+      "temp": "-40 to 125 C (automotive)",
+      "temp_fr": "-40 à 125 °C (automobile)",
+      "vmax": 32,
+      "hh": 1.5,
+      "note": "the classic version: its output 1.5 V below the positive rail with 2 kohm and within 5 mV of ground",
+      "note_fr": "la version classique : sa sortie 1,5 V sous le rail positif sur 2 kohm et à 5 mV de la masse",
+      "slew_v": 1.5,
+      "slew_min": 1.425,
+      "slew_max": 1.575,
+      "bw_at": "11.459us",
+      "bw_min": 1.1626,
+      "bw_max": 1.1765,
+      "vtop_min": 3.4,
+      "vtop_max": 3.6,
+      "datasheet": "ti-lm324",
+      "evidence": [
+        "LM2902KAVQDR Active Production"
+      ]
+    },
+    {
+      "mpn": "LM324BIDR",
+      "short": "lm324bidr",
+      "device": "LM324B",
+      "pkg": "SOIC-14",
+      "temp": "-40 to 85 C",
+      "temp_fr": "-40 à 85 °C",
+      "vmax": 36,
+      "hh": 1.35,
+      "note": "the B version: 3 to 36 V supply, its output 1.35 V below the positive rail at 50 uA",
+      "note_fr": "la version B : alimentation de 3 à 36 V, sa sortie à 1,35 V sous le rail positif à 50 uA",
+      "slew_v": 1.5,
+      "slew_min": 1.425,
+      "slew_max": 1.575,
+      "bw_at": "11.459us",
+      "bw_min": 1.1626,
+      "bw_max": 1.1765,
+      "vtop_min": 3.55,
+      "vtop_max": 3.75,
+      "datasheet": "ti-lm324",
+      "evidence": [
+        "LM324BIDR Active Production"
+      ]
+    },
+    {
+      "mpn": "LM324BAIDR",
+      "short": "lm324baidr",
+      "device": "LM324BA",
+      "pkg": "SOIC-14",
+      "temp": "-40 to 85 C",
+      "temp_fr": "-40 à 85 °C",
+      "vmax": 36,
+      "hh": 1.35,
+      "note": "the B version: 3 to 36 V supply, its output 1.35 V below the positive rail at 50 uA",
+      "note_fr": "la version B : alimentation de 3 à 36 V, sa sortie à 1,35 V sous le rail positif à 50 uA",
+      "slew_v": 1.5,
+      "slew_min": 1.425,
+      "slew_max": 1.575,
+      "bw_at": "11.459us",
+      "bw_min": 1.1626,
+      "bw_max": 1.1765,
+      "vtop_min": 3.55,
+      "vtop_max": 3.75,
+      "datasheet": "ti-lm324",
+      "evidence": [
+        "LM324BAIDR Active Production"
+      ]
+    },
+    {
+      "mpn": "LM324BIPWR",
+      "short": "lm324bipwr",
+      "device": "LM324B",
+      "pkg": "TSSOP-14",
+      "temp": "-40 to 85 C",
+      "temp_fr": "-40 à 85 °C",
+      "vmax": 36,
+      "hh": 1.35,
+      "note": "the B version: 3 to 36 V supply, its output 1.35 V below the positive rail at 50 uA",
+      "note_fr": "la version B : alimentation de 3 à 36 V, sa sortie à 1,35 V sous le rail positif à 50 uA",
+      "slew_v": 1.5,
+      "slew_min": 1.425,
+      "slew_max": 1.575,
+      "bw_at": "11.459us",
+      "bw_min": 1.1626,
+      "bw_max": 1.1765,
+      "vtop_min": 3.55,
+      "vtop_max": 3.75,
+      "datasheet": "ti-lm324",
+      "evidence": [
+        "LM324BIPWR Active Production"
+      ]
+    },
+    {
+      "mpn": "LM2902BIDR",
+      "short": "lm2902bidr",
+      "device": "LM2902B",
+      "pkg": "SOIC-14",
+      "temp": "-40 to 125 C",
+      "temp_fr": "-40 à 125 °C",
+      "vmax": 36,
+      "hh": 1.35,
+      "note": "the B version: 3 to 36 V supply, its output 1.35 V below the positive rail at 50 uA",
+      "note_fr": "la version B : alimentation de 3 à 36 V, sa sortie à 1,35 V sous le rail positif à 50 uA",
+      "slew_v": 1.5,
+      "slew_min": 1.425,
+      "slew_max": 1.575,
+      "bw_at": "11.459us",
+      "bw_min": 1.1626,
+      "bw_max": 1.1765,
+      "vtop_min": 3.55,
+      "vtop_max": 3.75,
+      "datasheet": "ti-lm324",
+      "evidence": [
+        "LM2902BIDR Active Production"
+      ]
+    },
+    {
+      "mpn": "LM2902BAIDR",
+      "short": "lm2902baidr",
+      "device": "LM2902BA",
+      "pkg": "SOIC-14",
+      "temp": "-40 to 125 C",
+      "temp_fr": "-40 à 125 °C",
+      "vmax": 36,
+      "hh": 1.35,
+      "note": "the B version: 3 to 36 V supply, its output 1.35 V below the positive rail at 50 uA",
+      "note_fr": "la version B : alimentation de 3 à 36 V, sa sortie à 1,35 V sous le rail positif à 50 uA",
+      "slew_v": 1.5,
+      "slew_min": 1.425,
+      "slew_max": 1.575,
+      "bw_at": "11.459us",
+      "bw_min": 1.1626,
+      "bw_max": 1.1765,
+      "vtop_min": 3.55,
+      "vtop_max": 3.75,
+      "datasheet": "ti-lm324",
+      "evidence": [
+        "LM2902BAIDR Active Production"
+      ]
+    }
+  ]
+}
