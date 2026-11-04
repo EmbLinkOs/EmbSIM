@@ -21,8 +21,8 @@ window: 111 native assertions and 5,376 separately assembled all-register compar
 pass. Mixed-width fetch, compact arithmetic, non-windowed calls/returns, conditional
 branches and callback memory access now execute an assembled summing/subroutine
 program. The execution test passes 618 assertions; a separate assembler/linker
-referee passes 3,840 execution cases and 960 failed accesses. General
-exceptions/interrupts, full ISA, SMP, SoC boot and timing remain
+referee passes 3,840 execution cases and 960 failed accesses. Complete
+exception/interrupt behavior, full ISA, SMP, SoC boot and timing remain
 unimplemented. The new 64-AR window engine implements windowed calls/ENTRY/RETW,
 lazy spill/fill exception transitions, RFWO/RFWU retries, selected special
 registers and hardware loops (1,337 native assertions). The actual Espressif
@@ -32,6 +32,11 @@ ESP-IDF's actual spill/fill handler instruction bodies through the bus, passing
 overflow/underflow counts. This does not establish ESP-IDF boot or SoC fidelity.
 Additionally, 96 compiler-generated C executions (sum/sort/copy,
 33,472 fetched instructions) pass buffer, guard, return and callee-save checks.
+SAR setup/variable shifts and exchange, RSIL state and selected opt-in XEA2
+syscall/illegal/privilege/nested entry/return now pass 785 native assertions.
+An additional 7,040 real ESP32 compiled bit-manipulation executions pass (37,818
+fetched instructions). Unknown instructions and ambiguous bus failures are not
+assigned invented exception causes; general interrupt delivery remains absent.
 No runnable ESP32 target is added, and the
 existing RISC-V ESP32-C3 is not a substitute.
 

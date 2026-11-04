@@ -5,6 +5,19 @@ versions follow semantic versioning. There is no release yet.
 
 ## Unreleased
 
+### Experimental Xtensa SAR and selected system behavior
+
+- Added SAR setup and variable shifts/funnel operations, XSR.SAR, selected system
+  registers, RSIL mask-state changes and serialized MEMW/ISYNC/ESYNC behavior.
+  This does not qualify interrupt delivery, cache/pipeline or async bus behavior.
+- Added explicit opt-in kernel/user/double exception vectors for syscall, known
+  illegal instructions and implemented privilege faults, with EPC1/DEPC retention,
+  RFE/RFDE and explicit cause/address injection. Unimplemented valid opcodes and
+  ambiguous bus failures remain diagnostics rather than fabricated causes.
+- Added 785 native assertions and 7,040 actual ESP32 compiled bit-manipulation
+  runs, alongside regression checks of window spill/fill. Full system/interrupt,
+  SMP, SoC boot and board support remain incomplete.
+
 ### Experimental Xtensa windows and hardware loops
 
 - Implemented 64 physical address registers, overlapping windows, CALL4/8/12

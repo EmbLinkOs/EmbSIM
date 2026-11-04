@@ -156,7 +156,7 @@ Implemented window behavior:
   spill/fill memory accesses, with natural alignment and failed-access retention.
 - ROTW and RSR/WSR for PS, WINDOWBASE, WINDOWSTART and EPC1 are supported.
   Privileged operations reject unsupported user-mode execution. General privilege
-  exception dispatch is not implemented. PS fields unrelated to these mechanisms
+  exception dispatch is opt-in as described below. PS fields unrelated to these mechanisms
   are retained but do not implement interrupts, security or other system behavior.
 
 The module preserves CALLINC on RETW, one of the ISA-permitted implementation
@@ -221,6 +221,73 @@ an ESP32 memory map. The harness initializes a valid caller window/stack. The
 vendor handlers perform actual bus loads/stores and RFWO/RFWU retries; no host
 shadow-register restore is used. General RTOS exception/interrupt code, MOVSP,
 full context switching, ESP-IDF boot and SoC devices remain outside this evidence.
+
+## Implemented: SAR and selected XEA2 system behavior
+
+The execution state now includes SAR, EXCCAUSE, EXCVADDR and DEPC. SAR is six
+bits wide on WSR/XSR; SSR uses only five source bits, SSL writes 32 minus the
+five-bit shift, SSA8L/SSA8B select byte shifts, and SSAI supplies an immediate.
+SLL/SRL/SRA/SRC handle the defined 0..32 SAR range without host-language
+shift overflow. SAR values above 32 remain readable/writable but executing those
+shifts returns unsupported because the ISA leaves the result undefined. XSR.SAR
+exchanges the register atomically within this single-instruction functional
+model; other XSR special-register forms remain unsupported.
+
+RSR/WSR support the new fields. SAR and loop registers are accessible without
+privileged-register checks; implemented privileged register operations and RSIL
+honor the configured PS.RING/EXCM state. RSIL returns old PS and changes
+INTLEVEL, but this does not implement pending interrupt delivery or interrupt
+masking conformance. MEMW/ISYNC/ESYNC are serialized by the already synchronous
+bus and register execution; there is no prefetch/cache/pipeline or asynchronous
+external-effect qualification. EXTW is still unsupported.
+
+An explicit opt-in XEA2-with-DEPC profile configures kernel, user and double
+exception vectors. It implements:
+
+- SYSCALL, known ILL/ILL.N opcodes, and privilege faults for the implemented
+  privileged instructions. Unimplemented valid instructions (tested with QUOU)
+  remain unsupported; they are never silently translated to illegal opcodes.
+- Kernel versus user selection by PS.UM on initial entry, EPC1 capture and EXCM
+  entry. A nested exception captures DEPC, preserves EPC1 and selects the double
+  vector. EXCCAUSE updates; EXCVADDR changes only on explicitly address-bearing
+  injection, not on an unrelated syscall.
+- RFE clearing EXCM and returning via EPC1; RFDE returning via DEPC while
+  retaining EXCM. Saved PCs name the faulting instruction; a syscall handler
+  explicitly advances its saved PC if it wants to resume after the instruction.
+- An explicit exception-injection API for future configured bus/SoC models.
+  The caller supplies the architecturally established cause/address semantics.
+
+The profile is disabled by initialization until vectors are configured. Those
+addresses are test/host inputs, not an inferred ESP32 VECBASE or ROM layout.
+Generic memory/fetch failures remain diagnostics because the current callback
+cannot distinguish protection, translation and bus error causes accurately.
+Interrupts, automatic MMU/bus fault dispatch, debug exceptions and complete
+privilege/system behavior remain unimplemented. No CPU constructor or board
+catalog target is added.
+
+`test_xtensa_system` passes 785 assertions: shift boundaries, masking/exchange,
+window checks on real operands, syscall kernel/user/double selection, saved PC
+advance and nested returns, EXCVADDR retention, explicit illegal instructions,
+unsupported valid opcodes, privilege faults and synchronous fence acceptance.
+A fetched program executes SYSCALL, runs a memory-resident handler that reads
+and advances EPC1, returns via RFE, and resumes the next instruction with the
+expected result. The existing 224 deep windowed-ABI runs and all six vendor
+spill/fill paths still pass with the expanded state.
+
+`run_system_c.py` uses the actual ESP32 GCC 8.4.0 toolchain to compile unchanged
+C left/right/arithmetic shifts, rotation and funnel functions. It passes 7,040
+runs (37,818 fetched instructions), including unsigned extremes, signed negative
+inputs, all masked shift counts and 0/32 funnel boundaries. It also checks caller
+stack, register-window and return state. These are functional CPU tests, not
+hardware timing, interrupt delivery or SoC boot qualification.
+
+```sh
+python tests/vendor/xtensa_integer/run_system_c.py \
+  --compiler /path/to/xtensa-esp32-elf-gcc \
+  --objcopy /path/to/xtensa-esp32-elf-objcopy \
+  --linker /path/to/xtensa-esp32-elf-ld \
+  --nm /path/to/xtensa-esp32-elf-nm
+```
 
 ## Implemented: standalone firmware integrity inspection
 

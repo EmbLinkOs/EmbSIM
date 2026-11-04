@@ -55,3 +55,9 @@ contract for exact toolchain/source hashes and commands. This qualifies selected
 window/loop behavior, not general RTOS context switching, ESP-IDF boot or SoC
 peripherals. Compiler/linker/objcopy/nm are external tools, not dependencies of
 the runnable app.
+
+`xtensa_integer/run_system_c.py` uses the actual ESP32 compiler for 7,040 shift,
+rotation and funnel runs (37,818 fetched instructions), checking functional bit
+results and caller stack/window/return state. Supply `--compiler`, `--objcopy`,
+`--linker` and `--nm` as for the windowed runner. This is not interrupt, cache,
+pipeline or hardware timing qualification.
