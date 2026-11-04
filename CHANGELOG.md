@@ -5,6 +5,16 @@ versions follow semantic versioning. There is no release yet.
 
 ## Unreleased
 
+### Experimental Xtensa integer execution
+
+- Added the wide integer arithmetic/logic/immediate/low-multiply execution
+  kernel, with unsigned wraparound semantics, operand-alias handling and
+  unchanged register state on unsupported instructions. This is not a CPU
+  backend: fetch, control flow, memory, register windows, exceptions, interrupts,
+  density, FPU, SMP and timing are still absent; no runnable target is added.
+- Added native boundary/sequence checks and an external-assembler referee for
+  4,352 instruction cases; no assembler code or tables are embedded.
+
 ### Original ESP32 firmware inspection
 
 - `embsim image-info esp32 FILE` validates standalone original-ESP32 plaintext

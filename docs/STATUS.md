@@ -15,7 +15,11 @@ gates](engineering/esp32-dual-core.md) document the new Xtensa LX6 backend,
 dual-core SoC, board circuits, radio, low-power and qualification work needed.
 Native `image-info esp32` now validates standalone image headers, segments, XOR
 checksum and optional SHA-256, with explicit rejection of signed/encrypted/merged
-images. No runnable ESP32 target is added, and the
+images. An experimental, unregistered Xtensa integer kernel now executes the
+wide arithmetic/logic/immediate/low-multiply subset against a supplied register
+window: 84 native assertions and 4,352 separately assembled all-register comparisons
+pass. Fetch, control flow, memory, windows, interrupts, density, SMP and timing
+remain unimplemented. No runnable ESP32 target is added, and the
 existing RISC-V ESP32-C3 is not a substitute.
 
 ## The library's categories (2026-11-03)

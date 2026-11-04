@@ -1,6 +1,6 @@
 # Original ESP32 dual-core target: identity and implementation gates
 
-**Status: firmware inspection implemented; no executable target is added.** Requested by
+**Status: firmware inspection and experimental integer kernel implemented; no executable target is added.** Requested by
  the owner on 2026-11-04. This is the original ESP32 family, not ESP32-C3,
 ESP32-S2 or ESP32-S3. The generic marketplace title “ESP-32 / ESP-32S
 WiFi+Bluetooth Dual Cores” does not identify a reproducible board revision.
@@ -28,6 +28,42 @@ Primary references inspected for this investigation:
 Record the exact document versions, hashes, schematic revision, silicon revision
 and vendor SDK/toolchain versions in the eventual target fixtures. The URLs above
 can change. Vendor maximum ratings are not normal operating conditions.
+
+## Implemented: experimental Xtensa integer execution kernel
+
+`core/mcu/xtensa/integer.c` executes a bounded subset of little-endian, wide
+(24-bit) instructions against a caller-provided A0–A15 register window:
+ADD, SUB, ADDX2/4/8, SUBX2/4/8, AND, OR, XOR, MOVI, ADDI, ADDMI, NEG,
+ABS and MULL. MOV's OR encoding is included. Arithmetic wraps modulo 2^32,
+including ABS/NEG of the most negative integer; sign extension uses unsigned
+arithmetic. Destinations may alias either source, and A0 is writable.
+
+Unsupported instructions and truncated/invalid inputs fail without changing any
+register; successful execution reports three consumed bytes. This helper has no
+fetch, memory operations, control flow, register-window rotation, interrupts,
+exceptions, special registers, density instructions, FPU, SMP or timing model.
+It is not wired into the CPU constructor or catalog and cannot run firmware.
+The caller-provided window is not a claim that register-window behavior exists.
+
+`test_xtensa_integer` checks an assembled sequence, arithmetic extremes, aliases,
+input errors and unchanged state on unsupported execution (84 assertions).
+`tests/vendor/xtensa_integer/run.py` independently assembles 4,352 instruction
+cases with GNU binutils and compares every output register against Python
+integer arithmetic. It varies register aliases, immediates and 32-bit extremes
+with a fixed seed. GNU xtensa-lx106 binutils 2.40 was used solely as an external
+encoding referee for the shared subset; it is not an LX6 system emulator or an
+ESP32 qualification suite. No assembler code or decoder tables are copied.
+
+Reproduce on Linux with a host C compiler and separate Xtensa binutils:
+
+```sh
+python tests/vendor/xtensa_integer/run.py \
+  --assembler /path/to/xtensa-lx106-elf-as \
+  --objcopy /path/to/xtensa-lx106-elf-objcopy
+```
+
+The deterministic native unit test runs in CTest without those external tools.
+Hardware execution comparison and a complete LX6 ISA referee remain outstanding.
 
 ## Implemented: standalone firmware integrity inspection
 
@@ -82,7 +118,8 @@ a plausible component. WROOM and WROVER variants need separate descriptions.
 
 The current ESP32-C3 has a RISC-V backend and C3-specific register models in
 `core/mcu/esp32c3/`. The original ESP32 requires Xtensa LX6 instruction and
-exception semantics. There is no Xtensa constructor in `core/mcu/build.c`.
+exception semantics. There is no Xtensa CPU constructor in `core/mcu/build.c`; the experimental
+integer kernel below is not a runtime backend.
 Renaming the C3 target cannot execute ESP32 firmware correctly.
 
 Reuse the scheduler, buses, board composition, electrical solver, instruments,

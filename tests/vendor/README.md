@@ -20,3 +20,12 @@ toolchains.
 | `arduino-esp32/` | Arduino-ESP32 3.2.0 through arduino-cli, as the IDE builds for "ESP32C3 Dev Module": the IDE's Blink, DigitalReadSerial and Fade, the core's GetChipID, RepeatTimer, WiFiScan and WiFiClientConnect, the BLE library's Server and iBeacon, HTTPClient's BasicHttpClient | `emblink/esp32c3_devkitm1` |
 
 `vendor_run.py` is what their runners share.
+
+## Experimental Xtensa integer kernel
+
+`xtensa_integer/run.py` uses a separate GNU Xtensa assembler and objcopy, plus
+Python arithmetic, to check 4,352 wide integer instructions against the original
+C kernel. Run with `--assembler PATH --objcopy PATH` on Linux with a host C
+compiler. No toolchain is vendored or linked. LX106 binutils supports this
+shared integer subset; it does not qualify the full ESP32 LX6 configuration.
+See [scope and reproduction](../../docs/engineering/esp32-dual-core.md).
