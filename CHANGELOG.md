@@ -5,6 +5,12 @@ versions follow semantic versioning. There is no release yet.
 
 ## Unreleased
 
+### Original ESP32 dual-core target investigation
+
+- Added board-identification requirements and staged acceptance gates for a
+  distinct Xtensa LX6 ESP32 target. No runtime support or verified board pinout
+  is claimed; the exact marketplace board/module still needs identification.
+
 ### A library sorted the way an EDA sorts it
 
 - Parts are filed by category and sub-category as Proteus's device picker

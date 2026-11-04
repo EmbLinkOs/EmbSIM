@@ -5,6 +5,15 @@ maintained by hand until evidence tooling exists. It is not a generated
 support matrix. Specifications define target contracts; their acceptance
 does not mean the described behaviour exists.
 
+## Original ESP32 dual-core target investigation (2026-11-04)
+
+The owner requested an original dual-core ESP32 development board. The listing
+name does not identify its PCB/module revision. [Identity and implementation
+gates](engineering/esp32-dual-core.md) document the new Xtensa LX6 backend,
+dual-core SoC, board circuits, radio, low-power and qualification work needed.
+This is design investigation only: no runnable ESP32 target is added, and the
+existing RISC-V ESP32-C3 is not a substitute.
+
 ## The library's categories (2026-11-03)
 
 Parts are filed by category and sub-category as Proteus's device picker and
