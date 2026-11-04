@@ -147,7 +147,7 @@ static void branch_immediates(void)
         esk_xtensa_state s={{0},100}; esk_xtensa_fault f;
         s.a[2]=taken ? cases[i].yes : cases[i].no;
         CHECK_EQ(execute(&s,NULL,cases[i].code,3,&f),ES_OK);
-        CHECK_EQ(s.pc,taken ? 108 : 103);
+        CHECK_EQ(s.pc,taken ? 108u : 103u);
     }
 }
 TEST_MAIN_BEGIN
