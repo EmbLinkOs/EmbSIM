@@ -13,7 +13,9 @@ is now tied to TECNOIOT ASIN B07N97DD1B: the advertised photo shows a
 [Identity and implementation
 gates](engineering/esp32-dual-core.md) document the new Xtensa LX6 backend,
 dual-core SoC, board circuits, radio, low-power and qualification work needed.
-This is design investigation only: no runnable ESP32 target is added, and the
+Native `image-info esp32` now validates standalone image headers, segments, XOR
+checksum and optional SHA-256, with explicit rejection of signed/encrypted/merged
+images. No runnable ESP32 target is added, and the
 existing RISC-V ESP32-C3 is not a substitute.
 
 ## The library's categories (2026-11-03)

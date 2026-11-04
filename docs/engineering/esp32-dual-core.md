@@ -1,6 +1,6 @@
 # Original ESP32 dual-core target: identity and implementation gates
 
-**Status: design investigation; no executable target is added.** Requested by
+**Status: firmware inspection implemented; no executable target is added.** Requested by
  the owner on 2026-11-04. This is the original ESP32 family, not ESP32-C3,
 ESP32-S2 or ESP32-S3. The generic marketplace title “ESP-32 / ESP-32S
 WiFi+Bluetooth Dual Cores” does not identify a reproducible board revision.
@@ -28,6 +28,36 @@ Primary references inspected for this investigation:
 Record the exact document versions, hashes, schematic revision, silicon revision
 and vendor SDK/toolchain versions in the eventual target fixtures. The URLs above
 can change. Vendor maximum ratings are not normal operating conditions.
+
+## Implemented: standalone firmware integrity inspection
+
+`embsim image-info esp32 app.bin` inspects a plaintext original-ESP32 image
+without loading or executing it. It reports the entry point, SPI flash header
+encodings, raw chip-revision bounds and every segment's load address, payload
+file offset and length. It rejects wrong chip IDs, invalid format fields,
+truncation, 32-bit address wrap, bad padding/checksum/digest and trailing data.
+The output descriptor is cleared on failure; the source file is never modified.
+
+The checksum covers segment data with Espressif's initial XOR byte `0xEF`;
+optional SHA-256 covers the header through checksum. An absent digest is reported,
+not manufactured. An intact digest establishes integrity, not authenticity.
+Segment addresses and revision fields are reported without claiming that the
+requested PCB, silicon or memory map accepts them. Zero-length/dummy segments
+are retained. Unsupported SPI encodings fail explicitly.
+
+Scope is one standalone plaintext image, at most 64 MiB and 16 segments. Merged
+flash dumps/partition tables, ELF conversion, encrypted or signed images, secure
+boot verification and flash placement are not implemented in this inspector.
+The existing C3 raw-flash loader is unchanged. This is not an ESP32 boot demo.
+
+Format reference: [Espressif's firmware image specification](https://docs.espressif.com/projects/esptool/en/latest/esp32/advanced-topics/firmware-image-format.html).
+The C parser is original code with no vendor ROM or loader copied. Acceptance
+uses independent Python `struct`/`hashlib` fixtures, truncation at every byte,
+16 segments, checksum-preserving data corruption, wrong-chip IDs, field failures
+and untouched-input checks. A separate esptool 5.6.0 comparison accepted our
+fixture's checksum/hash and generated ten files accepted by the native inspector
+(with/without digest and zero to 1024-byte payloads). These synthetic files prove
+format compatibility, not firmware execution or physical-board equivalence.
 
 ## Establish identity before catalog publication
 
@@ -116,6 +146,6 @@ instruction fixtures, vendor firmware, independent referees and hardware traces.
 No hardware trace has been collected for this new target yet.
 
 Until those gates pass, report the target's exact supported subset and missing
-features. This investigation establishes neither board support nor real-hardware
+features. This implementation establishes neither board support nor real-hardware
 equivalence. The exact board identity blocks the final board netlist; it does not
 block research on the shared Xtensa/SoC foundation.

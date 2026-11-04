@@ -5,6 +5,14 @@ versions follow semantic versioning. There is no release yet.
 
 ## Unreleased
 
+### Original ESP32 firmware inspection
+
+- `embsim image-info esp32 FILE` validates standalone original-ESP32 plaintext
+  firmware headers, bounded segments, footer padding, XOR and optional SHA-256.
+  Reports segment offsets/addresses and raw revision fields without loading code.
+  Signed/encrypted images, merged flash dumps and board compatibility are outside
+  this inspector's scope. The original ESP32 remains unavailable for execution.
+
 ### Original ESP32 dual-core target investigation
 
 - Added board-identification requirements and staged acceptance gates for a
