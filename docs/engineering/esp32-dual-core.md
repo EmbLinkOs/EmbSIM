@@ -1,6 +1,6 @@
 # Original ESP32 dual-core target: identity and implementation gates
 
-**Status: firmware inspection and experimental integer kernel implemented; no executable target is added.** Requested by
+**Status: firmware inspection and experimental integer/window/loop execution implemented; no executable target is added.** Requested by
  the owner on 2026-11-04. This is the original ESP32 family, not ESP32-C3,
 ESP32-S2 or ESP32-S3. The generic marketplace title “ESP-32 / ESP-32S
 WiFi+Bluetooth Dual Cores” does not identify a reproducible board revision.
@@ -126,9 +126,101 @@ python tests/vendor/xtensa_integer/run_c.py \
 ```
 
 No CPU constructor, GDB register mapping or board catalog support is registered.
-Full instruction coverage, windowed ABI, system registers, exception/interrupt
-handling, synchronization, dual-core execution, SoC boot and peripherals still
-need implementation. Single-step synthetic programs do not qualify ESP-IDF boot.
+Full instruction coverage, general exception/interrupt handling, complete system
+registers, synchronization, dual-core execution, SoC boot and peripherals still
+need implementation. Selected windowed-ABI support is described below. Single-step synthetic programs do not qualify ESP-IDF boot.
+
+## Implemented: register windows, spill/fill transitions and hardware loops
+
+`core/mcu/xtensa/windows.c` wraps execution with a 64-physical-AR register file,
+16 four-register window positions and exact read/write operand references for
+the implemented instruction set. The visible register cache can be edited by
+the caller; it synchronizes with the physical file on successful transitions.
+Initialization configures an ABI test state, not ESP32 power-on reset defaults.
+
+Implemented window behavior:
+
+- CALL4/8/12 and CALLX4/8/12 encode the return link and CALLINC without rotating.
+  ENTRY allocates its frame from the old stack pointer and then rotates, with
+  physical register overlap, wraparound and WindowStart tracking.
+- RETW/RETW.N reconstruct the return PC's high bits, validate the return window
+  distance and clear the departing active-window bit on successful return.
+- Lazy overflow checks consider actual operands, not all 16 visible registers.
+  They select the overflow4/8/12 event from the occupied window layout.
+- Underflow4/8/12 returns move to the caller window and record exception state.
+  Both overflow and underflow set EXCM, OWB and EPC1 and transfer to caller-
+  supplied vector addresses. They consume zero instruction bytes: the faulting
+  instruction is retried after RFWO/RFWU restores the original window/PC.
+- RFWO clears the spilled window bit; RFWU sets the filled bit. Physical register
+  state is retained across the handler and retry. L32E/S32E support exception-mode
+  spill/fill memory accesses, with natural alignment and failed-access retention.
+- ROTW and RSR/WSR for PS, WINDOWBASE, WINDOWSTART and EPC1 are supported.
+  Privileged operations reject unsupported user-mode execution. General privilege
+  exception dispatch is not implemented. PS fields unrelated to these mechanisms
+  are retained but do not implement interrupts, security or other system behavior.
+
+The module preserves CALLINC on RETW, one of the ISA-permitted implementation
+choices; exact silicon-specific behavior still needs independent qualification.
+L32E/S32E outside exception mode is intentionally unsupported. RSYNC has no
+asynchronous pipeline to drain in this sequential functional engine. No cache,
+MMU, memory-protection, pipeline timing or SoC vector map is inferred.
+
+LOOP, LOOPNEZ and LOOPGTZ update LBEG/LEND/LCOUNT; their RSR/WSR access is
+supported. Sequential loop-end execution loops back and decrements LCOUNT,
+while taken branches, jumps, calls and returns do not. This distinction is
+explicit even when a branch target equals its fallthrough address. EXCM disables
+loop-back during handlers. Unconditional LOOP with count zero retains the
+architectural 2^32 iteration count; conditional zero/negative skips are distinct.
+Pipeline synchronization, illegal/restricted endpoint sequences and processor-
+specific loop alignment constraints are not qualified by this functional model.
+
+### Windowed-ABI evidence
+
+The native window test has 1,337 assertions: CALL4/8/12 across every physical
+window position, stack/link/argument/result overlap, lazy overflow and retries,
+underflow restore/retry, physical wraparound, special registers, invalid modes,
+loop limits/exception behavior, taken-versus-sequential end handling and failed
+exception-memory accesses. The existing integer/execution tests still pass.
+
+The actual ESP32 toolchain is Espressif's GCC 8.4.0 esp-2021r2-patch5:
+
+- [Archive](https://dl.espressif.com/dl/xtensa-esp32-elf-gcc8_4_0-esp-2021r2-patch5-linux-amd64.tar.gz)
+- SHA-256 `8ef14e0409c2011b41e504a30f70d3e35287313a795d1f2462ad2cd0e2052d37`,
+  verified against [ESP-IDF v4.4.7 tools.json](https://github.com/espressif/esp-idf/blob/v4.4.7/tools/tools.json).
+
+The optional `run_windows_c.py` first passes 128 real ESP32 windowed-ABI C runs:
+sum, sort, copy and nested calls, including compiler-emitted hardware loops
+(35,165 retired instructions). With the vendor vector source below it passes
+224 runs: 160 compiled C runs and 64 project assembly recursion runs, retiring
+63,337 instructions. Deep recursion exercises every overflow/underflow type:
+204/204 events for 4-register frames, 300/300 for 8-register frames and 351/351
+for 12-register frames. Results, memory guards, caller windows and returns pass.
+
+The six spill/fill handler instruction bodies are extracted without instruction
+changes from [ESP-IDF v4.4.7 xtensa_vectors.S](https://github.com/espressif/esp-idf/blob/v4.4.7/components/freertos/port/xtensa/xtensa_vectors.S).
+Expected source SHA-256:
+`29b544a01b708ca59af85ec6caa80101fba33345d8ec765e6a8fd832b1728366`.
+The runner rejects source drift, retains the source's Cadence copyright and
+permissive permission notice in the generated assembly, and compiles only the
+six handlers at their original relative offsets. Toolchain and vendor source
+are external test inputs, not linked into EmbSIM or bundled in the catalog.
+This is the source's permissive software grant, not permission to redistribute
+unrelated vendor documents or ROMs.
+
+```sh
+python tests/vendor/xtensa_integer/run_windows_c.py \
+  --compiler /path/to/xtensa-esp32-elf-gcc \
+  --objcopy /path/to/xtensa-esp32-elf-objcopy \
+  --linker /path/to/xtensa-esp32-elf-ld \
+  --nm /path/to/xtensa-esp32-elf-nm \
+  --vectors-source /path/to/xtensa_vectors.S
+```
+
+Test vectors and memory addresses are configured by the runner; they are not
+an ESP32 memory map. The harness initializes a valid caller window/stack. The
+vendor handlers perform actual bus loads/stores and RFWO/RFWU retries; no host
+shadow-register restore is used. General RTOS exception/interrupt code, MOVSP,
+full context switching, ESP-IDF boot and SoC devices remain outside this evidence.
 
 ## Implemented: standalone firmware integrity inspection
 

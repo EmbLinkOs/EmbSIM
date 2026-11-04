@@ -42,3 +42,16 @@ bus. Supply `--compiler`, `--objcopy`, `--linker` and `--nm`. Checks include who
 buffers and guards, source retention, return PC and callee-saved registers. The
 reference result used GCC xtensa-lx106 10.2.1 at `-O1`; this tests shared
 instructions, not the full LX6 configuration, ESP-IDF boot or a real board.
+
+`xtensa_integer/run_windows_c.py` uses the actual Espressif ESP32 windowed-ABI
+compiler. Without vector input, 128 sum/sort/copy/nested-call executions pass.
+With `--vectors-source` pointing to the hash-pinned ESP-IDF v4.4.7
+`components/freertos/port/xtensa/xtensa_vectors.S`, 224 runs (160 C, 64 assembly)
+execute all six vendor window spill/fill bodies via actual bus accesses and
+RFWO/RFWU retries. The generated temporary assembly retains the source's
+permissive copyright/permission notice; no vendor handler is linked into the
+app. The runner validates the source SHA-256 before extraction. See the target
+contract for exact toolchain/source hashes and commands. This qualifies selected
+window/loop behavior, not general RTOS context switching, ESP-IDF boot or SoC
+peripherals. Compiler/linker/objcopy/nm are external tools, not dependencies of
+the runnable app.

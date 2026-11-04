@@ -5,6 +5,21 @@ versions follow semantic versioning. There is no release yet.
 
 ## Unreleased
 
+### Experimental Xtensa windows and hardware loops
+
+- Implemented 64 physical address registers, overlapping windows, CALL4/8/12
+  and indirect calls, ENTRY, RETW, lazy overflow/underflow vector transitions,
+  RFWO/RFWU retries, exception-mode spill/fill loads/stores and selected special
+  registers. Unsupported privilege/general exception handling remains explicit.
+- Added hardware loops with sequential-versus-taken flow tracking and EXCM
+  suppression. Initial state/vectors are configured test inputs, not ESP32 reset
+  defaults or a qualified SoC memory map.
+- Added 1,337 native assertions and real ESP32 windowed-ABI acceptance: 224
+  executions (160 compiled C, 64 assembly) run the actual ESP-IDF spill/fill
+  instruction bodies, exercising all six window exception paths through memory.
+  This does not implement general interrupts, SMP, SoC boot or the board yet.
+- Fixed an MSVC signed/unsigned mismatch in a branch-PC test expectation.
+
 ### Experimental Xtensa fetch, flow and memory execution
 
 - Execute mixed-width instructions through a callback bus, compact arithmetic,

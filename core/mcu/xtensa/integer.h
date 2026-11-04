@@ -13,4 +13,6 @@
  * Success consumes two or three bytes. */
 es_status esk_xtensa_integer_execute(uint32_t a[16], const unsigned char *code,
                                      size_t available, size_t *consumed);
+/* Exact read/write register references for the supported integer encodings. */
+es_status esk_xtensa_integer_references(const unsigned char *code, size_t available, uint32_t *mask);
 #endif

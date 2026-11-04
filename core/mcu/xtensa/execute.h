@@ -22,6 +22,11 @@ typedef struct esk_xtensa_fault { unsigned kind; uint32_t pc, address, opcode; }
 es_status esk_xtensa_execute(esk_xtensa_state *state, const esk_xtensa_memory *memory,
                              const unsigned char *code, size_t available,
                              size_t *consumed, esk_xtensa_fault *fault);
+/* As execute, also reports sequential increment (not a taken branch/jump/call),
+ * for hardware loop-end handling. A target equal to PC+width is still taken. */
+es_status esk_xtensa_execute_flow(esk_xtensa_state *state, const esk_xtensa_memory *memory,
+                                  const unsigned char *code, size_t available,
+                                  size_t *consumed, esk_xtensa_fault *fault, unsigned *sequential);
 /* Fetch exactly 2/3 bytes through byte reads, then execute one instruction. */
 es_status esk_xtensa_step(esk_xtensa_state *state, const esk_xtensa_memory *memory,
                           esk_xtensa_fault *fault);
