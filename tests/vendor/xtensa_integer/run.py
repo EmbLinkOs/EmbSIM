@@ -3,8 +3,9 @@
 # Copyright 2026 Junior Deogracias
 """Cross-check the experimental integer kernel with separately assembled bytes.
 
-GNU binutils is an external encoding referee, never linked or copied. LX106
-binutils can assemble this shared integer subset; it is not an LX6 system referee.
+GNU binutils is an external encoding referee, never linked or copied. The
+expanded subset requires an ESP32-configured assembler for its ISA options.
+This is not a complete LX6 system referee.
 Requires a host C compiler supporting -shared/-fPIC and Python ctypes (Linux).
 """
 import argparse
@@ -27,7 +28,7 @@ def main():
     rng = random.Random(0x32)
     cases = []
     operations = ['add', 'sub', 'and', 'or', 'xor', 'addx2', 'addx4', 'addx8',
-                  'subx2', 'subx4', 'subx8', 'mull', 'neg', 'abs', 'movi', 'addi', 'addmi', 'slli', 'srli', 'srai', 'extui']
+                  'subx2', 'subx4', 'subx8', 'mull', 'neg', 'abs', 'movi', 'addi', 'addmi', 'slli', 'srli', 'srai', 'extui', 'moveqz','movnez','movltz','movgez','min','max','minu','maxu','muluh','mulsh','quou','quos','remu','rems','sext','nsa','nsau']
     for operation in operations:
         for k in range(256):
             regs = [rng.getrandbits(32) for _ in range(16)]
@@ -35,6 +36,9 @@ def main():
             if k < 5:
                 regs[s] = [0, 1, 0x7fffffff, 0x80000000, 0xffffffff][k]
                 regs[t] = regs[s]
+            if operation in ['quou','quos','remu','rems']:
+                if k==5:s,t=2,3;regs[s]=0x80000000;regs[t]=0xffffffff
+                if regs[t]==0:regs[t]=1
             x, y = regs[s], regs[t]
             instruction = f'{operation} a{d},a{s},a{t}'
             if operation == 'add': result = x+y
@@ -45,6 +49,32 @@ def main():
             elif operation.startswith('addx'): result = x*int(operation[-1])+y
             elif operation.startswith('subx'): result = x*int(operation[-1])-y
             elif operation == 'mull': result = x*y
+            elif operation in ['moveqz','movnez','movltz','movgez']:
+                yes = y==0 if operation=='moveqz' else y!=0 if operation=='movnez' else y>=2**31 if operation=='movltz' else y<2**31
+                result=x if yes else regs[d]
+            elif operation in ['min','max','minu','maxu']:
+                left=x if operation.endswith('u') or x<2**31 else x-2**32
+                right=y if operation.endswith('u') or y<2**31 else y-2**32
+                result=min(left,right) if operation.startswith('min') else max(left,right)
+            elif operation in ['muluh','mulsh']:
+                left=x if operation=='muluh' or x<2**31 else x-2**32
+                right=y if operation=='muluh' or y<2**31 else y-2**32
+                result=(left*right)>>32
+            elif operation in ['quou','quos','remu','rems']:
+                if operation in ['quou','remu']:result=x//y if operation=='quou' else x%y
+                else:
+                    left=x if x<2**31 else x-2**32;right=y if y<2**31 else y-2**32
+                    quotient=abs(left)//abs(right)
+                    if (left<0)!=(right<0):quotient=-quotient
+                    result=quotient if operation=='quos' else left-quotient*right
+            elif operation == 'sext':
+                bit=rng.randrange(7,23);instruction=f'sext a{d},a{s},{bit}'
+                result=x&((1<<(bit+1))-1)
+                if result&(1<<bit):result-=1<<(bit+1)
+            elif operation in ['nsa','nsau']:
+                instruction=f'{operation} a{d},a{s}'
+                value=(~x&MASK) if operation=='nsa' and x>=2**31 else x
+                result=32-value.bit_length()-(operation=='nsa')
             elif operation == 'neg':
                 instruction = f'neg a{d},a{s}'; result = -x
             elif operation == 'abs':

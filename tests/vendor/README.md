@@ -24,14 +24,15 @@ toolchains.
 ## Experimental Xtensa integer kernel
 
 `xtensa_integer/run.py` uses a separate GNU Xtensa assembler and objcopy, plus
-Python arithmetic, to check 5,376 wide integer instructions against the original
+Python arithmetic, to check 9,728 wide integer instructions against the original
 C kernel. Run with `--assembler PATH --objcopy PATH` on Linux with a host C
-compiler. No toolchain is vendored or linked. LX106 binutils supports this
-shared integer subset; it does not qualify the full ESP32 LX6 configuration.
+compiler. The expanded runner requires an actual ESP32-configured assembler
+for its ISA options. No toolchain is vendored or linked, and these checks do
+not qualify the complete ESP32 LX6 configuration.
 See [scope and reproduction](../../docs/engineering/esp32-dual-core.md).
 
 `xtensa_integer/run_execute.py` additionally uses a separate linker, with
-relaxation disabled, for 3,840 flow/memory/density cases and 960 rejected bus
+relaxation disabled, for 4,608 flow/memory/density cases and 960 rejected bus
 accesses. Supply `--assembler`, `--objcopy` and `--linker` paths. It compares all
 registers, PC and exact bus transactions, including failed-access retention.
 It does not establish architectural exception delivery or complete ISA fidelity.
@@ -69,3 +70,9 @@ comparisons against 263,719 individual oracle ticks. Both take `--core-isa PATH`
 and compile the original C modules with the host compiler; the vendor header
 is external reference data, not linked into the app. These checks do not qualify
 SoC routing, instruction timing, NMI sampling or interrupt-service latency.
+
+`xtensa_integer/run_atomic_c.py` compiles real ESP32 exchange/CAS/increment and
+division functions: 832 executions, including 64 pairs of instruction-interleaved
+execution states forcing a CAS retry. Supply `--compiler`, `--objcopy`, `--linker`
+and `--nm`. Its callback is a serialized fixture, not a host-thread-safe shared
+SoC RAM model or proof of full SMP/coherence.

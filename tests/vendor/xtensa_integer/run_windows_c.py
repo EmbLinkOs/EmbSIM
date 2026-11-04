@@ -22,7 +22,7 @@ class Windows(C.Structure):
     _fields_=[('cpu',State),('ar',C.c_uint32*64),('ps',C.c_uint32),('base',C.c_uint32),
               ('start',C.c_uint32),('epc1',C.c_uint32),('lbeg',C.c_uint32),('lend',C.c_uint32),
               ('lcount',C.c_uint32),('sar',C.c_uint32),('exccause',C.c_uint32),('excvaddr',C.c_uint32),
-              ('depc',C.c_uint32),('exceptions_enabled',C.c_uint32),('exception_vectors',C.c_uint32*3),('irq',Interrupts),('vectors',C.c_uint32*6)]
+              ('depc',C.c_uint32),('scompare1',C.c_uint32),('exceptions_enabled',C.c_uint32),('exception_vectors',C.c_uint32*3),('irq',Interrupts),('vectors',C.c_uint32*6)]
 
 
 NESTED='''

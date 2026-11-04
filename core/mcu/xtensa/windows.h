@@ -18,7 +18,7 @@
 typedef struct esk_xtensa_windows {
     esk_xtensa_state cpu;
     uint32_t ar[64], ps, base, start, epc1, lbeg, lend, lcount;
-    uint32_t sar, exccause, excvaddr, depc, exceptions_enabled;
+    uint32_t sar, exccause, excvaddr, depc, scompare1, exceptions_enabled;
     uint32_t exception_vectors[3]; /* kernel, user, double; configured explicitly */
     esk_xtensa_interrupts irq;
     uint32_t vectors[6]; /* overflow4, underflow4, overflow8, underflow8, overflow12, underflow12 */

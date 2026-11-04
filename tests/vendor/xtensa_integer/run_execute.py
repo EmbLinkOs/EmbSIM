@@ -29,8 +29,11 @@ Read = C.CFUNCTYPE(C.c_int, C.c_void_p, C.c_uint32, C.c_uint, C.POINTER(C.c_uint
 Write = C.CFUNCTYPE(C.c_int, C.c_void_p, C.c_uint32, C.c_uint, C.c_uint32)
 
 
+CAS = C.CFUNCTYPE(C.c_int, C.c_void_p, C.c_uint32, C.c_uint32, C.c_uint32, C.POINTER(C.c_uint32))
+
+
 class Memory(C.Structure):
-    _fields_ = [('ctx', C.c_void_p), ('read', Read), ('write', Write)]
+    _fields_ = [('ctx', C.c_void_p), ('read', Read), ('write', Write), ('compare_exchange', CAS)]
 
 
 def main():
@@ -44,7 +47,7 @@ def main():
     cases = []
     operations = ['j', 'call0', 'jx', 'callx0', 'ret', 'ret.n', 'nop', 'nop.n',
                   'beqz', 'bnez', 'bltz', 'bgez', 'beq', 'bne', 'blt', 'bge', 'bltu', 'bgeu',
-                  'beqz.n', 'bnez.n', 'beqi', 'bnei', 'blti', 'bgei', 'bltui', 'bgeui', 'l8ui', 'l16ui', 'l16si', 'l32i', 's8i', 's16i', 's32i',
+                  'beqz.n', 'bnez.n', 'bany','bnone','ball','bnall','bbc','bbs','bbci','bbsi', 'beqi', 'bnei', 'blti', 'bgei', 'bltui', 'bgeui', 'l8ui', 'l16ui', 'l16si', 'l32i', 's8i', 's16i', 's32i',
                   'l32i.n', 's32i.n', 'l32r', 'movi.n', 'mov.n', 'add.n', 'addi.n']
     signed = lambda v: v if v < 2**31 else v-2**32
     for operation in operations:
@@ -75,6 +78,17 @@ def main():
                 taken = {'beq': x == y, 'bne': x != y, 'blt': signed(x) < signed(y),
                          'bge': signed(x) >= signed(y), 'bltu': x < y, 'bgeu': x >= y}[operation]
                 if taken: next_pc = target
+            elif operation in ['bany','bnone','ball','bnall','bbc','bbs','bbci','bbsi']:
+                left,right=regs[s],regs[t]
+                if operation in ['bbci','bbsi']:
+                    bit=k%32;asm+=f' a{s},{bit},.L{i}{target-pc:+d}'
+                    taken=((left>>bit)&1)==(operation=='bbsi')
+                else:
+                    asm+=f' a{s},a{t},.L{i}{target-pc:+d}'
+                    if operation in ['bany','bnone']:taken=((left&right)!=0)==(operation=='bany')
+                    elif operation in ['ball','bnall']:taken=((left&right)==right)==(operation=='ball')
+                    else:taken=((left>>(right&31))&1)==(operation=='bbs')
+                if taken:next_pc=target
             elif operation in ['beqi','bnei','blti','bgei','bltui','bgeui']:
                 unsigned = operation in ['bltui','bgeui']
                 values = ([32768,65536] if unsigned else [-1,1])+[2,3,4,5,6,7,8,10,12,16,32,64,128,256]

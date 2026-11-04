@@ -8,7 +8,7 @@ enum execution_kind {
     XT_BASE, XT_CALL, XT_ENTRY, XT_RETW, XT_WINDOW_RETURN, XT_ROTW,
     XT_SPECIAL, XT_RSYNC, XT_LOOP, XT_EXCEPTION_MEMORY,
     XT_SAR_SETUP=11, XT_SAR_SHIFT, XT_FENCE, XT_RSIL, XT_SYSCALL,
-    XT_EXCEPTION_RETURN, XT_ILLEGAL, XT_RFI, XT_WAITI
+    XT_EXCEPTION_RETURN, XT_ILLEGAL, XT_RFI, XT_WAITI, XT_ATOMIC, XT_DIVIDE
 };
 
 static uint32_t bit(unsigned n) { return UINT32_C(1) << (n & 15u); }
@@ -55,14 +55,14 @@ es_status esk_xtensa_raise_exception(esk_xtensa_windows *w, unsigned cause,
 }
 static int special_valid(const esk_xtensa_windows *w,unsigned reg)
 {
-    return (w->irq.enabled && esk_xtensa_irq_special(reg)) || reg<=3 || reg==72 || reg==73 || reg==177 || reg==192 || reg==230 || reg==232 || reg==238;
+    return (w->irq.enabled && esk_xtensa_irq_special(reg)) || reg<=3 || reg==12 || reg==72 || reg==73 || reg==177 || reg==192 || reg==230 || reg==232 || reg==238;
 }
 static uint32_t special_read(const esk_xtensa_windows *w,unsigned reg)
 {
     if (esk_xtensa_irq_special(reg)) { uint32_t value=0; (void)esk_xtensa_irq_read(w,reg,&value); return value; }
     switch (reg) {
     case 0:return w->lbeg; case 1:return w->lend; case 2:return w->lcount; case 3:return w->sar;
-    case 72:return w->base; case 73:return w->start; case 177:return w->epc1;
+    case 12:return w->scompare1; case 72:return w->base; case 73:return w->start; case 177:return w->epc1;
     case 192:return w->depc; case 230:return w->ps; case 232:return w->exccause; default:return w->excvaddr;
     }
 }
@@ -72,6 +72,7 @@ static void special_write(esk_xtensa_windows *w,unsigned reg,uint32_t value)
     switch (reg) {
     case 0:w->lbeg=value;break; case 1:w->lend=value;break; case 2:w->lcount=value;break;
     case 3:w->sar=value&63u;break;
+    case 12:w->scompare1=value;break;
     case 72:w->base=value&15u;load(w);break;
     case 73:w->start=value&65535u;break;
     case 177:w->epc1=value;break; case 192:w->depc=value;break;
@@ -92,7 +93,7 @@ static es_status references(const unsigned char *code, unsigned width, uint32_t 
     else if ((word&63u)==5) *mask=1;
     else if ((word&63u)==6) return ES_OK;
     else if (op==6 && ((t&3u)==1 || t==2 || t==6 || t==10 || t==14 || t==11 || t==15)) *mask=bit(s);
-    else if (op==7 && (r==1 || r==9 || r==2 || r==10 || r==3 || r==11)) *mask=bit(s)|bit(t);
+    else if (op==7) *mask=(r==6 || r==7 || r==14 || r==15) ? bit(s) : bit(s)|bit(t);
     else if (op==12 && t>=8) *mask=bit(s);
     else if (op==8 || op==9 || (op==2 && (r<=2 || r==4 || r==5 || r==6 || r==9))) *mask=bit(s)|bit(t);
     else if (op==1) *mask=bit(t);
@@ -148,7 +149,7 @@ es_status esk_xtensa_window_execute(esk_xtensa_windows *w, const esk_xtensa_memo
     else if ((word&UINT32_C(0xffff0f))==0x408000) kind=XT_ROTW;
     else if ((word&UINT32_C(0xff000f))==0x030000 || (word&UINT32_C(0xff000f))==0x130000 || (word&UINT32_C(0xff000f))==0x610000) {
         unsigned reg=(word>>8)&255u;
-        if (!special_valid(&next,reg) || (reg==227 && (word&UINT32_C(0xff000f))==0x030000) || ((word&UINT32_C(0xff000f))==0x610000 && reg!=3))
+        if (!special_valid(&next,reg) || (reg==227 && (word&UINT32_C(0xff000f))==0x030000) || ((word&UINT32_C(0xff000f))==0x610000 && reg!=3 && reg!=12))
             return reject(fault,ESK_XT_UNSUPPORTED,pc,pc,word);
         kind=XT_SPECIAL; mask=bit(t);
     }
@@ -171,6 +172,8 @@ es_status esk_xtensa_window_execute(esk_xtensa_windows *w, const esk_xtensa_memo
     else if (word==0x003000 || word==0x003200) kind=XT_EXCEPTION_RETURN;
     else if ((word&UINT32_C(0xfff0ff))==0x003010 && s>=2 && s<=7 && next.irq.enabled) kind=XT_RFI;
     else if ((word&UINT32_C(0xfff0ff))==0x007000 && next.irq.enabled) kind=XT_WAITI;
+    else if (op==2 && r==14) { kind=XT_ATOMIC;mask=bit(s)|bit(t); }
+    else if ((word&UINT32_C(0x0f000f))==0x020000 && (word>>20)>=12) { kind=XT_DIVIDE;mask=bit(r)|bit(s)|bit(t); }
     else if (word==0x002010) kind=XT_RSYNC; /* RSYNC; no asynchronous pipeline here */
     else if (references(code,width,word,&mask)!=ES_OK) return reject(fault,ESK_XT_UNSUPPORTED,pc,pc,word);
     if ((kind==XT_WINDOW_RETURN || kind==XT_ROTW ||
@@ -259,6 +262,19 @@ es_status esk_xtensa_window_execute(esk_xtensa_windows *w, const esk_xtensa_memo
         if (word==0x003000) { next.ps&=~ESK_XT_PS_EXCM; next.cpu.pc=next.epc1; }
         else next.cpu.pc=next.depc;
         flow=0;
+    } else if (kind==XT_ATOMIC) {
+        uint32_t address=next.cpu.a[s]+((word>>16)<<2),observed=0;
+        if(address&3u) return reject(fault,ESK_XT_ALIGN,pc,address,word);
+        if(!memory || !memory->compare_exchange) return reject(fault,ESK_XT_UNSUPPORTED,pc,address,word);
+        st=memory->compare_exchange(memory->ctx,address,next.scompare1,next.cpu.a[t],&observed);
+        if(st!=ES_OK) return reject(fault,st==ES_EUNSUPPORTED ? ESK_XT_UNSUPPORTED : ESK_XT_ATOMIC,pc,address,word);
+        next.cpu.a[t]=observed;next.cpu.pc=pc+3;
+    } else if (kind==XT_DIVIDE && !next.cpu.a[t]) {
+        if(!next.exceptions_enabled) return reject(fault,ESK_XT_DIV_ZERO,pc,pc,word);
+        st=esk_xtensa_raise_exception(&next,6,0,0,event);if(st==ES_OK) *w=next;return st;
+    } else if (kind==XT_DIVIDE) {
+        st=esk_xtensa_execute_flow(&next.cpu,memory,code,available,consumed,fault,&flow);
+        if(st!=ES_OK) return st;
     } else if (kind==XT_RFI) {
         st=esk_xtensa_irq_return(&next,s); if (st!=ES_OK) return st; flow=0;
     } else if (kind==XT_WAITI) {

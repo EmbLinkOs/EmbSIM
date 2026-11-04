@@ -10,6 +10,17 @@ static uint32_t extend(uint32_t x, unsigned bits)
     uint32_t sign = UINT32_C(1) << (bits - 1);
     return (x ^ sign) - sign;
 }
+static int64_t signed_value(uint32_t value)
+{
+    return (int64_t)value-((value>>31) ? INT64_C(4294967296) : 0);
+}
+static uint32_t leading_zeroes(uint32_t value)
+{
+    uint32_t n=0;
+    if(!value) return 32;
+    while(!(value&UINT32_C(0x80000000))) { n++;value<<=1; }
+    return n;
+}
 static es_status execute_inner(uint32_t a[16], const unsigned char *code,
                                size_t available, size_t *consumed, uint32_t *references)
 {
@@ -64,6 +75,30 @@ static es_status execute_inner(uint32_t a[16], const unsigned char *code,
         unsigned shift = s + (op1 & 1u) * 16u;
         if (shift + op2 + 1 > 32) return ES_EUNSUPPORTED;
         result = (a[t] >> shift) & ((UINT32_C(1) << (op2 + 1)) - 1u); mask = 1u << t;
+    } else if (op == 0 && op1 == 3 && op2 >= 8 && op2 <= 11) {
+        int yes=op2==8 ? a[t]==0 : op2==9 ? a[t]!=0 : op2==10 ? (a[t]>>31)!=0 : (a[t]>>31)==0;
+        result=yes ? a[s] : a[r];mask=(1u<<s)|(1u<<t);
+    } else if (op == 0 && op1 == 3 && op2 >= 4 && op2 <= 7) {
+        uint32_t left=a[s],right=a[t];int less;
+        if(op2<6) { left^=UINT32_C(0x80000000);right^=UINT32_C(0x80000000); }
+        less=left<right;result=((op2&1u) ? !less : less) ? a[s] : a[t];mask=(1u<<s)|(1u<<t);
+    } else if (op == 0 && op1 == 3 && op2 == 2) {
+        unsigned bits=t+8u;result=extend(a[s]&((UINT32_C(1)<<bits)-1u),bits);mask=1u<<s;
+    } else if (op == 0 && op1 == 0 && op2 == 4 && (r == 14 || r == 15)) {
+        uint32_t value=a[s];dest=t;mask=1u<<s;
+        if(r==14 && (value>>31)) value=~value;
+        result=leading_zeroes(value);if(r==14) result--;
+    } else if (op == 0 && op1 == 2 && (op2 == 10 || op2 == 11)) {
+        uint64_t product=op2==10 ? (uint64_t)a[s]*a[t] : (uint64_t)(signed_value(a[s])*signed_value(a[t]));
+        result=(uint32_t)(product>>32);mask=(1u<<s)|(1u<<t);
+    } else if (op == 0 && op1 == 2 && op2 >= 12) {
+        mask=(1u<<s)|(1u<<t);
+        if(!a[t]) return ES_EINVAL;
+        if(!(op2&1u)) result=op2==12 ? a[s]/a[t] : a[s]%a[t];
+        else {
+            int64_t left=signed_value(a[s]),right=signed_value(a[t]);
+            result=(uint32_t)(op2==13 ? left/right : left%right);
+        }
     } else if (op == 0 && op1 == 2 && op2 == 8) {
         result = a[s] * a[t]; mask = (1u << s) | (1u << t);
     } else {
@@ -81,7 +116,8 @@ es_status esk_xtensa_integer_execute(uint32_t a[16], const unsigned char *code,
 }
 es_status esk_xtensa_integer_references(const unsigned char *code, size_t available, uint32_t *mask)
 {
-    uint32_t a[16] = {0}; size_t consumed;
+    uint32_t a[16]; size_t consumed; unsigned i;
+    for(i=0;i<16;i++) a[i]=1; /* Valid divisor for operand-only decoding. */
     if (!mask) return ES_EINVAL;
     *mask = 0;
     return execute_inner(a, code, available, &consumed, mask);

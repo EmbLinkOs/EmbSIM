@@ -5,6 +5,19 @@ versions follow semantic versioning. There is no release yet.
 
 ## Unreleased
 
+### Experimental Xtensa integer and conditional-store extension
+
+- Added conditional moves, signed/unsigned min/max, high products, division and
+  remainder, SEXT/normalization and little-endian bit branches. Divide faults
+  preserve registers and dispatch cause 6 only with a configured exception
+  profile; unknown valid opcodes remain unsupported.
+- Added SCOMPARE1 and S32C1I via one required indivisible bus callback, with
+  no read/write fallback. Full SMP, shared SoC RAM/coherence, memory-type policy
+  and implementation-dependent spurious failures remain unqualified.
+- Added 128 arithmetic and 67 atomic assertions; expanded assembler cases to
+  9,728 integer and 4,608 flow/bit branches. Actual ESP32 compiled atomics/division
+  pass 832 executions, including 64 interleaved pairs forcing CAS retry.
+
 ### Experimental ESP32 CPU interrupts and compare clock
 
 - Added an opt-in 32-input ESP32 CPU interrupt profile: fixed levels/types,

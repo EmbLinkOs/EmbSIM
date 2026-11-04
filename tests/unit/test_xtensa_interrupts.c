@@ -138,7 +138,7 @@ static void fetched_handler(void)
     /* Save A2 in EXCSAVE3, acknowledge software input 29, restore A2, RFI 3. */
     static const unsigned char handler[]={0x20,0xd3,0x13,0x22,0xa0,1,0x30,0x22,1,0x20,0xe3,0x13,0x20,0xd3,3,0x10,0x33,0};
     static const uint32_t h[6]={0x1080,0x10c0,0x1100,0x1140,0x1180,0x11c0};
-    unsigned char data[512]={0};esk_xtensa_memory bus={data,code_read,NULL};esk_xtensa_windows w;
+    unsigned char data[512]={0};esk_xtensa_memory bus={data,code_read,NULL,NULL};esk_xtensa_windows w;
     esk_xtensa_fault f;unsigned event,steps=0,entries=0;
     memcpy(data,program,sizeof program);memcpy(data+192,handler,sizeof handler);
     init(&w);w.cpu.pc=0x1000;CHECK_EQ(esk_xtensa_irq_configure(&w,h),ES_OK);

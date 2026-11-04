@@ -43,24 +43,27 @@ register; successful execution reports three consumed bytes. The integer helper 
 last uses Xtensa's asymmetric -32..95 immediate range. This helper has no
 register-window rotation, interrupts, architectural exception dispatch, special
 registers, FPU, SMP or timing model.
-It is not wired into the CPU constructor or catalog and cannot run firmware.
-The caller-provided window is not a claim that register-window behavior exists.
+It is not wired into a CPU constructor or board catalog; the app cannot boot
+firmware on this target yet. This integer helper alone does not rotate windows;
+the higher-level engine below owns the physical register file.
 
 `test_xtensa_integer` checks an assembled sequence, arithmetic extremes, aliases,
 input errors and unchanged state on unsupported execution (111 assertions).
-`tests/vendor/xtensa_integer/run.py` independently assembles 5,376 instruction
+`tests/vendor/xtensa_integer/run.py` independently assembles 9,728 instruction
 cases with GNU binutils and compares every output register against Python
 integer arithmetic. It varies register aliases, immediates and 32-bit extremes
-with a fixed seed. GNU xtensa-lx106 binutils 2.40 was used solely as an external
-encoding referee for the shared subset; it is not an LX6 system emulator or an
-ESP32 qualification suite. No assembler code or decoder tables are copied.
+with a fixed seed. The expanded runner uses the actual Espressif ESP32 tools
+for the additional
+ISA options. Earlier LX106 binutils checks covered only the shared base subset;
+LX106 is not a substitute for the newly tested LX6 options or an ESP32 system
+qualification suite. No assembler code or decoder tables are copied.
 
 Reproduce on Linux with a host C compiler and separate Xtensa binutils:
 
 ```sh
 python tests/vendor/xtensa_integer/run.py \
-  --assembler /path/to/xtensa-lx106-elf-as \
-  --objcopy /path/to/xtensa-lx106-elf-objcopy
+  --assembler /path/to/xtensa-esp32-elf-as \
+  --objcopy /path/to/xtensa-esp32-elf-objcopy
 ```
 
 The deterministic native unit test runs in CTest without those external tools.
@@ -98,16 +101,16 @@ loop, calls a doubling subroutine and returns to the expected PC (27 executed
 instructions). The native test has 618 assertions covering branches, compact
 immediate limits, byte/halfword/word behavior, literal loads, link-register alias,
 32-bit PC wrap, memory-edge fetches, alignment and failed-access state retention.
-An optional external-assembler/linker referee checks 3,840 execution cases and
+An optional external-assembler/linker referee checks 4,608 execution cases and
 960 rejected accesses against independent Python PC/register/bus expectations.
 Linker relaxation is disabled to preserve the fixture's explicit instruction
-addresses. The earlier 5,376 integer cases continue to pass.
+addresses. The earlier 9,728 integer cases continue to pass.
 
 ```sh
 python tests/vendor/xtensa_integer/run_execute.py \
-  --assembler /path/to/xtensa-lx106-elf-as \
-  --objcopy /path/to/xtensa-lx106-elf-objcopy \
-  --linker /path/to/xtensa-lx106-elf-ld
+  --assembler /path/to/xtensa-esp32-elf-as \
+  --objcopy /path/to/xtensa-esp32-elf-objcopy \
+  --linker /path/to/xtensa-esp32-elf-ld
 ```
 
 A further compiler acceptance runner compiles unchanged freestanding C for
@@ -120,8 +123,8 @@ windowed-ABI, hardware or vendor SDK qualification.
 ```sh
 python tests/vendor/xtensa_integer/run_c.py \
   --compiler /path/to/xtensa-lx106-elf-gcc \
-  --objcopy /path/to/xtensa-lx106-elf-objcopy \
-  --linker /path/to/xtensa-lx106-elf-ld \
+  --objcopy /path/to/xtensa-esp32-elf-objcopy \
+  --linker /path/to/xtensa-esp32-elf-ld \
   --nm /path/to/xtensa-lx106-elf-nm
 ```
 
@@ -245,7 +248,7 @@ An explicit opt-in XEA2-with-DEPC profile configures kernel, user and double
 exception vectors. It implements:
 
 - SYSCALL, known ILL/ILL.N opcodes, and privilege faults for the implemented
-  privileged instructions. Unimplemented valid instructions (tested with QUOU)
+  privileged instructions. Unimplemented valid instructions (tested with ADD.S)
   remain unsupported; they are never silently translated to illegal opcodes.
 - Kernel versus user selection by PS.UM on initial entry, EPC1 capture and EXCM
   entry. A nested exception captures DEPC, preserves EPC1 and selects the double
@@ -371,6 +374,75 @@ This is not the SoC interrupt matrix, peripheral source routing, cross-core
 interrupt generation, full ISR/RTOS context switching, debug/NMI cycle timing or
 board power behavior. No executable board target is registered. Those remain
 separate qualification gates rather than being inferred from CPU input tests.
+
+## Implemented: extended integer operations, bit branches and conditional store
+
+The integer kernel now adds MOVEQZ/MOVNEZ/MOVLTZ/MOVGEZ, signed/unsigned
+MIN/MAX, MULUH/MULSH, QUOU/QUOS/REMU/REMS, SEXT and NSA/NSAU. Conditional
+moves retain the old destination when not taken; register aliases are supported.
+Signed division truncates toward zero and remainder follows the numerator's
+sign. INT_MIN/-1 produces the architectural wrapped quotient (and zero remainder)
+without invoking host C overflow; compiled C tests exclude that undefined C
+expression and the native instruction fixture tests it directly.
+
+Divide-by-zero preserves the destination and faults before instruction retirement.
+The configured XEA2 profile dispatches cause 6; without it, execution returns a
+specific divide diagnostic. Register-window exceptions retain their higher
+priority. Unsupported valid FPU instructions (ADD.S) remain diagnostics rather
+than being turned into illegal instructions now that QUOU is implemented.
+
+The little-endian branch decoder also adds BANY/BNONE/BALL/BNALL, BBC/BBS
+and BBCI/BBSI. Immediate bit numbers are not register references during window
+checks; register bit indices use their low five bits. Taken-flow tracking retains
+correct loop-exit behavior. Other endianness/configurations are not qualified.
+
+SCOMPARE1 supports RSR/WSR/XSR and retains per-execution-state values. S32C1I
+computes the aligned word address, supplies expected/desired values to a single
+bus compare-exchange callback and returns the original memory word in its
+register operand whether or not the comparison matches. Aliasing the result and
+base register uses the old base. Missing/unsupported callbacks fail explicitly;
+there is no read/write fallback that pretends to be atomic. Callback errors and
+alignment failures leave CPU state unchanged, while window overflow takes
+priority before touching memory.
+
+Callbacks must not re-enter or mutate the currently executing CPU state. Input
+and clock changes for that CPU are queued for instruction boundaries; these
+execution APIs do not provide concurrent host-thread state access. A future SoC
+bus/event bridge must honor that ownership contract.
+
+The callback must exclude conflicting writes from **all** bus agents. It is
+responsible for allowed memory regions and real indivisibility; serialized test
+callbacks do not establish host-thread safety. This profile uses strong compare-
+exchange and does not inject the implementation-dependent spurious-failure
+alternative. Caches, memory types/protection, hardware arbitration, pipeline
+ordering, interrupt/RTOS preservation of SCOMPARE1 and full SMP remain unqualified.
+MEMW in the current synchronous model does not establish a real cache-coherence
+or multicore ordering model. No shared SoC RAM bus or dual-core scheduler is
+registered by these tests.
+
+Native acceptance adds 128 arithmetic/bit-branch assertions and 67 conditional-
+store assertions: signed limits, division faults/window priority, bit endpoints,
+success/failure comparisons, base/result alias, offset wrap, unsupported regions,
+missing callbacks, fault retention and exactly one callback without normal bus
+read/write fallback. Existing system/window/interrupt/timer checks still pass.
+
+The expanded assembler referees now pass 9,728 integer cases and 4,608 flow/bit-
+branch cases, plus the existing 960 rejected accesses. Actual ESP32 GCC compiles
+exchange, compare-and-swap, increment and signed/unsigned division/remainder C
+routines for 832 successful executions (5,248 fetched instructions). Sixty-four
+pairs of execution states share test RAM and alternate instruction steps so both
+load the same value before conditional store; one must retry. Across the suite,
+384 CAS callbacks include 128 comparison mismatches and no ordinary stores.
+Unsigned wrap cases are included. This proves functional execution and the
+callback contract under that interleaving, not a completed dual-core SoC.
+
+```sh
+python tests/vendor/xtensa_integer/run_atomic_c.py \
+  --compiler /path/to/xtensa-esp32-elf-gcc \
+  --objcopy /path/to/xtensa-esp32-elf-objcopy \
+  --linker /path/to/xtensa-esp32-elf-ld \
+  --nm /path/to/xtensa-esp32-elf-nm
+```
 
 ## Implemented: standalone firmware integrity inspection
 

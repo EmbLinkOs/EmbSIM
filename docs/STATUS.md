@@ -17,11 +17,11 @@ Native `image-info esp32` now validates standalone image headers, segments, XOR
 checksum and optional SHA-256, with explicit rejection of signed/encrypted/merged
 images. An experimental, unregistered Xtensa integer kernel now executes the
 wide arithmetic/logic/immediate/low-multiply subset against a supplied register
-window: 111 native assertions and 5,376 separately assembled all-register comparisons
+window: 111 native assertions and 9,728 separately assembled all-register comparisons
 pass. Mixed-width fetch, compact arithmetic, non-windowed calls/returns, conditional
 branches and callback memory access now execute an assembled summing/subroutine
 program. The execution test passes 618 assertions; a separate assembler/linker
-referee passes 3,840 execution cases and 960 failed accesses. Complete
+referee passes 4,608 execution cases and 960 failed accesses. Complete
 exception/interrupt behavior, full ISA, SMP, SoC boot and timing remain
 unimplemented. The new 64-AR window engine implements windowed calls/ENTRY/RETW,
 lazy spill/fill exception transitions, RFWO/RFWU retries, selected special
@@ -43,6 +43,11 @@ use explicit supplied ticks, including WAITI wake and wraparound (81 assertions)
 Referees pass 2,048 vendor-configuration interrupt comparisons and 8,192
 clock/deadline comparisons against 263,719 individual ticks. The SoC interrupt
 matrix, peripheral routing, scheduler timing, SMP and board boot remain absent.
+Conditional moves/min/max/high products/division/normalization and bit branches
+now pass 128 additional native assertions. SCOMPARE1/S32C1I require one indivisible
+bus callback, with no non-atomic fallback (67 assertions). Another 832 actual
+ESP32 compiled atomic/division runs pass, including 64 interleaved increment
+pairs that force retry. This does not establish a shared SoC bus or full SMP.
 No runnable ESP32 target is added, and the
 existing RISC-V ESP32-C3 is not a substitute.
 

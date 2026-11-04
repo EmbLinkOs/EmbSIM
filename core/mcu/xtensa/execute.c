@@ -38,6 +38,8 @@ static es_status execute_inner(esk_xtensa_state *state, const esk_xtensa_memory 
     next = *state; next.pc = pc + width;
     st = esk_xtensa_integer_execute(next.a, code, available, &used);
     if (st == ES_OK) { next.pc = pc + (uint32_t)used; width = (unsigned)used; }
+    else if (st==ES_EINVAL && (word&UINT32_C(0x0f000f))==0x020000 && (word>>20)>=12)
+        return fail(fault,ESK_XT_DIV_ZERO,pc,pc,word);
     else if (word == 0x0020f0 || word == 0xf03d) { /* NOP / NOP.N */ }
     else if (word == 0x000080 || word == 0xf00d) { next.pc = next.a[0]; flow = 0; } /* RET/RET.N */
     else if ((word & UINT32_C(0xfff0ff)) == 0x0000a0) { next.pc = next.a[s]; flow = 0; } /* JX */
@@ -61,11 +63,24 @@ static es_status execute_inner(esk_xtensa_state *state, const esk_xtensa_memory 
         taken = t == 2 ? left == right : t == 6 ? left != right :
                 (t == 10 || t == 11) ? left < right : left >= right;
         if (taken) { next.pc = pc + 4 + sx(word >> 16, 8); flow = 0; }
-    } else if (op == 7 && (r == 1 || r == 9 || r == 2 || r == 10 || r == 3 || r == 11)) {
-        uint32_t left = next.a[s], right = next.a[t]; int taken;
-        if (r == 2 || r == 10) { left ^= UINT32_C(0x80000000); right ^= UINT32_C(0x80000000); }
-        taken = r == 1 ? left == right : r == 9 ? left != right :
-                (r == 2 || r == 3) ? left < right : left >= right;
+    } else if (op == 7) {
+        uint32_t left=next.a[s],right=next.a[t];int taken=0;
+        switch(r) {
+        case 0:taken=(left&right)==0;break;
+        case 1:taken=left==right;break;
+        case 2:taken=(left^UINT32_C(0x80000000))<(right^UINT32_C(0x80000000));break;
+        case 3:taken=left<right;break;
+        case 4:taken=(left&right)==right;break;
+        case 5:taken=((left>>(right&31u))&1u)==0;break;
+        case 6:case 7:taken=((left>>(t|((r&1u)<<4)))&1u)==0;break;
+        case 8:taken=(left&right)!=0;break;
+        case 9:taken=left!=right;break;
+        case 10:taken=(left^UINT32_C(0x80000000))>=(right^UINT32_C(0x80000000));break;
+        case 11:taken=left>=right;break;
+        case 12:taken=(left&right)!=right;break;
+        case 13:taken=((left>>(right&31u))&1u)!=0;break;
+        case 14:case 15:taken=((left>>(t|((r&1u)<<4)))&1u)!=0;break;
+        }
         if (taken) { next.pc = pc + 4 + sx(word >> 16, 8); flow = 0; }
     } else if (op == 12 && t >= 8) {
         int taken = t < 12 ? next.a[s] == 0 : next.a[s] != 0;
