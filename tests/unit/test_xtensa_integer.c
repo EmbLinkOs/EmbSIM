@@ -59,7 +59,23 @@ static void boundaries(void)
     CHECK_EQ(esk_xtensa_integer_execute(a, NULL, 3, &n), ES_EINVAL);
     CHECK_EQ(esk_xtensa_integer_execute(a, bytes, 3, NULL), ES_EINVAL);
 }
+static void shifts_and_fields(void)
+{
+    uint32_t a[16]={0}, before[16]; unsigned char code[3]={0x30,0xf2,0xf5}; size_t used;
+    a[3]=UINT32_C(0x80000001); execute(a,0x1123f0); CHECK_EQ(a[2],2); /* SLLI 1 */
+    a[5]=0x1234; execute(a,0x114500); CHECK_EQ(a[4],UINT32_C(0x12340000));
+    a[7]=1; execute(a,0x016710); CHECK_EQ(a[6],UINT32_C(0x80000000));
+    execute(a,0x412130); CHECK_EQ(a[2],UINT32_C(0x40000000)); /* SRLI 1 */
+    execute(a,0x212130); CHECK_EQ(a[2],UINT32_C(0xc0000000)); /* SRAI 1 */
+    a[5]=UINT32_C(0x80000000); execute(a,0x314050); CHECK_EQ(a[4],UINT32_C(0xffff8000));
+    a[7]=UINT32_C(0x80000000); execute(a,0x316f70); CHECK_EQ(a[6],UINT32_MAX);
+    a[3]=UINT32_C(0x12345678); execute(a,0x742430); CHECK_EQ(a[2],0x67);
+    /* Reserved field extraction past bit 31 does not mutate state. */
+    memcpy(before,a,sizeof a);
+    CHECK_EQ(esk_xtensa_integer_execute(a,code,3,&used),ES_EUNSUPPORTED);
+    CHECK_EQ(used,0); CHECK_EQ(memcmp(a,before,sizeof a),0);
+}
 TEST_MAIN_BEGIN
     (void)t_str_eq; /* This test uses only numeric assertions from the shared harness. */
-    RUN(program); RUN(boundaries);
+    RUN(program); RUN(boundaries); RUN(shifts_and_fields);
 TEST_MAIN_END

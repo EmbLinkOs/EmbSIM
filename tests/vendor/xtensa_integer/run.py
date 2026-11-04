@@ -27,7 +27,7 @@ def main():
     rng = random.Random(0x32)
     cases = []
     operations = ['add', 'sub', 'and', 'or', 'xor', 'addx2', 'addx4', 'addx8',
-                  'subx2', 'subx4', 'subx8', 'mull', 'neg', 'abs', 'movi', 'addi', 'addmi']
+                  'subx2', 'subx4', 'subx8', 'mull', 'neg', 'abs', 'movi', 'addi', 'addmi', 'slli', 'srli', 'srai', 'extui']
     for operation in operations:
         for k in range(256):
             regs = [rng.getrandbits(32) for _ in range(16)]
@@ -49,6 +49,13 @@ def main():
                 instruction = f'neg a{d},a{s}'; result = -x
             elif operation == 'abs':
                 instruction = f'abs a{d},a{s}'; result = abs(x if x < 2**31 else x-2**32)
+            elif operation in ['slli','srli','srai']:
+                shift = rng.randrange(1,32) if operation == 'slli' else rng.randrange(16 if operation == 'srli' else 32)
+                instruction = f'{operation} a{d},a{s},{shift}'
+                result = x << shift if operation == 'slli' else x >> shift if operation == 'srli' else (x if x < 2**31 else x-2**32) >> shift
+            elif operation == 'extui':
+                shift = rng.randrange(32); bits = rng.randrange(1,min(16,32-shift)+1)
+                instruction = f'extui a{d},a{s},{shift},{bits}'; result = (x >> shift) & ((1 << bits)-1)
             elif operation == 'movi':
                 immediate = rng.randrange(-2048, 2048)
                 instruction = f'movi a{d},{immediate}'; result = immediate

@@ -17,9 +17,15 @@ Native `image-info esp32` now validates standalone image headers, segments, XOR
 checksum and optional SHA-256, with explicit rejection of signed/encrypted/merged
 images. An experimental, unregistered Xtensa integer kernel now executes the
 wide arithmetic/logic/immediate/low-multiply subset against a supplied register
-window: 84 native assertions and 4,352 separately assembled all-register comparisons
-pass. Fetch, control flow, memory, windows, interrupts, density, SMP and timing
-remain unimplemented. No runnable ESP32 target is added, and the
+window: 111 native assertions and 5,376 separately assembled all-register comparisons
+pass. Mixed-width fetch, compact arithmetic, non-windowed calls/returns, conditional
+branches and callback memory access now execute an assembled summing/subroutine
+program. The execution test passes 618 assertions; a separate assembler/linker
+referee passes 3,840 execution cases and 960 failed accesses. Architectural
+exceptions, windows, interrupts, full ISA, SMP, SoC boot and timing remain
+unimplemented. Additionally, 96 compiler-generated C executions (sum/sort/copy,
+33,472 fetched instructions) pass buffer, guard, return and callee-save checks.
+No runnable ESP32 target is added, and the
 existing RISC-V ESP32-C3 is not a substitute.
 
 ## The library's categories (2026-11-03)

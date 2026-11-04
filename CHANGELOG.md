@@ -5,6 +5,22 @@ versions follow semantic versioning. There is no release yet.
 
 ## Unreleased
 
+### Experimental Xtensa fetch, flow and memory execution
+
+- Execute mixed-width instructions through a callback bus, compact arithmetic,
+  non-windowed jumps/calls/returns, signed/unsigned conditional branches,
+  byte/halfword/word loads/stores and default PC-relative literal loads.
+- Preserve PC/registers on unsupported or failed accesses and report failing
+  PC/address/opcode; reject unaligned data accesses before touching the bus.
+- Added assembled loop/subroutine acceptance, native boundary/fault checks and
+  3,840 externally assembled execution cases plus 960 failed-access cases.
+- Immediate shifts, EXTUI and signed/unsigned immediate comparisons allow
+  compiler-generated sum/sort/copy routines to run: 96 executions verify complete
+  buffers, guards, CALL0 callee-save behavior and returns.
+  This remains an experimental execution engine, not a registered CPU/board:
+  full ISA, register windows, exceptions/interrupts, SMP, SoC boot, peripherals
+  and timing are still absent.
+
 ### Experimental Xtensa integer execution
 
 - Added the wide integer arithmetic/logic/immediate/low-multiply execution

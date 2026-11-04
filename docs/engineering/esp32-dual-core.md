@@ -34,20 +34,21 @@ can change. Vendor maximum ratings are not normal operating conditions.
 `core/mcu/xtensa/integer.c` executes a bounded subset of little-endian, wide
 (24-bit) instructions against a caller-provided A0–A15 register window:
 ADD, SUB, ADDX2/4/8, SUBX2/4/8, AND, OR, XOR, MOVI, ADDI, ADDMI, NEG,
-ABS and MULL. MOV's OR encoding is included. Arithmetic wraps modulo 2^32,
+ABS, MULL, SLLI/SRLI/SRAI and EXTUI. MOV's OR encoding is included. Arithmetic wraps modulo 2^32,
 including ABS/NEG of the most negative integer; sign extension uses unsigned
 arithmetic. Destinations may alias either source, and A0 is writable.
 
 Unsupported instructions and truncated/invalid inputs fail without changing any
-register; successful execution reports three consumed bytes. This helper has no
-fetch, memory operations, control flow, register-window rotation, interrupts,
-exceptions, special registers, density instructions, FPU, SMP or timing model.
+register; successful execution reports three consumed bytes. The integer helper also implements ADD.N, ADDI.N, MOV.N and MOVI.N; the
+last uses Xtensa's asymmetric -32..95 immediate range. This helper has no
+register-window rotation, interrupts, architectural exception dispatch, special
+registers, FPU, SMP or timing model.
 It is not wired into the CPU constructor or catalog and cannot run firmware.
 The caller-provided window is not a claim that register-window behavior exists.
 
 `test_xtensa_integer` checks an assembled sequence, arithmetic extremes, aliases,
-input errors and unchanged state on unsupported execution (84 assertions).
-`tests/vendor/xtensa_integer/run.py` independently assembles 4,352 instruction
+input errors and unchanged state on unsupported execution (111 assertions).
+`tests/vendor/xtensa_integer/run.py` independently assembles 5,376 instruction
 cases with GNU binutils and compares every output register against Python
 integer arithmetic. It varies register aliases, immediates and 32-bit extremes
 with a fixed seed. GNU xtensa-lx106 binutils 2.40 was used solely as an external
@@ -64,6 +65,70 @@ python tests/vendor/xtensa_integer/run.py \
 
 The deterministic native unit test runs in CTest without those external tools.
 Hardware execution comparison and a complete LX6 ISA referee remain outstanding.
+
+## Implemented: mixed-width fetch, flow and memory execution
+
+`core/mcu/xtensa/execute.c` adds a PC and a visible register window, plus a
+byte/halfword/word callback bus. It executes:
+
+- The integer helper's wide and compact operations, NOP and NOP.N.
+- J, JX, CALL0, CALLX0, RET and RET.N. CALLX0 reads the target before
+  writing A0, including when the target register is A0. Windowed calls and
+  returns remain explicitly unsupported.
+- BEQZ/BNEZ/BLTZ/BGEZ, BEQ/BNE/BLT/BGE/BLTU/BGEU, BEQZ.N/BNEZ.N
+  and BEQI/BNEI/BLTI/BGEI/BLTUI/BGEUI with encoded constant selection.
+  Signed comparisons differ from unsigned; narrow branches have unsigned
+  forward displacement, while wide branches sign-extend their offsets.
+- L8UI, L16UI, L16SI, L32I, S8I, S16I, S32I, L32I.N and S32I.N.
+  Narrow loads mask callback results, and signed halfword loads sign-extend.
+- L32R in the default PC-relative mode; extended LITBASE is not implemented.
+
+Instruction fetch reads exactly two or three bytes, even at memory boundaries.
+Data access checks natural alignment before calling the bus. On unsupported
+instructions, truncation, failed fetch or failed data access, registers and PC
+remain unchanged, and diagnostics retain the failing PC/address/opcode. These
+are caller-visible fault reports, not architectural exception-vector dispatch.
+The bus callback must not complete a write when reporting failure. Side effects
+of MMIO reads cannot be rolled back. There is no MMU, protection, cache or
+multicore ordering/timing claim. Execution is sequential and has no inferred
+cycle count.
+
+An assembled mixed-width program fetches through memory, sums four words in a
+loop, calls a doubling subroutine and returns to the expected PC (27 executed
+instructions). The native test has 618 assertions covering branches, compact
+immediate limits, byte/halfword/word behavior, literal loads, link-register alias,
+32-bit PC wrap, memory-edge fetches, alignment and failed-access state retention.
+An optional external-assembler/linker referee checks 3,840 execution cases and
+960 rejected accesses against independent Python PC/register/bus expectations.
+Linker relaxation is disabled to preserve the fixture's explicit instruction
+addresses. The earlier 5,376 integer cases continue to pass.
+
+```sh
+python tests/vendor/xtensa_integer/run_execute.py \
+  --assembler /path/to/xtensa-lx106-elf-as \
+  --objcopy /path/to/xtensa-lx106-elf-objcopy \
+  --linker /path/to/xtensa-lx106-elf-ld
+```
+
+A further compiler acceptance runner compiles unchanged freestanding C for
+summing words, insertion-sorting unsigned words and copying bytes. With GCC
+xtensa-lx106 10.2.1 at `-O1`, 96 executions fetch 33,472 instructions and verify
+results, complete output buffers/guards, source preservation, CALL0 callee-saved
+registers and return addresses. This shared-subset compiler evidence is not LX6
+windowed-ABI, hardware or vendor SDK qualification.
+
+```sh
+python tests/vendor/xtensa_integer/run_c.py \
+  --compiler /path/to/xtensa-lx106-elf-gcc \
+  --objcopy /path/to/xtensa-lx106-elf-objcopy \
+  --linker /path/to/xtensa-lx106-elf-ld \
+  --nm /path/to/xtensa-lx106-elf-nm
+```
+
+No CPU constructor, GDB register mapping or board catalog support is registered.
+Full instruction coverage, windowed ABI, system registers, exception/interrupt
+handling, synchronization, dual-core execution, SoC boot and peripherals still
+need implementation. Single-step synthetic programs do not qualify ESP-IDF boot.
 
 ## Implemented: standalone firmware integrity inspection
 

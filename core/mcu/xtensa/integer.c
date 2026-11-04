@@ -17,6 +17,19 @@ es_status esk_xtensa_integer_execute(uint32_t a[16], const unsigned char *code,
     unsigned op, t, s, r, op1, op2, dest;
     if (consumed) *consumed = 0;
     if (!a || !code || !consumed) return ES_EINVAL;
+    if (available < 2) return ES_EINVAL;
+    insn = (uint32_t)code[0] | (uint32_t)code[1] << 8;
+    op = insn & 15u; t = (insn >> 4) & 15u; s = (insn >> 8) & 15u; r = insn >> 12;
+    if (op == 10 || op == 11 || (op == 12 && t < 8) || (op == 13 && r == 0)) {
+        if (op == 10) { dest = r; result = a[s] + a[t]; }
+        else if (op == 11) { dest = r; result = a[s] + (t ? (uint32_t)t : UINT32_MAX); }
+        else if (op == 12) {
+            uint32_t immediate = (uint32_t)t << 4 | r;
+            dest = s; result = immediate >= 96 ? immediate - 128u : immediate;
+        } else { dest = t; result = a[s]; }
+        a[dest] = result; *consumed = 2; return ES_OK;
+    }
+    if (op >= 8) return ES_EUNSUPPORTED;
     if (available < 3) return ES_EINVAL;
     insn = (uint32_t)code[0] | (uint32_t)code[1] << 8 | (uint32_t)code[2] << 16;
     op = insn & 15u; t = (insn >> 4) & 15u; s = (insn >> 8) & 15u;
@@ -35,6 +48,20 @@ es_status esk_xtensa_integer_execute(uint32_t a[16], const unsigned char *code,
         result = op2 == 1 ? a[s] & a[t] : op2 == 2 ? a[s] | a[t] : a[s] ^ a[t];
     } else if (op == 0 && op1 == 0 && op2 == 6 && s <= 1) {
         result = s == 0 || (a[t] & UINT32_C(0x80000000)) ? 0u - a[t] : a[t];
+    } else if (op == 0 && op1 == 1 && op2 <= 1) {
+        unsigned shift = 32u - (op2 * 16u + t);
+        if (shift >= 32) return ES_EUNSUPPORTED;
+        result = a[s] << shift;
+    } else if (op == 0 && op1 == 1 && op2 == 4) {
+        result = a[t] >> s;
+    } else if (op == 0 && op1 == 1 && (op2 == 2 || op2 == 3)) {
+        unsigned shift = s + (op2 & 1u) * 16u;
+        result = a[t] >> shift;
+        if (shift && (a[t] & UINT32_C(0x80000000))) result |= UINT32_MAX << (32u - shift);
+    } else if (op == 0 && (op1 == 4 || op1 == 5)) {
+        unsigned shift = s + (op1 & 1u) * 16u;
+        if (shift + op2 + 1 > 32) return ES_EUNSUPPORTED;
+        result = (a[t] >> shift) & ((UINT32_C(1) << (op2 + 1)) - 1u);
     } else if (op == 0 && op1 == 2 && op2 == 8) {
         result = a[s] * a[t];
     } else {

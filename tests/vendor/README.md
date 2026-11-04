@@ -24,8 +24,21 @@ toolchains.
 ## Experimental Xtensa integer kernel
 
 `xtensa_integer/run.py` uses a separate GNU Xtensa assembler and objcopy, plus
-Python arithmetic, to check 4,352 wide integer instructions against the original
+Python arithmetic, to check 5,376 wide integer instructions against the original
 C kernel. Run with `--assembler PATH --objcopy PATH` on Linux with a host C
 compiler. No toolchain is vendored or linked. LX106 binutils supports this
 shared integer subset; it does not qualify the full ESP32 LX6 configuration.
 See [scope and reproduction](../../docs/engineering/esp32-dual-core.md).
+
+`xtensa_integer/run_execute.py` additionally uses a separate linker, with
+relaxation disabled, for 3,840 flow/memory/density cases and 960 rejected bus
+accesses. Supply `--assembler`, `--objcopy` and `--linker` paths. It compares all
+registers, PC and exact bus transactions, including failed-access retention.
+It does not establish architectural exception delivery or complete ISA fidelity.
+
+`xtensa_integer/run_c.py` compiles unchanged sum/sort/copy C routines using
+external CALL0 GCC and runs 96 cases through instruction fetch and the callback
+bus. Supply `--compiler`, `--objcopy`, `--linker` and `--nm`. Checks include whole
+buffers and guards, source retention, return PC and callee-saved registers. The
+reference result used GCC xtensa-lx106 10.2.1 at `-O1`; this tests shared
+instructions, not the full LX6 configuration, ESP-IDF boot or a real board.
