@@ -236,8 +236,8 @@ model; other XSR special-register forms remain unsupported.
 RSR/WSR support the new fields. SAR and loop registers are accessible without
 privileged-register checks; implemented privileged register operations and RSIL
 honor the configured PS.RING/EXCM state. RSIL returns old PS and changes
-INTLEVEL, but this does not implement pending interrupt delivery or interrupt
-masking conformance. MEMW/ISYNC/ESYNC are serialized by the already synchronous
+INTLEVEL. The optional CPU input profile below adds functional interrupt masking
+and delivery; it does not establish cycle-exact interrupt latency. MEMW/ISYNC/ESYNC are serialized by the already synchronous
 bus and register execution; there is no prefetch/cache/pipeline or asynchronous
 external-effect qualification. EXTW is still unsupported.
 
@@ -261,8 +261,9 @@ The profile is disabled by initialization until vectors are configured. Those
 addresses are test/host inputs, not an inferred ESP32 VECBASE or ROM layout.
 Generic memory/fetch failures remain diagnostics because the current callback
 cannot distinguish protection, translation and bus error causes accurately.
-Interrupts, automatic MMU/bus fault dispatch, debug exceptions and complete
-privilege/system behavior remain unimplemented. No CPU constructor or board
+Automatic MMU/bus fault dispatch, debug exceptions and complete
+privilege/system behavior remain unimplemented. CPU interrupts are supported only
+with the separate explicit profile below. No CPU constructor or board
 catalog target is added.
 
 `test_xtensa_system` passes 785 assertions: shift boundaries, masking/exchange,
@@ -288,6 +289,88 @@ python tests/vendor/xtensa_integer/run_system_c.py \
   --linker /path/to/xtensa-esp32-elf-ld \
   --nm /path/to/xtensa-esp32-elf-nm
 ```
+
+## Implemented: ESP32 CPU interrupts and explicit compare-clock ticks
+
+`interrupts.c` implements the configured ESP32 LX6 CPU input controller. The
+32 input levels/types and EXCMLEVEL=3 are checked against Espressif's toolchain
+`xtensa/config/core-isa.h`, not inferred from the C3 or an arbitrary priority map.
+Expected configuration SHA-256:
+`60d20f76c7730b24041b9f55b16e0062f30bf85c7661c7ed215f050fedcdb344`.
+This external test input comes from the already hash-verified ESP32 toolchain.
+Its permissive vendor configuration notice is not a dependency of the app;
+no vendor controller implementation is copied or linked.
+
+The interrupt profile requires configured general exception vectors and separate
+caller-supplied level 2..7 vectors. It is disabled by initialization. Configuration
+resets controller/context values for deterministic test setup, not a claim about
+silicon reset values. Disabling the general exception profile also disables the
+interrupt profile and releases its simulated WAITI suspension.
+
+- Level inputs remain pending while asserted; external edges latch rising edges
+  until INTCLEAR. Software inputs 7/29 are set only through INTSET, and other
+  INTSET bits have no effect. Internal timer/profiling inputs can be driven by
+  the device input API; that does not make them physical GPIOs.
+- Maskable delivery uses INTENABLE and the higher of PS.INTLEVEL and the EXCM
+  floor of 3. The highest eligible level wins. A vector represents a level,
+  not an invented winning input number; software can inspect all pending bits.
+- The NMI input 14 latches an edge, bypasses masking and consumes that edge on
+  acceptance. A held input does not create repeated edges. Sampling/glitch timing
+  and precise silicon NMI status-read timing remain unqualified.
+- Level 1 enters the configured general exception path with cause 4. Higher
+  levels save EPCn/EPSn, set INTLEVEL/EXCM and enter the configured vector.
+  RFI 2..7 restores the saved PC and PS. No general registers are automatically
+  pushed to a host shadow stack; handler code saves what it needs.
+- INTERRUPT/INTSET, INTCLEAR, INTENABLE, EPC2..7, EPS2..7 and EXCSAVE1..7 are
+  available through the implemented special-register instructions. INTCLEAR has
+  no invented read value. Delivery does not automatically acknowledge a maskable
+  source, so held levels/rejected acknowledgement can immediately retrigger.
+- WAITI updates the mask and saves the next PC before suspension. Step returns
+  event 18 without fetching while no eligible input exists. Pending-before-WAITI
+  races, level masking and post-WAITI return addresses are checked. This does
+  not model sleep current, regulators, radio power management or clock gating.
+
+CCOUNT/CCOMPARE0..2 use **explicit processor-clock advances** through
+`esk_xtensa_clock_advance`; instruction retirement does not fabricate elapsed
+cycles. Compare hits latch CPU inputs 6/15/16 and remain pending until the
+corresponding CCOMPARE write. INTCLEAR and CCOUNT writes do not acknowledge them.
+The counter wraps at 32 bits, with zero/multiple-wrap/64-bit tick advances
+supported. `esk_xtensa_clock_deadline` returns the nearest unlatched compare,
+including a full wrap when compare equals the current count.
+
+Clock advances continue during WAITI, allowing a compare event to wake the CPU.
+Bulk advances capture hits but do not execute handlers midway through the advance;
+a host scheduler must split at deadlines when interrupt service timing matters.
+Software reads/writes are applied at the functional boundary; their precise
+silicon clock/pipeline phase is not qualified. CCOUNT/CCOMPARE are architecturally
+undefined at reset, so deterministic zero initialization is only test setup.
+No instruction timing, clock-frequency integration or cycle-accurate latency is
+claimed until the real core/runtime scheduler is connected.
+
+The native interrupt test passes 11,571 assertions: all 32 inputs across 16 mask
+levels, EXCM on/off and enable on/off, nesting, reassertion, edges/software/NMI,
+WAITI races, register/privilege behavior and a fetched handler. That handler saves
+A2 in EXCSAVE3, acknowledges software input 29, restores A2 and returns via RFI;
+the interrupted program resumes with its expected result. The timer test passes
+81 assertions covering deadlines, sticky requests, compare acknowledgement,
+wraps/huge advances, CCOUNT register access and timed WAITI wake-up.
+
+Optional referees provide 2,048 comparisons against the vendor's input level/type
+configuration, and 8,192 clock/deadline comparisons against 263,719 individual
+oracle ticks with vendor timer-input mapping. The earlier 224 windowed-ABI runs
+and 7,040 compiled bit-manipulation runs still pass with the expanded state.
+
+```sh
+python tests/vendor/xtensa_integer/run_interrupts.py \
+  --core-isa /path/to/xtensa-esp32-elf/include/xtensa/config/core-isa.h
+python tests/vendor/xtensa_integer/run_timer_clock.py \
+  --core-isa /path/to/xtensa-esp32-elf/include/xtensa/config/core-isa.h
+```
+
+This is not the SoC interrupt matrix, peripheral source routing, cross-core
+interrupt generation, full ISR/RTOS context switching, debug/NMI cycle timing or
+board power behavior. No executable board target is registered. Those remain
+separate qualification gates rather than being inferred from CPU input tests.
 
 ## Implemented: standalone firmware integrity inspection
 

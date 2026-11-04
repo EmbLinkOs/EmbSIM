@@ -61,3 +61,11 @@ rotation and funnel runs (37,818 fetched instructions), checking functional bit
 results and caller stack/window/return state. Supply `--compiler`, `--objcopy`,
 `--linker` and `--nm` as for the windowed runner. This is not interrupt, cache,
 pipeline or hardware timing qualification.
+
+`xtensa_integer/run_interrupts.py` validates the hash-pinned actual ESP32
+`core-isa.h` and checks 2,048 input type/level/mask combinations.
+`run_timer_clock.py` uses its timer-input mapping for 8,192 counter/deadline
+comparisons against 263,719 individual oracle ticks. Both take `--core-isa PATH`
+and compile the original C modules with the host compiler; the vendor header
+is external reference data, not linked into the app. These checks do not qualify
+SoC routing, instruction timing, NMI sampling or interrupt-service latency.

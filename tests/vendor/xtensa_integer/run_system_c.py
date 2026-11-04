@@ -45,7 +45,7 @@ def main():
         lib=out/'system.so'
         subprocess.run([args.cc,'-std=c99','-Wall','-Wextra','-Wconversion','-Werror','-shared','-fPIC',
                         '-I'+str(ROOT/'core'),'-I'+str(ROOT/'include'),
-                        *[str(ROOT/'core/mcu/xtensa'/f) for f in ['integer.c','execute.c','windows.c']],'-o',str(lib)],check=True)
+                        *[str(ROOT/'core/mcu/xtensa'/f) for f in ['integer.c','execute.c','windows.c','interrupts.c']],'-o',str(lib)],check=True)
         api=C.CDLL(str(lib));init=api.esk_xtensa_windows_init
         init.argtypes=[C.POINTER(Windows),C.c_uint32,C.POINTER(C.c_uint32)];init.restype=None
         step=api.esk_xtensa_window_step;step.argtypes=[C.POINTER(Windows),C.POINTER(Memory),C.POINTER(C.c_uint),C.POINTER(Fault)];step.restype=C.c_int

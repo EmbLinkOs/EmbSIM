@@ -14,11 +14,15 @@ from run_execute import State, Fault, Read, Write, Memory, ROOT, MASK
 from run_c import SOURCE
 
 
+class Interrupts(C.Structure):
+    _fields_=[(name,C.c_uint32) for name in ['enabled','intenable','lines','latched','waiting','last_level','last_pending']]+[(name,C.c_uint32*8) for name in ['epc','eps','excsave','vectors']]+[('ccount',C.c_uint32),('compare',C.c_uint32*3)]
+
+
 class Windows(C.Structure):
     _fields_=[('cpu',State),('ar',C.c_uint32*64),('ps',C.c_uint32),('base',C.c_uint32),
               ('start',C.c_uint32),('epc1',C.c_uint32),('lbeg',C.c_uint32),('lend',C.c_uint32),
               ('lcount',C.c_uint32),('sar',C.c_uint32),('exccause',C.c_uint32),('excvaddr',C.c_uint32),
-              ('depc',C.c_uint32),('exceptions_enabled',C.c_uint32),('exception_vectors',C.c_uint32*3),('vectors',C.c_uint32*6)]
+              ('depc',C.c_uint32),('exceptions_enabled',C.c_uint32),('exception_vectors',C.c_uint32*3),('irq',Interrupts),('vectors',C.c_uint32*6)]
 
 
 NESTED='''
@@ -67,7 +71,7 @@ def main():
         lib=out/'windows.so'
         subprocess.run([args.cc,'-std=c99','-Wall','-Wextra','-Wconversion','-Werror','-shared','-fPIC',
                         '-I'+str(ROOT/'core'),'-I'+str(ROOT/'include'),
-                        *[str(ROOT/'core/mcu/xtensa'/file) for file in ['integer.c','execute.c','windows.c']],'-o',str(lib)],check=True)
+                        *[str(ROOT/'core/mcu/xtensa'/file) for file in ['integer.c','execute.c','windows.c','interrupts.c']],'-o',str(lib)],check=True)
         api=C.CDLL(str(lib));init=api.esk_xtensa_windows_init
         init.argtypes=[C.POINTER(Windows),C.c_uint32,C.POINTER(C.c_uint32)];init.restype=None
         step=api.esk_xtensa_window_step;step.argtypes=[C.POINTER(Windows),C.POINTER(Memory),C.POINTER(C.c_uint),C.POINTER(Fault)];step.restype=C.c_int

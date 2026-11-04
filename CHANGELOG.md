@@ -5,6 +5,19 @@ versions follow semantic versioning. There is no release yet.
 
 ## Unreleased
 
+### Experimental ESP32 CPU interrupts and compare clock
+
+- Added an opt-in 32-input ESP32 CPU interrupt profile: fixed levels/types,
+  INTENABLE/EXCM masking, edge/software pending state, NMI, saved high-level
+  contexts, RFI, WAITI and special registers. The SoC interrupt matrix and
+  peripheral routing remain unimplemented; no board target is registered.
+- Added CCOUNT/CCOMPARE0..2, sticky timer requests, wrap-safe explicit clock
+  advances and deadline reporting. No instruction-cycle count is guessed.
+  WAITI can wake from supplied compare ticks; pipeline/service timing is not
+  qualified, and a scheduler must split advances at deadlines when needed.
+- Added 11,571 interrupt and 81 timer assertions, a fetched acknowledging ISR,
+  2,048 vendor-configuration comparisons and 8,192 tick-oracle comparisons.
+
 ### Experimental Xtensa SAR and selected system behavior
 
 - Added SAR setup and variable shifts/funnel operations, XSR.SAR, selected system

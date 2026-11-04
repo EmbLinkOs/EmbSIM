@@ -36,7 +36,13 @@ SAR setup/variable shifts and exchange, RSIL state and selected opt-in XEA2
 syscall/illegal/privilege/nested entry/return now pass 785 native assertions.
 An additional 7,040 real ESP32 compiled bit-manipulation executions pass (37,818
 fetched instructions). Unknown instructions and ambiguous bus failures are not
-assigned invented exception causes; general interrupt delivery remains absent.
+assigned invented exception causes. The optional CPU interrupt profile now adds
+32-input priority/type handling, masks, NMI edges, saved high-level contexts,
+RFI and WAITI suspension/wake (11,571 native assertions). CCOUNT/CCOMPARE0..2
+use explicit supplied ticks, including WAITI wake and wraparound (81 assertions).
+Referees pass 2,048 vendor-configuration interrupt comparisons and 8,192
+clock/deadline comparisons against 263,719 individual ticks. The SoC interrupt
+matrix, peripheral routing, scheduler timing, SMP and board boot remain absent.
 No runnable ESP32 target is added, and the
 existing RISC-V ESP32-C3 is not a substitute.
 

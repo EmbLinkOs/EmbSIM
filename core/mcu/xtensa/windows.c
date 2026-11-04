@@ -8,7 +8,7 @@ enum execution_kind {
     XT_BASE, XT_CALL, XT_ENTRY, XT_RETW, XT_WINDOW_RETURN, XT_ROTW,
     XT_SPECIAL, XT_RSYNC, XT_LOOP, XT_EXCEPTION_MEMORY,
     XT_SAR_SETUP=11, XT_SAR_SHIFT, XT_FENCE, XT_RSIL, XT_SYSCALL,
-    XT_EXCEPTION_RETURN, XT_ILLEGAL
+    XT_EXCEPTION_RETURN, XT_ILLEGAL, XT_RFI, XT_WAITI
 };
 
 static uint32_t bit(unsigned n) { return UINT32_C(1) << (n & 15u); }
@@ -35,6 +35,7 @@ void esk_xtensa_exception_configure(esk_xtensa_windows *w, const uint32_t vector
 {
     if (!w) return;
     w->exceptions_enabled=vectors ? 1u : 0u;
+    if (!vectors) { w->irq.enabled=0; w->irq.waiting=0; }
     if (vectors) memcpy(w->exception_vectors,vectors,sizeof w->exception_vectors);
 }
 es_status esk_xtensa_raise_exception(esk_xtensa_windows *w, unsigned cause,
@@ -52,12 +53,13 @@ es_status esk_xtensa_raise_exception(esk_xtensa_windows *w, unsigned cause,
     *event=7u+index;
     return ES_OK;
 }
-static int special_valid(unsigned reg)
+static int special_valid(const esk_xtensa_windows *w,unsigned reg)
 {
-    return reg<=3 || reg==72 || reg==73 || reg==177 || reg==192 || reg==230 || reg==232 || reg==238;
+    return (w->irq.enabled && esk_xtensa_irq_special(reg)) || reg<=3 || reg==72 || reg==73 || reg==177 || reg==192 || reg==230 || reg==232 || reg==238;
 }
 static uint32_t special_read(const esk_xtensa_windows *w,unsigned reg)
 {
+    if (esk_xtensa_irq_special(reg)) { uint32_t value=0; (void)esk_xtensa_irq_read(w,reg,&value); return value; }
     switch (reg) {
     case 0:return w->lbeg; case 1:return w->lend; case 2:return w->lcount; case 3:return w->sar;
     case 72:return w->base; case 73:return w->start; case 177:return w->epc1;
@@ -66,6 +68,7 @@ static uint32_t special_read(const esk_xtensa_windows *w,unsigned reg)
 }
 static void special_write(esk_xtensa_windows *w,unsigned reg,uint32_t value)
 {
+    if (esk_xtensa_irq_special(reg)) { (void)esk_xtensa_irq_write(w,reg,value); return; }
     switch (reg) {
     case 0:w->lbeg=value;break; case 1:w->lend=value;break; case 2:w->lcount=value;break;
     case 3:w->sar=value&63u;break;
@@ -145,7 +148,7 @@ es_status esk_xtensa_window_execute(esk_xtensa_windows *w, const esk_xtensa_memo
     else if ((word&UINT32_C(0xffff0f))==0x408000) kind=XT_ROTW;
     else if ((word&UINT32_C(0xff000f))==0x030000 || (word&UINT32_C(0xff000f))==0x130000 || (word&UINT32_C(0xff000f))==0x610000) {
         unsigned reg=(word>>8)&255u;
-        if (!special_valid(reg) || ((word&UINT32_C(0xff000f))==0x610000 && reg!=3))
+        if (!special_valid(&next,reg) || (reg==227 && (word&UINT32_C(0xff000f))==0x030000) || ((word&UINT32_C(0xff000f))==0x610000 && reg!=3))
             return reject(fault,ESK_XT_UNSUPPORTED,pc,pc,word);
         kind=XT_SPECIAL; mask=bit(t);
     }
@@ -166,10 +169,12 @@ es_status esk_xtensa_window_execute(esk_xtensa_windows *w, const esk_xtensa_memo
     else if (word==0x005000) kind=XT_SYSCALL;
     else if (word==0 || word==0xf06d) kind=XT_ILLEGAL;
     else if (word==0x003000 || word==0x003200) kind=XT_EXCEPTION_RETURN;
+    else if ((word&UINT32_C(0xfff0ff))==0x003010 && s>=2 && s<=7 && next.irq.enabled) kind=XT_RFI;
+    else if ((word&UINT32_C(0xfff0ff))==0x007000 && next.irq.enabled) kind=XT_WAITI;
     else if (word==0x002010) kind=XT_RSYNC; /* RSYNC; no asynchronous pipeline here */
     else if (references(code,width,word,&mask)!=ES_OK) return reject(fault,ESK_XT_UNSUPPORTED,pc,pc,word);
     if ((kind==XT_WINDOW_RETURN || kind==XT_ROTW ||
-         (kind==XT_SPECIAL && ((word>>8)&255u)>=64) || kind==XT_RSIL || kind==XT_EXCEPTION_RETURN) &&
+         (kind==XT_SPECIAL && ((word>>8)&255u)>=64) || kind==XT_RSIL || kind==XT_EXCEPTION_RETURN || kind==XT_RFI || kind==XT_WAITI) &&
         !(next.ps&ESK_XT_PS_EXCM) && ((next.ps>>6)&3u)) {
         if (!next.exceptions_enabled) return reject(fault,ESK_XT_UNSUPPORTED,pc,pc,word);
         st=esk_xtensa_raise_exception(&next,8,0,0,event); if (st==ES_OK) *w=next; return st;
@@ -254,6 +259,10 @@ es_status esk_xtensa_window_execute(esk_xtensa_windows *w, const esk_xtensa_memo
         if (word==0x003000) { next.ps&=~ESK_XT_PS_EXCM; next.cpu.pc=next.epc1; }
         else next.cpu.pc=next.depc;
         flow=0;
+    } else if (kind==XT_RFI) {
+        st=esk_xtensa_irq_return(&next,s); if (st!=ES_OK) return st; flow=0;
+    } else if (kind==XT_WAITI) {
+        next.ps=(next.ps&~15u)|s; next.cpu.pc=pc+3; next.irq.waiting=1; flow=0;
     } else if (kind==XT_RSYNC) next.cpu.pc=pc+3;
     else {
         st=esk_xtensa_execute_flow(&next.cpu,memory,code,available,consumed,fault,&flow);
@@ -271,6 +280,11 @@ es_status esk_xtensa_window_step(esk_xtensa_windows *w, const esk_xtensa_memory 
     if (event) *event=0;
     if (fault) memset(fault,0,sizeof *fault);
     if (!w || !event) return ES_EINVAL;
+    if (w->irq.enabled) {
+        es_status st=esk_xtensa_irq_poll(w,event);
+        if (st!=ES_OK || *event) return st;
+        if (w->irq.waiting) { *event=18; return ES_OK; }
+    }
     for (i=0;i<width;i++) {
         uint32_t address=w->cpu.pc+i;
         if (!memory || !memory->read || memory->read(memory->ctx,address,1,&value)!=ES_OK)
