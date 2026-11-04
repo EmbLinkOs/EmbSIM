@@ -8,7 +8,9 @@ does not mean the described behaviour exists.
 ## Original ESP32 dual-core target investigation (2026-11-04)
 
 The owner requested an original dual-core ESP32 development board. The listing
-name does not identify its PCB/module revision. [Identity and implementation
+is now tied to TECNOIOT ASIN B07N97DD1B: the advertised photo shows a
+30-pin ESP-WROOM-32 board. Exact PCB revision and BOM remain unverified.
+[Identity and implementation
 gates](engineering/esp32-dual-core.md) document the new Xtensa LX6 backend,
 dual-core SoC, board circuits, radio, low-power and qualification work needed.
 This is design investigation only: no runnable ESP32 target is added, and the

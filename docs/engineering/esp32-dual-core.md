@@ -4,7 +4,11 @@
  the owner on 2026-11-04. This is the original ESP32 family, not ESP32-C3,
 ESP32-S2 or ESP32-S3. The generic marketplace title “ESP-32 / ESP-32S
 WiFi+Bluetooth Dual Cores” does not identify a reproducible board revision.
-The product link, module marking and board pinout are still required.
+The owner supplied [Amazon ASIN B07N97DD1B](https://www.amazon.fr/dp/B07N97DD1B).
+The listing brand is TECNOIOT. Its main image shows an ESP-WROOM-32 shield,
+30 header positions, Micro-USB, EN and BOOT buttons. This identifies the
+advertised form factor, not a guaranteed PCB revision or bill of materials.
+See the [listing evidence and header transcription](esp32-tecnoiot-b07n97dd1b.md).
 
 ## Reference material
 
