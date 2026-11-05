@@ -20,6 +20,12 @@ reading unimplemented eFuse register 0x3ff5a000. No dummy MMIO values or host PC
 shortcut were used. This confirms a native boot blocker; it does not qualify
 physical ROM/board identity or imply that fixing one register finishes boot.
 
+The owner subsequently supplied physical identification: ESP32-D0WD-V3 v3.1,
+40 MHz crystal, JEDEC C4 60 16 and 4 MB detected flash. Giantec GT25Q32A-U
+manufacturer documentation matches that ID; exact ordering/package remains
+unresolved. This identifies the measured unit more precisely than the listing,
+and differs from the separate Winbond test profile.
+
 ## Reference material
 
 Primary references inspected for this investigation:
@@ -833,7 +839,8 @@ named-part fixture below adds bounded program/erase behavior.
 
 The [named flash-part contract](esp32-flash-programming.md) adds an explicit
 unprotected W25Q32JV-IQ 4 MiB profile. It does not identify the requested board's
-actual flash part. Standard write-enable/status, page program/wrap and aligned
+actual flash part. The physical readout now matches Giantec C4 60 16, rather than
+this fixture's EF 40 16. Standard write-enable/status, page program/wrap and aligned
 erase use supplied external microseconds with conservative datasheet-maximum
 durations. SPI1 USER transmit/receive and cache re-enable boundaries are covered.
 Native tests, 2,631 independent command/time comparisons and actual compiled

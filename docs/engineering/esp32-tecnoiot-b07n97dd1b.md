@@ -2,7 +2,8 @@
 
 **Status: identified listing, provisional hardware inventory, not executable
 support.** Inspected 2026-11-04 after the owner provided the product link.
-No physical unit, PCB schematic or hardware capture has been examined.
+No direct physical inspection, PCB schematic or electrical capture has been
+examined. An owner-supplied serial hardware identification is recorded below.
 
 ## Sources and confidence
 
@@ -23,16 +24,21 @@ Its 30-pin layout resembles boards commonly sold as ESP32 DevKit V1, but that
 name alone does not establish manufacturer, revision or electrical equivalence.
 Marketplace images and shipped units can differ.
 
-## Flash verification update (2026-11-05)
+## Hardware verification update (2026-11-05)
 
-The listing was rechecked: its product-specific title/bullets/overview do not
-identify the fitted flash manufacturer or ordering code. Related-product ads
-are not evidence for this unit. Espressif's original ESP32-WROOM-32 datasheet
-specifies nominal 4 MB external flash, conditional on genuine/correct module
-identity; that does not identify this shipped unit's flash. A physical readout
-has been requested from the owner's macOS/Linux machine. See the
-[flash identity and real boot investigation](esp32-boot-verification.md).
-The selected W25Q32JV-IQ test profile is not verified board hardware.
+Owner-supplied esptool v5.6.0 output reports **ESP32-D0WD-V3 revision v3.1**,
+a **40 MHz crystal**, **JEDEC C4 60 16** and **4 MB flash**. Esptool reports a
+3.3 V flash setting from a strapping pin; this is not a measured rail voltage.
+Giantec GT25Q32A-U V2.5 section 9.2 lists that exact JEDEC response, supporting
+a Giantec GT25Q32-class match. Exact package/ordering suffix and die revision
+remain unconfirmed. The output and primary manufacturer reference are in the
+[hardware and boot investigation](esp32-boot-verification.md).
+
+The listing itself still does not identify a complete flash part or authenticate
+the photo/PCB revision. The Winbond W25Q32JV-IQ EF 40 16 fixture does not match
+the physical readout and remains a separate test profile. Serial download/stub
+success is not full ROM/SDK application boot evidence. No runtime part was
+switched or relabeled from this report alone.
 
 ## Header transcription
 
@@ -76,9 +82,11 @@ range. GPIOs are 3.3 V signals, not assumed 5 V tolerant.
 
 Before publishing an electrically qualified board model, establish:
 
-- Actual PCB/module revision and ESP32 silicon/eFuse identity.
-- Flash manufacturer/capacity and whether any PSRAM is fitted; neither is proven
-  by this photograph. Do not silently select a WROVER configuration.
+- Actual PCB/module revision and full eFuse configuration. Silicon/revision is
+  now hardware-reported as ESP32-D0WD-V3 v3.1.
+- Exact flash ordering/package/revision and whether any PSRAM is fitted. JEDEC
+  C4 60 16 / 4 MB and the Giantec datasheet match are now recorded; the photo
+  does not establish PSRAM. Do not silently select a WROVER configuration.
 - USB bridge exact device and wiring; CP210X in the product text proves neither
   a specific CP2102 variant nor its oscillator, power or flow-control connections.
 - Regulator suffix, power routing, protection, capacitor values and tolerances.

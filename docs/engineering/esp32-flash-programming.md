@@ -15,9 +15,12 @@ flash chip's programming completion are separate events.
 
 The model implements this behavior from Winbond W25Q32JV Revision G, March 27,
 2018. IQ/JQ identifies as EF 40 16; IM/JM has a different type byte and is not
-silently substituted. The requested TECNOIOT board's flash marking/BOM remain
-unverified. Selecting this part is an explicit test configuration, not a board
-identity conclusion.
+silently substituted. The owner's physical board now reports JEDEC C4 60 16 /
+4 MB, matching Giantec's GT25Q32A-U datasheet. Exact ordering/BOM details remain
+unconfirmed.
+That differs from this fixture's EF 40 16. See the
+[physical readout evidence](esp32-boot-verification.md). Selecting this Winbond
+part is a separate test configuration, not the owner's verified board profile.
 
 ## Qualified subset
 

@@ -5,6 +5,15 @@ versions follow semantic versioning. There is no release yet.
 
 ## Unreleased
 
+### Owner ESP32 hardware identification
+
+- Recorded the owner's physical esptool readout: ESP32-D0WD-V3 v3.1, 40 MHz
+  crystal, JEDEC C4 60 16 and 4 MB detected flash; 3.3 V is a reported strapping
+  setting. Unique MAC is omitted from repository artifacts.
+- Matched the flash ID to Giantec's GT25Q32A-U manufacturer datasheet. Exact
+  ordering/package/revision remains unresolved; the separate Winbond test
+  fixture does not match this board. Runtime models are unchanged.
+
 ### Original ESP32 boot verification evidence
 
 - Built unmodified ESP-IDF v4.4.7 hello_world and observed its bootloader,
@@ -13,7 +22,8 @@ versions follow semantic versioning. There is no release yet.
   retired instructions at the unimplemented eFuse read, PC 0x4000fdd8/address
   0x3ff5a000. This is a confirmed native boot blocker, not SDK/board support.
 - Rechecked the advertised module's nominal capacity against Espressif's
-  datasheet; the physical flash manufacturer/part remains unidentified.
+  datasheet; the subsequent owner readout above establishes the reported
+  JEDEC/vendor class, with exact ordering details still unresolved.
 
 ### Experimental explicit W25Q32JV flash programming
 

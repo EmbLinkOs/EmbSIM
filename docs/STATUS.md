@@ -11,8 +11,11 @@ does not mean the described behaviour exists.
 boots both schedulers and prints Hello world in Espressif QEMU. Native EmbSIM
 using the same image and QEMU-distributed PRO ROM fails after seven retired
 instructions: PC 0x4000fdd8, eFuse read 0x3ff5a000. This is a confirmed boot
-blocker, not successful SDK/board boot. The physical flash ID remains pending;
-4 MB is only the genuine ESP-WROOM-32 family's nominal datasheet capacity.
+blocker, not successful SDK/board boot. The owner subsequently supplied a
+physical esptool readout: ESP32-D0WD-V3 v3.1, 40 MHz crystal, JEDEC C4 60 16,
+4 MB detected flash and a 3.3 V strapping setting. Giantec's GT25Q32A-U datasheet
+matches the ID; exact ordering/package remains unresolved. The Winbond fixture
+is a different part and does not qualify this board.
 [Evidence and reproduction](engineering/esp32-boot-verification.md) separate
 reference success, native failure and unresolved hardware identity.
 
@@ -136,8 +139,8 @@ extends the storage commands.
 An explicit [W25Q32JV-IQ programming profile](engineering/esp32-flash-programming.md)
 now adds write-enable/BUSY, page programming/wrap and aligned erase through SPI1.
 It requires an explicitly selected unprotected 4 MiB part fixture; the requested
-board's actual flash chip remains unverified. External microseconds drive
-conservative datasheet-maximum durations. Native tests and 2,631 independent
+board reports Giantec-matching C4 60 16, different from this fixture's EF 40 16.
+External microseconds drive conservative datasheet-maximum durations. Native tests and 2,631 independent
 command/time comparisons pass; compiled firmware programs and executes 32 RAM
 workers (32 exact replays, 125,856 retired instructions). Fresh post-completion
 flush is required before cache enable. Full chip/protection/electrical behavior,

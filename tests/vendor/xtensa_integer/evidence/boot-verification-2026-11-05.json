@@ -2,7 +2,7 @@
   "date": "2026-11-05",
   "implementation_under_test": "d4e34ae3dc84a2c23d72fa04f1f16be9369373de",
   "hardware_flash_identity_verified": false,
-  "hardware_evidence": "Owner supplied ASIN; fresh product sections do not identify flash manufacturer/order code. Physical readout pending.",
+  "hardware_evidence": "Updated by owner esptool output: ESP32-D0WD-V3 v3.1; JEDEC C4 60 16 and 4 MiB; Giantec GT25Q32A-U datasheet match. Exact package/order suffix remains unresolved.",
   "nominal_module": {
     "photo_marking": "ESP-WROOM-32",
     "datasheet_flash": "4 MB external SPI flash, conditional on correct/genuine module identity",
@@ -81,5 +81,8 @@
       "0x4000fdd5",
       "0x4000fdd8"
     ]
-  }
+  },
+  "hardware_flash_jedec_and_capacity_reported": true,
+  "hardware_evidence_artifact": "hardware-identification-2026-11-05.json",
+  "hardware_flash_identity_verification_scope": "Exact ordering/package/revision remains unresolved; reported JEDEC/capacity and manufacturer table match are separately recorded"
 }

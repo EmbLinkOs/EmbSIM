@@ -1,44 +1,75 @@
 # ESP32 physical flash identity and ROM/SDK boot verification
 
-**Result on 2026-11-05: the actual board flash part is not identified. The pinned
-ESP-IDF example boots in Espressif QEMU; native EmbSIM ROM boot fails at the first
-eFuse-block read after seven retired instructions.** Passing instruction/flash
-fixtures and CI must not be reported as successful board or SDK boot.
+**Result on 2026-11-05: the owner's board reports ESP32-D0WD-V3 revision 3.1,
+JEDEC C4 60 16 and 4 MB flash. Giantec's GT25Q32A-U datasheet matches that ID;
+exact package/ordering suffix remains unconfirmed. The pinned SDK example boots
+in Espressif QEMU; native EmbSIM fails at the eFuse read after seven retired
+instructions.** Passing fixtures and CI do not establish successful native boot.
 
-## Physical flash: what the evidence establishes
+## Physical readout and manufacturer match
 
-The owner's [TECNOIOT ASIN B07N97DD1B](https://www.amazon.fr/dp/B07N97DD1B) was
-revisited. Its product title, feature bullets and overview do not identify a
-flash manufacturer, JEDEC ID or order code. Related-product recommendations
-are separate products and provide no evidence for this board. The existing
-[advertised-board inventory](esp32-tecnoiot-b07n97dd1b.md) remains provisional.
+The owner ran esptool v5.6.0 on macOS against the physical board. The
+[recorded output](../../tests/vendor/xtensa_integer/evidence/hardware-identification-2026-11-05.txt)
+and [structured evidence](../../tests/vendor/xtensa_integer/evidence/hardware-identification-2026-11-05.json)
+establish these reported values:
+
+| Item | Hardware/tool report | Scope |
+|---|---|---|
+| Silicon | ESP32-D0WD-V3, revision v3.1 | Identifies the responding chip/revision |
+| Crystal | 40 MHz | Esptool detection, not an independent frequency measurement |
+| Features | Wi-Fi, BT, dual core + LP core, 240 MHz, Vref calibration in eFuse, Coding Scheme None | Reported capabilities; 240 MHz is not a measured current CPU frequency |
+| Flash manufacturer/device | C4 / 6016, JEDEC bytes C4 60 16 | Physical ID transaction through the running RAM stub |
+| Flash capacity | 4 MB (4,194,304 bytes) | Detected capacity; not inferred from SDK configuration |
+| Flash voltage | 3.3 V, set by strapping pin | Reported setting, not an electrical rail measurement |
+
+The MAC is omitted from repository artifacts because it is unnecessary for
+part qualification. This readout verifies the responding serial-download/RAM-stub
+path and flash-ID transaction. It does not prove a physical SDK application boot
+or any native EmbSIM boot behavior.
+
+Giantec's [GT25Q32A-U datasheet V2.5, June 2026, section 9.2, page 36/88](https://en.giantec-semi.com/uploads/pdf/260605/GT25Q32A%20U%20DS_V2.5.pdf)
+explicitly lists 9Fh response **C4h / 60 / 16**. PDF SHA-256:
+`df021758e55bde131f39af59c42acac20f2e0b32e251f4ade673687d22b7cd55`.
+This supports a Giantec GT25Q32-class identification and a match to the published
+GT25Q32A-U ID. JEDEC alone does not prove an exact package, temperature/order
+suffix, die revision or uniqueness across all related variants. Physical
+markings or an authenticated BOM would resolve the remaining ordering details.
+
+The observed ID differs from the W25Q32JV-IQ fixture's EF 40 16. That Winbond
+fixture must not be selected as verified hardware for this board or relabeled
+with C4 without qualifying Giantec-specific behavior. No runtime chip profile
+was changed by this evidence update; a Giantec model still needs qualification.
+
+## Listing and nominal module evidence
+
+The [TECNOIOT ASIN B07N97DD1B](https://www.amazon.fr/dp/B07N97DD1B) was also
+revisited. Its product-specific fields do not identify the fitted flash part;
+related-product recommendations are separate products. The
+[advertised-board inventory](esp32-tecnoiot-b07n97dd1b.md) is still provisional
+for PCB, module marking, power, bridge and header continuity.
 
 The advertised photo shows an ESP-WROOM-32 shield. Espressif's
 [ESP32-WROOM-32 datasheet](https://www.espressif.com/sites/default/files/documentation/esp32-wroom-32_datasheet_en.pdf)
-specifies 4 MB external SPI flash. This is a **conditional nominal capacity** for
-the identified genuine module family, not proof of the shipped unit's identity
-or capacity. PDF SHA-256 inspected here:
+specifies nominal 4 MB external SPI flash, conditional on genuine/correct module
+identity. PDF SHA-256:
 `fe7dced2f6077f983dcd7df0e72b6f6c8b7b77fd6de2ff1a0efceffe3fd1e1fa`.
-It does not identify this unit's flash manufacturer or full ordering suffix.
+The owner's actual 4 MB report is separate, stronger evidence for the responding
+unit's detected capacity. Neither source authenticates a full PCB BOM.
 
-There is no physical board/USB serial device in this cloud environment. The
-owner has macOS/Linux; a read-only hardware result has been requested:
+To repeat the read-only check on macOS/Linux, use the computer attached to the
+board (no USB serial device is attached to this cloud environment):
 
 ```sh
-python3 -m esptool --chip esp32 --port PORT flash-id
+python3 -m venv ~/.venvs/embsim-board-check
+~/.venvs/embsim-board-check/bin/python -m pip install esptool
+~/.venvs/embsim-board-check/bin/python -m serial.tools.list_ports
+~/.venvs/embsim-board-check/bin/python -m esptool --chip esp32 --port PORT flash-id
 ```
 
-Use the actual serial port, for example `/dev/cu.SLAB_USBtoUART` or a matching
-`/dev/cu.usbserial-*` device on macOS, `/dev/ttyUSB0` on Linux. Esptool v4 uses the
-older command spelling `flash_id`. This reads identification without programming
-flash, but the normal connection resets the board. The manufacturer/device ID,
-detected size and silicon revision lines can establish more of the hardware
-profile. An ID shared by multiple part revisions does not establish the exact
-ordering suffix; markings or a verified BOM may still be necessary.
-
-The implemented W25Q32JV-IQ fixture therefore stays explicitly selected and
-unverified against the owner's physical unit. Neither the SDK's configured
-flash size nor QEMU's simulated part is hardware identification evidence.
+Replace PORT with the actual enumerated device. Esptool v4 uses `flash_id`.
+The command does not program flash, but normally resets the board and executes
+a RAM stub. The SDK's configured flash size and QEMU's simulated part remain
+configuration choices, rather than hardware identification evidence.
 
 ## Positive reference: real SDK example in Espressif QEMU
 
