@@ -10,8 +10,10 @@ does not mean the described behaviour exists.
 **Current implementation update:** an [explicit eFuse read/reload profile](engineering/esp32-efuse-read-profile.md)
 now supports None-coded input images, read protection and completion routing.
 With a supplied synthetic unprogrammed image, real ROM execution advances from
-seven to 6,692 retired instructions, then blocks on RTC reset-state read at
-0x3ff48034, PC 0x400081df. [MEMCTL](engineering/esp32-memctl-loop-buffer.md) now
+seven to 6,692 retired instructions without an RTC snapshot. With the new
+[RTC reset/retention profile](engineering/esp32-rtc-reset-retention.md) and an
+explicit synthetic power-on snapshot, it reaches 6,698 instructions, then blocks
+on analog configuration read at 0x3ff48088, PC 0x4000770a. [MEMCTL](engineering/esp32-memctl-loop-buffer.md) now
 has reset/control and a bounded functional loop-buffer profile. Its physical
 fill/fetch/pipeline timing remains unqualified.
 [Region protection](engineering/esp32-region-protection.md) now implements fixed

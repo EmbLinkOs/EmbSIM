@@ -28,6 +28,7 @@ def main():
     ap.add_argument('--rom',type=Path,required=True);ap.add_argument('--flash',type=Path,required=True)
     ap.add_argument('--efuse',type=Path,help='explicit JSON list of 31 raw None-coded fuse words; not inferred board defaults')
     ap.add_argument('--efuse-completion-period',type=int,default=64,help='external fixture event every N instruction attempts; not physical timing')
+    ap.add_argument('--rtc-power-on-fixture',action='store_true',help='explicit synthetic power-on reasons/vector selects and eight zero retention words; not owner RTC state')
     ap.add_argument('--prid',type=lambda value:int(value,0),default=0xcdcd,help='PRO PRID; SDK documents 0xcdcd; 0 reproduces historical invalid-ID fixture')
     ap.add_argument('--report',type=Path);ap.add_argument('--steps',type=int,default=100000)
     ap.add_argument('--cc',default='cc');args=ap.parse_args()
@@ -57,6 +58,7 @@ def main():
         complete=bind('esk_esp32_fabric_efuse_read_complete',C.c_int,pointer)
         spi=bind('esk_esp32_fabric_spi1_configure',C.c_int,pointer,C.c_int)
         core=bind('esk_esp32_machine_core',C.POINTER(Windows),pointer,C.c_uint)
+        rtc=bind('esk_esp32_machine_rtc_configure',C.c_int,pointer,C.c_uint32,C.POINTER(C.c_uint32),C.c_size_t)
         memctl=bind('esk_xtensa_memctl_configure',C.c_int,C.POINTER(Windows))
         region=bind('esk_xtensa_region_configure',C.c_int,C.POINTER(Windows))
         reset=bind('esk_xtensa_lx6_reset',C.c_int,C.POINTER(Windows),C.c_uint)
@@ -74,6 +76,9 @@ def main():
                 'flash_profile':'immutable SPI1 fixture, not a physical flash identity'}
         try:
             ram=fabric(machine)
+            if args.rtc_power_on_fixture:
+                words=(C.c_uint32*8)();assert rtc(machine,0x3041,words,8)==0
+                report['rtc_fixture']='power-on cause 1 per core, vector selects 1, eight explicit zero retention words; not physical-owner RTC state'
             if args.efuse:
                 words=json.loads(args.efuse.read_text(encoding='utf-8'))
                 if not isinstance(words,list) or len(words)!=31 or any(type(n) is not int or not 0<=n<=0xffffffff for n in words):ap.error('eFuse image must contain 31 uint32 words')

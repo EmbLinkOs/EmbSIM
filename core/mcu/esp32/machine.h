@@ -34,6 +34,18 @@ esk_xtensa_memory esk_esp32_machine_bus(esk_esp32_machine *m,unsigned cpu);
 es_status esk_esp32_machine_source(esk_esp32_machine *m,unsigned source,int asserted);
 es_status esk_esp32_machine_gpio_irq(esk_esp32_machine *m,unsigned cpu,int nmi,int asserted);
 es_status esk_esp32_machine_nmi_mask(esk_esp32_machine *m,unsigned cpu,int asserted);
+/* Opt-in RTC reset-state and eight retention-register snapshot. All eight
+ * initial words are explicit because hardware power-on contents are undefined.
+ * reset_state supplies only bits 13:0: vector selects and raw cause latches;
+ * no cause/silicon/clock identity is inferred. NULL/0 detaches host fixture.
+ * RESET_STATE cause fields are RO, vector bits RW; STORE0..7 full-width RW.
+ * DPORT APP reset updates APP cause to 14 and samples the RTC vector on assert.
+ * Retention/state survive the bounded CPU-only reset. PRO reset generation,
+ * RTC software/watchdog/global/deep-sleep/power reset and wakeup/timing remain
+ * unsupported. Direct low-level CPU reset is a debug bypass, not an RTC event.
+ * Configuration and host bus use are between turns; no profile infers a board. */
+es_status esk_esp32_machine_rtc_configure(esk_esp32_machine *m,uint32_t reset_state,
+                                        const uint32_t *retention,size_t count);
 /* Opt into the supported APP reset-input profile, asserting reset now.
  * Select static vector input 0/1 explicitly; no board strap inference. DPORT
  * 0x3ff0002c bit 0 then holds/releases APP. Assertion applies the supported

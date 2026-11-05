@@ -228,3 +228,9 @@ The [cycle-capture project](xtensa_integer/cycle_probe/README.md) builds with
 ESP-IDF v4.4.7/actual ESP32 GCC and emits 3,672 framed IRAM kernel observations.
 A complete QEMU control-flow/protocol run and analyzer rejection tests pass;
 this is not physical measurement or a calibrated native instruction-time model.
+
+`xtensa_integer/run_rtc.py` checks pinned reset/retention fields and calls an
+unchanged external PRO-ROM reset-reason helper: 1,281 comparisons, 256 calls and
+1,792 instructions. Explicit snapshots are required; complete RTC/power domains
+and native boot remain unqualified. See the
+[RTC contract](../../docs/engineering/esp32-rtc-reset-retention.md).

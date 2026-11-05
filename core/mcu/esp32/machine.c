@@ -8,6 +8,7 @@ struct esk_esp32_machine {
     esk_xtensa_windows cpu[2];uint64_t retired[2];unsigned running[2],executing;
     uint32_t app_clock,app_stall,app_boot,app_reset,app_reset_enabled,app_reset_vector,app_reset_pending;
     unsigned spi1_owned,efuse_owned;
+    uint32_t rtc_enabled,rtc_state,rtc_store[8];
     esk_esp32_matrix matrix;struct machine_view view[2];
 };
 /* Never mutate an executing CPU from a bus callback. Synchronize the
@@ -38,13 +39,38 @@ static void sync_inputs(esk_esp32_machine *m)
 static void apply_reset(esk_esp32_machine *m)
 {
     if(m->app_reset_pending) {
+        if(m->rtc_enabled) {
+            m->app_reset_vector=(m->rtc_state>>12)&1u;
+            m->rtc_state=(m->rtc_state&~UINT32_C(0xfc0))|(14u<<6);
+        }
         (void)esk_xtensa_lx6_reset(&m->cpu[1],m->app_reset_vector);m->app_reset_pending=0;
     }
+}
+/* Return 0=reset state, 1..8=retention, -1=unqualified/hole. */
+static int rtc_register(const esk_esp32_machine *m,uint32_t address)
+{
+    if(!m->rtc_enabled) return -1;
+    if(address>=0x3ff48034 && address<0x3ff48038) return 0;
+    if(address>=0x3ff4804c && address<0x3ff4805c) return 1+(int)((address-0x3ff4804c)/4u);
+    if(address>=0x3ff480b0 && address<0x3ff480c0) return 5+(int)((address-0x3ff480b0)/4u);
+    return -1;
+}
+es_status esk_esp32_machine_rtc_configure(esk_esp32_machine *m,uint32_t reset_state,const uint32_t *retention,size_t count)
+{
+    if(!m || m->executing || (!retention && count)) return ES_EINVAL;
+    if(!retention && !count) { m->rtc_enabled=0;return ES_OK; }
+    if(count!=8 || (reset_state&~UINT32_C(0x3fff))) return ES_EINVAL;
+    memcpy(m->rtc_store,retention,sizeof m->rtc_store);m->rtc_state=reset_state;m->rtc_enabled=1;return ES_OK;
 }
 /* APP reset input is opt-in. BOOT_ADDR is consumed by firmware, never used
  * as the hardware reset PC. Architectural changes occur outside callbacks. */
 static es_status control_read(const esk_esp32_machine *m,uint32_t address,unsigned bytes,uint32_t *value)
 {
+    int reg=rtc_register(m,address);
+    if(reg>=0) {
+        if(!value || bytes!=4 || (address&3u)) return ES_EINVAL;
+        *value=reg ? m->rtc_store[(unsigned)reg-1u] : m->rtc_state;return ES_OK;
+    }
     if(address<0x3ff0002c || address>0x3ff0003b) return ES_EUNSUPPORTED;
     if(address<0x3ff00030 && !m->app_reset_enabled) return ES_EUNSUPPORTED;
     if(!value || bytes!=4 || (address&3u)) return ES_EINVAL;
@@ -53,6 +79,13 @@ static es_status control_read(const esk_esp32_machine *m,uint32_t address,unsign
 }
 static es_status control_write(esk_esp32_machine *m,uint32_t address,unsigned bytes,uint32_t value)
 {
+    int reg=rtc_register(m,address);
+    if(reg>=0) {
+        if(bytes!=4 || (address&3u)) return ES_EINVAL;
+        if(reg) m->rtc_store[(unsigned)reg-1u]=value;
+        else m->rtc_state=(m->rtc_state&0xfffu)|(value&0x3000u);
+        return ES_OK;
+    }
     if(address<0x3ff0002c || address>0x3ff0003b) return ES_EUNSUPPORTED;
     if(address<0x3ff00030 && !m->app_reset_enabled) return ES_EUNSUPPORTED;
     if(bytes!=4 || (address&3u)) return ES_EINVAL;
@@ -136,6 +169,7 @@ es_status esk_esp32_machine_nmi_mask(esk_esp32_machine *m,unsigned cpu,int asser
 es_status esk_esp32_machine_app_reset_configure(esk_esp32_machine *m,unsigned vector_input)
 {
     if(!m || vector_input>1 || m->executing) return ES_EINVAL;
+    if(m->rtc_enabled) m->rtc_state=(m->rtc_state&~UINT32_C(0x1000))|(vector_input<<12);
     m->app_reset_enabled=1;m->app_reset_vector=vector_input;m->app_reset=1;m->app_reset_pending=1;
     apply_reset(m);return ES_OK;
 }

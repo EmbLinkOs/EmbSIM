@@ -5,6 +5,20 @@ versions follow semantic versioning. There is no release yet.
 
 ## Unreleased
 
+### Original ESP32 RTC reset state and retention
+
+- Added an explicit RTC reset-state/eight-word retention snapshot profile.
+  Cause fields are read-only; vector selects and retention are writable.
+  DPORT APP reset records reason 14, samples its RTC vector and preserves
+  RTC/retention and peer state, applying reset after instruction commit.
+- 53,787 native assertions and 1,281 pinned field/retention/reset comparisons
+  pass; the unchanged external PRO-ROM reset-reason helper passes 256 calls.
+- With an additional explicit synthetic power-on RTC snapshot, native ROM
+  reaches 6,698 instructions and blocks on analog configuration read 0x3ff48088.
+  Unknown RTC controls, global/power/watchdog/wakeup behavior, native SDK boot
+  and physical instruction timing remain unqualified.
+
+
 ### Original ESP32 MEMCTL and timing qualification tools
 
 - Added opt-in MEMCTL bit 0 with reset, privileged read/write/exchange and a

@@ -62,7 +62,12 @@ values and five loop counts pass: **20 calls, 20 compiled hardware loops and
 2,332 retired instructions**, through native instruction memory. Host ABI setup
 is explicit. No CPU timing is inferred from retirement or provider fetch counts.
 
-The external real-ROM diagnostic now passes MEMCTL initialization and retires
+The subsequent [RTC reset/retention profile](esp32-rtc-reset-retention.md), with
+an additional explicit synthetic snapshot, now advances to analog configuration
+read after 6,698 instructions. The historical MEMCTL-only result below retains
+its original source/fixture scope.
+
+The external real-ROM diagnostic at this milestone passes MEMCTL initialization and retires
 **6,692 instructions**, then stops at **RTC_CNTL_RESET_STATE_REG** read,
 address 0x3ff48034, PC 0x400081df, opcode 0x0828. The
 [hash-recorded probe](../../tests/vendor/xtensa_integer/evidence/boot-with-memctl-2026-11-05.json)

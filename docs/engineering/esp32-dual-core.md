@@ -34,7 +34,9 @@ retired instructions in the prior profile. With
 in the prior profile. With [fixed-region protection](esp32-region-protection.md),
 it reached 545 instructions in the prior profile.
 [Functional MEMCTL/loop buffering](esp32-memctl-loop-buffer.md) now advances it to
-6,692 instructions and an RTC reset-state read at 0x3ff48034/PC 0x400081df.
+6,692 instructions without an RTC snapshot. Adding the
+[explicit RTC reset/retention fixture](esp32-rtc-reset-retention.md) reaches 6,698
+and the next analog-configuration read at 0x3ff48088/PC 0x4000770a.
 [Instruction timing](esp32-instruction-timing.md) still requires physical evidence;
 a buildable capture firmware is prepared without claiming calibrated latency. It is not the owner's fuse dump and does
 not establish full boot. The [Giantec storage subset](esp32-giantec-profile.md)
