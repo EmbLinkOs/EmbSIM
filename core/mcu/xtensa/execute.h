@@ -34,8 +34,13 @@ typedef struct esk_xtensa_memory {
     es_status (*atomic_type)(void *ctx,uint32_t address,unsigned *type);
 } esk_xtensa_memory;
 enum { ESK_XT_OK, ESK_XT_UNSUPPORTED, ESK_XT_TRUNCATED, ESK_XT_FETCH,
-       ESK_XT_ALIGN, ESK_XT_LOAD, ESK_XT_STORE, ESK_XT_DIV_ZERO, ESK_XT_ATOMIC };
+       ESK_XT_ALIGN, ESK_XT_LOAD, ESK_XT_STORE, ESK_XT_DIV_ZERO, ESK_XT_ATOMIC, ESK_XT_PROTECTION };
 typedef struct esk_xtensa_fault { unsigned kind; uint32_t pc, address, opcode; } esk_xtensa_fault;
+/* Pure descriptor for supported base load/store encodings. word/width must
+ * already be decoded; returns 1 for a memory reference, 0 otherwise.
+ * Shared by execution and windowed region protection; no bus access. */
+int esk_xtensa_memory_reference(const esk_xtensa_state *state,uint32_t word,unsigned width,
+                                uint32_t *address,unsigned *bytes,int *store,int *signed16);
 /* Execute supplied instruction bytes; no state commit on failure. */
 es_status esk_xtensa_execute(esk_xtensa_state *state, const esk_xtensa_memory *memory,
                              const unsigned char *code, size_t available,

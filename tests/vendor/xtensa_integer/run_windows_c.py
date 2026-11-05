@@ -22,7 +22,7 @@ class Windows(C.Structure):
     _fields_=[('cpu',State),('ar',C.c_uint32*64),('ps',C.c_uint32),('base',C.c_uint32),
               ('start',C.c_uint32),('epc1',C.c_uint32),('lbeg',C.c_uint32),('lend',C.c_uint32),
               ('lcount',C.c_uint32),('sar',C.c_uint32),('exccause',C.c_uint32),('excvaddr',C.c_uint32),
-              ('depc',C.c_uint32),('scompare1',C.c_uint32),('exceptions_enabled',C.c_uint32),('exception_vectors',C.c_uint32*3),('irq',Interrupts),('vectors',C.c_uint32*6),('vecbase',C.c_uint32),('vecbase_enabled',C.c_uint32),('threadptr',C.c_uint32),('misc',C.c_uint32*4),('prid',C.c_uint32),('prid_enabled',C.c_uint32),('atomctl',C.c_uint32),('atomctl_enabled',C.c_uint32)]
+              ('depc',C.c_uint32),('scompare1',C.c_uint32),('exceptions_enabled',C.c_uint32),('exception_vectors',C.c_uint32*3),('irq',Interrupts),('vectors',C.c_uint32*6),('vecbase',C.c_uint32),('vecbase_enabled',C.c_uint32),('threadptr',C.c_uint32),('misc',C.c_uint32*4),('prid',C.c_uint32),('prid_enabled',C.c_uint32),('atomctl',C.c_uint32),('atomctl_enabled',C.c_uint32),('region_enabled',C.c_uint32),('region',(C.c_uint32*8)*2),('region_active',(C.c_uint32*8)*2)]
 
 
 NESTED='''

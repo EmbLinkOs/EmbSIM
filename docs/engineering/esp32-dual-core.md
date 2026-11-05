@@ -31,7 +31,8 @@ that first access when a caller supplies all 31 uncoded words. A synthetic
 unprogrammed fixture with explicit read-completion events advances ROM to 440
 retired instructions in the prior profile. With
 [atomic-operation control](esp32-atomic-control.md), it now reaches 451 instructions
-and unsupported WITLB at PC 0x400004c9. It is not the owner's fuse dump and does
+in the prior profile. With [fixed-region protection](esp32-region-protection.md),
+it reaches 545 instructions and unsupported RSR.MEMCTL at PC 0x400004f2. It is not the owner's fuse dump and does
 not establish full boot. The [Giantec storage subset](esp32-giantec-profile.md)
 adds independently checked timing/WEL behavior for the matching JEDEC family;
 complete chip behavior remains unqualified.

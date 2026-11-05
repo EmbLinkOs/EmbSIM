@@ -212,3 +212,9 @@ See [Giantec scope](../../docs/engineering/esp32-giantec-profile.md).
 instructions through the native bus. It covers all 64 ATOMCTL values on both
 cores; internal cache and complete MMU/boot remain unqualified. See the
 [atomic-control contract](../../docs/engineering/esp32-atomic-control.md).
+
+`xtensa_integer/run_regions.py` uses pinned original ESP32 core configuration
+and actual assembler/compiler tools: 266,240 TLB instruction/register/alias
+comparisons, plus 32 C maintenance calls/480 instructions on the native bus.
+See the [region-protection contract](../../docs/engineering/esp32-region-protection.md)
+for synchronization, access rights, one-ring behavior and omitted memory features.

@@ -29,6 +29,7 @@ typedef struct esk_xtensa_windows {
     uint32_t vecbase,vecbase_enabled;
     uint32_t threadptr,misc[4],prid,prid_enabled;
     uint32_t atomctl,atomctl_enabled;
+    uint32_t region_enabled,region[2][8],region_active[2][8];
 } esk_xtensa_windows;
 /* event 0: retired; 1..6: window transition; 7/8/9: kernel/user/double exception;
  * 11..17: accepted interrupt level 1..7; 18: suspended WAITI (step only).
@@ -43,6 +44,17 @@ typedef struct esk_xtensa_windows {
  * configuration. This supplies a constant board/SoC input, not a guessed ESP32
  * silicon ID or a live pin-waveform model; it survives supported CPU reset. */
 es_status esk_xtensa_prid_configure(esk_xtensa_windows *state,uint32_t value);
+/* Original-ESP32 Region Protection Option: eight identity-mapped 512MiB
+ * regions per ITLB/DTLB, attributes reset to 2. Explicit opt-in; CPU reset
+ * resets tables only while enabled. One hardware ring, no Xtensa I/D cache.
+ * WxTLB/RxTLB/PxTLB and non-removing IxTLB; fetch/data permissions raise
+ * causes 20/28/29 before bus access. Unsupported instructions remain failures.
+ * Readback changes at WxTLB; ISYNC/DSYNC commit instruction/data access tables.
+ * Pre-barrier behavior uses the old table as a deterministic fixture policy. No pipeline/cycle, page-table/translation, device
+ * cache or external cache-isolate qualification. Isolate data on nonlocal
+ * addresses fails. Reserved unused low operand bits fail unchanged.
+ * execute consumes supplied bytes; step checks actual instruction fetches. */
+es_status esk_xtensa_region_configure(esk_xtensa_windows *state);
 /* Opt-in conditional-store ATOMCTL SR99, six bits, reset 0x28.
  * RSR/WSR/XSR privileged; reserved upper-bit writes fail unchanged.
  * S32C1I requires bus atomic_type: LOCAL ignores fields; 0 raises cause 3,

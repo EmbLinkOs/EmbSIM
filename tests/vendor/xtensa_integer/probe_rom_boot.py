@@ -57,6 +57,7 @@ def main():
         complete=bind('esk_esp32_fabric_efuse_read_complete',C.c_int,pointer)
         spi=bind('esk_esp32_fabric_spi1_configure',C.c_int,pointer,C.c_int)
         core=bind('esk_esp32_machine_core',C.POINTER(Windows),pointer,C.c_uint)
+        region=bind('esk_xtensa_region_configure',C.c_int,C.POINTER(Windows))
         reset=bind('esk_xtensa_lx6_reset',C.c_int,C.POINTER(Windows),C.c_uint)
         prid=bind('esk_xtensa_prid_configure',C.c_int,C.POINTER(Windows),C.c_uint32)
         run=bind('esk_esp32_machine_run_core',C.c_int,pointer,C.c_uint,C.c_int)
@@ -66,7 +67,7 @@ def main():
         assert create(C.byref(allocator),C.byref(machine))==0
         report={'boot_verified':False,'outcome':'step_budget_inconclusive','core':'PRO only',
                 'rom_sha256':ROM_SHA256,'flash_sha256':hashlib.sha256(image).hexdigest(),
-                'reset_vector':'0x40000400','prid_fixture':f'0x{args.prid:08x}',
+                'reset_vector':'0x40000400','region_profile':'original ESP32 eight ITLB/DTLB identity regions, reset attribute 2, one ring, no Xtensa cache','prid_fixture':f'0x{args.prid:08x}',
                 'prid_reference':'ESP-IDF v4.4.7 xtensa_context.h documents PRO=0xcdcd, APP=0xabab; not a hardware readout',
                 'rom_tail_policy':'zero-fill absent DROM tail to match QEMU region setup, not silicon contents',
                 'flash_profile':'immutable SPI1 fixture, not a physical flash identity'}
@@ -83,7 +84,7 @@ def main():
             data=rom[0x60000:]+bytes(0x70000-len(rom));assert len(data)==65536
             assert install(ram,1,C.c_char_p(data),len(data))==0
             assert flash(ram,C.c_char_p(image),len(image))==0 and spi(ram,1)==0
-            w=core(machine,0);assert reset(w,1)==0 and prid(w,args.prid)==0 and run(machine,0,1)==0
+            w=core(machine,0);assert reset(w,1)==0 and region(w)==0 and prid(w,args.prid)==0 and run(machine,0,1)==0
             event=C.c_uint();fault=Fault();trace=deque(maxlen=12)
             completions=0
             report['efuse_completion_fixture']=f'one external completion opportunity every {args.efuse_completion_period} instruction attempts; not physical timing'
@@ -97,6 +98,8 @@ def main():
                                   pc=hex(fault.pc if status else pc),opcode=hex(fault.opcode),address=hex(fault.address),
                                   fault_kind=fault.kind,attempts=attempt+1)
                     break
+            report['region_readback']=[list(bank) for bank in w.contents.region]
+            report['region_access_attributes']=[list(bank) for bank in w.contents.region_active]
             report.update(efuse_completions=completions,retired_before_stop=retired(machine,0),trace_tail=list(trace))
         finally:destroy(machine)
         assert allocator.live_bytes==0

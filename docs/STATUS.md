@@ -10,10 +10,13 @@ does not mean the described behaviour exists.
 **Current implementation update:** an [explicit eFuse read/reload profile](engineering/esp32-efuse-read-profile.md)
 now supports None-coded input images, read protection and completion routing.
 With a supplied synthetic unprogrammed image, real ROM execution advances from
-seven to 451 retired instructions, then blocks on WITLB at PC 0x400004c9.
+seven to 545 retired instructions, then blocks on RSR.MEMCTL at PC 0x400004f2.
+[Region protection](engineering/esp32-region-protection.md) now implements fixed
+ITLB/DTLB maintenance, synchronized permissions and causes 20/28/29.
 [ATOMCTL](engineering/esp32-atomic-control.md) now has six-bit privileged register
 access, reset, memory-type selection, local/RCW atomics and cause-3 dispatch.
-Internal cache operations and full instruction/data attributes remain absent.
+Internal cache operations, complete memory-system/loop-buffer behavior and full
+SDK boot remain absent.
 Read completion is an explicit external event; no physical duration is inferred.
 The earlier synchronous profile took the ROM failure/reset path.
 The owner's actual fuse image is not inferred. A separate

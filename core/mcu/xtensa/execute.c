@@ -85,16 +85,8 @@ static es_status execute_inner(esk_xtensa_state *state, const esk_xtensa_memory 
     } else if (op == 12 && t >= 8) {
         int taken = t < 12 ? next.a[s] == 0 : next.a[s] != 0;
         if (taken) { next.pc = pc + 4 + ((t & 3u) << 4 | r); flow = 0; }
-    } else if (op == 8 || op == 9) {
-        bytes = 4; addr = next.a[s] + (uint32_t)r * 4; store = op == 9;
-    } else if (op == 2 && (r <= 2 || r == 4 || r == 5 || r == 6 || r == 9 || r == 11 || r == 15)) {
-        unsigned scale = (r == 0 || r == 4) ? 0u : (r == 1 || r == 5 || r == 9) ? 1u : 2u;
-        bytes = 1u << scale; addr = next.a[s] + ((word >> 16) << scale);
-        /* Synchronous completed callbacks already satisfy L32AI acquisition
-         * and S32RI release ordering. No queued/cache bus is supported here. */
-        store = (r >= 4 && r <= 6) || r == 15; signed16 = r == 9;
-    } else if (op == 1) { /* L32R without extended LITBASE option */
-        bytes = 4; addr = ((pc + 3) & UINT32_C(0xfffffffc)) + ((word >> 8 | UINT32_C(0xffff0000)) << 2);
+    } else if (esk_xtensa_memory_reference(state,word,width,&addr,&bytes,&store,&signed16)) {
+        /* Shared pure descriptor also supplies windowed permission preflight. */
     } else return fail(fault, ESK_XT_UNSUPPORTED, pc, pc, word);
     if (bytes) {
         if (addr & (bytes - 1u)) return fail(fault, ESK_XT_ALIGN, pc, addr, word);
@@ -118,6 +110,23 @@ es_status esk_xtensa_execute(esk_xtensa_state *state, const esk_xtensa_memory *m
                              size_t *consumed, esk_xtensa_fault *fault)
 {
     return execute_inner(state,memory,code,available,consumed,fault,NULL);
+}
+int esk_xtensa_memory_reference(const esk_xtensa_state *state,uint32_t word,unsigned width,
+                                uint32_t *address,unsigned *bytes,int *store,int *signed16)
+{
+    unsigned op=word&15u,s=(word>>8)&15u,r=(word>>12)&15u;int sign=0;
+    if(!state || !address || !bytes || !store) return 0;
+    if(width==2 && (op==8 || op==9)) {
+        *bytes=4;*address=state->a[s]+r*4u;*store=op==9;
+    } else if(width==3 && op==2 && (r<=2 || r==4 || r==5 || r==6 || r==9 || r==11 || r==15)) {
+        unsigned scale=(r==0 || r==4) ? 0u : (r==1 || r==5 || r==9) ? 1u : 2u;
+        *bytes=1u<<scale;*address=state->a[s]+((word>>16)<<scale);
+        *store=(r>=4 && r<=6) || r==15;sign=r==9;
+    } else if(width==3 && op==1) {
+        *bytes=4;*address=((state->pc+3u)&UINT32_C(0xfffffffc))+((word>>8|UINT32_C(0xffff0000))<<2);*store=0;
+    } else return 0;
+    if(signed16) *signed16=sign;
+    return 1;
 }
 es_status esk_xtensa_execute_flow(esk_xtensa_state *state, const esk_xtensa_memory *memory,
                                   const unsigned char *code, size_t available,

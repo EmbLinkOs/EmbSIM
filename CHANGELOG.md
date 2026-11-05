@@ -5,6 +5,20 @@ versions follow semantic versioning. There is no release yet.
 
 ## Unreleased
 
+### Original ESP32 region protection
+
+- Added an explicit eight-region instruction/data protection profile, all ten
+  TLB maintenance operations, reset/readback and ISYNC/DSYNC access-table commit.
+  No page-table translation or SoC-cache completeness is claimed.
+- Enforced fetch/load/store rights before bus access, with causes 20/28/29,
+  kernel/user/double dispatch, and atomic store-protection priority. Shared pure
+  load/store address decoding preserves the flat-memory execution contract.
+- Qualified the one-ring configuration and local-only isolate access boundary.
+  17,068 native assertions, 266,240 GNU comparisons and 32 actual ESP32 C calls
+  pass. Native ROM now reaches 545 instructions and unsupported RSR.MEMCTL at
+  PC 0x400004f2; full SDK boot remains unverified.
+
+
 ### Original ESP32 CPU atomic control
 
 - Added opt-in privileged RSR/WSR/XSR.ATOMCTL, six-bit state/reset and explicit

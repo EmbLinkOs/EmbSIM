@@ -73,7 +73,11 @@ through the same core-specific bus view used for accesses.
   including zero/reserved modes. The bus is native, with no Python memory
   callbacks. Host ABI function setup is explicit; this is not application boot.
 
-The real-ROM probe now retires **451 instructions**, including WSR.ATOMCTL=0x15,
+The subsequent [region profile](esp32-region-protection.md) advances the probe
+to RSR.MEMCTL after 545 instructions. The historical atomic-only result below
+retains its earlier source scope.
+
+The real-ROM probe at this milestone retires **451 instructions**, including WSR.ATOMCTL=0x15,
 then stops at unsupported **WITLB**, opcode 0x506340, PC 0x400004c9. The
 [recorded probe](../../tests/vendor/xtensa_integer/evidence/boot-with-atomctl-2026-11-05.json)
 uses the same external ROM, actual SDK image, synthetic None-coded eFuse image,

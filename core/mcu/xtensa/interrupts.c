@@ -66,7 +66,7 @@ es_status esk_xtensa_irq_poll(struct esk_xtensa_windows *w,unsigned *event)
 es_status esk_xtensa_irq_return(struct esk_xtensa_windows *w,unsigned level)
 {
     if (!w || !w->irq.enabled || level<2 || level>7) return ES_EUNSUPPORTED;
-    w->ps=w->irq.eps[level]&ESK_XT_PS_MASK;w->cpu.pc=w->irq.epc[level];return ES_OK;
+    w->ps=w->irq.eps[level]&ESK_XT_PS_MASK&~(w->region_enabled ? UINT32_C(0xc0) : 0u);w->cpu.pc=w->irq.epc[level];return ES_OK;
 }
 int esk_xtensa_irq_special(unsigned reg)
 {
@@ -76,7 +76,7 @@ es_status esk_xtensa_irq_read(const struct esk_xtensa_windows *w,unsigned reg,ui
 {
     if (!w || !w->irq.enabled || !value) return ES_EUNSUPPORTED;
     if (reg>=178 && reg<=183) *value=w->irq.epc[reg-176];
-    else if (reg>=194 && reg<=199) *value=w->irq.eps[reg-192];
+    else if (reg>=194 && reg<=199) *value=w->irq.eps[reg-192]&~(w->region_enabled ? UINT32_C(0xc0) : 0u);
     else if (reg>=209 && reg<=215) *value=w->irq.excsave[reg-208];
     else if (reg==226) *value=esk_xtensa_irq_pending(w);
     else if (reg==228) *value=w->irq.intenable;
@@ -89,7 +89,7 @@ es_status esk_xtensa_irq_write(struct esk_xtensa_windows *w,unsigned reg,uint32_
 {
     if (!w || !w->irq.enabled) return ES_EUNSUPPORTED;
     if (reg>=178 && reg<=183) w->irq.epc[reg-176]=value;
-    else if (reg>=194 && reg<=199) w->irq.eps[reg-192]=value;
+    else if (reg>=194 && reg<=199) w->irq.eps[reg-192]=value&~(w->region_enabled ? UINT32_C(0xc0) : 0u);
     else if (reg>=209 && reg<=215) w->irq.excsave[reg-208]=value;
     else if (reg==226) w->irq.latched|=value&SOFTWARE;
     else if (reg==227) w->irq.latched&=~(value&(SOFTWARE|EDGE));

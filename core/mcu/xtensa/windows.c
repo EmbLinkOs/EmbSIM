@@ -8,7 +8,7 @@ enum execution_kind {
     XT_BASE, XT_CALL, XT_ENTRY, XT_RETW, XT_WINDOW_RETURN, XT_ROTW,
     XT_SPECIAL, XT_RSYNC, XT_LOOP, XT_EXCEPTION_MEMORY,
     XT_SAR_SETUP=11, XT_SAR_SHIFT, XT_FENCE, XT_RSIL, XT_SYSCALL,
-    XT_EXCEPTION_RETURN, XT_ILLEGAL, XT_RFI, XT_WAITI, XT_ATOMIC, XT_DIVIDE, XT_THREADPTR, XT_MOVSP
+    XT_EXCEPTION_RETURN, XT_ILLEGAL, XT_RFI, XT_WAITI, XT_ATOMIC, XT_DIVIDE, XT_THREADPTR, XT_MOVSP, XT_REGION
 };
 
 static uint32_t bit(unsigned n) { return UINT32_C(1) << (n & 15u); }
@@ -30,6 +30,32 @@ void esk_xtensa_windows_init(esk_xtensa_windows *w, uint32_t pc, const uint32_t 
     if (!w) return;
     memset(w,0,sizeof *w); w->cpu.pc=pc; w->ps=ESK_XT_PS_WOE; w->start=1;
     if (vectors) memcpy(w->vectors,vectors,sizeof w->vectors);
+}
+es_status esk_xtensa_region_configure(esk_xtensa_windows *w)
+{
+    unsigned bank,entry;if(!w) return ES_EINVAL;
+    w->region_enabled=1;w->ps&=~UINT32_C(0xc0);
+    for(bank=0;bank<2;bank++) for(entry=0;entry<8;entry++) w->region[bank][entry]=w->region_active[bank][entry]=2;
+    return ES_OK;
+}
+/* Original ESP32 core-isa.h local port windows, not SoC backing allocation.
+ * Attribute rights apply even to local memory. No cache lookup is synthesized. */
+static int region_local(uint32_t address)
+{
+    return (address>=0x3f400000 && address<0x3fc00000) ||
+           (address>=0x3ff00000 && address<0x40000000) ||
+           (address>=0x40000000 && address<0x40c00000);
+}
+static es_status region_access(const esk_xtensa_windows *w,uint32_t address,unsigned bytes,unsigned access,unsigned *cause)
+{
+    static const unsigned rights[16]={3,7,7,4,7,7,7,0,0,0,0,0,0,0,3,0};
+    unsigned i;*cause=0;if(!w->region_enabled) return ES_OK;
+    for(i=0;i<bytes;i++) {
+        uint32_t a=address+i;unsigned attr=w->region_active[access==2 ? 0 : 1][a>>29];
+        if(!(rights[attr&15u]&(1u<<access))) { *cause=access==2 ? 20u : access==1 ? 29u : 28u;return ES_EINVAL; }
+        if(attr==14 && !region_local(a)) return ES_EUNSUPPORTED;
+    }
+    return ES_OK;
 }
 es_status esk_xtensa_atomctl_configure(esk_xtensa_windows *w)
 {
@@ -55,6 +81,7 @@ es_status esk_xtensa_lx6_reset(esk_xtensa_windows *w,unsigned vector_input)
 {
     if(!w || vector_input>1) return ES_EINVAL;
     (void)esk_xtensa_atomctl_configure(w);
+    if(w->region_enabled) (void)esk_xtensa_region_configure(w);
     save(w);w->base&=15u;w->start&=65535u;
     w->ps=0x1f;w->lcount=0;w->cpu.pc=vector_input ? 0x40000400u : 0x50000000u;
     w->exceptions_enabled=1;w->irq.enabled=1;w->irq.waiting=0;
@@ -98,7 +125,7 @@ static uint32_t special_read(const esk_xtensa_windows *w,unsigned reg)
     switch (reg) {
     case 0:return w->lbeg; case 1:return w->lend; case 2:return w->lcount; case 3:return w->sar;
     case 99:return w->atomctl; case 12:return w->scompare1; case 72:return w->base; case 73:return w->start; case 177:return w->epc1;
-    case 192:return w->depc; case 230:return w->ps&ESK_XT_PS_MASK; case 235:return w->prid; case 231:return w->vecbase; case 232:return w->exccause; default:return w->excvaddr;
+    case 192:return w->depc; case 230:return w->ps&ESK_XT_PS_MASK&~(w->region_enabled ? UINT32_C(0xc0) : 0u); case 235:return w->prid; case 231:return w->vecbase; case 232:return w->exccause; default:return w->excvaddr;
     }
 }
 static void special_write(esk_xtensa_windows *w,unsigned reg,uint32_t value)
@@ -113,7 +140,7 @@ static void special_write(esk_xtensa_windows *w,unsigned reg,uint32_t value)
     case 72:w->base=value&15u;load(w);break;
     case 73:w->start=value&65535u;break;
     case 177:w->epc1=value;break; case 192:w->depc=value;break;
-    case 230:w->ps=value&ESK_XT_PS_MASK;break; case 231:(void)esk_xtensa_vecbase_configure(w,value);break; case 232:w->exccause=value;break; default:w->excvaddr=value;break;
+    case 230:w->ps=value&ESK_XT_PS_MASK&~(w->region_enabled ? UINT32_C(0xc0) : 0u);break; case 231:(void)esk_xtensa_vecbase_configure(w,value);break; case 232:w->exccause=value;break; default:w->excvaddr=value;break;
     }
 }
 /* Register references are checked before any access. Zero/compare branches do
@@ -208,7 +235,12 @@ es_status esk_xtensa_window_execute(esk_xtensa_windows *w, const esk_xtensa_memo
     else if ((word&UINT32_C(0xff000f))==0x910000 && !s) { kind=XT_SAR_SHIFT; n=1; mask=bit(r)|bit(t); }
     else if ((word&UINT32_C(0xff000f))==0xb10000 && !s) { kind=XT_SAR_SHIFT; n=2; mask=bit(r)|bit(t); }
     else if ((word&UINT32_C(0xff000f))==0x810000) { kind=XT_SAR_SHIFT; n=3; mask=bit(r)|bit(s)|bit(t); }
-    else if (word==0x0020c0 || word==0x002000 || word==0x002020) kind=XT_FENCE;
+    else if ((word&UINT32_C(0xff000f))==0x500000 && next.region_enabled &&
+             (r==3 || r==4 || r==5 || r==6 || r==7 || r==11 || r==12 || r==13 || r==14 || r==15) &&
+             ((r!=4 && r!=12) || !t)) {
+        kind=XT_REGION;mask=bit(s);if(r!=4 && r!=12) mask|=bit(t);
+    }
+    else if (word==0x0020c0 || word==0x002000 || word==0x002020 || word==0x002030) kind=XT_FENCE;
     else if ((word&UINT32_C(0xfff00f))==0x006000) { kind=XT_RSIL; mask=bit(t); }
     else if (word==0x005000) kind=XT_SYSCALL;
     else if (word==0 || word==0xf06d) kind=XT_ILLEGAL;
@@ -220,14 +252,38 @@ es_status esk_xtensa_window_execute(esk_xtensa_windows *w, const esk_xtensa_memo
     else if (word==0x002010) kind=XT_RSYNC; /* RSYNC; no asynchronous pipeline here */
     else if (references(code,width,word,&mask)!=ES_OK) return reject(fault,ESK_XT_UNSUPPORTED,pc,pc,word);
     if ((kind==XT_WINDOW_RETURN || kind==XT_ROTW ||
-         (kind==XT_SPECIAL && ((word>>8)&255u)>=64) || kind==XT_RSIL || kind==XT_EXCEPTION_RETURN || kind==XT_RFI || kind==XT_WAITI) &&
-        !(next.ps&ESK_XT_PS_EXCM) && ((next.ps>>6)&3u)) {
+         (kind==XT_SPECIAL && ((word>>8)&255u)>=64) || kind==XT_REGION || kind==XT_RSIL || kind==XT_EXCEPTION_RETURN || kind==XT_RFI || kind==XT_WAITI) &&
+        !next.region_enabled && !(next.ps&ESK_XT_PS_EXCM) && ((next.ps>>6)&3u)) {
         if (!next.exceptions_enabled) return reject(fault,ESK_XT_UNSUPPORTED,pc,pc,word);
         st=esk_xtensa_raise_exception(&next,8,0,0,event); if (st==ES_OK) *w=next; return st;
     }
     e=overflow(&next,mask);
     if (e) { *w=next; *event=e; return ES_OK; }
-    if (kind==XT_MOVSP) {
+    if(next.region_enabled) {
+        uint32_t address=0;unsigned bytes=0,cause=0;int write=0,has=0;
+        if(kind==XT_ATOMIC) { address=next.cpu.a[s]+((word>>16)<<2);bytes=4;write=1;has=1; }
+        else if(kind==XT_EXCEPTION_MEMORY) { address=next.cpu.a[s]+((((word>>12)&15u)-16u)<<2);bytes=4;write=(word&UINT32_C(0x400000))!=0;has=1; }
+        else if(kind==XT_BASE) has=esk_xtensa_memory_reference(&next.cpu,word,width,&address,&bytes,&write,NULL);
+        if(has && !(address&(bytes-1u))) {
+            st=region_access(&next,address,bytes,write ? 1u : 0u,&cause);
+            if(st!=ES_OK) {
+                if(cause && next.exceptions_enabled) { st=esk_xtensa_raise_exception(&next,cause,address,1,event);if(st==ES_OK) *w=next;return st; }
+                return reject(fault,cause ? ESK_XT_PROTECTION : ESK_XT_UNSUPPORTED,pc,address,word);
+            }
+        }
+    }
+    if(kind==XT_REGION) {
+        unsigned bank=r>=8 ? 1u : 0u,entry=next.cpu.a[s]>>29,action=r&7u;
+        uint32_t value=next.cpu.a[t];
+        if(action==6) {
+            if(value&UINT32_C(0xff0)) return reject(fault,ESK_XT_UNSUPPORTED,pc,pc,word);
+            next.region[bank][entry]=value&15u;
+        } else if(action==3) next.cpu.a[t]=0;
+        else if(action==7) next.cpu.a[t]=(entry<<29)|next.region[bank][entry];
+        else if(action==5) next.cpu.a[t]=(entry<<29)|1u;
+        /* Invalidate cannot remove hardwired identity-mapped entries. */
+        next.cpu.pc=pc+3;
+    } else if (kind==XT_MOVSP) {
         if (!(next.start&(bit(next.base-1u)|bit(next.base-2u)|bit(next.base-3u)))) {
             if(!next.exceptions_enabled) return reject(fault,ESK_XT_UNSUPPORTED,pc,pc,word);
             st=esk_xtensa_raise_exception(&next,5,0,0,event);if(st==ES_OK) *w=next;return st;
@@ -307,7 +363,13 @@ es_status esk_xtensa_window_execute(esk_xtensa_windows *w, const esk_xtensa_memo
         else if (n==2) joined=(uint64_t)next.cpu.a[t] | ((next.cpu.a[t]>>31) ? UINT64_C(0xffffffff00000000) : 0);
         else joined=(uint64_t)next.cpu.a[s]<<32 | next.cpu.a[t];
         next.cpu.a[r]=(uint32_t)(joined>>next.sar); next.cpu.pc=pc+3;
-    } else if (kind==XT_FENCE) next.cpu.pc=pc+3; /* fully serialized functional bus, no pipeline/cache claim */
+    } else if (kind==XT_FENCE) {
+        if(next.region_enabled && (word==0x002000 || word==0x002030)) {
+            unsigned bank=word==0x002030 ? 1u : 0u;
+            memcpy(next.region_active[bank],next.region[bank],sizeof next.region[bank]);
+        }
+        next.cpu.pc=pc+3;
+    } /* fully serialized functional bus, no pipeline/cache claim */
     else if (kind==XT_RSIL) { next.cpu.a[t]=next.ps; next.ps=(next.ps&~15u)|s; next.cpu.pc=pc+3; }
     else if (kind==XT_SYSCALL || kind==XT_ILLEGAL) {
         if (!next.exceptions_enabled) return reject(fault,ESK_XT_UNSUPPORTED,pc,pc,word);
@@ -370,7 +432,12 @@ es_status esk_xtensa_window_step(esk_xtensa_windows *w, const esk_xtensa_memory 
         if (w->irq.waiting) { *event=18; return ES_OK; }
     }
     for (i=0;i<width;i++) {
-        uint32_t address=w->cpu.pc+i;
+        uint32_t address=w->cpu.pc+i;unsigned cause=0;
+        es_status permission=region_access(w,address,1,2,&cause);
+        if(permission!=ES_OK) {
+            if(cause && w->exceptions_enabled) return esk_xtensa_raise_exception(w,cause,address,1,event);
+            return reject(fault,cause ? ESK_XT_PROTECTION : ESK_XT_UNSUPPORTED,w->cpu.pc,address,0);
+        }
         if (!memory || (!memory->fetch && !memory->read) ||
             (memory->fetch ? memory->fetch : memory->read)(memory->ctx,address,1,&value)!=ES_OK)
             return reject(fault,ESK_XT_FETCH,w->cpu.pc,address,0);
