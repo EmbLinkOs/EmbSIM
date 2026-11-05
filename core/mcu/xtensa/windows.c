@@ -95,7 +95,7 @@ static es_status references(const unsigned char *code, unsigned width, uint32_t 
     else if (op==6 && ((t&3u)==1 || t==2 || t==6 || t==10 || t==14 || t==11 || t==15)) *mask=bit(s);
     else if (op==7) *mask=(r==6 || r==7 || r==14 || r==15) ? bit(s) : bit(s)|bit(t);
     else if (op==12 && t>=8) *mask=bit(s);
-    else if (op==8 || op==9 || (op==2 && (r<=2 || r==4 || r==5 || r==6 || r==9))) *mask=bit(s)|bit(t);
+    else if (op==8 || op==9 || (op==2 && (r<=2 || r==4 || r==5 || r==6 || r==9 || r==11 || r==15))) *mask=bit(s)|bit(t);
     else if (op==1) *mask=bit(t);
     else return ES_EUNSUPPORTED;
     return ES_OK;

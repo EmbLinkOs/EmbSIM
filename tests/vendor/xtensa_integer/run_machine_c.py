@@ -21,6 +21,16 @@ unsigned task(volatile unsigned *counter, unsigned count) {
     while(count--) sum+=__sync_add_and_fetch(counter,1);
     return sum;
 }
+unsigned task_locked(volatile unsigned *counter, unsigned count, volatile unsigned *lock) {
+    unsigned sum=0;
+    while(count--) {
+        while(__atomic_load_n(lock,__ATOMIC_ACQUIRE) || __sync_lock_test_and_set(lock,1)) { }
+        *counter=*counter+1;
+        sum+=*counter;
+        __sync_lock_release(lock);
+    }
+    return sum;
+}
 '''
 
 
@@ -71,7 +81,7 @@ def main():
         retired = bind('esk_esp32_machine_retired', C.c_uint64, pointer, C.c_uint)
         code = binary.read_bytes(); total = 0; runs = 0
         # Repeat each initial condition/schedule to prove deterministic replay.
-        for trial in range(64):
+        for trial in range(128):
             initial = [0, MASK - 30, 0x80000000][trial] if trial < 3 else rng.getrandbits(32)
             counts = [rng.randrange(1, 33), rng.randrange(1, 33)]
             trace = None
@@ -84,11 +94,11 @@ def main():
                     assert bus.write(bus.ctx, 0x3ffb0000, 4, initial) == 0
                     stop = 0x7ffffff0; states = []
                     for cpu in range(2):
-                        assert configure(machine, cpu, symbols['task']) == 0
+                        assert configure(machine, cpu, symbols['task' if trial < 64 else 'task_locked']) == 0
                         w = core(machine, cpu).contents
                         w.ps |= 1 << 16; w.cpu.a[4] = stop
                         w.cpu.a[0] = 0x12340000 + cpu; w.cpu.a[1] = 0x3ffd0000 + cpu * 4096
-                        w.cpu.a[6] = 0x3ffb0000; w.cpu.a[7] = counts[cpu]
+                        w.cpu.a[6] = 0x3ffb0000; w.cpu.a[7] = counts[cpu]; w.cpu.a[8] = 0x3ffb0004
                         states.append(w); assert run(machine, cpu, 1) == 0
                     done = [False, False]; event = C.c_uint(); fault = Fault(); schedule = []
                     for turn in range(30000):
@@ -107,13 +117,15 @@ def main():
                     assert all(done), 'tasks did not finish'
                     value = C.c_uint32(); assert bus.read(bus.ctx, 0x3ffb0000, 4, C.byref(value)) == 0
                     n = sum(counts); assert value.value == (initial + n) & MASK
+                    final_value = value.value
+                    assert bus.read(bus.ctx, 0x3ffb0004, 4, C.byref(value)) == 0 and value.value == 0
                     # Every successful increment returns a distinct consecutive value.
                     assert sum(w.cpu.a[6] for w in states) & MASK == (n * initial + n * (n + 1) // 2) & MASK
                     for cpu, w in enumerate(states):
                         assert w.base == 0 and w.start == 1
                         assert w.cpu.a[0] == 0x12340000 + cpu and w.cpu.a[1] == 0x3ffd0000 + cpu * 4096
                         assert retired(machine, cpu) == sum(1 for owner, _ in schedule if owner == cpu)
-                    result = (schedule, value.value, [w.cpu.a[6] for w in states])
+                    result = (schedule, final_value, [w.cpu.a[6] for w in states])
                     if replay:
                         assert result == trace
                     else:
@@ -122,7 +134,7 @@ def main():
                 finally:
                     destroy(machine)
                 assert allocator.live_bytes == 0
-        print(f'{runs} compiled task executions, 64 schedule replays, {total} instructions; native shared RAM/CAS')
+        print(f'{runs} compiled task executions, 128 schedule replays (atomic counters and spinlock-protected ordinary writes), {total} instructions; native shared RAM/CAS')
 
 
 if __name__ == '__main__':

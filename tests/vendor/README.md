@@ -32,7 +32,7 @@ not qualify the complete ESP32 LX6 configuration.
 See [scope and reproduction](../../docs/engineering/esp32-dual-core.md).
 
 `xtensa_integer/run_execute.py` additionally uses a separate linker, with
-relaxation disabled, for 4,608 flow/memory/density cases and 960 rejected bus
+relaxation disabled, for 4,800 flow/memory/density cases and 1,152 rejected bus
 accesses. Supply `--assembler`, `--objcopy` and `--linker` paths. It compares all
 registers, PC and exact bus transactions, including failed-access retention.
 It does not establish architectural exception delivery or complete ISA fidelity.
@@ -78,9 +78,10 @@ and `--nm`. Its callback is a serialized fixture, not a host-thread-safe shared
 SoC RAM model or proof of full SMP/coherence.
 
 `xtensa_integer/run_machine_c.py` uses the same actual ESP32 tools to execute two
-compiled atomic increment loops through native internal RAM and CAS, without
-Python memory callbacks: 256 task executions, 64 deterministic schedule replays,
-65,590 instructions. It checks counts, sums, wrap, return/window/stack state and
+compiled atomic counters and spinlocks protecting ordinary writes through native
+internal RAM, acquire/release operations and CAS, without
+Python memory callbacks: 512 task executions, 128 deterministic schedule replays,
+229,322 instructions. It checks counts, sums, wrap, return/window/stack state and
 retirement. Supply `--compiler`, `--objcopy`, `--linker`, `--nm`. This is a
 serialized functional harness, not DPORT/ROM boot, cache/coherence, cycle timing
 or full SMP qualification.

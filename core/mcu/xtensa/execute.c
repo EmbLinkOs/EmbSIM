@@ -87,10 +87,12 @@ static es_status execute_inner(esk_xtensa_state *state, const esk_xtensa_memory 
         if (taken) { next.pc = pc + 4 + ((t & 3u) << 4 | r); flow = 0; }
     } else if (op == 8 || op == 9) {
         bytes = 4; addr = next.a[s] + (uint32_t)r * 4; store = op == 9;
-    } else if (op == 2 && (r <= 2 || r == 4 || r == 5 || r == 6 || r == 9)) {
+    } else if (op == 2 && (r <= 2 || r == 4 || r == 5 || r == 6 || r == 9 || r == 11 || r == 15)) {
         unsigned scale = (r == 0 || r == 4) ? 0u : (r == 1 || r == 5 || r == 9) ? 1u : 2u;
         bytes = 1u << scale; addr = next.a[s] + ((word >> 16) << scale);
-        store = r >= 4 && r <= 6; signed16 = r == 9;
+        /* Synchronous completed callbacks already satisfy L32AI acquisition
+         * and S32RI release ordering. No queued/cache bus is supported here. */
+        store = (r >= 4 && r <= 6) || r == 15; signed16 = r == 9;
     } else if (op == 1) { /* L32R without extended LITBASE option */
         bytes = 4; addr = ((pc + 3) & UINT32_C(0xfffffffc)) + ((word >> 8 | UINT32_C(0xffff0000)) << 2);
     } else return fail(fault, ESK_XT_UNSUPPORTED, pc, pc, word);

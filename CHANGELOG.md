@@ -5,6 +5,16 @@ versions follow semantic versioning. There is no release yet.
 
 ## Unreleased
 
+### Experimental Xtensa acquire/release and shared spinlocks
+
+- Added L32AI/S32RI with scaled offsets, alias-safe access, alignment/failure
+  retention and window-overflow priority. Synchronous completed bus callbacks
+  supply functional ordering; asynchronous transactions/caches remain unsupported.
+- Added 30,732 native assertions and expanded assembled execution checks to
+  4,800 cases/1,152 refused accesses. Native shared-bus compiled acceptance now
+  includes spinlocks protecting ordinary writes: 512 task executions, 128 exact
+  schedule replays and 229,322 instructions across both workloads.
+
 ### Experimental ESP32 internal memory and two-context harness
 
 - Added native SRAM0/1/2 and RTC memory views, including SRAM1's reversed
@@ -16,8 +26,8 @@ versions follow semantic versioning. There is no release yet.
   contexts with shared RAM, explicit pause/resume, fault isolation and private
   interrupt/clock state. No guessed clock ticks or silicon reset defaults.
 - Added exhaustive SRAM1 alias/boundary/failure fixtures and native-bus acceptance
-  with actual ESP32 compiled tasks: 256 executions, 64 deterministic schedule
-  replays and 65,590 instructions. This is not a runnable board target, ROM boot,
+  with actual ESP32 compiled tasks: 512 executions, 128 deterministic schedule
+  replays and 229,322 instructions. This is not a runnable board target, ROM boot,
   DPORT/cache/coherence implementation, host-thread safety or complete SMP.
 
 ### Experimental Xtensa integer and conditional-store extension
@@ -30,7 +40,7 @@ versions follow semantic versioning. There is no release yet.
   no read/write fallback. Full SMP, shared SoC RAM/coherence, memory-type policy
   and implementation-dependent spurious failures remain unqualified.
 - Added 128 arithmetic and 67 atomic assertions; expanded assembler cases to
-  9,728 integer and 4,608 flow/bit branches. Actual ESP32 compiled atomics/division
+  9,728 integer and 4,800 flow/bit branches. Actual ESP32 compiled atomics/division
   pass 832 executions, including 64 interleaved pairs forcing CAS retry.
 
 ### Experimental ESP32 CPU interrupts and compare clock
@@ -82,7 +92,7 @@ versions follow semantic versioning. There is no release yet.
 - Preserve PC/registers on unsupported or failed accesses and report failing
   PC/address/opcode; reject unaligned data accesses before touching the bus.
 - Added assembled loop/subroutine acceptance, native boundary/fault checks and
-  3,840 externally assembled execution cases plus 960 failed-access cases.
+  3,840 externally assembled execution cases plus 1,152 failed-access cases.
 - Immediate shifts, EXTUI and signed/unsigned immediate comparisons allow
   compiler-generated sum/sort/copy routines to run: 96 executions verify complete
   buffers, guards, CALL0 callee-save behavior and returns.

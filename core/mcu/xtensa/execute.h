@@ -9,6 +9,10 @@
  * to the caller with PC/address/opcode, not dispatched to architectural vectors.
  * Sequential callbacks provide ordering but make no multicore ordering claim.
  * Callback failure MUST mean no completed write. No rollback of MMIO reads.
+ * Reads/writes must finish synchronously before returning; posted operations,
+ * stale private caches and deferred visibility require a different interface.
+ * This serialized provider contract supplies L32AI/S32RI ordering, not a
+ * pipeline/cache/coherence model or an asynchronous system-bus barrier.
  * Callbacks must not re-enter or mutate the executing CPU state. Queue its
  * input/clock changes for instruction boundaries; these APIs are not thread-safe. */
 typedef struct esk_xtensa_state { uint32_t a[16], pc; } esk_xtensa_state;

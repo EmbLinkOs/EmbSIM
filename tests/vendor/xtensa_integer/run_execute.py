@@ -47,7 +47,7 @@ def main():
     cases = []
     operations = ['j', 'call0', 'jx', 'callx0', 'ret', 'ret.n', 'nop', 'nop.n',
                   'beqz', 'bnez', 'bltz', 'bgez', 'beq', 'bne', 'blt', 'bge', 'bltu', 'bgeu',
-                  'beqz.n', 'bnez.n', 'bany','bnone','ball','bnall','bbc','bbs','bbci','bbsi', 'beqi', 'bnei', 'blti', 'bgei', 'bltui', 'bgeui', 'l8ui', 'l16ui', 'l16si', 'l32i', 's8i', 's16i', 's32i',
+                  'beqz.n', 'bnez.n', 'bany','bnone','ball','bnall','bbc','bbs','bbci','bbsi', 'beqi', 'bnei', 'blti', 'bgei', 'bltui', 'bgeui', 'l8ui', 'l16ui', 'l16si', 'l32i', 'l32ai', 's32ri', 's8i', 's16i', 's32i',
                   'l32i.n', 's32i.n', 'l32r', 'movi.n', 'mov.n', 'add.n', 'addi.n']
     signed = lambda v: v if v < 2**31 else v-2**32
     for operation in operations:

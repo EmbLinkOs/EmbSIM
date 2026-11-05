@@ -101,8 +101,8 @@ loop, calls a doubling subroutine and returns to the expected PC (27 executed
 instructions). The native test has 618 assertions covering branches, compact
 immediate limits, byte/halfword/word behavior, literal loads, link-register alias,
 32-bit PC wrap, memory-edge fetches, alignment and failed-access state retention.
-An optional external-assembler/linker referee checks 4,608 execution cases and
-960 rejected accesses against independent Python PC/register/bus expectations.
+An optional external-assembler/linker referee checks 4,800 execution cases and
+1,152 rejected accesses against independent Python PC/register/bus expectations.
 Linker relaxation is disabled to preserve the fixture's explicit instruction
 addresses. The earlier 9,728 integer cases continue to pass.
 
@@ -426,8 +426,8 @@ success/failure comparisons, base/result alias, offset wrap, unsupported regions
 missing callbacks, fault retention and exactly one callback without normal bus
 read/write fallback. Existing system/window/interrupt/timer checks still pass.
 
-The expanded assembler referees now pass 9,728 integer cases and 4,608 flow/bit-
-branch cases, plus the existing 960 rejected accesses. Actual ESP32 GCC compiles
+The expanded assembler referees now pass 9,728 integer cases and 4,800 flow/bit-
+branch cases, plus the existing 1,152 rejected accesses. Actual ESP32 GCC compiles
 exchange, compare-and-swap, increment and signed/unsigned division/remainder C
 routines for 832 successful executions (5,248 fetched instructions). Sixty-four
 pairs of execution states share test RAM and alternate instruction steps so both
@@ -443,6 +443,28 @@ python tests/vendor/xtensa_integer/run_atomic_c.py \
   --linker /path/to/xtensa-esp32-elf-ld \
   --nm /path/to/xtensa-esp32-elf-nm
 ```
+
+## Implemented: synchronous acquire/release memory operations
+
+L32AI and S32RI implement aligned 32-bit load-acquire and store-release with an
+unsigned 8-bit word-scaled offset (0..1020 bytes). Address/source aliasing uses
+the pre-instruction registers; window-reference checks precede bus access.
+Misalignment or refused callbacks preserve architectural state and report the
+existing load/store fault diagnostic rather than inventing an MMU exception.
+
+The callback provider must complete reads/writes before returning and expose
+completed effects to subsequent turns. This serialized functional contract
+already supplies the required acquire/release ordering. It does not support
+posted writes, stale private caches or asynchronous transactions; extending the
+bus to those requires explicit completion/barrier semantics. No physical cache,
+pipeline or timing fidelity follows from this implementation.
+
+`test_xtensa_ordering` passes 30,732 assertions across every register pair,
+minimum/maximum offsets, failure retention, alignment and window-overflow
+priority. The independent actual ESP32 assembler runner now passes 4,800
+execution cases and 1,152 refused accesses, including acquire/release.
+The native machine runner below additionally executes actual compiler-generated
+L32AI/S32RI in spinlocks protecting non-atomic read/modify/write critical sections.
 
 ## Implemented: internal RAM and two-context execution harness
 
@@ -500,11 +522,11 @@ SRAM1 word and byte lane, remap isolation, RTC
 restrictions, rejected access widths/holes, all-or-nothing loading, allocation
 failure, shared conditional stores, independent state, fault ordering and
 one-core WAITI/timer wake while its peer continues. The separate compiled runner
-uses no Python memory/CAS callbacks: actual ESP32 GCC output runs two increment
-loops against native shared RAM, checking final count, the sum of distinct
+uses no Python memory/CAS callbacks: actual ESP32 GCC output runs atomic counter
+loops and acquire/CAS/release spinlocks protecting ordinary shared writes, checking final count, the sum of distinct
 returned increments, unsigned wrap, caller/window/stack preservation, retirement
-and exact replay equality. It passes 256 task executions and 64 schedule replays
-(65,590 instructions). This is functional interleaving evidence, not full SMP
+and exact replay equality. It passes 512 task executions and 128 schedule replays
+(229,322 instructions). This is functional interleaving evidence, not full SMP
 or real-hardware qualification.
 
 ```sh

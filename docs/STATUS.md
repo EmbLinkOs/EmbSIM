@@ -21,7 +21,7 @@ window: 111 native assertions and 9,728 separately assembled all-register compar
 pass. Mixed-width fetch, compact arithmetic, non-windowed calls/returns, conditional
 branches and callback memory access now execute an assembled summing/subroutine
 program. The execution test passes 618 assertions; a separate assembler/linker
-referee passes 4,608 execution cases and 960 failed accesses. Complete
+referee passes 4,800 execution cases and 1,152 failed accesses. Complete
 exception/interrupt behavior, full ISA, SMP, SoC boot and timing remain
 unimplemented. The new 64-AR window engine implements windowed calls/ENTRY/RETW,
 lazy spill/fill exception transitions, RFWO/RFWU retries, selected special
@@ -52,9 +52,13 @@ word-reversed SRAM1 instruction aliases, PRO-only RTC fast RAM, shared RTC slow
 RAM, optional external ROM and per-core host-controlled boot remap. A serialized
 two-context harness shares this RAM while keeping CPU/interrupt/clock state
 private. Native fixtures cover address/permission/remap/fault/wait boundaries;
-256 actual ESP32 compiled task executions and 64 replay comparisons pass through
-the native bus (65,590 instructions). This remains a bounded memory/execution
+512 actual ESP32 compiled task executions and 128 replay comparisons pass through
+the native bus (229,322 instructions). This remains a bounded memory/execution
 harness: cache/MMU, DPORT hardware controls, complete SMP and SoC boot are absent.
+L32AI/S32RI now provide acquire/release ordering under the synchronous completed
+callback contract (30,732 native assertions). The compiled shared-bus acceptance
+includes acquire/CAS/release spinlocks protecting ordinary writes. Asynchronous
+transactions, cache coherence and physical timing remain unsupported.
 No runnable ESP32 target is added, and the
 existing RISC-V ESP32-C3 is not a substitute.
 
