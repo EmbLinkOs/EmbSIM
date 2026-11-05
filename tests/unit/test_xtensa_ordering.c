@@ -39,7 +39,7 @@ static void registers_offsets_and_faults(void)
         f.fail=1;w.cpu.a[s]=0x3ffb0000;f.reads=f.writes=0;before=w;
         CHECK_EQ(execute(&w,&bus,t,s,offset,(int)store,&event,&fault),ES_EINVAL);
         CHECK_EQ(memcmp(&w,&before,sizeof w),0);
-        CHECK_EQ(fault.kind,store ? ESK_XT_STORE : ESK_XT_LOAD);
+        CHECK_EQ(fault.kind,(unsigned)(store ? ESK_XT_STORE : ESK_XT_LOAD));
         CHECK_EQ(f.reads,store ? 0u : 1u);CHECK_EQ(f.writes,store);
         f.reads=f.writes=0;w.cpu.a[s]=0x3ffb0001;before=w;
         CHECK_EQ(execute(&w,&bus,t,s,offset,(int)store,&event,&fault),ES_EINVAL);
