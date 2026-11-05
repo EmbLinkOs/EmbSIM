@@ -96,7 +96,9 @@ contract linked above.
 `xtensa_integer/run_ipi_c.py` takes the actual ESP32 `--compiler`, `--objcopy`,
 `--linker` and `--nm`. A compiled C sender uses DPORT MMIO to wake a WAITI peer;
 an assembled context-saving ISR acknowledges its source and publishes a release
-ACK. No Python memory/interrupt callbacks: 128 mailbox runs, 2,112 interrupts,
-64 exact replays, 188,480 retired instructions. Checks messages, source clear,
+ACK through an actual ESP32-compiled C handler (windowed ABI). Both PRO-to-APP
+and APP-to-PRO directions pass. No Python memory/interrupt callbacks:
+256 mailbox runs, 4,224 interrupts,
+128 exact replays, 512,128 retired instructions. Checks messages, source clear,
 stack guards, general registers and ABI/window return. Not full ISR/RTOS, PID,
 peripheral generators, APB timing or SoC boot qualification.

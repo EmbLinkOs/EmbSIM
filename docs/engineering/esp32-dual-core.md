@@ -594,10 +594,12 @@ Proof:
 - `run_matrix.py`: 4,288 independent vendor-addressed routes and 512 combined
   source/map/mask comparisons. It parses the hash-pinned vendor headers below
   for register addresses/defaults/source slots and CPU-internal input types.
-- `run_ipi_c.py`: actual ESP32-compiled windowed C sender plus assembled ISR,
-  128 mailbox runs, 2,112 routed interrupts, 64 exact instruction/event replays
-  and 188,480 retired instructions. The ISR saves/restores integer registers on
-  an EXCSAVE2 stack, uses EXCSAVE3 for the interrupted SP, clears the source and
+- `run_ipi_c.py`: actual ESP32-compiled windowed C sender and C handler plus assembled
+  entry/return wrapper,
+  256 mailbox runs, 4,224 routed interrupts, 128 exact instruction/event replays
+  and 512,128 retired instructions, in both directions. The ISR saves/restores
+  integer registers on an EXCSAVE2 stack, uses EXCSAVE3 for the interrupted SP and calls the C handler
+  with EXCM cleared and interrupt level 2 retained. The handler clears the source and
   publishes a release acknowledgement. Checks cover all messages, source clear,
   stack guards, general registers, ABI return and window state. This is not a
   complete production ISR, nested exception or RTOS context-switch proof.

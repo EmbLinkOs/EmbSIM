@@ -66,9 +66,10 @@ selectors, core-local GPIO and explicit PID NMI-mask inputs. Firmware can wake a
 peer from WAITI, acknowledge its source and return. Delivery synchronizes after
 instruction commit, including paused-peer edges. New fixtures pass 64,374 matrix
 and 101 integration assertions; pinned-header referees pass 4,288 routes and 512
-combined-source/mask cases. Actual ESP32 C sender/assembled ISR acceptance passes
-128 mailbox executions, 2,112 interrupts and 64 exact replays (188,480 retired
-instructions). Peripheral generators, PID hardware, DPORT reset/stall, APB timing,
+combined-source/mask cases. Actual ESP32 C sender/C handler acceptance with an
+assembled entry/return wrapper passes 256 mailbox executions, 4,224 interrupts and 128 exact replays (512,128 retired
+instructions), in both directions. Peripheral generators, PID hardware, DPORT
+reset/stall, APB timing,
 flash/cache and boot remain absent; no complete ISR/RTOS or timing claim follows.
 No runnable ESP32 target is added, and the
 existing RISC-V ESP32-C3 is not a substitute.

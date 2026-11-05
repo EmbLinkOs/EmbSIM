@@ -16,8 +16,8 @@ versions follow semantic versioning. There is no release yet.
   paused-peer edges and same-core MMIO IRQ updates survive correctly. No physical
   APB timing, DPORT reset/stall, cache/flash, full SMP or boot claim is added.
 - Added 64,374 matrix/101 integration assertions and pinned-header referees for
-  4,288 routes/512 combined-source cases. Actual ESP32 C sender/assembled ISR
-  passes 128 mailbox runs, 2,112 interrupts and 64 exact replays (188,480 retired
+  4,288 routes/512 combined-source cases. Actual ESP32 C sender/C handler with
+  an assembled entry/return wrapper passes 256 mailbox runs, 4,224 interrupts and 128 exact replays (512,128 retired
   instructions), preserving integer registers and stack guards.
 
 ### Experimental Xtensa acquire/release and shared spinlocks
