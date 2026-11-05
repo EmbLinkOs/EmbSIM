@@ -3,8 +3,8 @@
 **Result on 2026-11-05: the owner's board reports ESP32-D0WD-V3 revision 3.1,
 JEDEC C4 60 16 and 4 MB flash. Giantec's GT25Q32A-U datasheet matches that ID;
 exact package/ordering suffix remains unconfirmed. The pinned SDK example boots
-in Espressif QEMU. Native EmbSIM reaches UART0 initialization after 6,734 retired
-instructions with explicit synthetic eFuse/RTC and active GPIO fixtures; without an eFuse profile,
+in Espressif QEMU. Native EmbSIM reaches UART1 initialization after 6,737 retired
+instructions with explicit synthetic eFuse/RTC, active GPIO and UART0 fixtures; without an eFuse profile,
 the baseline stops at an eFuse read after seven.** Neither result establishes
 successful native boot.
 
@@ -114,7 +114,17 @@ configuration or printed SDK capacity must not substitute for hardware identity.
 
 ## Native EmbSIM result: blocked
 
-**Latest follow-up:** [Software GPIO/global hold](esp32-gpio-pad-hold.md) now
+**Latest UART0 follow-up:** [Normal UART0](esp32-uart0.md) adds native FIFOs,
+source-clock framing and interrupt handling. With `--uart0-active-fixture` and
+all prior explicit fixtures, the probe retires 6,737 instructions / 6,738 attempts,
+then blocks on UART1 INT_CLR write 0x3ff50010, PC 0x40009013, opcode 0x68a2.
+The added UART0 fixture supplies empty FIFOs and RXD=1/CTS=0/DSR=0; it advances no
+serial ticks and does not infer board pinmux or other UARTs. The
+[UART0 follow-up evidence](../../tests/vendor/xtensa_integer/evidence/boot-with-uart0-2026-11-05.json)
+records the new source hashes and still reports boot unverified. Add
+`--uart0-active-fixture` to the command below to reproduce this boundary.
+
+**Prior GPIO follow-up:** [Software GPIO/global hold](esp32-gpio-pad-hold.md) now
 handles the pad-hold portion of DIG_ISO with an explicit routing fixture. The
 probe reaches 6,734 retirements, blocked at UART0 INT_CLR write 0x3ff40010,
 PC 0x4000900b. The earlier 0x3ff48088 label was wrong: it is DIG_ISO, not ANA_CONF.

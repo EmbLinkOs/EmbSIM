@@ -7,7 +7,16 @@ does not mean the described behaviour exists.
 
 ## Original ESP32 dual-core target investigation (2026-11-04)
 
-**Latest GPIO update:** the [software-GPIO/pad-hold profile](engineering/esp32-gpio-pad-hold.md)
+**Latest UART0 update:** the [normal asynchronous UART0 profile](engineering/esp32-uart0.md)
+now supports fixed TX/RX FIFOs, explicit source-clock framing, CTS gating, decoded
+RX/error input and interrupt source 34 on both native core views. 915,199 native
+assertions, 316,077 independent bit/frame comparisons and 128 compiled C calls
+with eleven unchanged SDK helpers pass. The additional explicit UART0 fixture
+reaches 6,737 retirements, then UART1 INT_CLR write 0x3ff50010/PC 0x40009013.
+UART1/2, advanced modes, full clocks/pin/electrical/USB integration and native SDK
+boot remain unimplemented. Serial-clock advancement does not calibrate CPU timing.
+
+**Prior GPIO update:** the [software-GPIO/pad-hold profile](engineering/esp32-gpio-pad-hold.md)
 now supports explicit routes, live resolved inputs, projected drive/HiZ and hold
 capture/clear. With all explicit probe fixtures it reaches 6,734 instructions,
 then UART0 INT_CLR write at 0x3ff40010/PC 0x4000900b. Full GPIO/IO_MUX, electrical

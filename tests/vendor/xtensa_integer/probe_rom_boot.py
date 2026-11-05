@@ -28,6 +28,7 @@ def main():
     ap.add_argument('--rom',type=Path,required=True);ap.add_argument('--flash',type=Path,required=True)
     ap.add_argument('--efuse',type=Path,help='explicit JSON list of 31 raw None-coded fuse words; not inferred board defaults')
     ap.add_argument('--efuse-completion-period',type=int,default=64,help='external fixture event every N instruction attempts; not physical timing')
+    ap.add_argument('--uart0-active-fixture',action='store_true',help='normal UART0 fixture, explicit RXD=1 CTS=0 DSR=0, empty FIFOs, no serial ticks; not board pinmux or other UARTs')
     ap.add_argument('--gpio-active-fixture',action='store_true',help='explicit no-routed-pads software-GPIO/DIG_ISO hold fixture; isolation/power transitions unsupported')
     ap.add_argument('--rtc-power-on-fixture',action='store_true',help='explicit synthetic power-on reasons/vector selects and eight zero retention words; not owner RTC state')
     ap.add_argument('--prid',type=lambda value:int(value,0),default=0xcdcd,help='PRO PRID; SDK documents 0xcdcd; 0 reproduces historical invalid-ID fixture')
@@ -42,7 +43,7 @@ def main():
     with tempfile.TemporaryDirectory(prefix='embsim-native-rom-probe-') as tmp:
         lib=Path(tmp)/'probe.so'
         sources=[ROOT/'core/mcu/xtensa'/n for n in ['integer.c','execute.c','windows.c','interrupts.c']]
-        sources += [ROOT/'core/mcu/esp32'/n for n in ['fabric.c', 'efuse.c','machine.c','gpio.c','matrix.c','flashmap.c','flashspi.c','w25q32.c', 'nor32.c', 'gt25q32.c']]
+        sources += [ROOT/'core/mcu/esp32'/n for n in ['fabric.c', 'efuse.c','machine.c','uart.c','gpio.c','matrix.c','flashmap.c','flashspi.c','w25q32.c', 'nor32.c', 'gt25q32.c']]
         sources += [ROOT/'core/util/alloc.c']
         subprocess.run([args.cc,'-std=c99','-Wall','-Wextra','-Wconversion','-Werror','-shared','-fPIC',
                         '-I'+str(ROOT/'core'),'-I'+str(ROOT/'include'),*map(str,sources),'-o',str(lib)],check=True)
@@ -59,6 +60,7 @@ def main():
         complete=bind('esk_esp32_fabric_efuse_read_complete',C.c_int,pointer)
         spi=bind('esk_esp32_fabric_spi1_configure',C.c_int,pointer,C.c_int)
         core=bind('esk_esp32_machine_core',C.POINTER(Windows),pointer,C.c_uint)
+        uart=bind('esk_esp32_machine_uart_configure',C.c_int,pointer,C.c_int,C.c_int,C.c_int,C.c_int)
         gpio=bind('esk_esp32_machine_gpio_configure',C.c_int,pointer,C.POINTER(C.c_uint32),C.c_size_t)
         rtc=bind('esk_esp32_machine_rtc_configure',C.c_int,pointer,C.c_uint32,C.POINTER(C.c_uint32),C.c_size_t)
         memctl=bind('esk_xtensa_memctl_configure',C.c_int,C.POINTER(Windows))
@@ -78,6 +80,9 @@ def main():
                 'flash_profile':'immutable SPI1 fixture, not a physical flash identity'}
         try:
             ram=fabric(machine)
+            if args.uart0_active_fixture:
+                assert uart(machine,1,1,0,0)==0
+                report['uart0_fixture']='normal UART0, empty FIFOs, explicit RXD=1 CTS=0 DSR=0, no serial-clock advancement, no UART1/2 or board pinmux'
             if args.gpio_active_fixture:
                 config=(C.c_uint32*14)();assert gpio(machine,config,14)==0
                 report['gpio_fixture']='no routed pads; defined active-domain DIG_ISO defaults and hold controls only, no isolation/power emulation'

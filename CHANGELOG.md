@@ -5,6 +5,21 @@ versions follow semantic versioning. There is no release yet.
 
 ## Unreleased
 
+### Original ESP32 normal asynchronous UART0
+
+- Added an opt-in fixed-FIFO UART0 profile with APB/AHB firmware access,
+  source-clock fractional-divider accounting, 5..8 data bits, parity and 1/1.5
+  stop bits, projected TX state/bit and framed completion output.
+- Added CTS gating, external decoded RX/error inputs, FIFO ordering/overflow,
+  interrupt enable/W1C/reassertion and shared source-34 routing after commit.
+- Kept SDK-documented unreliable RX reset and the two-stop-bit workaround
+  unsupported, alongside UART1/2, advanced modes and physical pin/clock/USB
+  integration. This does not qualify CPU timing or complete UART/board behavior.
+- 915,199 native assertions, 316,077 independent bit/frame comparisons and
+  128 compiled ESP32 C calls with eleven unchanged SDK helpers pass.
+  Native ROM with an additional explicit UART0 fixture reaches 6,737
+  retirements and blocks at UART1 INT_CLR; full SDK boot remains unverified.
+
 ### Original ESP32 software GPIO and global pad hold
 
 - Added explicit software-route GPIO fixtures, shared two-bank latches and

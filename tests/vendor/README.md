@@ -240,3 +240,9 @@ and native boot remain unqualified. See the
 Input changes and held-output checks use native buses and explicit route/latch
 fixtures, not a complete IO_MUX/electrical/Deep-sleep/board model. See the
 [GPIO/pad-hold contract](../../docs/engineering/esp32-gpio-pad-hold.md).
+
+`xtensa_integer/run_uart.py` checks 316,077 independent UART0 bit/frame
+observations and runs 128 interactive compiled C calls using eleven unchanged
+ESP-IDF UART helpers on both native buses. Source clocks and decoded RX frames
+are explicit host inputs; UART1/2, advanced modes and physical pin/clock/USB
+behavior remain unqualified. See the [UART0 contract and reproduction](../../docs/engineering/esp32-uart0.md).

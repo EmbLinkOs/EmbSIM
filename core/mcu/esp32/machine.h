@@ -5,6 +5,7 @@
 #include "mcu/esp32/fabric.h"
 #include "mcu/esp32/matrix.h"
 #include "mcu/esp32/gpio.h"
+#include "mcu/esp32/uart.h"
 #include "mcu/xtensa/windows.h"
 typedef struct esk_esp32_machine esk_esp32_machine;
 /* Experimental two-context execution harness over shared internal memory.
@@ -35,6 +36,15 @@ es_status esk_esp32_machine_gpio_configure(esk_esp32_machine *m,const uint32_t *
 es_status esk_esp32_machine_gpio_input(esk_esp32_machine *m,unsigned pin,int known,int high);
 es_status esk_esp32_machine_gpio_output(const esk_esp32_machine *m,unsigned pin,esk_esp32_gpio_pad *pad);
 es_status esk_esp32_machine_gpio_auto_hold_event(esk_esp32_machine *m);
+/* UART0 normal async fixture and externally supplied serial events; uart.h
+ * defines framing, clock and error/omission boundaries. Source 34 is owned
+ * while attached. Selected-clock ticks are independent of CPU retirement.
+ * APIs/callbacks are serialized between turns; callbacks must not re-enter. */
+es_status esk_esp32_machine_uart_configure(esk_esp32_machine *m,int on,int rxd,int cts,int dsr);
+es_status esk_esp32_machine_uart_inputs(esk_esp32_machine *m,int rxd,int cts,int dsr);
+es_status esk_esp32_machine_uart_receive(esk_esp32_machine *m,uint32_t data,unsigned flags);
+es_status esk_esp32_machine_uart_timeout(esk_esp32_machine *m);
+es_status esk_esp32_machine_uart_advance(esk_esp32_machine *m,uint64_t ticks,esk_esp32_uart_emit emit,void *ctx);
 /* Opt-in SPI1 owns matrix source 29; the eFuse profile owns source 44.
  * Both ownerships are active only while their respective profiles are enabled.
  * completion/enable changes route after commit (immediately for host bus writes).

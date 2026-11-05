@@ -7,9 +7,9 @@ struct esk_esp32_machine {
     esk_alloc *a;esk_esp32_fabric *fabric;
     esk_xtensa_windows cpu[2];uint64_t retired[2];unsigned running[2],executing;
     uint32_t app_clock,app_stall,app_boot,app_reset,app_reset_enabled,app_reset_vector,app_reset_pending;
-    unsigned spi1_owned,efuse_owned;
+    unsigned spi1_owned,efuse_owned,uart_owned;
     uint32_t rtc_enabled,rtc_state,rtc_store[8];
-    esk_esp32_gpio gpio;
+    esk_esp32_gpio gpio;esk_esp32_uart uart;
     esk_esp32_matrix matrix;struct machine_view view[2];
 };
 /* Never mutate an executing CPU from a bus callback. Synchronize the
@@ -28,6 +28,11 @@ static void sync_inputs(esk_esp32_machine *m)
         (void)esk_esp32_matrix_source(&m->matrix,44,asserted);m->efuse_owned=1;
     } else if(m->efuse_owned) {
         (void)esk_esp32_matrix_source(&m->matrix,44,0);m->efuse_owned=0;
+    }
+    if(esk_esp32_uart_irq(&m->uart,&asserted)==ES_OK) {
+        (void)esk_esp32_matrix_source(&m->matrix,34,asserted);m->uart_owned=1;
+    } else if(m->uart_owned) {
+        (void)esk_esp32_matrix_source(&m->matrix,34,0);m->uart_owned=0;
     }
     for(cpu=0;cpu<2;cpu++) if(m->cpu[cpu].irq.enabled && !(cpu==1 && m->app_reset_enabled && m->app_reset)) {
         uint32_t levels=esk_esp32_matrix_levels(&m->matrix,cpu);
@@ -102,6 +107,8 @@ static es_status bus_read(void *ctx,uint32_t address,unsigned bytes,uint32_t *va
 {
     struct machine_view *v=(struct machine_view *)ctx;esk_xtensa_memory ram;es_status st;
     st=control_read(v->m,address,bytes,value);if(st!=ES_EUNSUPPORTED) return st;
+    st=esk_esp32_uart_read(&v->m->uart,address,bytes,value);
+    if(st!=ES_EUNSUPPORTED) { if(st==ES_OK && !v->m->executing) sync_inputs(v->m);return st; }
     st=esk_esp32_gpio_read(&v->m->gpio,address,bytes,value);if(st!=ES_EUNSUPPORTED) return st;
     st=esk_esp32_matrix_read(&v->m->matrix,address,bytes,value);
     if(st!=ES_EUNSUPPORTED) return st;
@@ -115,6 +122,8 @@ static es_status bus_write(void *ctx,uint32_t address,unsigned bytes,uint32_t va
         if(st==ES_OK && !v->m->executing) { apply_reset(v->m);sync_inputs(v->m); }
         return st;
     }
+    st=esk_esp32_uart_write(&v->m->uart,address,bytes,value);
+    if(st!=ES_EUNSUPPORTED) { if(st==ES_OK && !v->m->executing) sync_inputs(v->m);return st; }
     st=esk_esp32_gpio_write(&v->m->gpio,address,bytes,value);if(st!=ES_EUNSUPPORTED) return st;
     st=esk_esp32_matrix_write(&v->m->matrix,address,bytes,value);
     if(st!=ES_EUNSUPPORTED) {
@@ -157,6 +166,10 @@ es_status esk_esp32_machine_source(esk_esp32_machine *m,unsigned source,int asse
         if(esk_esp32_fabric_efuse_irq(m->fabric,&asserted_now)==ES_OK) return ES_EUNSUPPORTED;
         if(m->efuse_owned) sync_inputs(m);
     }
+    if(source==34) {
+        if(esk_esp32_uart_irq(&m->uart,&asserted_now)==ES_OK) return ES_EUNSUPPORTED;
+        if(m->uart_owned) sync_inputs(m);
+    }
     st=esk_esp32_matrix_source(&m->matrix,source,asserted);if(st==ES_OK) sync_inputs(m);return st;
 }
 es_status esk_esp32_machine_gpio_irq(esk_esp32_machine *m,unsigned cpu,int nmi,int asserted)
@@ -197,7 +210,7 @@ es_status esk_esp32_machine_create(esk_alloc *a,esk_esp32_machine **out)
     m=(esk_esp32_machine *)esk_calloc(a,1,sizeof *m);if(!m) return ES_ENOMEM;
     m->a=a;st=esk_esp32_fabric_create(a,&m->fabric);
     if(st!=ES_OK) { esk_free(a,m,sizeof *m);return st; }
-    esk_esp32_matrix_init(&m->matrix);esk_esp32_gpio_init(&m->gpio);
+    esk_esp32_matrix_init(&m->matrix);esk_esp32_gpio_init(&m->gpio);esk_esp32_uart_init(&m->uart);
     for(i=0;i<2;i++) { esk_xtensa_windows_init(&m->cpu[i],0,NULL);m->view[i].m=m;m->view[i].cpu=i; }
     *out=m;return ES_OK;
 }
@@ -257,3 +270,31 @@ es_status esk_esp32_machine_gpio_output(const esk_esp32_machine *m,unsigned pin,
 { return !m || m->executing ? ES_EINVAL : esk_esp32_gpio_output(&m->gpio,pin,pad); }
 es_status esk_esp32_machine_gpio_auto_hold_event(esk_esp32_machine *m)
 { return !m || m->executing ? ES_EINVAL : esk_esp32_gpio_auto_hold_event(&m->gpio); }
+
+es_status esk_esp32_machine_uart_configure(esk_esp32_machine *m,int on,int rxd,int cts,int dsr)
+{
+    es_status st;if(!m || m->executing) return ES_EINVAL;
+    st=esk_esp32_uart_configure(&m->uart,on,rxd,cts,dsr);if(st==ES_OK) sync_inputs(m);return st;
+}
+es_status esk_esp32_machine_uart_inputs(esk_esp32_machine *m,int rxd,int cts,int dsr)
+{
+    es_status st;if(!m || m->executing) return ES_EINVAL;
+    st=esk_esp32_uart_inputs(&m->uart,rxd,cts,dsr);if(st==ES_OK) sync_inputs(m);return st;
+}
+es_status esk_esp32_machine_uart_receive(esk_esp32_machine *m,uint32_t data,unsigned flags)
+{
+    es_status st;if(!m || m->executing) return ES_EINVAL;
+    st=esk_esp32_uart_receive(&m->uart,data,flags);if(st==ES_OK) sync_inputs(m);return st;
+}
+es_status esk_esp32_machine_uart_timeout(esk_esp32_machine *m)
+{
+    es_status st;if(!m || m->executing) return ES_EINVAL;
+    st=esk_esp32_uart_timeout(&m->uart);if(st==ES_OK) sync_inputs(m);return st;
+}
+es_status esk_esp32_machine_uart_advance(esk_esp32_machine *m,uint64_t ticks,esk_esp32_uart_emit emit,void *ctx)
+{
+    es_status st;if(!m || m->executing) return ES_EINVAL;
+    m->executing=1;st=esk_esp32_uart_advance(&m->uart,ticks,emit,ctx);m->executing=0;
+    if(st==ES_OK) sync_inputs(m);
+    return st;
+}

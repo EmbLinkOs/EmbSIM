@@ -38,7 +38,7 @@ def main():
     with tempfile.TemporaryDirectory(prefix='embsim-controls-') as tmp:
         lib = Path(tmp) / 'controls.so'
         sources = [ROOT / 'core/mcu/xtensa' / n for n in ['integer.c', 'execute.c', 'windows.c', 'interrupts.c']]
-        sources += [ROOT / 'core/mcu/esp32' / n for n in ['fabric.c', 'efuse.c', 'machine.c','gpio.c', 'matrix.c', 'flashmap.c', 'flashspi.c', 'w25q32.c', 'nor32.c', 'gt25q32.c']]
+        sources += [ROOT / 'core/mcu/esp32' / n for n in ['fabric.c', 'efuse.c', 'machine.c','uart.c','gpio.c', 'matrix.c', 'flashmap.c', 'flashspi.c', 'w25q32.c', 'nor32.c', 'gt25q32.c']]
         sources += [ROOT / 'core/util/alloc.c']
         subprocess.run([args.cc, '-std=c99', '-Wall', '-Wextra', '-Wconversion', '-Werror', '-shared', '-fPIC',
                         '-I' + str(ROOT / 'core'), '-I' + str(ROOT / 'include'), *map(str, sources), '-o', str(lib)], check=True)
