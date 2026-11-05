@@ -55,7 +55,7 @@ two-context harness shares this RAM while keeping CPU/interrupt/clock state
 private. Native fixtures cover address/permission/remap/fault/wait boundaries;
 512 actual ESP32 compiled task executions and 128 replay comparisons pass through
 the native bus (229,322 instructions). This remains a bounded memory/execution
-harness: cache/MMU, DPORT core reset/release controls, complete SMP and SoC boot are absent.
+harness: cache/MMU, complete reset domains, full SMP and SoC boot are absent.
 L32AI/S32RI now provide acquire/release ordering under the synchronous completed
 callback contract (30,732 native assertions). The compiled shared-bus acceptance
 includes acquire/CAS/release spinlocks protecting ordinary writes. Asynchronous
@@ -68,8 +68,7 @@ instruction commit, including paused-peer edges. New fixtures pass 64,374 matrix
 and 103 integration assertions; pinned-header referees pass 4,288 routes and 512
 combined-source/mask cases. Actual ESP32 C sender/C handler acceptance with an
 assembled entry/return wrapper passes 256 mailbox executions, 4,224 interrupts and 128 exact replays (512,128 retired
-instructions), in both directions. Peripheral generators, PID hardware, DPORT
-reset/release, APB timing,
+instructions), in both directions. Peripheral generators, PID hardware, complete reset domains, APB timing,
 flash/cache and boot remain absent; no complete ISR/RTOS or timing claim follows.
 APP clock/stall fields and the ROM-consumed boot-address register now work
 through the machine bus. APP starts clock-disabled; fixture setup explicitly
@@ -77,13 +76,22 @@ enables it. Gate/stall stops fetch/retirement and resumes at the same PC, withou
 resetting shared state. Gate-aware supplied-clock/deadline APIs suppress APP
 counter ticks while gated. New evidence: 163 native assertions, 384 vendor-field
 comparisons and compiled control/mailbox stress (256 runs, 4,224 interrupts,
-128 replays, 551,232 retired instructions). Reset/release remains unsupported;
+128 replays, 551,232 retired instructions). APP reset/release requires the separate opt-in supported reset profile below;
 the boot-address register does not bypass missing ROM code or set PC directly.
 Physical clock/pulse timing, power and cold boot are still unqualified.
 PS now masks reserved fields on read/write/exchange and RFI restoration;
 XSR.PS preserves its old-value result with privilege/window checks before the
 transition. This adds 1,304 native assertions and 3,456 independent assembled
 PS/RFI comparisons, including atomic interrupt-mask changes.
+A [bounded reset/vector profile](engineering/esp32-reset-vectors.md) now supports
+explicit static reset-input selection, PS/LCOUNT/VECBASE reset fields and aligned
+VECBASE relocation with fixed vendor offsets. Undefined CPU register values use
+an explicit fixture policy, not a silicon retention claim. Opt-in APP reset input
+holds/releases the core after instruction commit and preserves shared source
+state. Evidence: 2,281 CPU/104 machine assertions, 3,072 assembled VECBASE accesses,
+960 vendor-offset dispatches and 128 reset-address comparisons. Original test-ROM
+handoff passes 128 compiled supervisor/worker cycles and 16 exact replays.
+Actual Espressif ROM, full reset-domain behavior and SDK/board boot remain absent.
 No runnable ESP32 target is added, and the
 existing RISC-V ESP32-C3 is not a substitute.
 

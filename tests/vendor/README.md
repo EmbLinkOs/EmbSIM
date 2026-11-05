@@ -117,3 +117,17 @@ fixture runners now explicitly enable the documented APP clock field.
 It passes 3,456 PS read/write/exchange and RFI cases against a Python field/register
 oracle, checking every operand register and reserved-bit masking. It does not
 qualify full privilege/MMU behavior, physical RSYNC latency or processor reset.
+
+`xtensa_integer/run_vectors.py` takes `--core-isa`, `--assembler` and `--objcopy`:
+3,072 assembled VECBASE accesses, 960 parsed-vendor-offset dispatches and 128
+static reset-vector comparisons. Aligned bases only; no low-bit/lock or complete
+silicon reset qualification. Add `--include-reset` to `run_controls.py` to include
+the opt-in APP reset register (512 total vendor-field comparisons).
+
+`xtensa_integer/run_reset_c.py` takes the actual ESP32 `--compiler`, `--objcopy`,
+`--linker` and `--nm`. Compiled PRO code releases APP into an original temporary
+test-ROM program that initializes the supported CPU state, reads BOOT_ADDR and
+calls a compiled worker: 128 cycles, 128 static ROM entries, 16 exact replays,
+11,904 retired instructions. No Python memory callback or host APP PC shortcut.
+This is not Espressif ROM, full reset/MMU/cache, SDK or board boot qualification.
+See [reset/vector scope](../../docs/engineering/esp32-reset-vectors.md).

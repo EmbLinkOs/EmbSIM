@@ -31,12 +31,34 @@ void esk_xtensa_windows_init(esk_xtensa_windows *w, uint32_t pc, const uint32_t 
     memset(w,0,sizeof *w); w->cpu.pc=pc; w->ps=ESK_XT_PS_WOE; w->start=1;
     if (vectors) memcpy(w->vectors,vectors,sizeof w->vectors);
 }
+es_status esk_xtensa_vecbase_configure(esk_xtensa_windows *w,uint32_t base)
+{
+    unsigned i;static const uint32_t general[3]={0x300,0x340,0x3c0};
+    if(!w) return ES_EINVAL;
+    if(base&1023u) return ES_EUNSUPPORTED;
+    w->vecbase=base;w->vecbase_enabled=1;
+    for(i=0;i<6;i++) { w->vectors[i]=base+i*64u;w->irq.vectors[i+2]=base+0x180u+i*64u; }
+    for(i=0;i<3;i++) w->exception_vectors[i]=base+general[i];
+    return ES_OK;
+}
+es_status esk_xtensa_lx6_reset(esk_xtensa_windows *w,unsigned vector_input)
+{
+    if(!w || vector_input>1) return ES_EINVAL;
+    save(w);w->base&=15u;w->start&=65535u;
+    w->ps=0x1f;w->lcount=0;w->cpu.pc=vector_input ? 0x40000400u : 0x50000000u;
+    w->exceptions_enabled=1;w->irq.enabled=1;w->irq.waiting=0;
+    /* INTERRUPT is undefined at reset. Choose no pending requests; the SoC
+     * provider re-drives its live levels after releasing reset. */
+    w->irq.lines=w->irq.latched=w->irq.last_level=w->irq.last_pending=0;
+    return esk_xtensa_vecbase_configure(w,0x40000000);
+}
 void esk_xtensa_exception_configure(esk_xtensa_windows *w, const uint32_t vectors[3])
 {
     if (!w) return;
     w->exceptions_enabled=vectors ? 1u : 0u;
     if (!vectors) { w->irq.enabled=0; w->irq.waiting=0; }
     if (vectors) memcpy(w->exception_vectors,vectors,sizeof w->exception_vectors);
+    if(w->vecbase_enabled) (void)esk_xtensa_vecbase_configure(w,w->vecbase);
 }
 es_status esk_xtensa_raise_exception(esk_xtensa_windows *w, unsigned cause,
                                      uint32_t address, int has_address, unsigned *event)
@@ -49,13 +71,14 @@ es_status esk_xtensa_raise_exception(esk_xtensa_windows *w, unsigned cause,
     else { w->epc1=w->cpu.pc; index=(w->ps&32u) ? 1u : 0u; }
     w->exccause=cause;
     if (has_address) w->excvaddr=address;
-    w->ps|=ESK_XT_PS_EXCM; w->cpu.pc=w->exception_vectors[index];
+    w->ps|=ESK_XT_PS_EXCM;
+    w->cpu.pc=w->vecbase_enabled ? w->vecbase+(index==2 ? 0x3c0u : 0x300u+index*64u) : w->exception_vectors[index];
     *event=7u+index;
     return ES_OK;
 }
 static int special_valid(const esk_xtensa_windows *w,unsigned reg)
 {
-    return (w->irq.enabled && esk_xtensa_irq_special(reg)) || reg<=3 || reg==12 || reg==72 || reg==73 || reg==177 || reg==192 || reg==230 || reg==232 || reg==238;
+    return (w->irq.enabled && esk_xtensa_irq_special(reg)) || reg<=3 || reg==12 || reg==72 || reg==73 || reg==177 || reg==192 || reg==230 || (reg==231 && w->vecbase_enabled) || reg==232 || reg==238;
 }
 static uint32_t special_read(const esk_xtensa_windows *w,unsigned reg)
 {
@@ -63,7 +86,7 @@ static uint32_t special_read(const esk_xtensa_windows *w,unsigned reg)
     switch (reg) {
     case 0:return w->lbeg; case 1:return w->lend; case 2:return w->lcount; case 3:return w->sar;
     case 12:return w->scompare1; case 72:return w->base; case 73:return w->start; case 177:return w->epc1;
-    case 192:return w->depc; case 230:return w->ps&ESK_XT_PS_MASK; case 232:return w->exccause; default:return w->excvaddr;
+    case 192:return w->depc; case 230:return w->ps&ESK_XT_PS_MASK; case 231:return w->vecbase; case 232:return w->exccause; default:return w->excvaddr;
     }
 }
 static void special_write(esk_xtensa_windows *w,unsigned reg,uint32_t value)
@@ -76,7 +99,7 @@ static void special_write(esk_xtensa_windows *w,unsigned reg,uint32_t value)
     case 72:w->base=value&15u;load(w);break;
     case 73:w->start=value&65535u;break;
     case 177:w->epc1=value;break; case 192:w->depc=value;break;
-    case 230:w->ps=value&ESK_XT_PS_MASK;break; case 232:w->exccause=value;break; default:w->excvaddr=value;break;
+    case 230:w->ps=value&ESK_XT_PS_MASK;break; case 231:(void)esk_xtensa_vecbase_configure(w,value);break; case 232:w->exccause=value;break; default:w->excvaddr=value;break;
     }
 }
 /* Register references are checked before any access. Zero/compare branches do
@@ -112,7 +135,7 @@ static unsigned overflow(esk_xtensa_windows *w, uint32_t mask)
     event=(w->start&bit(victim+1)) ? 1u : (w->start&bit(victim+2)) ? 3u : 5u;
     w->epc1=w->cpu.pc;
     w->ps=(w->ps&~UINT32_C(0xf00)) | (w->base<<8) | ESK_XT_PS_EXCM;
-    save(w); w->base=victim; load(w); w->cpu.pc=w->vectors[event-1];
+    save(w); w->base=victim; load(w); w->cpu.pc=w->vecbase_enabled ? w->vecbase+(event-1u)*64u : w->vectors[event-1];
     return event;
 }
 es_status esk_xtensa_window_execute(esk_xtensa_windows *w, const esk_xtensa_memory *memory,
@@ -149,7 +172,7 @@ es_status esk_xtensa_window_execute(esk_xtensa_windows *w, const esk_xtensa_memo
     else if ((word&UINT32_C(0xffff0f))==0x408000) kind=XT_ROTW;
     else if ((word&UINT32_C(0xff000f))==0x030000 || (word&UINT32_C(0xff000f))==0x130000 || (word&UINT32_C(0xff000f))==0x610000) {
         unsigned reg=(word>>8)&255u;
-        if (!special_valid(&next,reg) || (reg==227 && (word&UINT32_C(0xff000f))==0x030000) || ((word&UINT32_C(0xff000f))==0x610000 && reg!=3 && reg!=12 && reg!=230))
+        if (!special_valid(&next,reg) || (reg==227 && (word&UINT32_C(0xff000f))==0x030000) || ((word&UINT32_C(0xff000f))==0x610000 && reg!=3 && reg!=12 && reg!=230 && reg!=231))
             return reject(fault,ESK_XT_UNSUPPORTED,pc,pc,word);
         kind=XT_SPECIAL; mask=bit(t);
     }
@@ -202,7 +225,7 @@ es_status esk_xtensa_window_execute(esk_xtensa_windows *w, const esk_xtensa_memo
         if (next.start&bit(next.base)) { next.start&=~bit(old); load(&next); next.cpu.pc=return_pc; }
         else {
             next.epc1=pc; next.ps=(next.ps&~UINT32_C(0xf00))|(old<<8)|ESK_XT_PS_EXCM;
-            load(&next); e=n*2; next.cpu.pc=next.vectors[e-1]; *w=next; *event=e; return ES_OK;
+            load(&next); e=n*2; next.cpu.pc=next.vecbase_enabled ? next.vecbase+(e-1u)*64u : next.vectors[e-1]; *w=next; *event=e; return ES_OK;
         }
         flow=0;
         /* CALLINC is preserved; the ISA permits implementation-dependent update. */
@@ -217,7 +240,10 @@ es_status esk_xtensa_window_execute(esk_xtensa_windows *w, const esk_xtensa_memo
         unsigned reg=(word>>8)&255u; uint32_t value=next.cpu.a[t],old=special_read(&next,reg);
         uint32_t form=word&UINT32_C(0xff000f);
         if (form==0x030000) next.cpu.a[t]=old;
-        else { special_write(&next,reg,value); if (form==0x610000) next.cpu.a[t]=old; }
+        else {
+            if(reg==231 && (value&1023u)) return reject(fault,ESK_XT_UNSUPPORTED,pc,pc,word);
+            special_write(&next,reg,value);if(form==0x610000) next.cpu.a[t]=old;
+        }
         next.cpu.pc=pc+3;
     } else if (kind==XT_LOOP) {
         unsigned condition=(word>>12)&15u; uint32_t count=next.cpu.a[s];

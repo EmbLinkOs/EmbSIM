@@ -6,7 +6,7 @@ struct machine_view { struct esk_esp32_machine *m;unsigned cpu; };
 struct esk_esp32_machine {
     esk_alloc *a;esk_esp32_fabric *fabric;
     esk_xtensa_windows cpu[2];uint64_t retired[2];unsigned running[2],executing;
-    uint32_t app_clock,app_stall,app_boot;
+    uint32_t app_clock,app_stall,app_boot,app_reset,app_reset_enabled,app_reset_vector,app_reset_pending;
     esk_esp32_matrix matrix;struct machine_view view[2];
 };
 /* Never mutate an executing CPU from a bus callback. Synchronize the
@@ -16,7 +16,7 @@ struct esk_esp32_machine {
 static void sync_inputs(esk_esp32_machine *m)
 {
     unsigned cpu,input;const uint32_t internal=UINT32_C(0x200188c0);
-    for(cpu=0;cpu<2;cpu++) if(m->cpu[cpu].irq.enabled) {
+    for(cpu=0;cpu<2;cpu++) if(m->cpu[cpu].irq.enabled && !(cpu==1 && m->app_reset_enabled && m->app_reset)) {
         uint32_t levels=esk_esp32_matrix_levels(&m->matrix,cpu);
         for(input=0;input<32;input++) {
             uint32_t bit=UINT32_C(1)<<input;
@@ -24,21 +24,31 @@ static void sync_inputs(esk_esp32_machine *m)
         }
     }
 }
-/* Only documented APP clock/stall and ROM-consumed boot-address fields.
- * Reset remains unsupported: treating BOOT_ADDR as the hardware reset PC
- * would bypass ROM and fabricate a successful boot. */
+static void apply_reset(esk_esp32_machine *m)
+{
+    if(m->app_reset_pending) {
+        (void)esk_xtensa_lx6_reset(&m->cpu[1],m->app_reset_vector);m->app_reset_pending=0;
+    }
+}
+/* APP reset input is opt-in. BOOT_ADDR is consumed by firmware, never used
+ * as the hardware reset PC. Architectural changes occur outside callbacks. */
 static es_status control_read(const esk_esp32_machine *m,uint32_t address,unsigned bytes,uint32_t *value)
 {
-    if(address<0x3ff00030 || address>0x3ff0003b) return ES_EUNSUPPORTED;
+    if(address<0x3ff0002c || address>0x3ff0003b) return ES_EUNSUPPORTED;
+    if(address<0x3ff00030 && !m->app_reset_enabled) return ES_EUNSUPPORTED;
     if(!value || bytes!=4 || (address&3u)) return ES_EINVAL;
-    *value=address==0x3ff00030 ? m->app_clock : address==0x3ff00034 ? m->app_stall : m->app_boot;
+    *value=address==0x3ff0002c ? m->app_reset : address==0x3ff00030 ? m->app_clock : address==0x3ff00034 ? m->app_stall : m->app_boot;
     return ES_OK;
 }
 static es_status control_write(esk_esp32_machine *m,uint32_t address,unsigned bytes,uint32_t value)
 {
-    if(address<0x3ff00030 || address>0x3ff0003b) return ES_EUNSUPPORTED;
+    if(address<0x3ff0002c || address>0x3ff0003b) return ES_EUNSUPPORTED;
+    if(address<0x3ff00030 && !m->app_reset_enabled) return ES_EUNSUPPORTED;
     if(bytes!=4 || (address&3u)) return ES_EINVAL;
-    if(address==0x3ff00030) m->app_clock=value&1u;
+    if(address==0x3ff0002c) {
+        if((value&1u) && !m->app_reset) m->app_reset_pending=1;
+        m->app_reset=value&1u;
+    } else if(address==0x3ff00030) m->app_clock=value&1u;
     else if(address==0x3ff00034) m->app_stall=value&1u;
     else m->app_boot=value;
     return ES_OK;
@@ -54,7 +64,11 @@ static es_status bus_read(void *ctx,uint32_t address,unsigned bytes,uint32_t *va
 static es_status bus_write(void *ctx,uint32_t address,unsigned bytes,uint32_t value)
 {
     struct machine_view *v=(struct machine_view *)ctx;esk_xtensa_memory ram;es_status st;
-    st=control_write(v->m,address,bytes,value);if(st!=ES_EUNSUPPORTED) return st;
+    st=control_write(v->m,address,bytes,value);
+    if(st!=ES_EUNSUPPORTED) {
+        if(st==ES_OK && !v->m->executing) { apply_reset(v->m);sync_inputs(v->m); }
+        return st;
+    }
     st=esk_esp32_matrix_write(&v->m->matrix,address,bytes,value);
     if(st!=ES_EUNSUPPORTED) {
         if(st==ES_OK && !v->m->executing) sync_inputs(v->m);
@@ -93,17 +107,23 @@ es_status esk_esp32_machine_nmi_mask(esk_esp32_machine *m,unsigned cpu,int asser
     es_status st;if(!m || m->executing) return ES_EINVAL;
     st=esk_esp32_matrix_nmi_mask(&m->matrix,cpu,asserted);if(st==ES_OK) sync_inputs(m);return st;
 }
+es_status esk_esp32_machine_app_reset_configure(esk_esp32_machine *m,unsigned vector_input)
+{
+    if(!m || vector_input>1 || m->executing) return ES_EINVAL;
+    m->app_reset_enabled=1;m->app_reset_vector=vector_input;m->app_reset=1;m->app_reset_pending=1;
+    apply_reset(m);return ES_OK;
+}
 es_status esk_esp32_machine_clock_advance(esk_esp32_machine *m,unsigned cpu,uint64_t ticks)
 {
     if(!m || cpu>1 || m->executing) return ES_EINVAL;
     if(!m->cpu[cpu].irq.enabled) return ES_EUNSUPPORTED;
-    if(cpu==1 && !m->app_clock) return ES_OK;
+    if(cpu==1 && (!m->app_clock || (m->app_reset_enabled && m->app_reset))) return ES_OK;
     return esk_xtensa_clock_advance(&m->cpu[cpu],ticks);
 }
 int esk_esp32_machine_clock_deadline(const esk_esp32_machine *m,unsigned cpu,uint64_t *ticks)
 {
     if(ticks) *ticks=0;
-    if(!m || cpu>1 || !ticks || (cpu==1 && !m->app_clock)) return 0;
+    if(!m || cpu>1 || !ticks || (cpu==1 && (!m->app_clock || (m->app_reset_enabled && m->app_reset)))) return 0;
     return esk_xtensa_clock_deadline(&m->cpu[cpu],ticks);
 }
 es_status esk_esp32_machine_create(esk_alloc *a,esk_esp32_machine **out)
@@ -127,6 +147,7 @@ esk_esp32_fabric *esk_esp32_machine_fabric(esk_esp32_machine *m) { return m ? m-
 es_status esk_esp32_machine_configure(esk_esp32_machine *m,unsigned cpu,uint32_t entry)
 {
     if(!m || cpu>1) return ES_EINVAL;
+    if(cpu==1 && m->app_reset_enabled) return ES_EUNSUPPORTED;
     esk_xtensa_windows_init(&m->cpu[cpu],entry,NULL);m->running[cpu]=0;m->retired[cpu]=0;return ES_OK;
 }
 esk_xtensa_windows *esk_esp32_machine_core(esk_esp32_machine *m,unsigned cpu) { return m && cpu<2 ? &m->cpu[cpu] : NULL; }
@@ -142,10 +163,11 @@ es_status esk_esp32_machine_step(esk_esp32_machine *m,unsigned cpu,unsigned *eve
     if(fault) memset(fault,0,sizeof *fault);
     if(!m || cpu>1 || !event) return ES_EINVAL;
     if(!m->running[cpu]) { *event=19;return ES_OK; }
+    if(cpu==1 && m->app_reset_enabled && m->app_reset) { *event=22;return ES_OK; }
     if(cpu==1 && (!m->app_clock || m->app_stall)) { *event=!m->app_clock ? 20u : 21u;return ES_OK; }
     sync_inputs(m);bus=esk_esp32_machine_bus(m,cpu);m->executing=1;
     st=esk_xtensa_window_step(&m->cpu[cpu],&bus,event,fault);
-    m->executing=0;sync_inputs(m);
+    m->executing=0;apply_reset(m);sync_inputs(m);
     if(st!=ES_OK) m->running[cpu]=0;
     else if(!*event) m->retired[cpu]++;
     return st;

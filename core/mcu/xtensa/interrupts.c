@@ -17,6 +17,7 @@ es_status esk_xtensa_irq_configure(struct esk_xtensa_windows *w,const uint32_t h
     if (!w || !high_vectors || !w->exceptions_enabled) return ES_EINVAL;
     memset(&w->irq,0,sizeof w->irq);w->irq.enabled=1;
     for(i=0;i<6;i++) w->irq.vectors[i+2]=high_vectors[i];
+    if(w->vecbase_enabled) (void)esk_xtensa_vecbase_configure(w,w->vecbase);
     return ES_OK;
 }
 es_status esk_xtensa_irq_line(struct esk_xtensa_windows *w,unsigned input,int asserted)
@@ -56,7 +57,7 @@ es_status esk_xtensa_irq_poll(struct esk_xtensa_windows *w,unsigned *event)
         if (st!=ES_OK) return st;
     } else {
         w->irq.epc[level]=w->cpu.pc;w->irq.eps[level]=w->ps;
-        w->ps=(w->ps&~15u)|level|ESK_XT_PS_EXCM;w->cpu.pc=w->irq.vectors[level];
+        w->ps=(w->ps&~15u)|level|ESK_XT_PS_EXCM;w->cpu.pc=w->vecbase_enabled ? w->vecbase+0x180u+(level-2u)*64u : w->irq.vectors[level];
     }
     if (level==7) w->irq.latched&=~NMI;
     w->irq.waiting=0;w->irq.last_level=level;w->irq.last_pending=mask;

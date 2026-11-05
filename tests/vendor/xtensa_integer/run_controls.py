@@ -22,12 +22,12 @@ def main():
     ap = argparse.ArgumentParser(description=__doc__)
     ap.add_argument('--dport-reg', type=Path, required=True)
     ap.add_argument('--soc-header', type=Path, required=True)
-    ap.add_argument('--cc', default='cc'); args = ap.parse_args()
+    ap.add_argument('--cc', default='cc'); ap.add_argument('--include-reset', action='store_true'); args = ap.parse_args()
     dport = read_header(args.dport_reg, '38deaa4ef02016ee9cdf490a9bfe4b587f11d1d1e6a2329dc858a50b9b248817')
     soc = read_header(args.soc_header, '7a7148c288d7c289c961810e5617fa7b14d105b28349a45f772150b1e0845dd3')
     base = int(re.search(r'#define\s+DR_REG_DPORT_BASE\s+(0x[0-9a-f]+)', soc)[1], 16)
     fields = []
-    for letter in 'BCD':
+    for letter in ('ABCD' if args.include_reset else 'BCD'):
         match = re.search(r'#define\s+DPORT_APPCPU_CTRL_' + letter + r"_REG\s+\(DR_REG_DPORT_BASE\s*\+\s*(0x[0-9A-F]+)\)\n"
                           r"/\* \w+ : R/W ;bitpos:\[(\d+)(?::(\d+))?\] ;default: \d+'([bh])([0-9a-fA-F]+)", dport)
         assert match, letter
@@ -46,11 +46,13 @@ def main():
         api.esk_alloc_init.argtypes = [C.POINTER(Allocator), C.c_void_p]; api.esk_alloc_init.restype = None
         api.esk_esp32_machine_create.argtypes = [C.POINTER(Allocator), C.POINTER(C.c_void_p)]
         api.esk_esp32_machine_destroy.argtypes = [C.c_void_p]; api.esk_esp32_machine_destroy.restype = None
+        api.esk_esp32_machine_app_reset_configure.argtypes = [C.c_void_p, C.c_uint]
         api.esk_esp32_machine_bus.argtypes = [C.c_void_p, C.c_uint]; api.esk_esp32_machine_bus.restype = Memory
         for cpu in range(2):
             allocator = Allocator(); api.esk_alloc_init(C.byref(allocator), None)
             machine = C.c_void_p(); assert api.esk_esp32_machine_create(C.byref(allocator), C.byref(machine)) == 0
             try:
+                if args.include_reset: assert api.esk_esp32_machine_app_reset_configure(machine, 1) == 0
                 bus = api.esk_esp32_machine_bus(machine, cpu); value = C.c_uint32()
                 for address, mask, default in fields:
                     assert bus.read(bus.ctx, address, 4, C.byref(value)) == 0 and value.value == default

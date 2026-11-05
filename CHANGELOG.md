@@ -5,6 +5,21 @@ versions follow semantic versioning. There is no release yet.
 
 ## Unreleased
 
+### Experimental ESP32 CPU reset and vector relocation
+
+- Added the supported CPU reset subset with explicit static vector selection,
+  defined PS/LCOUNT/VECBASE fields and declared undefined-state fixture choices.
+  Aligned RSR/WSR/XSR.VECBASE now relocates window, general and CPU interrupt
+  entries using original-ESP32 offsets. Low-bit/lock behavior remains unqualified.
+- Added opt-in APP reset hold/release at DPORT 0x3ff0002c, commit-safe self-reset,
+  suspended clocks/deadlines and live-source preservation. Release uses the static
+  entry; BOOT_ADDR remains firmware-consumed storage. No actual vendor ROM,
+  complete reset domains, flash/cache or SDK/board boot claim is added.
+- Added 2,281 CPU/104 machine assertions, 3,072 assembled register cases,
+  960 vendor-offset dispatches, 128 reset-vector and 512 control-field comparisons.
+  A compiled supervisor/worker plus original test-ROM fixture passes 128 reset
+  cycles, 16 exact replays and 11,904 retired instructions.
+
 ### Experimental Xtensa status-register correctness
 
 - Fixed PS writes/reads to mask reserved fields and added legal XSR.PS exchange.
@@ -21,7 +36,7 @@ versions follow semantic versioning. There is no release yet.
   state, including after a firmware store suspends its own execution.
 - Added gate-aware supplied-clock/deadline APIs. No automatic clock ticks,
   physical synchronization/pulse timing or power behavior is claimed. Reset
-  control remains unsupported; writing the boot address does not set PC or
+  control requires the separate opt-in reset profile; writing the boot address does not set PC or
   replace the missing ROM boot sequence.
 - Added 163 native assertions, 384 pinned-header field comparisons and compiled
   control/mailbox acceptance: 256 runs, 4,224 interrupts, 128 exact replays and

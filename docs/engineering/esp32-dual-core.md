@@ -1,6 +1,6 @@
 # Original ESP32 dual-core target: identity and implementation gates
 
-**Status: firmware inspection, experimental Xtensa execution, shared internal RAM, interrupt routing and APP execution controls implemented; no runnable board target is added.** Requested by
+**Status: firmware inspection, experimental Xtensa execution, shared internal RAM, interrupt routing, APP controls and bounded reset/vector profiles implemented; no runnable board target is added.** Requested by
  the owner on 2026-11-04. This is the original ESP32 family, not ESP32-C3,
 ESP32-S2 or ESP32-S3. The generic marketplace title “ESP-32 / ESP-32S
 WiFi+Bluetooth Dual Cores” does not identify a reproducible board revision.
@@ -544,7 +544,7 @@ cannot intervene. This is not host-thread-safe memory, cache/coherence,
 arbitration, an instruction-to-cycle model, DPORT reset/release, physical clock timing, retention,
 DMA or a complete SMP machine. Reconfiguring one profile preserves shared RAM
 and remap settings and is explicitly not a silicon reset sequence. No CPU
-constructor, board picker entry, boot ROM execution or ESP-IDF boot is added.
+constructor, board picker entry, Espressif ROM execution or ESP-IDF boot is added.
 
 Native fixtures pass 360,531 memory assertions and 86 machine assertions: every
 SRAM1 word and byte lane, remap isolation, RTC
@@ -691,10 +691,10 @@ that does not honor machine gates. No ticks are inferred from instructions.
 Pending requests remain pending while suspended and can enter on resume.
 
 The boot-address register stores all 32 bits and never directly changes PC.
-The TRM explicitly says ROM code jumps to this address after APP boots. That ROM
-path is not implemented. In particular, APPCPU_CTRL_A reset/release at
-`3FF0002C` remains unsupported; clock enable alone is not a real cold-boot
-sequence. No synthetic reset state, ROM jump, reset cause/retention domain,
+The TRM explicitly says ROM code jumps to this address after APP boots. Actual
+Espressif ROM execution is not implemented. APPCPU_CTRL_A reset/release at
+`3FF0002C` now requires the separate opt-in supported reset profile below;
+clock enable alone is not a real cold-boot sequence. No synthetic reset state, ROM jump, reset cause/retention domain,
 oscillator/PLL/APB conversion, power consumption or complete board boot is added.
 
 Proof:
@@ -726,6 +726,23 @@ python tests/vendor/xtensa_integer/run_ipi_c.py \
   --nm /path/to/xtensa-esp32-elf-nm \
   --exercise-controls
 ```
+
+## Implemented: supported reset and relocatable-vector profiles
+
+The [reset/vector contract and reproduction](esp32-reset-vectors.md) describe
+explicit static reset-input selection, defined PS/LCOUNT/VECBASE state,
+undefined-register fixture policy, aligned SR231 read/write/exchange and dynamic
+exception/interrupt/window entry. APP reset hold/release is an opt-in DPORT
+profile with commit-safe self-reset, clock/deadline suppression, peripheral
+source preservation and no boot-address PC shortcut. Legacy debug fixtures
+retain their existing contract until reset is enabled.
+
+Evidence includes 2,281 CPU and 104 machine assertions, 3,072 independent
+assembled VECBASE accesses, 960 vendor-offset dispatches, 128 reset-address
+comparisons and 512 vendor-control-field comparisons. A compiled supervisor and
+worker pass 128 reset cycles through an original temporary test-ROM program
+(11,904 retired instructions, 16 exact replays). This is not Espressif ROM,
+complete silicon reset, MMU/cache or real SDK/board boot qualification.
 
 ## Implemented: standalone firmware integrity inspection
 

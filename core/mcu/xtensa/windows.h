@@ -10,7 +10,8 @@
 /* Experimental LX6 64-AR register-window execution, NOT SoC support.
  * cpu.a is the editable visible cache; physical ARs synchronize on successful
  * instructions/exception transitions. Init configures an ABI test state, not
- * silicon power-on defaults. Vectors are caller-supplied, not inferred.
+ * silicon power-on defaults. Legacy vectors are caller-supplied; explicit
+ * reset/relocation profiles use pinned original-ESP32 vector configuration.
  * Selected special registers, SAR and opt-in XEA2-with-DEPC exception entry
  * are implemented. CPU interrupt/timer delivery is opt-in; the SoC interrupt
  * matrix, automatic bus/MMU fault dispatch, complete ISA, MMU/caches and
@@ -23,6 +24,7 @@ typedef struct esk_xtensa_windows {
     uint32_t exception_vectors[3]; /* kernel, user, double; configured explicitly */
     esk_xtensa_interrupts irq;
     uint32_t vectors[6]; /* overflow4, underflow4, overflow8, underflow8, overflow12, underflow12 */
+    uint32_t vecbase,vecbase_enabled;
 } esk_xtensa_windows;
 /* event 0: retired; 1..6: window transition; 7/8/9: kernel/user/double exception;
  * 11..17: accepted interrupt level 1..7; 18: suspended WAITI (step only).
@@ -30,6 +32,20 @@ typedef struct esk_xtensa_windows {
  * syscall/illegal handlers explicitly decide whether to advance EPC1/DEPC.
  * Architectural exception entries intentionally update saved state and PC.
  * Other failures retain state and return the ordinary fault report. */
+/* Explicit ESP32 relocatable-vector profile. Only 1024-aligned bases are
+ * qualified; unaligned/lock-bit writes fail unchanged rather than guessing
+ * silicon masking. Aligned RSR/WSR/XSR.VECBASE use SR231 when enabled.
+ * This sets locations, not exception/IRQ enables. Legacy fixture vectors stay
+ * in effect until explicitly enabled; while active, VECBASE owns locations. */
+es_status esk_xtensa_vecbase_configure(esk_xtensa_windows *state,uint32_t base);
+/* Reset the supported original-ESP32 CPU subset, on an initialized profile.
+ * Explicit reset-vector input: 0=0x50000000, 1=0x40000400. PS=0x1f,
+ * LCOUNT=0, VECBASE=0x40000000; exception/IRQ profiles enabled and WAITI
+ * canceled. Undefined architectural registers retain fixture values; pending
+ * IRQ state is chosen zero and external levels must be re-driven. These are
+ * deterministic choices, NOT silicon retention guarantees. Missing ISA/debug/
+ * MMU/cache reset state, pin selection and power/reset timing stay unqualified. */
+es_status esk_xtensa_lx6_reset(esk_xtensa_windows *state,unsigned vector_input);
 /* Explicit exception profile; no SoC vector addresses inferred. Unknown or
  * unimplemented instructions remain unsupported, never silently illegal. */
 void esk_xtensa_exception_configure(esk_xtensa_windows *state, const uint32_t vectors[3]);
