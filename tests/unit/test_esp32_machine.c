@@ -9,7 +9,8 @@ static void shared_execution(void)
     /* S32C1I A2,A3,0 followed by NOP.N. Independently assembled ESP32 opcode. */
     unsigned char code[]={0x22,0xe3,0x00,0x3d,0xf0};
     esk_alloc_init(&a,NULL);CHECK_EQ(esk_esp32_machine_create(&a,&m),ES_OK);
-    f=esk_esp32_machine_fabric(m);bus=esk_esp32_fabric_bus(f,0);
+    f=esk_esp32_machine_fabric(m);bus=esk_esp32_machine_bus(m,0);
+    CHECK_EQ(bus.write(bus.ctx,0x3ff00030,4,1),ES_OK);
     CHECK_EQ(esk_esp32_fabric_load(f,0,0x40080000,code,sizeof code),ES_OK);
     CHECK_EQ(esk_esp32_machine_configure(m,0,0x40080000),ES_OK);
     CHECK_EQ(esk_esp32_machine_configure(m,1,0x40080000),ES_OK);
@@ -62,6 +63,7 @@ static void independent_wait_and_clock(void)
         CHECK_EQ(esk_esp32_machine_run_core(m,i,1),ES_OK);
     }
     one=esk_esp32_machine_core(m,0);two=esk_esp32_machine_core(m,1);
+    { esk_xtensa_memory bus=esk_esp32_machine_bus(m,0);CHECK_EQ(bus.write(bus.ctx,0x3ff00030,4,1),ES_OK); }
     CHECK_EQ(esk_esp32_machine_round(m,events,&failed,&fault),ES_OK);
     CHECK_EQ(one->irq.waiting,1);CHECK_EQ(two->irq.waiting,0);
     CHECK_EQ(esk_esp32_machine_round(m,events,&failed,&fault),ES_OK);

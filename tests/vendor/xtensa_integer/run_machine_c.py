@@ -72,7 +72,7 @@ def main():
         create = bind('esk_esp32_machine_create', C.c_int, C.POINTER(Allocator), C.POINTER(pointer))
         destroy = bind('esk_esp32_machine_destroy', None, pointer)
         fabric = bind('esk_esp32_machine_fabric', pointer, pointer)
-        bus_get = bind('esk_esp32_fabric_bus', Memory, pointer, C.c_uint)
+        bus_get = bind('esk_esp32_machine_bus', Memory, pointer, C.c_uint)
         load = bind('esk_esp32_fabric_load', C.c_int, pointer, C.c_uint, C.c_uint32, pointer, C.c_size_t)
         configure = bind('esk_esp32_machine_configure', C.c_int, pointer, C.c_uint, C.c_uint32)
         core = bind('esk_esp32_machine_core', C.POINTER(Windows), pointer, C.c_uint)
@@ -89,8 +89,9 @@ def main():
                 allocator = Allocator(); alloc_init(C.byref(allocator), None)
                 machine = pointer(); assert create(C.byref(allocator), C.byref(machine)) == 0
                 try:
-                    ram = fabric(machine); bus = bus_get(ram, 0)
+                    ram = fabric(machine); bus = bus_get(machine, 0)
                     assert load(ram, 0, 0x40080000, C.c_char_p(code), len(code)) == 0
+                    assert bus.write(bus.ctx, 0x3ff00030, 4, 1) == 0
                     assert bus.write(bus.ctx, 0x3ffb0000, 4, initial) == 0
                     stop = 0x7ffffff0; states = []
                     for cpu in range(2):

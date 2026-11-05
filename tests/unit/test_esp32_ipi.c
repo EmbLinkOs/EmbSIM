@@ -8,6 +8,7 @@ static void profile(esk_esp32_machine *m,unsigned cpu,uint32_t entry)
 {
     esk_xtensa_windows *w;
     CHECK_EQ(esk_esp32_machine_configure(m,cpu,entry),ES_OK);
+    if(cpu==1) { esk_xtensa_memory bus=esk_esp32_machine_bus(m,0);CHECK_EQ(bus.write(bus.ctx,0x3ff00030,4,1),ES_OK); }
     w=esk_esp32_machine_core(m,cpu);esk_xtensa_exception_configure(w,general);
     CHECK_EQ(esk_xtensa_irq_configure(w,high),ES_OK);
 }

@@ -18,12 +18,26 @@ from run_windows_c import Windows
 from run_machine_c import Allocator
 
 SENDER = '''
-unsigned sender(volatile unsigned *mailbox,unsigned count,unsigned seed) {
+unsigned sender(volatile unsigned *mailbox,unsigned count,unsigned seed,unsigned controls) {
     volatile unsigned *ipi=(volatile unsigned *)0x3ff000dc;
     unsigned i;
     for(i=1;i<=count;i++) {
+        #if CONTROL_PROBE
+        if(controls) {
+            *(volatile unsigned *)0x3ff00034=1;
+            *(volatile unsigned *)0x3ff00030=0;
+            *(volatile unsigned *)0x3ff00038=seed^i;
+            if(*(volatile unsigned *)0x3ff00038!=(seed^i)) return ~(seed^i);
+        }
+#endif
         mailbox[0]=seed^i;
         *ipi=1;
+#if CONTROL_PROBE
+        if(controls) {
+            *(volatile unsigned *)0x3ff00030=1;
+            *(volatile unsigned *)0x3ff00034=0;
+        }
+#endif
         while(__atomic_load_n(mailbox+1,__ATOMIC_ACQUIRE)!=(seed^i)) { }
     }
     return mailbox[1];
@@ -46,14 +60,14 @@ def main():
     ap = argparse.ArgumentParser(description=__doc__)
     for name in ['compiler', 'objcopy', 'linker', 'nm']:
         ap.add_argument('--' + name, required=True)
-    ap.add_argument('--cc', default='cc'); args = ap.parse_args()
+    ap.add_argument('--cc', default='cc'); ap.add_argument('--exercise-controls', action='store_true'); args = ap.parse_args()
     with tempfile.TemporaryDirectory(prefix='embsim-ipi-c-') as tmp:
         out = Path(tmp); objects = []
         for name, source in [('sender', SENDER), ('handler', HANDLER)]:
             src, obj = out / (name + '.c'), out / (name + '.o'); objects.append(obj)
             src.write_text(source, encoding='utf-8')
             subprocess.run([args.compiler, '-B' + str(Path(args.compiler).parent) + '/', '-O1',
-                            '-mtext-section-literals', '-ffreestanding', '-fno-builtin', '-c', str(src), '-o', str(obj)], check=True)
+                            '-DCONTROL_PROBE=' + str(int(args.exercise_controls)), '-mtext-section-literals', '-ffreestanding', '-fno-builtin', '-c', str(src), '-o', str(obj)], check=True)
         # Fixture IRQ prologue/epilogue saves the interrupted integer context
         # on an EXCSAVE2 stack, using EXCSAVE3 to save the idle SP. Not an RTOS handler.
         entry = ['.text', '.align 4',
@@ -97,7 +111,7 @@ def main():
         step = bind('esk_esp32_machine_step', C.c_int, pointer, C.c_uint, C.POINTER(C.c_uint), C.POINTER(Fault))
         exceptions = bind('esk_xtensa_exception_configure', None, wp, C.POINTER(C.c_uint32))
         irq = bind('esk_xtensa_irq_configure', C.c_int, wp, C.POINTER(C.c_uint32))
-        total = 0; deliveries = 0; runs = 0; code = binary.read_bytes()
+        total = 0; deliveries = 0; runs = 0; suspensions = {20: 0, 21: 0}; code = binary.read_bytes()
         for trial in range(128):
             sender_cpu = trial // 64; receiver_cpu = 1 - sender_cpu
             count = 1 + trial % 32; seed = 0x10203040 + trial * 256; replay_trace = None
@@ -107,12 +121,13 @@ def main():
                 try:
                     ram = fabric(machine); bus = bus_get(machine, 0)
                     assert load(ram, 0, 0x40080000, C.c_char_p(code), len(code)) == 0
+                    assert bus.write(bus.ctx, 0x3ff00030, 4, 1) == 0
                     assert configure(machine, sender_cpu, symbols['sender']) == 0
                     assert configure(machine, receiver_cpu, symbols['idle']) == 0
                     tx, rx = [core(machine, cpu).contents for cpu in [sender_cpu, receiver_cpu]]
                     tx.ps |= 1 << 16; tx.cpu.a[4] = 0x7ffffff0
                     tx.cpu.a[0] = 0x12345678; tx.cpu.a[1] = 0x3ffd0000
-                    tx.cpu.a[6] = 0x3ffb0000; tx.cpu.a[7] = count; tx.cpu.a[8] = seed
+                    tx.cpu.a[6] = 0x3ffb0000; tx.cpu.a[7] = count; tx.cpu.a[8] = seed; tx.cpu.a[9] = int(sender_cpu == 0)
                     # Distinct idle registers must survive every actual ISR.
                     rx.cpu.a[1] = 0x3ffd8000
                     for r in [0] + list(range(2, 16)): rx.cpu.a[r] = 0xa5000000 + r
@@ -133,9 +148,13 @@ def main():
                                 assert run(machine, sender_cpu, 0) == 0; sender_done = True
                         if cpu == sender_cpu and sender_done:
                             continue
+                        before = (rx.cpu.pc, list(rx.cpu.a))
                         status = step(machine, cpu, C.byref(event), C.byref(fault))
                         assert status == 0, (status, cpu, hex(fault.pc), hex(fault.opcode), fault.kind)
-                        assert event.value in [0, 12, 18], event.value
+                        assert event.value in ([0, 12, 18, 20, 21] if args.exercise_controls else [0, 12, 18]), event.value
+                        if event.value in suspensions:
+                            assert cpu == 1 and (rx.cpu.pc, list(rx.cpu.a)) == before
+                            suspensions[event.value] += 1
                         trace.append((cpu, event.value, tx.cpu.pc, rx.cpu.pc)); total += event.value == 0
                         if event.value == 12:
                             assert cpu == receiver_cpu and rx.irq.last_pending == 1 << 19
@@ -146,7 +165,8 @@ def main():
                     value = C.c_uint32()
                     for addr, expected in [(0x3ffb0000, seed ^ count), (0x3ffb0004, seed ^ count),
                                            (0x3ffb0008, count), (0x3ff000dc, 0),
-                                           (0x3ff000ec + receiver_cpu * 12, 0), (0x3ffd8f00, 0xc0decafe), (0x3ffd9000, 0xc0decafe)]:
+                                           (0x3ff000ec + receiver_cpu * 12, 0), (0x3ff00030, 1), (0x3ff00034, 0),
+                                           (0x3ff00038, (seed ^ count) if args.exercise_controls and sender_cpu == 0 else 0), (0x3ffd8f00, 0xc0decafe), (0x3ffd9000, 0xc0decafe)]:
                         assert bus.read(bus.ctx, addr, 4, C.byref(value)) == 0 and value.value == expected, hex(addr)
                     assert tx.cpu.a[6] == seed ^ count and tx.cpu.a[0] == 0x12345678 and tx.cpu.a[1] == 0x3ffd0000
                     assert tx.base == 0 and tx.start == 1 and rx.base == 0 and rx.start == 1
@@ -158,7 +178,8 @@ def main():
                 finally:
                     destroy(machine)
                 assert allocator.live_bytes == 0
-        print(f'{runs} compiled mailbox executions, {deliveries} routed interrupts, 128 exact replays (both directions), {total} retired instructions')
+        if args.exercise_controls: assert all(suspensions.values())
+        print(f'{runs} compiled mailbox executions, {deliveries} routed interrupts, 128 exact replays (both directions), {total} retired instructions; suspended turns {suspensions}')
 
 
 if __name__ == '__main__':

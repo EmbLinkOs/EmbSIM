@@ -1,6 +1,6 @@
 # Original ESP32 dual-core target: identity and implementation gates
 
-**Status: firmware inspection, experimental Xtensa execution, shared internal RAM and interrupt routing implemented; no runnable board target is added.** Requested by
+**Status: firmware inspection, experimental Xtensa execution, shared internal RAM, interrupt routing and APP execution controls implemented; no runnable board target is added.** Requested by
  the owner on 2026-11-04. This is the original ESP32 family, not ESP32-C3,
 ESP32-S2 or ESP32-S3. The generic marketplace title “ESP-32 / ESP-32S
 WiFi+Bluetooth Dual Cores” does not identify a reproducible board revision.
@@ -513,12 +513,12 @@ advancement remains explicit and private to each profile.
 All calls have one serialized owner. Native SRAM1/2 CAS performs its read and
 conditional write within one callback, so instruction-interleaved contexts
 cannot intervene. This is not host-thread-safe memory, cache/coherence,
-arbitration, an instruction-to-cycle model, DPORT reset/release/stall, retention,
+arbitration, an instruction-to-cycle model, DPORT reset/release, physical clock timing, retention,
 DMA or a complete SMP machine. Reconfiguring one profile preserves shared RAM
 and remap settings and is explicitly not a silicon reset sequence. No CPU
 constructor, board picker entry, boot ROM execution or ESP-IDF boot is added.
 
-Native fixtures pass 360,531 memory assertions and 84 machine assertions: every
+Native fixtures pass 360,531 memory assertions and 86 machine assertions: every
 SRAM1 word and byte lane, remap isolation, RTC
 restrictions, rejected access widths/holes, all-or-nothing loading, allocation
 failure, shared conditional stores, independent state, fault ordering and
@@ -588,7 +588,7 @@ Proof:
 - `test_esp32_matrix`: 64,374 assertions across every defined source/destination,
   reset fields, core isolation, GPIO-specific status, shared OR, remapping,
   NMI masks, software-source fields, RO status and invalid accesses.
-- `test_esp32_ipi`: 101 assertions for a fetched sender, peer WAITI wake,
+- `test_esp32_ipi`: 103 assertions for a fetched sender, peer WAITI wake,
   handler acknowledgement/RFI, paused-peer edge capture, same-core MMIO changes
   surviving instruction commit, shared edge-input OR and internal-input isolation.
 - `run_matrix.py`: 4,288 independent vendor-addressed routes and 512 combined
@@ -624,6 +624,79 @@ python tests/vendor/xtensa_integer/run_ipi_c.py \
   --objcopy /path/to/xtensa-esp32-elf-objcopy \
   --linker /path/to/xtensa-esp32-elf-ld \
   --nm /path/to/xtensa-esp32-elf-nm
+```
+
+## Implemented: APP clock/stall controls and ROM-consumed boot address
+
+The unified machine bus now implements these TRM v5.9 chapter 12 fields,
+checked against the same pinned ESP-IDF `dport_reg.h` above:
+
+| Register | Address | Defined field | Initial field value |
+| --- | --- | --- | --- |
+| APPCPU_CTRL_B | `3FF00030` | Bit 0: APP clock enable | 0 |
+| APPCPU_CTRL_C | `3FF00034` | Bit 0: APP run-stall | 0 |
+| APPCPU_CTRL_D | `3FF00038` | 32-bit ROM-consumed boot address | 0 |
+
+APP therefore requires an explicit clock-enable write before fixture execution.
+`machine_configure` injects a debug architecture profile and entry, not a hardware
+boot/reset operation: it preserves these controls, memory, remap and matrix.
+Reserved control bits read zero and are ignored on writes. Only aligned 32-bit
+data accesses are qualified; malformed accesses do not change control state.
+
+A debug-paused core reports event 19. Otherwise APP reports event 20 if its clock
+is disabled, or event 21 if stalled with its clock enabled. These turns do not
+fetch, deliver interrupts or retire instructions; PC/registers and shared RAM
+survive. A firmware store that disables its own execution commits before the
+next suspended turn. PRO can resume APP through the same registers. Clock gate
+has priority over stall; debug pause has priority over both. These are functional
+instruction-boundary decisions, not a model of clock-domain synchronizer or
+pipeline drain latency. Input routing remains functional at explicit boundaries;
+short-pulse capture while the CPU clock is gated is not silicon-qualified.
+
+`machine_clock_advance` accepts supplied clock ticks and discards APP ticks while
+its clock is disabled, without catch-up on re-enable. The machine deadline API
+reports no APP compare deadline while gated. With its clock enabled, supplied
+ticks continue advancing the functional counter during stall, WAITI or a host
+debug pause. This does not establish physical debug-clock policy or elapsed
+wall time. The lower-level `clock_advance(core)` remains an explicit debug bypass
+that does not honor machine gates. No ticks are inferred from instructions.
+Pending requests remain pending while suspended and can enter on resume.
+
+The boot-address register stores all 32 bits and never directly changes PC.
+The TRM explicitly says ROM code jumps to this address after APP boots. That ROM
+path is not implemented. In particular, APPCPU_CTRL_A reset/release at
+`3FF0002C` remains unsupported; clock enable alone is not a real cold-boot
+sequence. No synthetic reset state, ROM jump, reset cause/retention domain,
+oscillator/PLL/APB conversion, power consumption or complete board boot is added.
+
+Proof:
+
+- `test_esp32_controls`: 163 assertions for initial/read/write fields, invalid
+  accesses, self gate/stall and resume, suspended-round isolation, state/memory
+  preservation, gate-aware clock/deadline behavior and pending interrupt delivery.
+- `run_controls.py`: 384 field comparisons through both CPU bus views, using
+  parsed pinned-vendor register addresses, field widths and defaults.
+- `run_ipi_c.py --exercise-controls`: PRO C firmware stalls and gates APP around
+  each message, writes/reads the boot-address field and raises a held source
+  before releasing APP. The baseline bidirectional workload still passes, while
+  the control probe additionally checks unchanged PC/registers on suspended
+  turns and final control fields. It passes 256 mailbox runs, 4,224 interrupts,
+  128 exact replays and 551,232 retired instructions. Its 27,456 gated and
+  10,560 stalled turns are attempted instruction boundaries, not physical cycles.
+- Baseline mailbox acceptance remains 512,128 retired instructions and the native
+  shared-RAM/spinlock acceptance remains 229,322 instructions. Their fixture
+  setup now explicitly enables APP's clock instead of bypassing its default.
+
+```sh
+python tests/vendor/xtensa_integer/run_controls.py \
+  --dport-reg /path/to/esp-idf/components/soc/esp32/include/soc/dport_reg.h \
+  --soc-header /path/to/esp-idf/components/soc/esp32/include/soc/soc.h
+python tests/vendor/xtensa_integer/run_ipi_c.py \
+  --compiler /path/to/xtensa-esp32-elf-gcc \
+  --objcopy /path/to/xtensa-esp32-elf-objcopy \
+  --linker /path/to/xtensa-esp32-elf-ld \
+  --nm /path/to/xtensa-esp32-elf-nm \
+  --exercise-controls
 ```
 
 ## Implemented: standalone firmware integrity inspection

@@ -102,3 +102,13 @@ and APP-to-PRO directions pass. No Python memory/interrupt callbacks:
 128 exact replays, 512,128 retired instructions. Checks messages, source clear,
 stack guards, general registers and ABI/window return. Not full ISR/RTOS, PID,
 peripheral generators, APB timing or SoC boot qualification.
+
+`xtensa_integer/run_controls.py` parses the same pinned `--dport-reg` and
+`--soc-header` for APP clock/stall/boot-address register addresses, widths and
+defaults: 384 field comparisons across both CPU bus views. Reset/ROM boot are
+not qualified. Add `--exercise-controls` to `run_ipi_c.py` to have compiled PRO
+firmware suspend/resume APP during message/interrupt traffic: 256 runs,
+4,224 interrupts, 128 exact replays and 551,232 retired instructions. It checks
+unchanged PC/registers on suspended turns and final control fields. Its counted
+suspended turns are instruction attempts, not physical clock cycles. All machine
+fixture runners now explicitly enable the documented APP clock field.

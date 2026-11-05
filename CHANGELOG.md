@@ -5,6 +5,20 @@ versions follow semantic versioning. There is no release yet.
 
 ## Unreleased
 
+### Experimental ESP32 APP execution controls
+
+- Added DPORT APP clock-enable/run-stall and ROM-consumed boot-address fields.
+  APP starts clock-disabled; debug fixtures explicitly enable it. Gate/stall
+  suspends fetch, interrupt entry and retirement while preserving CPU/memory
+  state, including after a firmware store suspends its own execution.
+- Added gate-aware supplied-clock/deadline APIs. No automatic clock ticks,
+  physical synchronization/pulse timing or power behavior is claimed. Reset
+  control remains unsupported; writing the boot address does not set PC or
+  replace the missing ROM boot sequence.
+- Added 163 native assertions, 384 pinned-header field comparisons and compiled
+  control/mailbox acceptance: 256 runs, 4,224 interrupts, 128 exact replays and
+  551,232 retired instructions with PRO suspending/resuming APP during traffic.
+
 ### Experimental ESP32 interrupt matrix and cross-core signaling
 
 - Added per-core DPORT source maps/status, shared software-generated interrupts,
@@ -15,7 +29,7 @@ versions follow semantic versioning. There is no release yet.
   instruction commit. A peer can wake from WAITI, acknowledge a source and RFI;
   paused-peer edges and same-core MMIO IRQ updates survive correctly. No physical
   APB timing, DPORT reset/stall, cache/flash, full SMP or boot claim is added.
-- Added 64,374 matrix/101 integration assertions and pinned-header referees for
+- Added 64,374 matrix/103 integration assertions and pinned-header referees for
   4,288 routes/512 combined-source cases. Actual ESP32 C sender/C handler with
   an assembled entry/return wrapper passes 256 mailbox runs, 4,224 interrupts and 128 exact replays (512,128 retired
   instructions), preserving integer registers and stack guards.
