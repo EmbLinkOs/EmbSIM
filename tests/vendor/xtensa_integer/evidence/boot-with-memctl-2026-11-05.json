@@ -83,10 +83,10 @@
   "next_blocker": "RTC_CNTL_RESET_STATE_REG read at 0x3ff48034, PC 0x400081df; native SDK boot remains unverified",
   "fixture_note": "Explicit synthetic fuse image, PRID, region/functional MEMCTL profiles and artificial completion schedule; no physical timing or owner fuse image claim",
   "sources_sha256": {
-    "core/mcu/xtensa/windows.c": "e5a7bd37c367101255c4a24ab4b59728ca452ccf72b4d4ce696bc097fea5e238",
+    "core/mcu/xtensa/windows.c": "0d642d048a310250f5954f9a4ae41b6a1e2cb0888ed1afdcf20a9165dc39a0e9",
     "core/mcu/xtensa/windows.h": "159fdbcd13da216e15fe64bab2cd70c24950b6e173d06d5643a323782aecd067",
     "core/mcu/xtensa/execute.c": "c69879eb07ab393416c396a6789c5f638d77810016a2932c58e51b71e2ba7fa7",
-    "core/mcu/xtensa/interrupts.c": "429607ba6873226a3be8d19ec420595ff2238964e4896365fc8165e669f0b031",
+    "core/mcu/xtensa/interrupts.c": "e5b4fbefa1b249847d5ec298893fd431f5f11673d150b0b7c92e162bc3d0055f",
     "tests/vendor/xtensa_integer/probe_rom_boot.py": "e5a0a431d3fc90995ee9c260d35b6930b2bd77174df502eb8d2937cb4e049b1d"
   }
 }

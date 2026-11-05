@@ -12,7 +12,7 @@ versions follow semantic versioning. There is no release yet.
   exception invalidation, protected hits and failed-fetch/decode rollback.
   Exact silicon fill/replacement, fetch geometry and instruction timing remain
   unqualified. Legacy fixtures retain explicit opt-in.
-- 268,225 native assertions, 96 GNU register comparisons and 20 compiled C
+- 268,232 native assertions, 96 GNU register comparisons and 20 compiled C
   hardware-loop calls pass. Native ROM reaches 6,692 instructions, then blocks
   on RTC reset-state read at 0x3ff48034, PC 0x400081df. SDK boot remains unverified.
 - Added buildable ESP-IDF cycle-capture firmware and strict log analysis for

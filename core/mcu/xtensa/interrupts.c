@@ -59,6 +59,7 @@ es_status esk_xtensa_irq_poll(struct esk_xtensa_windows *w,unsigned *event)
         w->irq.epc[level]=w->cpu.pc;w->irq.eps[level]=w->ps;
         w->ps=(w->ps&~15u)|level|ESK_XT_PS_EXCM;w->cpu.pc=w->vecbase_enabled ? w->vecbase+0x180u+(level-2u)*64u : w->irq.vectors[level];
     }
+    if(w->memctl_enabled) memset(w->loopbuf_valid,0,sizeof w->loopbuf_valid);
     if (level==7) w->irq.latched&=~NMI;
     w->irq.waiting=0;w->irq.last_level=level;w->irq.last_pending=mask;
     *event=10u+level;return ES_OK;

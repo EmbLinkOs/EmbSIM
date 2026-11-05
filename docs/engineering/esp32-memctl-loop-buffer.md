@@ -49,7 +49,7 @@ policy does not qualify all physical fetch traces or debugger/pipeline effects.
 
 ## Evidence
 
-`test_xtensa_memctl` passes **268,225 assertions**, including every operand
+`test_xtensa_memctl` passes **268,232 assertions**, including every operand
 register/form, upper-bit rejection, privilege/reset, enabled/disabled loops of
 2..512 bytes, exact prefix fetch counts for the chosen policy, mixed two/three-
 byte instructions across byte 256, self-modifying-code ISYNC, exception/interrupt

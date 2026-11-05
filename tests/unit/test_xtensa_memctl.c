@@ -106,6 +106,10 @@ static void mixed_width_and_self_modifying_flush(void)
     CHECK_EQ(esk_xtensa_window_step(&w,&bus,&event,&fault),ES_OK);CHECK(w.loopbuf_valid[0]!=0);
     w.irq.intenable=UINT32_C(1)<<19;CHECK_EQ(esk_xtensa_irq_line(&w,19,1),ES_OK);
     CHECK_EQ(esk_xtensa_window_step(&w,&bus,&event,&fault),ES_OK);CHECK_EQ(event,12);CHECK_EQ(w.loopbuf_valid[0],0);
+    CHECK_EQ(esk_xtensa_lx6_reset(&w,1),ES_OK);w.cpu.pc=BASE;w.ps=0;
+    CHECK_EQ(esk_xtensa_window_step(&w,&bus,&event,&fault),ES_OK);CHECK(w.loopbuf_valid[0]!=0);
+    w.irq.intenable=UINT32_C(1)<<19;CHECK_EQ(esk_xtensa_irq_line(&w,19,1),ES_OK);
+    CHECK_EQ(esk_xtensa_irq_poll(&w,&event),ES_OK);CHECK_EQ(event,12);CHECK_EQ(w.loopbuf_valid[0],0);
 }
 TEST_MAIN_BEGIN
     (void)t_str_eq;RUN(register_contract);RUN(prefix_capacity_and_disable);RUN(barriers_bounds_reset_and_isolation);RUN(failed_fetch_and_decode_rollback);RUN(mixed_width_and_self_modifying_flush);

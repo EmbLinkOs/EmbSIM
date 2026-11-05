@@ -441,7 +441,7 @@ es_status esk_xtensa_window_step(esk_xtensa_windows *w, const esk_xtensa_memory 
     if(!w || !event) return ES_EINVAL;
     if(w->irq.enabled) {
         st=esk_xtensa_irq_poll(w,event);
-        if(st!=ES_OK || *event) { if(st==ES_OK && w->memctl_enabled) loop_buffer_flush(w);return st; }
+        if(st!=ES_OK || *event) return st;
         if(w->irq.waiting) { *event=18;return ES_OK; }
     }
     fetched=*w;
