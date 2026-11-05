@@ -56,6 +56,10 @@ No physical timer-calibration result or full SDK boot is claimed.
 counter/controller. Its additional fixture reaches 6,872 retirements and the
 RTC_IO_DIG_PAD_HOLD read at 0x3ff48474. Full clock-tree/oscillator and CPU timing
 qualification remain separate work.
+[Digital per-pin hold](esp32-digital-pad-hold.md) now adds independent snapshots
+and local/global/unhold composition. The native diagnostic reaches 6,902
+retirements, then IO_MUX U0TXD read at 0x3ff49088. Full IO_MUX/peripheral routing
+and native SDK boot remain unqualified.
 [Instruction timing](esp32-instruction-timing.md) still requires physical evidence;
 a buildable capture firmware is prepared without claiming calibrated latency. It is not the owner's fuse dump and does
 not establish full boot. The [Giantec storage subset](esp32-giantec-profile.md)

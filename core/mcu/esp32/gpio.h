@@ -16,12 +16,17 @@
  * DIG_ISO: global pad hold/unhold, auto-hold enable/latch/clear only. Isolation,
  * sleep/power/Wi-Fi/memory changes fail; fixed fields retain published defaults.
  * Auto-hold event is an external latch input, not SoC sleep execution.
- * No IO_MUX/peripheral matrix, per-pad hold, IRQ/wakeup/filter/straps, sleep
+ * DIG_PAD_HOLD implements the SDK-mapped digital pins; RTC pad-specific hold
+ * and the PICO-only GPIO20 hold bit remain unsupported. Local/global hold use
+ * one effective latch per routed pad; FORCE_UNHOLD overrides local/auto hold.
+ * Simultaneous FORCE_HOLD/FORCE_UNHOLD remains unsupported.
+ * No IO_MUX/peripheral matrix, RTC per-pad hold, IRQ/wakeup/filter/straps, sleep
  * configuration, package mapping, loading/glitches/strength/timing qualification.
  * All calls serialized; failed operations preserve state/output. */
 typedef struct esk_esp32_gpio {
     uint32_t enabled,route[2],ie[2],pu[2],pd[2],out[2],oe[2],od[2],known[2],level[2];
-    uint32_t hold_out[2],hold_oe[2],hold_od[2],iso,auto_hold,held;
+    uint32_t hold_out[2],hold_oe[2],hold_od[2],hold_ie[2],hold_pu[2],hold_pd[2];
+    uint32_t iso,auto_hold,dig_hold,held[2];
 } esk_esp32_gpio;
 /* drive -1=HiZ, 0=low, 1=high. Pulls describe controls to an external solver. */
 typedef struct esk_esp32_gpio_pad { int drive;unsigned input_enabled,pull_up,pull_down; } esk_esp32_gpio_pad;

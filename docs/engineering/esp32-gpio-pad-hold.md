@@ -5,6 +5,10 @@ resolved digital inputs, push-pull/open-drain/HiZ output projection and the glob
 pad-hold subset of DIG_ISO. This is not complete GPIO/IO_MUX, physical pad loading,
 power isolation, package/board integration or SDK boot.**
 
+The [digital per-pin follow-up](esp32-digital-pad-hold.md) now adds the SDK-mapped
+local hold register and combines all hold causes per pad. This page retains the
+original global-hold baseline and its reproducible vendor evidence.
+
 ## Register identity correction
 
 The earlier RTC evidence mislabeled 0x3ff48088 as ANA_CONF. The pinned ESP-IDF
@@ -53,7 +57,7 @@ physical pad. Detach/reconfigure are host fixture operations, not silicon reset.
   high-bank input reads are separately checked.
 
 MMIO is aligned 32-bit only. Unknown GPIO registers, IO_MUX changes, matrix
-peripheral routes, per-pad hold, IRQ/wakeup/filter/strap/sleep configuration and
+peripheral routes, RTC per-pad hold, IRQ/wakeup/filter/strap/sleep configuration and
 pad IV/voltage/glitch/timing behavior remain unsupported. This profile is an
 unregistered experimental backend, not a graphical board-pin binding.
 
@@ -69,7 +73,8 @@ When hold becomes effective, current output level, enable and open-drain control
 are captured. Subsequent register writes remain readable but do not alter the
 projected held output. Release exposes current controls. FORCE_UNHOLD disables
 hold; simultaneous FORCE_HOLD/FORCE_UNHOLD is explicitly unsupported because its
-priority is unqualified. Capture is global across selected endpoints.
+priority is unqualified. Global capture covers selected endpoints; local hold
+now shares the same effective per-pad latch, as specified in the follow-up.
 
 The auto-hold event is an explicit external latch input and only sets the latch
 when armed. It is **not** a complete SoC Deep-sleep transition: the CPU, clocks,

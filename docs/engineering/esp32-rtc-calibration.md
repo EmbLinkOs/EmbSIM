@@ -139,6 +139,10 @@ branch; calibration MMIO is outside DPORT.
 
 ## Native ROM investigation
 
+The following records preserve the calibration milestone. The
+[digital pad-hold follow-up](esp32-digital-pad-hold.md) now passes its former
+next blocker; the latest boot boundary is recorded there.
+
 Add **`--rtc-cal-fixture`** to the existing diagnostic with explicit
 eFuse/RTC/GPIO/UART-bank/mask-ROM fixtures. This supplies control 0x13000 and
 prior value zero, with no clock periods by default. That unclocked case follows

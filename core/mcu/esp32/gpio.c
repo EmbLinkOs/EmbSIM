@@ -5,13 +5,31 @@
 #include <string.h>
 static uint32_t valid(unsigned bank) { return bank ? 255u : UINT32_C(0x0effffff); }
 static uint32_t outputs(unsigned bank) { return bank ? 3u : valid(0); }
+/* SDK GPIO_HOLD_MASK inverse; bit 13 is package-specific GPIO20, unqualified.
+ * These are pad-control bits, not GPIO-number shifts. */
+static const unsigned digital_hold_pin[17]={3,1,6,7,8,9,10,11,5,16,17,18,19,40,21,22,23};
+static uint32_t merge(uint32_t old,uint32_t live,uint32_t mask)
+{ return (old&~mask)|(live&mask); }
+static uint32_t projected(const esk_esp32_gpio *g,unsigned bank,const uint32_t live[2],const uint32_t held[2])
+{ return merge(live[bank],held[bank],g->held[bank]); }
 static void settle_hold(esk_esp32_gpio *g)
 {
-    uint32_t hold=(!(g->iso&0x4000u) && ((g->iso&0x8000u) || g->auto_hold)) ? 1u : 0u;
-    if(hold && !g->held) {
-        memcpy(g->hold_out,g->out,sizeof g->out);memcpy(g->hold_oe,g->oe,sizeof g->oe);memcpy(g->hold_od,g->od,sizeof g->od);
+    unsigned n,bank;uint32_t local[2]={0,0};
+    int unhold=(g->iso&0x4000u)!=0,global=(g->iso&0x8000u)!=0 || g->auto_hold;
+    for(n=0;n<17;n++) if(digital_hold_pin[n]<40 && (g->dig_hold&(UINT32_C(1)<<n))) {
+        unsigned pin=digital_hold_pin[n];local[pin/32]|=UINT32_C(1)<<(pin%32);
     }
-    g->held=hold;
+    for(bank=0;bank<2;bank++) {
+        uint32_t next=unhold ? 0u : (global ? g->route[bank] : local[bank]&g->route[bank]);
+        uint32_t rising=next&~g->held[bank];
+        g->hold_out[bank]=merge(g->hold_out[bank],g->out[bank],rising);
+        g->hold_oe[bank]=merge(g->hold_oe[bank],g->oe[bank],rising);
+        g->hold_od[bank]=merge(g->hold_od[bank],g->od[bank],rising);
+        g->hold_ie[bank]=merge(g->hold_ie[bank],g->ie[bank],rising);
+        g->hold_pu[bank]=merge(g->hold_pu[bank],g->pu[bank],rising);
+        g->hold_pd[bank]=merge(g->hold_pd[bank],g->pd[bank],rising);
+        g->held[bank]=next;
+    }
 }
 void esk_esp32_gpio_init(esk_esp32_gpio *g)
 {
@@ -56,11 +74,12 @@ es_status esk_esp32_gpio_output(const esk_esp32_gpio *g,unsigned pin,esk_esp32_g
     if(!g || !pad || pin>=40) return ES_EINVAL;
     if(!g->enabled || !selected(g,pin)) return ES_EUNSUPPORTED;
     bank=pin/32;bit=UINT32_C(1)<<(pin%32);
-    out=(g->held ? g->hold_out[bank] : g->out[bank])&bit;
-    oe=(g->held ? g->hold_oe[bank] : g->oe[bank])&outputs(bank)&bit;
-    od=(g->held ? g->hold_od[bank] : g->od[bank])&bit;
+    out=projected(g,bank,g->out,g->hold_out)&bit;
+    oe=projected(g,bank,g->oe,g->hold_oe)&outputs(bank)&bit;
+    od=projected(g,bank,g->od,g->hold_od)&bit;
     result.drive=oe && !(od && out) ? (out ? 1 : 0) : -1;
-    result.input_enabled=(g->ie[bank]&bit) ? 1u : 0u;result.pull_up=(g->pu[bank]&bit) ? 1u : 0u;result.pull_down=(g->pd[bank]&bit) ? 1u : 0u;
+    result.input_enabled=(projected(g,bank,g->ie,g->hold_ie)&bit) ? 1u : 0u;
+    result.pull_up=(projected(g,bank,g->pu,g->hold_pu)&bit) ? 1u : 0u;result.pull_down=(projected(g,bank,g->pd,g->hold_pd)&bit) ? 1u : 0u;
     *pad=result;return ES_OK;
 }
 es_status esk_esp32_gpio_auto_hold_event(esk_esp32_gpio *g)
@@ -74,6 +93,7 @@ static es_status decode(const esk_esp32_gpio *g,uint32_t address,unsigned bytes,
 {
     if(!g->enabled) return ES_EUNSUPPORTED;
     if(address>=0x3ff44000 && address<0x3ff45000) *offset=address-0x3ff44000;
+    else if(address>=0x3ff48474 && address<0x3ff48478) *offset=0x1004;
     else if(address>=0x3ff48088 && address<0x3ff4808c) *offset=0x1000;
     else return ES_EUNSUPPORTED;
     if(bytes!=4 || (address&3u)) return ES_EINVAL;
@@ -84,6 +104,7 @@ es_status esk_esp32_gpio_read(const esk_esp32_gpio *g,uint32_t address,unsigned 
     uint32_t off;es_status st;unsigned pin,bank;
     if(!g || !value) return ES_EINVAL;
     st=decode(g,address,bytes,&off);if(st!=ES_OK) return st;
+    if(off==0x1004) { *value=g->dig_hold;return ES_OK; }
     if(off==0x1000) { *value=g->iso|(g->auto_hold<<9);return ES_OK; }
     if(off>=0x530 && off<=0x5cc) {
         pin=(off-0x530)/4;if(!selected(g,pin)) return ES_EUNSUPPORTED;
@@ -98,8 +119,8 @@ es_status esk_esp32_gpio_read(const esk_esp32_gpio *g,uint32_t address,unsigned 
     case 0x20:*value=g->oe[0];break;case 0x2c:*value=g->oe[1];break;
     case 0x3c:case 0x40:
         bank=off==0x40 ? 1u : 0u;
-        if(g->ie[bank]&~g->known[bank]) return ES_EUNSUPPORTED;
-        *value=g->level[bank]&g->ie[bank];break;
+        if(projected(g,bank,g->ie,g->hold_ie)&~g->known[bank]) return ES_EUNSUPPORTED;
+        *value=g->level[bank]&projected(g,bank,g->ie,g->hold_ie);break;
     default:return ES_EUNSUPPORTED;
     }
     return ES_OK;
@@ -109,6 +130,10 @@ es_status esk_esp32_gpio_write(esk_esp32_gpio *g,uint32_t address,unsigned bytes
     uint32_t off,*reg,mask;unsigned bank,operation,pin;es_status st;
     if(!g) return ES_EINVAL;
     st=decode(g,address,bytes,&off);if(st!=ES_OK) return st;
+    if(off==0x1004) {
+        if(value&~UINT32_C(0x1dfff)) return ES_EUNSUPPORTED;
+        g->dig_hold=value;settle_hold(g);return ES_OK;
+    }
     if(off==0x1000) {
         /* Do not accept memory/Wi-Fi/power/pad-isolation changes without their
          * domain model. Reserved writes/RO status have no effect. */

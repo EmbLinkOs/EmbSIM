@@ -265,3 +265,9 @@ macros on both cores. Explicit clock records exercise one-shot completion,
 single-period cycling and stalled state. This does not qualify the complete SDK
 clock-enable/delay/calibration functions or physical frequency/timing.
 [Counter/controller contract](../../docs/engineering/esp32-rtc-calibration.md).
+
+`xtensa_integer/run_gpio.py --per-pin-hold` adds 4,096 independent transition
+turns and 256 compiled C calls using eleven unchanged SDK helpers and the actual
+hold-mask table. It checks local/global overlap, force-unhold, open-drain/enable
+capture and live inputs. RTC pad controls, peripheral routing and electrical
+behavior remain unqualified. [Digital per-pin contract](../../docs/engineering/esp32-digital-pad-hold.md).

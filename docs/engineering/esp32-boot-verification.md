@@ -3,7 +3,7 @@
 **Result on 2026-11-05: the owner's board reports ESP32-D0WD-V3 revision 3.1,
 JEDEC C4 60 16 and 4 MB flash. Giantec's GT25Q32A-U datasheet matches that ID;
 exact package/ordering suffix remains unconfirmed. The pinned SDK example boots
-in Espressif QEMU. Native EmbSIM reaches per-pin pad hold after 6,872 retired
+in Espressif QEMU. Native EmbSIM reaches IO_MUX U0TXD after 6,902 retired
 instructions with explicit synthetic eFuse/RTC/GPIO/UART-bank/mask-ROM/calibration fixtures; without an eFuse profile,
 the baseline stops at an eFuse read after seven.** Neither result establishes
 successful native boot.
@@ -114,7 +114,15 @@ configuration or printed SDK capacity must not substitute for hardware identity.
 
 ## Native EmbSIM result: blocked
 
-**Latest RTC-calibration follow-up:** the [TIMG0 counter/controller](esp32-rtc-calibration.md)
+**Latest digital pad-hold follow-up:** [The digital pin hold register](esp32-digital-pad-hold.md)
+now supplies SDK-mapped controls and observable held outputs with local/global
+composition. The diagnostic reaches 6,902 retirements / 6,903 attempts, then
+IO_MUX U0TXD read 0x3ff49088, PC 0x40009156, opcode 0x498. This uses the same
+explicit fixture inputs including one synthetic 1,280-tick calibration period.
+[New evidence](../../tests/vendor/xtensa_integer/evidence/boot-with-digital-pad-hold-2026-11-06.json)
+retains boot unverified; peripheral pin routing is not replaced by register stubs.
+
+**Prior RTC-calibration follow-up:** the [TIMG0 counter/controller](esp32-rtc-calibration.md)
 uses explicit full-period XTAL tick inputs rather than inferred instruction time.
 The additional `--rtc-cal-fixture` reaches 6,872 retirements / 6,873 attempts,
 then RTC_IO_DIG_PAD_HOLD read at 0x3ff48474, PC 0x4000a67d, opcode 0x298.

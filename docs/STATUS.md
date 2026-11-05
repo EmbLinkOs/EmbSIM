@@ -7,7 +7,15 @@ does not mean the described behaviour exists.
 
 ## Original ESP32 dual-core target investigation (2026-11-04)
 
-**Latest RTC-calibration update:** the [TIMG0 counter/controller profile](engineering/esp32-rtc-calibration.md)
+**Latest digital pad-hold update:** [Per-pin digital hold](engineering/esp32-digital-pad-hold.md)
+now follows the SDK bit mapping and combines local/global/auto-hold causes with
+FORCE_UNHOLD precedence and independent pad snapshots. 3,455 new native checks,
+4,096 independent transition turns and 256 compiled C calls using eleven unchanged
+SDK helpers pass. Native ROM now reaches 6,902 retirements and IO_MUX U0TXD read
+at 0x3ff49088. RTC pad-specific hold, IO_MUX/peripheral routing, physical board
+behavior and complete SDK boot remain unqualified.
+
+**Prior RTC-calibration update:** the [TIMG0 counter/controller profile](engineering/esp32-rtc-calibration.md)
 now counts explicitly supplied XTAL ticks over selected-clock periods, with
 one-shot completion and single-period cycling. 919,967 native assertions,
 19,208 independent comparisons and 486 compiled C harness calls using unchanged

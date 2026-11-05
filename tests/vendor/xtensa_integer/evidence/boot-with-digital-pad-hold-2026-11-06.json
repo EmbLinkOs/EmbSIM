@@ -1,0 +1,98 @@
+{
+  "boot_verified": false,
+  "outcome": "blocked",
+  "core": "PRO only",
+  "rom_sha256": "9115bbcd03da9f54d3baca5ad94d588a43da54ed332347137ba3dc9010df258b",
+  "flash_sha256": "52fcca3c31ed835d45e22826d42dd7a7db0c867171fa330f9c56b0a81df7bee7",
+  "reset_vector": "0x40000400",
+  "memctl_profile": "bit 0 plus deterministic 256-byte loop-buffer fixture; not physical fetch/timing qualification",
+  "region_profile": "original ESP32 eight ITLB/DTLB identity regions, reset attribute 2, one ring, no Xtensa cache",
+  "prid_fixture": "0x0000cdcd",
+  "prid_reference": "ESP-IDF v4.4.7 xtensa_context.h documents PRO=0xcdcd, APP=0xabab; not a hardware readout",
+  "rom_tail_policy": "zero-fill absent DROM tail to match QEMU region setup, not silicon contents",
+  "flash_profile": "immutable SPI1 fixture, not a physical flash identity",
+  "rtc_cal_fixture": "explicit TIMG0 cycling control 0x13000, initial value 0; not measured oscillator or POR calibration history",
+  "rtc_cal_initial_period_ticks": 1280,
+  "rtc_cal_period_note": "one explicit source-1 full-period event before PRO execution, no automatic instruction-to-time conversion or physical frequency claim",
+  "uart_bank_fixture": "normal UART0/1/2, default disjoint shared FIFO allocations, empty FIFOs, explicit RXD=1 CTS=0 DSR=0 per port, no serial-clock advancement or board pinmux",
+  "gpio_fixture": "no routed pads; defined active-domain DIG_ISO defaults and hold controls only, no isolation/power emulation",
+  "rtc_fixture": "power-on cause 1 per core, vector selects 1, eight explicit zero retention words; not physical-owner RTC state",
+  "efuse_fixture_sha256": "2d8192ea7bdf3510bc117b4ea4b833a94b2ff2ceff252ce1610c297ed633d5bb",
+  "mask_rom_profile": "explicit PRO 448KiB SDK/QEMU IROM; final 64KiB also aliases DROM; external image tail zero-padded like reference, not measured silicon bytes",
+  "efuse_completion_fixture": "one external completion opportunity every 64 instruction attempts; not physical timing",
+  "status": -1,
+  "event": 0,
+  "pc": "0x40009156",
+  "opcode": "0x498",
+  "address": "0x3ff49088",
+  "fault_kind": 5,
+  "attempts": 6903,
+  "rtc_cal_value_after_stop": "0x500",
+  "region_readback": [
+    [
+      15,
+      1,
+      1,
+      2,
+      2,
+      2,
+      2,
+      2
+    ],
+    [
+      15,
+      1,
+      1,
+      2,
+      2,
+      2,
+      2,
+      2
+    ]
+  ],
+  "region_access_attributes": [
+    [
+      15,
+      1,
+      1,
+      2,
+      2,
+      2,
+      2,
+      2
+    ],
+    [
+      15,
+      1,
+      1,
+      2,
+      2,
+      2,
+      2,
+      2
+    ]
+  ],
+  "efuse_completions": 3,
+  "retired_before_stop": 6902,
+  "trace_tail": [
+    "0x4000a69a",
+    "0x4000a69d",
+    "0x4000a69f",
+    "0x4000a6a1",
+    "0x4000a724",
+    "0x4000a727",
+    "0x4000a72a",
+    "0x4000a72c",
+    "0x4000914d",
+    "0x40009150",
+    "0x40009153",
+    "0x40009156"
+  ],
+  "next_blocker": "IO_MUX U0TXD read at 0x3ff49088, PC 0x40009156, opcode 0x498; full pin routing and native SDK boot remain unverified",
+  "fixture_note": "Same explicit software-GPIO/RTC/UART/mask-ROM/calibration fixtures; per-pin digital hold now modeled. Synthetic calibration period is not a physical clock capture.",
+  "sources_sha256": {
+    "core/mcu/esp32/gpio.c": "6567b5ffe04910277d5ff8c0d9bdc7c1fc380e5d7bddcead4c0eded9f2c603da",
+    "core/mcu/esp32/gpio.h": "f245e15921160a561cd429353473cf29f25bd5054aa2a13f890de628947bc94b",
+    "tests/vendor/xtensa_integer/probe_rom_boot.py": "cbdb1b740c388b90e224853ba873b977876cfc47bcef6ee15186cfde10f871d8"
+  }
+}

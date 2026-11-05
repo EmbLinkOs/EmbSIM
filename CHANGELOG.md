@@ -5,6 +5,18 @@ versions follow semantic versioning. There is no release yet.
 
 ## Unreleased
 
+### Original ESP32 digital per-pin hold
+
+- Added the SDK-mapped digital hold register and per-pad capture masks.
+  Local/global/auto-hold causes combine without recapturing an already held
+  pad; FORCE_UNHOLD overrides them. Unrelated outputs remain live.
+- Preserved captured output enable/level/open-drain and modeled input/pull
+  controls, live resolved input samples, raw register changes and CPU-reset
+  retention. Unsupported/package-specific bits fail without partial capture.
+- 3,455 new native assertions, 4,096 independent transition turns and 256 compiled
+  C calls with eleven unchanged SDK helpers pass. Native ROM now reaches 6,902
+  retirements, then IO_MUX U0TXD read; full pin routing/SDK boot remain unfinished.
+
 ### Original ESP32 TIMG0 RTC calibration counter
 
 - Added explicit calibration snapshots, selected-period XTAL-tick counting,
