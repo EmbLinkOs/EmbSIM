@@ -5,6 +5,20 @@ versions follow semantic versioning. There is no release yet.
 
 ## Unreleased
 
+### Original ESP32 UART bank and shared FIFO RAM
+
+- Extended normal asynchronous execution to UART1/2, with per-port sources
+  34/35/36, host inputs/clocks and shared state on both CPU buses.
+- Added one physical-layout FIFO byte array, bounded block allocations,
+  overlapping queued-data overwrites, extended counts and high thresholds.
+- Added idle-only UART1→UART2 TX reset coupling, held-reset protection and
+  unchanged failure for active/invalid resets. RX reset remains unsupported;
+  the unchanged SDK drain helper is tested on every port instead.
+- 271,883 new native assertions, 4,096 shared-RAM oracle turns and 384 compiled
+  C calls with twelve unchanged SDK helpers pass. The prior UART0 suite remains
+  passing. Native ROM now reaches 6,790 retirements, then instruction fetch at
+  0x40065c18 outside the current ROM mapping. Full SDK boot remains unverified.
+
 ### Original ESP32 normal asynchronous UART0
 
 - Added an opt-in fixed-FIFO UART0 profile with APB/AHB firmware access,

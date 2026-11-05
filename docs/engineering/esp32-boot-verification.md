@@ -3,8 +3,8 @@
 **Result on 2026-11-05: the owner's board reports ESP32-D0WD-V3 revision 3.1,
 JEDEC C4 60 16 and 4 MB flash. Giantec's GT25Q32A-U datasheet matches that ID;
 exact package/ordering suffix remains unconfirmed. The pinned SDK example boots
-in Espressif QEMU. Native EmbSIM reaches UART1 initialization after 6,737 retired
-instructions with explicit synthetic eFuse/RTC, active GPIO and UART0 fixtures; without an eFuse profile,
+in Espressif QEMU. Native EmbSIM reaches an instruction-ROM mapping boundary after 6,790 retired
+instructions with explicit synthetic eFuse/RTC, active GPIO and UART-bank fixtures; without an eFuse profile,
 the baseline stops at an eFuse read after seven.** Neither result establishes
 successful native boot.
 
@@ -114,7 +114,17 @@ configuration or printed SDK capacity must not substitute for hardware identity.
 
 ## Native EmbSIM result: blocked
 
-**Latest UART0 follow-up:** [Normal UART0](esp32-uart0.md) adds native FIFOs,
+**Latest UART-bank follow-up:** [UART0/1/2 and shared RAM](esp32-uart-bank.md)
+passes the previous UART1 interrupt clear. With `--uart-bank-active-fixture`,
+PRO retires 6,790 instructions / 6,791 attempts, then fails fetch at 0x40065c18
+from a real CALL8 at 0x40007729. The current fabric exposes only the first 384 KiB
+instruction-ROM window; the SDK declares the mask range through 0x40070000.
+Extended mapping/image layout remains unqualified, with no substituted RAM or PC
+shortcut. The [bank evidence](../../tests/vendor/xtensa_integer/evidence/boot-with-uart-bank-2026-11-05.json)
+retains boot unverified. This fixture uses explicit empty default UART0/1/2
+allocations and RXD=1/CTS=0/DSR=0; it advances no serial ticks.
+
+**Prior UART0 follow-up:** [Normal UART0](esp32-uart0.md) adds native FIFOs,
 source-clock framing and interrupt handling. With `--uart0-active-fixture` and
 all prior explicit fixtures, the probe retires 6,737 instructions / 6,738 attempts,
 then blocks on UART1 INT_CLR write 0x3ff50010, PC 0x40009013, opcode 0x68a2.

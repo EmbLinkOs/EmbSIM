@@ -44,6 +44,10 @@ board wiring and electrical loading remain unqualified.
 interrupt delivery; its explicit fixture reaches 6,737 instructions before
 UART1 INT_CLR write 0x3ff50010/PC 0x40009013. Other UARTs, advanced modes and
 physical pin/clock/USB behavior remain absent.
+[UART bank/shared RAM](esp32-uart-bank.md) now extends normal mode to UART1/2,
+bounded overlapping allocations and idle coupled reset. The all-port fixture
+reaches 6,790 retirements, then instruction-ROM fetch at 0x40065c18 outside the
+currently exposed fabric window. Extended ROM mapping remains a separate task.
 [Instruction timing](esp32-instruction-timing.md) still requires physical evidence;
 a buildable capture firmware is prepared without claiming calibrated latency. It is not the owner's fuse dump and does
 not establish full boot. The [Giantec storage subset](esp32-giantec-profile.md)

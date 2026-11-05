@@ -7,7 +7,16 @@ does not mean the described behaviour exists.
 
 ## Original ESP32 dual-core target investigation (2026-11-04)
 
-**Latest UART0 update:** the [normal asynchronous UART0 profile](engineering/esp32-uart0.md)
+**Latest UART-bank update:** the [normal UART0/1/2 bank](engineering/esp32-uart-bank.md)
+now shares one 1024-byte FIFO RAM, supports bounded allocations/overwrites and
+extended counts/thresholds, and coordinates idle UART1→UART2 TX reset. 271,883
+new native assertions, 4,096 shared-RAM referee turns and 384 compiled C calls
+with twelve unchanged SDK helpers pass. Native ROM with all three explicit UART
+fixtures reaches 6,790 retirements, then an unmapped instruction-ROM fetch at
+0x40065c18. Extended ROM mapping, advanced UART modes, full physical clock/pin/USB
+integration and complete SDK boot remain unqualified.
+
+**Prior UART0 update:** the [normal asynchronous UART0 profile](engineering/esp32-uart0.md)
 now supports fixed TX/RX FIFOs, explicit source-clock framing, CTS gating, decoded
 RX/error input and interrupt source 34 on both native core views. 915,199 native
 assertions, 316,077 independent bit/frame comparisons and 128 compiled C calls

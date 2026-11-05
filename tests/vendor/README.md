@@ -246,3 +246,9 @@ observations and runs 128 interactive compiled C calls using eleven unchanged
 ESP-IDF UART helpers on both native buses. Source clocks and decoded RX frames
 are explicit host inputs; UART1/2, advanced modes and physical pin/clock/USB
 behavior remain unqualified. See the [UART0 contract and reproduction](../../docs/engineering/esp32-uart0.md).
+
+`xtensa_integer/run_uart.py --all-ports` additionally checks 4,096 independent
+shared-RAM turns and runs 384 compiled C calls / twelve unchanged SDK helpers
+across UART0/1/2 on both native cores. It verifies overlapping FIFO bytes,
+extended counts/thresholds and bounded shared reset, and exercises the SDK RX
+drain helper. [Bank contract and omissions](../../docs/engineering/esp32-uart-bank.md).

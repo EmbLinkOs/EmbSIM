@@ -3,7 +3,11 @@
 **Implemented: opt-in UART0 normal asynchronous transmit/receive FIFOs, explicit
 source-clock advancement, framing, CTS gating, interrupt latches and native
 APB/AHB firmware access. This is not a complete UART, pin binding, USB bridge,
-physical clock calibration or successful SDK boot. UART1/2 remain unsupported.**
+physical clock calibration or successful SDK boot.**
+
+The [UART-bank follow-up](esp32-uart-bank.md) now extends this normal-mode
+profile to UART1/2 with shared RAM and bounded reset coupling. This page preserves
+the original UART0 contract and its reproducible baseline evidence.
 
 ## Hardware and implementation boundary
 
@@ -16,8 +20,7 @@ threshold, modem-change and completion interrupts have independent raw latches,
 software enables and write-one clear controls.
 
 This original C99 implementation has no copied vendor runtime. It supports the
-fixed UART0 allocation at APB 0x3ff40000 and FIFO alias 0x60000000. UART1/2,
-allocation changes/shared-RAM interference, DPORT peripheral reset/clock gates,
+fixed UART0 allocation at APB 0x3ff40000 and FIFO alias 0x60000000. DPORT peripheral reset/clock gates,
 DMA/UHCI, IRDA, RS485, autobaud, inversion, loopback, RX flow/software flow,
 break detection/transmission, idle insertion, AT commands, wakeup and electrical
 pad/USB behavior remain absent. Unsupported register/features/accesses return an
@@ -27,12 +30,13 @@ The pinned SDK documents hardware issues that constrain this profile:
 
 - `uart_ll_rxfifo_rst` drains through APB because the hardware RX reset bit is
   unreliable. Setting that bit is unsupported here. The SDK helper itself also
-  inspects RX memory pointers; its complete reset procedure is not yet qualified.
+  inspects RX memory pointers; the bank follow-up now qualifies this drain helper
+  with default allocations on all three ports.
 - `uart_ll_set_stop_bits` uses RS485 `dl1_en` for the two-stop-bit workaround.
   STOP encoding 3 and that workaround remain unsupported. One and 1.5 stop bits
   are implemented; invalid encoding zero fails.
-- UART1 TX reset also affects UART2. Neither port is inferred from UART0 or
-  exposed through an invented independent reset.
+- UART1 TX reset also affects UART2. The bank follow-up implements an idle-only
+  coupled reset; active-reset behavior remains unqualified.
 
 ## Explicit fixture and externally visible behavior
 

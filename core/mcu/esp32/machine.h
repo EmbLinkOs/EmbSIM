@@ -36,10 +36,16 @@ es_status esk_esp32_machine_gpio_configure(esk_esp32_machine *m,const uint32_t *
 es_status esk_esp32_machine_gpio_input(esk_esp32_machine *m,unsigned pin,int known,int high);
 es_status esk_esp32_machine_gpio_output(const esk_esp32_machine *m,unsigned pin,esk_esp32_gpio_pad *pad);
 es_status esk_esp32_machine_gpio_auto_hold_event(esk_esp32_machine *m);
-/* UART0 normal async fixture and externally supplied serial events; uart.h
- * defines framing, clock and error/omission boundaries. Source 34 is owned
- * while attached. Selected-clock ticks are independent of CPU retirement.
- * APIs/callbacks are serialized between turns; callbacks must not re-enter. */
+/* UART bank normal async fixtures and externally supplied serial events;
+ * uart.h defines shared RAM, reset coupling, clock/framing and limitations.
+ * Sources 34..36 are owned per attached port. Selected-clock ticks are independent
+ * of CPU retirement. Calls/callbacks are serialized between turns; no re-entry. */
+es_status esk_esp32_machine_uart_port_configure(esk_esp32_machine *m,unsigned port,int on,int rxd,int cts,int dsr);
+es_status esk_esp32_machine_uart_port_inputs(esk_esp32_machine *m,unsigned port,int rxd,int cts,int dsr);
+es_status esk_esp32_machine_uart_port_receive(esk_esp32_machine *m,unsigned port,uint32_t data,unsigned flags);
+es_status esk_esp32_machine_uart_port_timeout(esk_esp32_machine *m,unsigned port);
+es_status esk_esp32_machine_uart_port_advance(esk_esp32_machine *m,unsigned port,uint64_t ticks,esk_esp32_uart_emit emit,void *ctx);
+/* Compatibility helpers below address UART0. */
 es_status esk_esp32_machine_uart_configure(esk_esp32_machine *m,int on,int rxd,int cts,int dsr);
 es_status esk_esp32_machine_uart_inputs(esk_esp32_machine *m,int rxd,int cts,int dsr);
 es_status esk_esp32_machine_uart_receive(esk_esp32_machine *m,uint32_t data,unsigned flags);
