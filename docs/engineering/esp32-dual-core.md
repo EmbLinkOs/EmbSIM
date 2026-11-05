@@ -10,6 +10,16 @@ The listing brand is TECNOIOT. Its main image shows an ESP-WROOM-32 shield,
 advertised form factor, not a guaranteed PCB revision or bill of materials.
 See the [listing evidence and header transcription](esp32-tecnoiot-b07n97dd1b.md).
 
+## ROM/SDK boot verification result
+
+A [direct boot investigation](esp32-boot-verification.md) on 2026-11-05 built
+unmodified ESP-IDF v4.4.7 hello_world. It boots both CPU schedulers and prints
+Hello world in Espressif QEMU. Native EmbSIM with the same image and the
+QEMU-distributed PRO ROM fails after seven retired instructions at PC 0x4000fdd8,
+reading unimplemented eFuse register 0x3ff5a000. No dummy MMIO values or host PC
+shortcut were used. This confirms a native boot blocker; it does not qualify
+physical ROM/board identity or imply that fixing one register finishes boot.
+
 ## Reference material
 
 Primary references inspected for this investigation:

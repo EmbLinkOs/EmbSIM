@@ -182,3 +182,11 @@ replays, 125,856 retired instructions. Time is an explicit external fixture,
 not derived from instruction counts. This named unprotected chip profile is not
 a board BOM, full chip or ROM/SDK qualification. See
 [programming scope and reproduction](../../docs/engineering/esp32-flash-programming.md).
+
+`xtensa_integer/probe_rom_boot.py --rom --flash [--report]` is a diagnostic,
+not a passing vendor qualification. With the pinned Espressif QEMU PRO ROM and
+an actual unmodified ESP-IDF v4.4.7 hello_world image, native execution fails
+after seven retired instructions at the missing eFuse read. The same image
+boots both schedulers and the application in Espressif QEMU. The probe returns
+1 for blocked/inconclusive boot, and does not invent MMIO or jump past reset.
+See [boot verification and artifacts](../../docs/engineering/esp32-boot-verification.md).

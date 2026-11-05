@@ -1,0 +1,139 @@
+Adding SPI flash device
+ets Jul 29 2019 12:21:46
+
+rst:0x1 (POWERON_RESET),boot:0x12 (SPI_FAST_FLASH_BOOT)
+configsip: 0, SPIWP:0xee
+clk_drv:0x00,q_drv:0x00,d_drv:0x00,cs0_drv:0x00,hd_drv:0x00,wp_drv:0x00
+mode:DIO, clock div:2
+load:0x3fff0030,len:6652
+ho 0 tail 12 room 4
+load:0x40078000,len:15052
+load:0x40080400,len:3836
+entry 0x4008069c
+I (742) boot: ESP-IDF v4.4.7 2nd stage bootloader
+I (743) boot: compile time 14:52:36
+I (743) boot: Multicore bootloader
+I (751) boot: chip revision: v0.0
+I (753) boot.esp32: SPI Speed      : 40MHz
+I (754) boot.esp32: SPI Mode       : DIO
+I (754) boot.esp32: SPI Flash Size : 2MB
+I (761) boot: Enabling RNG early entropy source...
+I (776) boot: Partition Table:
+I (776) boot: ## Label            Usage          Type ST Offset   Length
+I (777) boot:  0 nvs              WiFi data        01 02 00009000 00006000
+I (777) boot:  1 phy_init         RF data          01 01 0000f000 00001000
+I (777) boot:  2 factory          factory app      00 00 00010000 00100000
+I (782) boot: End of partition table
+I (792) esp_image: segment 0: paddr=00010020 vaddr=3f400020 size=08094h ( 32916) map
+I (818) esp_image: segment 1: paddr=000180bc vaddr=3ffb0000 size=01b7ch (  7036) load
+I (837) esp_image: segment 2: paddr=00019c40 vaddr=40080000 size=063d8h ( 25560) load
+I (864) esp_image: segment 3: paddr=00020020 vaddr=400d0020 size=15108h ( 86280) map
+I (892) esp_image: segment 4: paddr=00035130 vaddr=400863d8 size=052c0h ( 21184) load
+I (913) boot: Loaded app from partition at offset 0x10000
+I (913) boot: Disabling RNG early entropy source...
+I (925) cpu_start: Multicore app
+I (931) cpu_start: Pro cpu up.
+I (932) cpu_start: Starting app cpu, entry point is 0x40080ff0
+I (569) cpu_start: App cpu up.
+I (1549) cpu_start: Pro cpu start user code
+I (1550) cpu_start: cpu freq: 160000000
+I (1551) cpu_start: Application information:
+I (1551) cpu_start: Project name:     hello_world
+I (1551) cpu_start: App version:      v4.4.7
+I (1551) cpu_start: Compile time:     Nov  5 2026 14:52:30
+I (1551) cpu_start: ELF file SHA256:  fe26855a26fcde4c...
+I (1552) cpu_start: ESP-IDF:          v4.4.7
+I (1552) cpu_start: Min chip rev:     v0.0
+I (1552) cpu_start: Max chip rev:     v3.99 
+I (1552) cpu_start: Chip rev:         v0.0
+I (1554) heap_init: Initializing. RAM available for dynamic allocation:
+I (1555) heap_init: At 3FFAE6E0 len 00001920 (6 KiB): DRAM
+I (1555) heap_init: At 3FFB2470 len 0002DB90 (182 KiB): DRAM
+I (1555) heap_init: At 3FFE0440 len 00003AE0 (14 KiB): D/IRAM
+I (1555) heap_init: At 3FFE4350 len 0001BCB0 (111 KiB): D/IRAM
+I (1556) heap_init: At 4008B698 len 00014968 (82 KiB): IRAM
+I (1593) spi_flash: detected chip: gd
+I (1606) spi_flash: flash io: dio
+W (1613) spi_flash: Detected size(4096k) larger than the size in the binary image header(2048k). Using the size in the binary image header.
+I (1621) cpu_start: Starting scheduler on PRO CPU.
+I (0) cpu_start: Starting scheduler on APP CPU.
+Hello world!
+This is esp32 chip with 2 CPU core(s), WiFi/BT/BLE, silicon revision v0.0, 2MB external flash
+Minimum free heap size: 300920 bytes
+Restarting in 10 seconds...
+Restarting in 9 seconds...
+Restarting in 8 seconds...
+Restarting in 7 seconds...
+Restarting in 6 seconds...
+Restarting in 5 seconds...
+Restarting in 4 seconds...
+Restarting in 3 seconds...
+Restarting in 2 seconds...
+Restarting in 1 seconds...
+Restarting in 0 seconds...
+Restarting now.
+ets Jul 29 2019 12:21:46
+
+rst:0xc (SW_CPU_RESET),boot:0x12 (SPI_FAST_FLASH_BOOT)
+configsip: 0, SPIWP:0xee
+clk_drv:0x00,q_drv:0x00,d_drv:0x00,cs0_drv:0x00,hd_drv:0x00,wp_drv:0x00
+mode:DIO, clock div:2
+load:0x3fff0030,len:6652
+ho 0 tail 12 room 4
+load:0x40078000,len:15052
+load:0x40080400,len:3836
+entry 0x4008069c
+I (27883) boot: ESP-IDF v4.4.7 2nd stage bootloader
+I (27883) boot: compile time 14:52:36
+I (27883) boot: Multicore bootloader
+I (27891) boot: chip revision: v0.0
+I (27894) boot.esp32: SPI Speed      : 40MHz
+I (27894) boot.esp32: SPI Mode       : DIO
+I (27894) boot.esp32: SPI Flash Size : 2MB
+I (27902) boot: Enabling RNG early entropy source...
+I (27916) boot: Partition Table:
+I (27916) boot: ## Label            Usage          Type ST Offset   Length
+I (27916) boot:  0 nvs              WiFi data        01 02 00009000 00006000
+I (27916) boot:  1 phy_init         RF data          01 01 0000f000 00001000
+I (27916) boot:  2 factory          factory app      00 00 00010000 00100000
+I (27921) boot: End of partition table
+I (27933) esp_image: segment 0: paddr=00010020 vaddr=3f400020 size=08094h ( 32916) map
+I (27953) esp_image: segment 1: paddr=000180bc vaddr=3ffb0000 size=01b7ch (  7036) load
+I (27972) esp_image: segment 2: paddr=00019c40 vaddr=40080000 size=063d8h ( 25560) load
+I (28014) esp_image: segment 3: paddr=00020020 vaddr=400d0020 size=15108h ( 86280) map
+I (28040) esp_image: segment 4: paddr=00035130 vaddr=400863d8 size=052c0h ( 21184) load
+I (28066) boot: Loaded app from partition at offset 0x10000
+I (28066) boot: Disabling RNG early entropy source...
+I (28076) cpu_start: Multicore app
+I (28083) cpu_start: Pro cpu up.
+I (28084) cpu_start: Starting app cpu, entry point is 0x40080ff0
+I (12234) cpu_start: App cpu up.
+I (13513) cpu_start: Pro cpu start user code
+I (13513) cpu_start: cpu freq: 160000000
+I (13513) cpu_start: Application information:
+I (13513) cpu_start: Project name:     hello_world
+I (13513) cpu_start: App version:      v4.4.7
+I (13513) cpu_start: Compile time:     Nov  5 2026 14:52:30
+I (13514) cpu_start: ELF file SHA256:  fe26855a26fcde4c...
+I (13514) cpu_start: ESP-IDF:          v4.4.7
+I (13514) cpu_start: Min chip rev:     v0.0
+I (13514) cpu_start: Max chip rev:     v3.99 
+I (13514) cpu_start: Chip rev:         v0.0
+I (13515) heap_init: Initializing. RAM available for dynamic allocation:
+I (13516) heap_init: At 3FFAE6E0 len 00001920 (6 KiB): DRAM
+I (13516) heap_init: At 3FFB2470 len 0002DB90 (182 KiB): DRAM
+I (13516) heap_init: At 3FFE0440 len 00003AE0 (14 KiB): D/IRAM
+I (13517) heap_init: At 3FFE4350 len 0001BCB0 (111 KiB): D/IRAM
+I (13517) heap_init: At 4008B698 len 00014968 (82 KiB): IRAM
+I (13540) spi_flash: detected chip: gd
+I (13552) spi_flash: flash io: dio
+W (13557) spi_flash: Detected size(4096k) larger than the size in the binary image header(2048k). Using the size in the binary image header.
+I (13563) cpu_start: Starting scheduler on PRO CPU.
+I (0) cpu_start: Starting scheduler on APP CPU.
+Hello world!
+This is esp32 chip with 2 CPU core(s), WiFi/BT/BLE, silicon revision v0.0, 2MB external flash
+Minimum free heap size: 300920 bytes
+Restarting in 10 seconds...
+Restarting in 9 seconds...
+Restarting in 8 seconds...
+qemu-system-xtensa: terminating on signal 15 from pid 306234 (timeout)

@@ -5,6 +5,16 @@ versions follow semantic versioning. There is no release yet.
 
 ## Unreleased
 
+### Original ESP32 boot verification evidence
+
+- Built unmodified ESP-IDF v4.4.7 hello_world and observed its bootloader,
+  both CPU schedulers and application in Espressif QEMU.
+- Added an external-ROM native diagnostic: the same image fails after seven
+  retired instructions at the unimplemented eFuse read, PC 0x4000fdd8/address
+  0x3ff5a000. This is a confirmed native boot blocker, not SDK/board support.
+- Rechecked the advertised module's nominal capacity against Espressif's
+  datasheet; the physical flash manufacturer/part remains unidentified.
+
 ### Experimental explicit W25Q32JV flash programming
 
 - Added an explicitly selected, unprotected W25Q32JV-IQ 4 MiB profile with

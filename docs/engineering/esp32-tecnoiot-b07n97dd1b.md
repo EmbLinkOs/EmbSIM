@@ -23,6 +23,17 @@ Its 30-pin layout resembles boards commonly sold as ESP32 DevKit V1, but that
 name alone does not establish manufacturer, revision or electrical equivalence.
 Marketplace images and shipped units can differ.
 
+## Flash verification update (2026-11-05)
+
+The listing was rechecked: its product-specific title/bullets/overview do not
+identify the fitted flash manufacturer or ordering code. Related-product ads
+are not evidence for this unit. Espressif's original ESP32-WROOM-32 datasheet
+specifies nominal 4 MB external flash, conditional on genuine/correct module
+identity; that does not identify this shipped unit's flash. A physical readout
+has been requested from the owner's macOS/Linux machine. See the
+[flash identity and real boot investigation](esp32-boot-verification.md).
+The selected W25Q32JV-IQ test profile is not verified board hardware.
+
 ## Header transcription
 
 Orientation: component side facing the viewer, antenna at top, USB connector

@@ -7,6 +7,15 @@ does not mean the described behaviour exists.
 
 ## Original ESP32 dual-core target investigation (2026-11-04)
 
+**Boot verification, 2026-11-05:** a pinned unmodified ESP-IDF v4.4.7 example
+boots both schedulers and prints Hello world in Espressif QEMU. Native EmbSIM
+using the same image and QEMU-distributed PRO ROM fails after seven retired
+instructions: PC 0x4000fdd8, eFuse read 0x3ff5a000. This is a confirmed boot
+blocker, not successful SDK/board boot. The physical flash ID remains pending;
+4 MB is only the genuine ESP-WROOM-32 family's nominal datasheet capacity.
+[Evidence and reproduction](engineering/esp32-boot-verification.md) separate
+reference success, native failure and unresolved hardware identity.
+
 The owner requested an original dual-core ESP32 development board. The listing
 is now tied to TECNOIOT ASIN B07N97DD1B: the advertised photo shows a
 30-pin ESP-WROOM-32 board. Exact PCB revision and BOM remain unverified.
