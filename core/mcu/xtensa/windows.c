@@ -8,7 +8,7 @@ enum execution_kind {
     XT_BASE, XT_CALL, XT_ENTRY, XT_RETW, XT_WINDOW_RETURN, XT_ROTW,
     XT_SPECIAL, XT_RSYNC, XT_LOOP, XT_EXCEPTION_MEMORY,
     XT_SAR_SETUP=11, XT_SAR_SHIFT, XT_FENCE, XT_RSIL, XT_SYSCALL,
-    XT_EXCEPTION_RETURN, XT_ILLEGAL, XT_RFI, XT_WAITI, XT_ATOMIC, XT_DIVIDE, XT_THREADPTR
+    XT_EXCEPTION_RETURN, XT_ILLEGAL, XT_RFI, XT_WAITI, XT_ATOMIC, XT_DIVIDE, XT_THREADPTR, XT_MOVSP
 };
 
 static uint32_t bit(unsigned n) { return UINT32_C(1) << (n & 15u); }
@@ -174,7 +174,8 @@ es_status esk_xtensa_window_execute(esk_xtensa_windows *w, const esk_xtensa_memo
         if (s>3 || !(next.ps&ESK_XT_PS_WOE) || (next.ps&ESK_XT_PS_EXCM))
             return reject(fault,ESK_XT_UNSUPPORTED,pc,pc,word);
         mask=bit(n*4+s)|bit(s);
-    } else if (word==0x000090 || word==0xf01d) kind=XT_RETW;
+    } else if ((word&UINT32_C(0xfff00f))==0x001000) { kind=XT_MOVSP;mask=bit(s)|bit(t); }
+    else if (word==0x000090 || word==0xf01d) kind=XT_RETW;
     else if (word==0x003400 || word==0x003500) kind=XT_WINDOW_RETURN;
     else if ((word&UINT32_C(0xffff0f))==0x408000) kind=XT_ROTW;
     else if ((word&UINT32_C(0xff000f))==0x030000 || (word&UINT32_C(0xff000f))==0x130000 || (word&UINT32_C(0xff000f))==0x610000) {
@@ -219,7 +220,13 @@ es_status esk_xtensa_window_execute(esk_xtensa_windows *w, const esk_xtensa_memo
     }
     e=overflow(&next,mask);
     if (e) { *w=next; *event=e; return ES_OK; }
-    if (kind==XT_CALL) {
+    if (kind==XT_MOVSP) {
+        if (!(next.start&(bit(next.base-1u)|bit(next.base-2u)|bit(next.base-3u)))) {
+            if(!next.exceptions_enabled) return reject(fault,ESK_XT_UNSUPPORTED,pc,pc,word);
+            st=esk_xtensa_raise_exception(&next,5,0,0,event);if(st==ES_OK) *w=next;return st;
+        }
+        next.cpu.a[t]=next.cpu.a[s];next.cpu.pc=pc+3;
+    } else if (kind==XT_CALL) {
         next.ps=(next.ps&~UINT32_C(0x30000)) | (n<<16);
         next.cpu.a[n*4]=(n<<30)|((pc+3)&UINT32_C(0x3fffffff)); next.cpu.pc=target; flow=0;
     } else if (kind==XT_ENTRY) {

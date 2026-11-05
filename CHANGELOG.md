@@ -5,6 +5,16 @@ versions follow semantic versioning. There is no release yet.
 
 ## Unreleased
 
+### Experimental Xtensa dynamic stack allocation
+
+- Added MOVSP with wrapped caller-window checks and AllocaCause 5 before SP
+  changes, including ordinary exception entry, retry and loop commit behavior.
+  Firmware owns base-save-area restoration; no host stack-repair shortcut.
+- Added 13,475 native assertions, 32,768 independent assembler comparisons and
+  1,536 actual compiled TLS calls with dynamic buffers (16 exact replays,
+  253,812 retired instructions). Full vendor alloca-handler/RTOS boot remains
+  unqualified.
+
 ### Experimental ESP32 thread-local storage execution
 
 - Added unprivileged RUR/WUR.THREADPTR and privileged RSR/WSR/XSR.MISC0..3,

@@ -155,3 +155,11 @@ local-exec C TLS runs through native RAM: 1,536 calls, six persistent task banks
 16 replays and 52,224 retired instructions. PRID is an explicit test input,
 not a silicon value claim. Neither runner qualifies a scheduler or SDK boot.
 See [context register scope and reproduction](../../docs/engineering/esp32-context-registers.md).
+
+`xtensa_integer/run_alloca.py` takes actual ESP32 `--assembler` and `--objcopy`:
+32,768 MOVSP operand/window/AllocaCause comparisons. Add `--dynamic-stack` to
+`run_tls_c.py` for compiler-generated variable-size stack buffers alongside TLS:
+1,536 calls/MOVSP executions, 16 replays and 253,812 retired instructions. The
+compiled path keeps caller windows resident; native/assembler tests cover the
+missing-caller exception. Complete vendor alloca-handler restoration remains
+unqualified. Reproduction is in the context register contract above.

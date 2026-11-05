@@ -108,6 +108,11 @@ Evidence: 9,723 native context/access/reset assertions, 7,680 independent assemb
 comparisons and 1,536 actual ESP32-compiled TLS calls across six persistent banks
 (16 exact replays, 52,224 retired instructions). Firmware selects the banks;
 this does not establish a scheduler, interrupt-driven task switching or SDK boot.
+MOVSP now implements caller-window checks and configured AllocaCause 5 before
+changing SP. Evidence: 13,475 native assertions, 32,768 independent assembler
+comparisons and another 1,536 actual TLS C calls with dynamic stack buffers
+(16 replays, 253,812 retired instructions). Vendor alloca-handler restoration,
+preemptive scheduling and RTOS boot remain unqualified.
 No runnable ESP32 target is added, and the
 existing RISC-V ESP32-C3 is not a substitute.
 

@@ -1,4 +1,4 @@
-# ESP32 CPU task-context registers and compiler TLS
+# ESP32 CPU task-context registers, compiler TLS and dynamic stack frames
 
 **Implemented: bounded functional THREADPTR/MISC access and explicitly configured
 PRID input in the experimental Xtensa engine. No runnable ESP32 board, SDK boot
@@ -70,6 +70,37 @@ Host ABI setup starts each function call; this is firmware-selected bank
 acceptance, not proof of interrupt-driven preemption, migration, complete context
 switching, FreeRTOS boot or cache coherence. Retired instructions are not cycles.
 
+## Dynamic stack frames and MOVSP
+
+MOVSP is the Xtensa ABI's atomic caller-window check and register move. The
+RI-2021.8 ISA operation checks WINDOWSTART at WINDOWBASE-1, -2 and -3, wrapping
+around the 16-window file. If any of those windows is present, the source moves
+to the destination and execution advances normally. Otherwise configured
+AllocaCause 5 enters the ordinary kernel/user/double exception path before any
+stack-pointer change. Register-window overflow checks precede AllocaCause.
+Without the exception profile, the missing-caller case fails unchanged with
+PC/opcode diagnostics. A successful MOVSP participates in hardware loop commit;
+an exception does not consume an iteration.
+
+Firmware remains responsible for restoring the caller window/base-save area and
+retrying. The engine does not silently adjust a stack frame or fabricate a caller
+window. This work does not qualify ESP-IDF's complete alloca exception handler.
+
+`test_xtensa_alloca` passes **13,475 assertions** for all window bases, all eight
+caller-presence combinations, exception modes, all source/destination operands,
+overflow priority, explicit handler retry, disabled-profile diagnostics and loop
+commit. `run_alloca.py` passes **32,768 independently GNU-assembled comparisons**
+with randomized register values, unrelated-window decoys, wrapped bases and
+kernel/user/double entry.
+
+Adding `--dynamic-stack` to `run_tls_c.py` compiles a runtime-sized volatile
+`__builtin_alloca` buffer inside the TLS update function. Both cores execute the
+actual compiler's MOVSP and return to their original stack pointer. All six TLS
+banks and guards are checked as before: **1,536 calls, 1,536 MOVSP executions,
+16 exact replays and 253,812 retired instructions**. These compiler runs keep
+the caller window resident; missing-caller exception/retry is covered separately
+by native and assembler tests. This is not preemptive RTOS or timing evidence.
+
 ## Reproduction and provenance
 
 Use the external Espressif GCC 8.4.0 esp-2021r2-patch5 toolchain already pinned in
@@ -99,6 +130,15 @@ python3 tests/vendor/xtensa_integer/run_tls_c.py \
   --nm /path/to/xtensa-esp32-elf-nm \
   --port-source /path/to/esp-idf/components/freertos/port/xtensa/port.c \
   --cpu-ll /path/to/esp-idf/components/hal/esp32/include/hal/cpu_ll.h
+```
+
+Run the dynamic-stack variant by adding `--dynamic-stack` to the TLS command.
+The independent MOVSP referee uses:
+
+```sh
+python3 tests/vendor/xtensa_integer/run_alloca.py \
+  --assembler /path/to/xtensa-esp32-elf-as \
+  --objcopy /path/to/xtensa-esp32-elf-objcopy
 ```
 
 The runtime remains independent of these tools and SDK files. Full ISA/FPU/debug,

@@ -46,6 +46,7 @@ def main():
     ap = argparse.ArgumentParser(description=__doc__)
     for name in ['compiler', 'objcopy', 'linker', 'nm']:
         ap.add_argument('--' + name, required=True)
+    ap.add_argument('--dynamic-stack', action='store_true')
     ap.add_argument('--port-source', type=Path, required=True)
     ap.add_argument('--cpu-ll', type=Path, required=True)
     ap.add_argument('--cc', default='cc'); args = ap.parse_args(); rng = random.Random(0x715)
@@ -55,7 +56,10 @@ def main():
     assert 'rsr.prid' in cpu_ll and 'extui %0,%0,13,1' in cpu_ll
     with tempfile.TemporaryDirectory(prefix='embsim-tls-c-') as tmp:
         out = Path(tmp); src, obj, elf, binary = [out / ('tls.' + ext) for ext in ['c', 'o', 'elf', 'bin']]
-        src.write_text(SOURCE, encoding='utf-8')
+        source = SOURCE
+        if args.dynamic_stack:
+            source = source.replace('    counter += delta;', '    unsigned count = (delta & 31) + 1;\n    volatile unsigned *scratch = __builtin_alloca(count * sizeof(unsigned));\n    for (unsigned i = 0; i < count; i++) scratch[i] = delta ^ i;\n    delta = scratch[count - 1] ^ (count - 1);\n    counter += delta;')
+        src.write_text(source, encoding='utf-8')
         subprocess.run([args.compiler, '-B' + str(Path(args.compiler).parent) + '/', '-O1', '-ffreestanding',
                         '-fno-builtin', '-ftls-model=local-exec', '-mtext-section-literals', '-c', str(src), '-o', str(obj)], check=True)
         subprocess.run([args.linker, '--no-relax', '-Ttext=0x40080000', '--entry=task', str(obj), '-o', str(elf)], check=True)
@@ -97,7 +101,7 @@ def main():
         prid = bind('esk_xtensa_prid_configure', C.c_int, C.POINTER(Windows), C.c_uint32)
         run = bind('esk_esp32_machine_run_core', C.c_int, pointer, C.c_uint, C.c_int)
         step = bind('esk_esp32_machine_step', C.c_int, pointer, C.c_uint, C.POINTER(C.c_uint), C.POINTER(Fault))
-        total = 0; calls = 0
+        total = 0; calls = 0; stack_moves = 0
         for trial in range(16):
             expected_replay = None
             deltas = [[rng.getrandbits(32) for _ in range(2)] for _ in range(24)]
@@ -128,14 +132,17 @@ def main():
                             for n, arg in enumerate(args_c): w.cpu.a[6 + n] = arg
                             states.append(w); assert run(machine, cpu, 1) == 0
                         done = [False, False]; event = C.c_uint(); fault = Fault()
-                        for tick in range(1000):
+                        for tick in range(5000):
                             cpu = (tick + trial) % 2; w = states[cpu]
                             if done[cpu]: continue
                             if w.cpu.pc == 0x7ffffff0:
                                 done[cpu] = True; assert run(machine, cpu, 0) == 0
                                 if all(done): break
                                 continue
-                            pc = w.cpu.pc; status = step(machine, cpu, C.byref(event), C.byref(fault))
+                            pc = w.cpu.pc
+                            word = int.from_bytes(code[pc - 0x40080000:pc - 0x40080000 + 3], 'little')
+                            if word & 0xfff00f == 0x001000: stack_moves += 1
+                            status = step(machine, cpu, C.byref(event), C.byref(fault))
                             assert status == 0 and event.value == 0, (status, cpu, hex(fault.pc), hex(fault.opcode), fault.kind, event.value)
                             trace.append((cpu, pc, w.cpu.pc)); total += 1
                         assert all(done)
@@ -149,6 +156,7 @@ def main():
                             zeros[cpu][task] += 1
                             wanted = counters[cpu][task] ^ 0x12345678 ^ zeros[cpu][task]
                             assert w.cpu.a[6] == wanted and w.base == 0 and w.start == 1
+                            assert w.cpu.a[1] == 0x3ffd0000 + cpu * 4096
                             assert w.threadptr == base and w.misc[0] == (0xcafe0000 | (cpu << 8) | turn)
                             assert read(0x3ffc0000 + cpu * 256) == base + bias + symbols['counter']
                             assert read(0x3ffc0004 + cpu * 256) == cpu
@@ -165,7 +173,8 @@ def main():
                 finally:
                     destroy(machine)
                 assert allocator.live_bytes == 0
-        print(f'{calls} actual ESP32 TLS C calls, six persistent task banks, 16 exact replays, {total} retired instructions')
+        assert stack_moves == (calls if args.dynamic_stack else 0)
+        print(f'{calls} actual ESP32 TLS C calls, six persistent task banks, 16 exact replays, {total} retired instructions; {stack_moves} MOVSP executions')
 
 
 if __name__ == '__main__':

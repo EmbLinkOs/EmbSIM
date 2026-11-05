@@ -12,6 +12,8 @@
  * instructions/exception transitions. Init configures an ABI test state, not
  * silicon power-on defaults. Legacy vectors are caller-supplied; explicit
  * reset/relocation profiles use pinned original-ESP32 vector configuration.
+ * MOVSP checks the preceding three windows and raises configured AllocaCause
+ * without changing SP; firmware owns base-save-area relocation and retry.
  * Selected special registers, SAR and opt-in XEA2-with-DEPC exception entry
  * are implemented. CPU interrupt/timer delivery is opt-in; the SoC interrupt
  * matrix, automatic bus/MMU fault dispatch, complete ISA, MMU/caches and

@@ -798,8 +798,13 @@ read-only PRID fixture input. Undefined THREADPTR/MISC reset values follow the
 declared deterministic policy; full silicon PRID remains unresolved. Native
 context tests (9,723 assertions), 7,680 independently assembled comparisons and 1,536 actual ESP32
 C TLS calls pass through native RAM (six persistent banks, 16 exact replays,
-52,224 retired instructions). No scheduler, complete context switch or real
-ROM/SDK boot claim follows.
+52,224 retired instructions). MOVSP now checks the preceding three windows and
+raises AllocaCause 5 before a stack move when restoration is needed. Another
+13,475 native assertions and 32,768 assembled comparisons pass; the TLS runner's
+`--dynamic-stack` variant passes 1,536 compiled dynamic-buffer calls and
+253,812 instructions. Firmware owns base-save restoration and retry. No full
+vendor alloca handler, scheduler, complete context switch or real ROM/SDK boot
+claim follows.
 
 ## Establish identity before catalog publication
 
