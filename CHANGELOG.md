@@ -5,6 +5,16 @@ versions follow semantic versioning. There is no release yet.
 
 ## Unreleased
 
+### Experimental ESP32 thread-local storage execution
+
+- Added unprivileged RUR/WUR.THREADPTR and privileged RSR/WSR/XSR.MISC0..3,
+  with full-width, per-core storage and correct operand/window checks.
+- Added read-only PRID with an explicit fixture input; unconfigured reads remain
+  unsupported. No guessed silicon identity, scheduler or real SDK boot is added.
+- Added 9,723 native context assertions, 7,680 independent assembler comparisons and actual
+  ESP32-compiled C TLS acceptance: 1,536 calls across six persistent banks,
+  16 exact replays and 52,224 retired instructions through native RAM.
+
 ### Experimental ESP32 read-only mapped flash
 
 - Added copied whole-page flash backing, per-core PID0/1 normal-mode MMU tables,

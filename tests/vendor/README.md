@@ -146,3 +146,12 @@ callbacks. These checks qualify immutable PID0/1 mappings with disabled-cache
 edits and explicit flush; they do not qualify physical flash/SPI, live remap,
 cache tags/timing or real ROM/SDK boot. See the
 [flash profile contract](../../docs/engineering/esp32-flash-mapping.md).
+
+`xtensa_integer/run_context.py` takes the pinned `--core-isa`, actual ESP32
+`--assembler` and `--objcopy`: 7,680 independent all-register THREADPTR/MISC/PRID
+comparisons. `run_tls_c.py` takes the actual ESP32 compiler/objcopy/linker/nm,
+plus hash-pinned ESP-IDF v4.4.7 `--port-source` and `--cpu-ll` files. Actual
+local-exec C TLS runs through native RAM: 1,536 calls, six persistent task banks,
+16 replays and 52,224 retired instructions. PRID is an explicit test input,
+not a silicon value claim. Neither runner qualifies a scheduler or SDK boot.
+See [context register scope and reproduction](../../docs/engineering/esp32-context-registers.md).

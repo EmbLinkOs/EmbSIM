@@ -25,6 +25,7 @@ typedef struct esk_xtensa_windows {
     esk_xtensa_interrupts irq;
     uint32_t vectors[6]; /* overflow4, underflow4, overflow8, underflow8, overflow12, underflow12 */
     uint32_t vecbase,vecbase_enabled;
+    uint32_t threadptr,misc[4],prid,prid_enabled;
 } esk_xtensa_windows;
 /* event 0: retired; 1..6: window transition; 7/8/9: kernel/user/double exception;
  * 11..17: accepted interrupt level 1..7; 18: suspended WAITI (step only).
@@ -32,6 +33,13 @@ typedef struct esk_xtensa_windows {
  * syscall/illegal handlers explicitly decide whether to advance EPC1/DEPC.
  * Architectural exception entries intentionally update saved state and PC.
  * Other failures retain state and return the ordinary fault report. */
+/* THREADPTR UR231 and MISC0..3 SR244..247 are per-core, full-width state.
+ * Init zeros them only as fixture setup; supported CPU reset preserves their
+ * undefined architectural values as the declared deterministic policy.
+ * PRID SR235 is read-only and unsupported until explicit reset-pin fixture
+ * configuration. This supplies a constant board/SoC input, not a guessed ESP32
+ * silicon ID or a live pin-waveform model; it survives supported CPU reset. */
+es_status esk_xtensa_prid_configure(esk_xtensa_windows *state,uint32_t value);
 /* Explicit ESP32 relocatable-vector profile. Only 1024-aligned bases are
  * qualified; unaligned/lock-bit writes fail unchanged rather than guessing
  * silicon masking. Aligned RSR/WSR/XSR.VECBASE use SR231 when enabled.

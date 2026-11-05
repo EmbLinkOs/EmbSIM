@@ -100,6 +100,14 @@ Compiled PRO setup plus original test-ROM handoff also passes 128 reset cycles
 into a mapped worker. Immutable backing and disabled-cache table edits bound this
 profile; SPI programming, real cache tags/timing, live SDK mmap/invalidation,
 PSRAM/high PIDs and actual ROM/SDK/board boot remain unimplemented.
+The [CPU task-context register profile](engineering/esp32-context-registers.md)
+now implements unprivileged THREADPTR, privileged MISC0..3 and read-only PRID
+with an explicitly supplied fixture constant. PRID's full silicon value is still
+unverified; the SDK's bit-13 core extraction is tested without inventing it.
+Evidence: 9,723 native context/access/reset assertions, 7,680 independent assembler
+comparisons and 1,536 actual ESP32-compiled TLS calls across six persistent banks
+(16 exact replays, 52,224 retired instructions). Firmware selects the banks;
+this does not establish a scheduler, interrupt-driven task switching or SDK boot.
 No runnable ESP32 target is added, and the
 existing RISC-V ESP32-C3 is not a substitute.
 
