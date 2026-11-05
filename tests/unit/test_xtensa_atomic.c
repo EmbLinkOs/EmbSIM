@@ -116,7 +116,7 @@ static void atomctl_memory_policy(void)
         w.cpu.pc=0x40080000;w.ps=0;w.cpu.a[3]=256;w.cpu.a[2]=42;w.scompare1=9;w.atomctl=control;before=w;
         if(mode==1) {
             CHECK_EQ(execute(&w,&bus,0x00e322,&event,&fault),ES_OK);CHECK_EQ(event,0);
-            CHECK_EQ(b.calls,1);CHECK_EQ(w.cpu.a[2],matched ? 9 : 8);CHECK_EQ(b.value,matched ? 42 : 8);
+            CHECK_EQ(b.calls,1);CHECK_EQ(w.cpu.a[2],matched ? 9u : 8u);CHECK_EQ(b.value,matched ? 42u : 8u);
         } else if(!mode) {
             CHECK_EQ(execute(&w,&bus,0x00e322,&event,&fault),ES_OK);CHECK_EQ(event,7);CHECK_EQ(b.calls,0);
             CHECK_EQ(w.exccause,3);CHECK_EQ(w.excvaddr,256);CHECK_EQ(w.epc1,before.cpu.pc);CHECK_EQ(w.cpu.a[2],42);
