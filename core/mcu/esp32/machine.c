@@ -7,7 +7,7 @@ struct esk_esp32_machine {
     esk_alloc *a;esk_esp32_fabric *fabric;
     esk_xtensa_windows cpu[2];uint64_t retired[2];unsigned running[2],executing;
     uint32_t app_clock,app_stall,app_boot,app_reset,app_reset_enabled,app_reset_vector,app_reset_pending;
-    unsigned spi1_owned;
+    unsigned spi1_owned,efuse_owned;
     esk_esp32_matrix matrix;struct machine_view view[2];
 };
 /* Never mutate an executing CPU from a bus callback. Synchronize the
@@ -21,6 +21,11 @@ static void sync_inputs(esk_esp32_machine *m)
         (void)esk_esp32_matrix_source(&m->matrix,29,asserted);m->spi1_owned=1;
     } else if(m->spi1_owned) {
         (void)esk_esp32_matrix_source(&m->matrix,29,0);m->spi1_owned=0;
+    }
+    if(esk_esp32_fabric_efuse_irq(m->fabric,&asserted)==ES_OK) {
+        (void)esk_esp32_matrix_source(&m->matrix,44,asserted);m->efuse_owned=1;
+    } else if(m->efuse_owned) {
+        (void)esk_esp32_matrix_source(&m->matrix,44,0);m->efuse_owned=0;
     }
     for(cpu=0;cpu<2;cpu++) if(m->cpu[cpu].irq.enabled && !(cpu==1 && m->app_reset_enabled && m->app_reset)) {
         uint32_t levels=esk_esp32_matrix_levels(&m->matrix,cpu);
@@ -106,6 +111,10 @@ es_status esk_esp32_machine_source(esk_esp32_machine *m,unsigned source,int asse
     if(source==29) {
         if(esk_esp32_fabric_spi1_irq(m->fabric,&asserted_now)==ES_OK) return ES_EUNSUPPORTED;
         if(m->spi1_owned) sync_inputs(m);
+    }
+    if(source==44) {
+        if(esk_esp32_fabric_efuse_irq(m->fabric,&asserted_now)==ES_OK) return ES_EUNSUPPORTED;
+        if(m->efuse_owned) sync_inputs(m);
     }
     st=esk_esp32_matrix_source(&m->matrix,source,asserted);if(st==ES_OK) sync_inputs(m);return st;
 }

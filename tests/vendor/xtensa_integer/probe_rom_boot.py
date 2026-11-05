@@ -26,6 +26,7 @@ ROM_SHA256='9115bbcd03da9f54d3baca5ad94d588a43da54ed332347137ba3dc9010df258b'
 def main():
     ap=argparse.ArgumentParser(description=__doc__)
     ap.add_argument('--rom',type=Path,required=True);ap.add_argument('--flash',type=Path,required=True)
+    ap.add_argument('--efuse',type=Path,help='explicit JSON list of 31 raw None-coded fuse words; not inferred board defaults')
     ap.add_argument('--report',type=Path);ap.add_argument('--steps',type=int,default=100000)
     ap.add_argument('--cc',default='cc');args=ap.parse_args()
     if not 1<=args.steps<=1000000:ap.error('--steps must be 1..1000000')
@@ -35,7 +36,7 @@ def main():
     with tempfile.TemporaryDirectory(prefix='embsim-native-rom-probe-') as tmp:
         lib=Path(tmp)/'probe.so'
         sources=[ROOT/'core/mcu/xtensa'/n for n in ['integer.c','execute.c','windows.c','interrupts.c']]
-        sources += [ROOT/'core/mcu/esp32'/n for n in ['fabric.c','machine.c','matrix.c','flashmap.c','flashspi.c','w25q32.c']]
+        sources += [ROOT/'core/mcu/esp32'/n for n in ['fabric.c', 'efuse.c','machine.c','matrix.c','flashmap.c','flashspi.c','w25q32.c', 'nor32.c', 'gt25q32.c']]
         sources += [ROOT/'core/util/alloc.c']
         subprocess.run([args.cc,'-std=c99','-Wall','-Wextra','-Wconversion','-Werror','-shared','-fPIC',
                         '-I'+str(ROOT/'core'),'-I'+str(ROOT/'include'),*map(str,sources),'-o',str(lib)],check=True)
@@ -48,6 +49,7 @@ def main():
         fabric=bind('esk_esp32_machine_fabric',pointer,pointer)
         install=bind('esk_esp32_fabric_rom',C.c_int,pointer,C.c_uint,pointer,C.c_size_t)
         flash=bind('esk_esp32_fabric_flash',C.c_int,pointer,pointer,C.c_size_t)
+        efuse=bind('esk_esp32_fabric_efuse_configure',C.c_int,pointer,C.POINTER(C.c_uint32),C.c_size_t)
         spi=bind('esk_esp32_fabric_spi1_configure',C.c_int,pointer,C.c_int)
         core=bind('esk_esp32_machine_core',C.POINTER(Windows),pointer,C.c_uint)
         reset=bind('esk_xtensa_lx6_reset',C.c_int,C.POINTER(Windows),C.c_uint)
@@ -63,7 +65,14 @@ def main():
                 'rom_tail_policy':'zero-fill absent DROM tail to match QEMU region setup, not silicon contents',
                 'flash_profile':'immutable SPI1 fixture, not a physical flash identity'}
         try:
-            ram=fabric(machine);data=rom[:0x60000]
+            ram=fabric(machine)
+            if args.efuse:
+                words=json.loads(args.efuse.read_text(encoding='utf-8'))
+                if not isinstance(words,list) or len(words)!=31 or any(type(n) is not int or not 0<=n<=0xffffffff for n in words):ap.error('eFuse image must contain 31 uint32 words')
+                supplied=(C.c_uint32*31)(*words)
+                if efuse(ram,supplied,31)!=0:ap.error('unsupported eFuse coding/profile; expected None coding')
+                report['efuse_fixture_sha256']=hashlib.sha256(args.efuse.read_bytes()).hexdigest()
+            data=rom[:0x60000]
             assert install(ram,0,C.c_char_p(data),len(data))==0
             data=rom[0x60000:]+bytes(0x70000-len(rom));assert len(data)==65536
             assert install(ram,1,C.c_char_p(data),len(data))==0

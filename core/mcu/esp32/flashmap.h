@@ -26,6 +26,8 @@ es_status esk_esp32_flashmap_spi1_configure(esk_esp32_flashmap *f,int enabled);
 /* Explicit W25Q32JV-IQ unprotected 4MiB profile, not a board-part assertion.
  * Both caches disabled; cannot detach or replace backing while busy. */
 es_status esk_esp32_flashmap_w25q32_configure(esk_esp32_flashmap *f,int enabled);
+/* Giantec subset described by gt25q32.h; mutually exclusive with Winbond. */
+es_status esk_esp32_flashmap_gt25q32_configure(esk_esp32_flashmap *f,int enabled);
 es_status esk_esp32_flashmap_flash_advance(esk_esp32_flashmap *f,uint64_t microseconds);
 es_status esk_esp32_flashmap_flash_deadline(const esk_esp32_flashmap *f,uint64_t *microseconds);
 es_status esk_esp32_flashmap_spi1_irq(const esk_esp32_flashmap *f,int *asserted);

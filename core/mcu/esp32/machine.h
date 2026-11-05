@@ -8,9 +8,10 @@
 typedef struct esk_esp32_machine esk_esp32_machine;
 /* Experimental two-context execution harness over shared internal memory.
  * Deterministic serialized instruction turns, not a cycle scheduler or full SoC.
- * No vendor boot ROM, peripheral generators,
- * cache arbitration/coherence or board model. Host controls are debug/test
- * operations, not emulated hardware control registers. No concurrent callers. */
+ * No bundled ROM or complete SoC boot. SPI1/eFuse generators are opt-in;
+ * Other peripherals, cache arbitration/coherence and board model are absent.
+ * Host configure/run APIs are debug/test operations; firmware APP-control
+ * registers have the separate contract below. No concurrent callers. */
 es_status esk_esp32_machine_create(esk_alloc *a,esk_esp32_machine **out);
 void esk_esp32_machine_destroy(esk_esp32_machine *m);
 esk_esp32_fabric *esk_esp32_machine_fabric(esk_esp32_machine *m);
@@ -26,7 +27,8 @@ esk_esp32_fabric *esk_esp32_machine_fabric(esk_esp32_machine *m);
  * not irq_line on CPU peripheral input numbers. Internal timer/software and
  * profiling inputs remain CPU-local. No API is re-entrant or thread-safe. */
 esk_xtensa_memory esk_esp32_machine_bus(esk_esp32_machine *m,unsigned cpu);
-/* The opt-in SPI1 read profile owns matrix source 29 while enabled. Its
+/* Opt-in SPI1 owns matrix source 29; the eFuse profile owns source 44.
+ * Both ownerships are active only while their respective profiles are enabled.
  * completion/enable changes route after commit (immediately for host bus writes).
  * External source injection into that owned slot fails explicitly. */
 es_status esk_esp32_machine_source(esk_esp32_machine *m,unsigned source,int asserted);

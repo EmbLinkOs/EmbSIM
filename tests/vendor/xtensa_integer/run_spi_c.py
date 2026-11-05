@@ -6,7 +6,7 @@
 Both cores serialize the shared controller with a compiled atomic lock. Some
 runs copy code from SPI into instruction RAM and call it. No vendor ROM/SDK boot,
 DMA, physical timing or complete board qualification. --program-workers uses
-the explicitly selected unprotected W25Q32JV-IQ subset, not a board identity.
+an explicitly selected unprotected named-part subset, not a full board identity.
 """
 import argparse
 import ctypes as C
@@ -93,7 +93,11 @@ def main():
     for name in ['compiler','objcopy','linker','nm']: ap.add_argument('--'+name,required=True)
     ap.add_argument('--ll-header',type=Path,required=True);ap.add_argument('--struct-header',type=Path,required=True)
     ap.add_argument('--program-workers',action='store_true')
+    ap.add_argument('--flash-tick-period',type=int,default=37)
+    ap.add_argument('--flash-part',choices=['w25q32','gt25q32'],default='w25q32')
     ap.add_argument('--cc',default='cc');args=ap.parse_args();rng=random.Random(0x5b11)
+    if args.flash_part!='w25q32' and not args.program_workers:ap.error('--flash-part requires --program-workers')
+    if not 1<=args.flash_tick_period<=100000:ap.error('invalid flash tick period')
     ll=read_header(args.ll_header,'d1331e0d99ff2377e80e7ec4b8f314453345e68d894f5d2b3139c0e8069ae724')
     struct=read_header(args.struct_header,'97fffd958e992ea25af94e08bb6e5b6c7487671b3e070efa68e80d216db383b2')
     helpers=[]
@@ -106,7 +110,7 @@ def main():
             end+=1
         helpers.append(ll[match.start():end])
     notice=ll[:ll.index('#pragma once')]
-    total=0;calls=0;loaded=0;busy_turns=0
+    total=0;calls=0;loaded=0;busy_turns=0;busy_polls=0
     with tempfile.TemporaryDirectory(prefix='embsim-spi-c-') as tmp:
         out=Path(tmp);(out/'vendor-spi-struct.h').write_text(struct,encoding='utf-8')
         def compile_code(name,source,base,entry,flags=()):
@@ -120,6 +124,8 @@ def main():
                      if len(f:=line.split())==3}
             return binary.read_bytes(),symbols[entry]
         body=SOURCE.replace('    dev->ctrl.fastrd_mode=0;', PROGRAM_PREFIX+'    dev->ctrl.fastrd_mode=0;',1) if args.program_workers else SOURCE
+        if args.program_workers and args.flash_tick_period!=37:
+            body=body.replace('} while(dev->data_buf[0]&1);', 'if(dev->data_buf[0]&1) (*(volatile unsigned *)0x3ffc1004)++;\n            } while(dev->data_buf[0]&1);')
         source=notice+'\n#include <stdint.h>\n#include <stdbool.h>\n#include "vendor-spi-struct.h"\n'+'\n'.join(helpers)+body
         code,start=compile_code('operation',source,0x40080000,'operation')
         image=bytearray(rng.getrandbits(8) for _ in range(0x400000 if args.program_workers else 4*65536));entries=[];lengths=[];payloads=[];tags=[0x12345678,0x98765432]
@@ -131,7 +137,7 @@ def main():
             entries.append(entry);lengths.append(len(worker))
         image=bytes(image);lib=out/'spi.so'
         sources=[ROOT/'core/mcu/xtensa'/n for n in ['integer.c','execute.c','windows.c','interrupts.c']]
-        sources += [ROOT/'core/mcu/esp32'/n for n in ['fabric.c','machine.c','matrix.c','flashmap.c','flashspi.c', 'w25q32.c']]
+        sources += [ROOT/'core/mcu/esp32'/n for n in ['fabric.c', 'efuse.c','machine.c','matrix.c','flashmap.c','flashspi.c', 'w25q32.c', 'nor32.c', 'gt25q32.c']]
         sources += [ROOT/'core/util/alloc.c']
         subprocess.run([args.cc,'-std=c99','-Wall','-Wextra','-Wconversion','-Werror','-shared','-fPIC',
                         '-I'+str(ROOT/'core'),'-I'+str(ROOT/'include'),*map(str,sources),'-o',str(lib)],check=True)
@@ -144,7 +150,7 @@ def main():
         fabric=bind('esk_esp32_machine_fabric',pointer,pointer)
         bus_get=bind('esk_esp32_machine_bus',Memory,pointer,C.c_uint)
         load=bind('esk_esp32_fabric_load',C.c_int,pointer,C.c_uint,C.c_uint32,pointer,C.c_size_t)
-        select=bind('esk_esp32_fabric_w25q32_configure',C.c_int,pointer,C.c_int)
+        select=bind('esk_esp32_fabric_'+args.flash_part+'_configure',C.c_int,pointer,C.c_int)
         advance=bind('esk_esp32_fabric_flash_advance',C.c_int,pointer,C.c_uint64)
         deadline=bind('esk_esp32_fabric_flash_deadline',C.c_int,pointer,C.POINTER(C.c_uint64))
         flash=bind('esk_esp32_fabric_flash',C.c_int,pointer,pointer,C.c_size_t)
@@ -182,12 +188,12 @@ def main():
                         states.append(w);assert run(m,cpu,1)==0
                     done=[False,False];event=C.c_uint();fault=Fault();trace=[];worker_steps=[0,0]
                     for tick in range(30000):
-                        # Explicit external flash-time fixture: 1 ms events every 37
+                        # Explicit external flash-time fixture: 1 ms events at the selected
                         # scheduled turns. This is not a CPU instruction/cycle timing model.
                         if args.program_workers:
                             remaining=C.c_uint64();assert deadline(ram,C.byref(remaining))==0
                             busy_turns+=remaining.value!=0
-                            if tick%37==0: assert advance(ram,1000)==0
+                            if tick%args.flash_tick_period==0: assert advance(ram,1000)==0
                         cpu=(tick+trial)%2;w=states[cpu]
                         if done[cpu]:continue
                         if w.cpu.pc==0x7ffffff0:
@@ -210,6 +216,10 @@ def main():
                         assert actual==expected[cpu][1]
                         assert bool(worker_steps[cpu])==bool(params[cpu][3]);loaded+=bool(worker_steps[cpu]);calls+=1
                     assert bus.read(bus.ctx,0x3ffc1000,4,C.byref(read))==0 and read.value==0
+                    if args.program_workers and args.flash_tick_period!=37:
+                        assert bus.read(bus.ctx,0x3ffc1004,4,C.byref(read))==0
+                        if params[0][3] and args.flash_tick_period>=257:assert read.value>0
+                        busy_polls+=read.value
                     assert bus.read(bus.ctx,0x3ff000ec,4,C.byref(read))==0 and not read.value&(1<<29)
                     result=trace,[w.cpu.a[6] for w in states]
                     if replay:assert result==previous
@@ -217,8 +227,8 @@ def main():
                 finally:destroy(m)
                 assert a.live_bytes==0
         if args.program_workers: assert busy_turns>0
-        action='SPI-programmed' if args.program_workers else 'SPI-loaded'
-        print(f'{calls} actual ESP32 SPI1 C reads, {loaded} {action} RAM workers, 32 exact replays, {total} retired instructions; {busy_turns} busy turns; seven unchanged SDK helper bodies')
+        action=(args.flash_part+'-programmed') if args.program_workers else 'SPI-loaded'
+        print(f'{calls} actual ESP32 SPI1 C reads, {loaded} {action} RAM workers, 32 exact replays, {total} retired instructions; {busy_turns} busy turns, {busy_polls} instrumented firmware BUSY reads; seven unchanged SDK helper bodies')
 
 
 if __name__=='__main__':main()

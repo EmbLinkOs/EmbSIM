@@ -190,3 +190,17 @@ after seven retired instructions at the missing eFuse read. The same image
 boots both schedulers and the application in Espressif QEMU. The probe returns
 1 for blocked/inconclusive boot, and does not invent MMIO or jump past reset.
 See [boot verification and artifacts](../../docs/engineering/esp32-boot-verification.md).
+
+`xtensa_integer/run_efuse.py` takes pinned ESP-IDF v4.4.7 `--efuse-reg`,
+`--efuse-ll`, `--soc-header` and actual ESP32 compiler/objcopy/linker/nm tools:
+3,968 register/protection comparisons and 128 compiled C calls/5,248 instructions
+through seven unchanged SDK helpers. Explicit synthetic None-coded images only;
+no owner keys or full burn/SDK qualification. Add `--efuse FILE` to the ROM probe
+for the [new eFuse profile](../../docs/engineering/esp32-efuse-read-profile.md).
+
+`run_w25q32.py --part gt25q32 --datasheet FILE` uses the hash-pinned Giantec V2.5
+PDF and an independent array/time oracle. `run_spi_c.py --program-workers
+--flash-part gt25q32 --flash-tick-period 257` stresses actual firmware BUSY reads:
+128 reads, 32 programmed workers, 32 replays, 139,520 instructions, 432 observed
+BUSY reads. The external-time schedule is artificial, not processor timing.
+See [Giantec scope](../../docs/engineering/esp32-giantec-profile.md).

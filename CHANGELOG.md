@@ -5,6 +5,20 @@ versions follow semantic versioning. There is no release yet.
 
 ## Unreleased
 
+### Original ESP32 eFuse reads and Giantec storage
+
+- Added an explicit None-coded 31-word eFuse image/read/reload profile, software
+  read protection, completion status and source-44 routing. OTP programming,
+  other coding schemes and hardware fuse consumers remain unqualified.
+- A supplied synthetic unprogrammed image advances the real ROM probe from seven
+  to 30 retired instructions; boot now blocks on RTC control at 0x3ff48000.
+  This does not establish native SDK boot or reproduce the owner's fuse contents.
+- Added a separate Giantec GT25Q32A-U subset matching reported C4 60 16, with
+  independently qualified maximum-duration and WEL policies. Shared array code
+  preserves the separate Winbond fixture. Full chip behavior remains unfinished.
+- Native/referee/actual compiler checks pass, including 432 firmware-observed
+  BUSY reads during Giantec programming and 128 C eFuse helper calls.
+
 ### Owner ESP32 hardware identification
 
 - Recorded the owner's physical esptool readout: ESP32-D0WD-V3 v3.1, 40 MHz

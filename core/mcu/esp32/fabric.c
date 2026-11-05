@@ -3,12 +3,14 @@
 /* Address facts: ESP32 TRM v5.9, section 3.3.2. No vendor code copied. */
 #include "mcu/esp32/fabric.h"
 #include "mcu/esp32/flashmap.h"
+#include "mcu/esp32/efuse.h"
 #include <string.h>
 struct view { struct esk_esp32_fabric *f;unsigned cpu; };
 struct esk_esp32_fabric {
     esk_alloc *a;
     unsigned char sram0[0x20000],sram1[0x20000],sram2[0x32000],fast[0x2000],slow[0x2000];
     unsigned char *rom[2];esk_esp32_flashmap *flash;
+    esk_esp32_efuse efuse;
     unsigned remap[2];struct view view[2];
 };
 struct location { unsigned char *byte;int readonly,word_only,executable,atomic; };
@@ -59,6 +61,7 @@ static es_status read_bus(void *ctx,uint32_t a,unsigned n,uint32_t *v)
 {
     struct view *view=(struct view *)ctx;es_status st;
     if(!view) return ES_EINVAL;
+    st=esk_esp32_efuse_read(&view->f->efuse,a,n,v);if(st!=ES_EUNSUPPORTED) return st;
     if(view->f->flash) {
         st=esk_esp32_flashmap_reg_read(view->f->flash,a,n,v);if(st!=ES_EUNSUPPORTED) return st;
         st=esk_esp32_flashmap_read(view->f->flash,view->cpu,a,n,0,v);if(st!=ES_EUNSUPPORTED) return st;
@@ -76,6 +79,7 @@ static es_status write_bus(void *ctx,uint32_t a,unsigned n,uint32_t value)
 {
     struct view *view=(struct view *)ctx;es_status st;
     if(!view) return ES_EINVAL;
+    st=esk_esp32_efuse_write(&view->f->efuse,a,n,value);if(st!=ES_EUNSUPPORTED) return st;
     if(view->f->flash) { st=esk_esp32_flashmap_reg_write(view->f->flash,a,n,value);if(st!=ES_EUNSUPPORTED) return st; }
     return access(view,a,n,0,1,&value);
 }
@@ -97,7 +101,7 @@ es_status esk_esp32_fabric_create(esk_alloc *a,esk_esp32_fabric **out)
     *out=NULL;
     if(!a) return ES_EINVAL;
     f=(esk_esp32_fabric *)esk_calloc(a,1,sizeof *f);if(!f) return ES_ENOMEM;
-    f->a=a;for(i=0;i<2;i++) { f->view[i].f=f;f->view[i].cpu=i; }*out=f;return ES_OK;
+    f->a=a;esk_esp32_efuse_init(&f->efuse);for(i=0;i<2;i++) { f->view[i].f=f;f->view[i].cpu=i; }*out=f;return ES_OK;
 }
 void esk_esp32_fabric_destroy(esk_esp32_fabric *f)
 {
@@ -139,6 +143,11 @@ es_status esk_esp32_fabric_w25q32_configure(esk_esp32_fabric *f,int enabled)
     if(!f) return ES_EINVAL;
     return f->flash ? esk_esp32_flashmap_w25q32_configure(f->flash,enabled) : ES_EUNSUPPORTED;
 }
+es_status esk_esp32_fabric_gt25q32_configure(esk_esp32_fabric *f,int enabled)
+{
+    if(!f) return ES_EINVAL;
+    return f->flash ? esk_esp32_flashmap_gt25q32_configure(f->flash,enabled) : ES_EUNSUPPORTED;
+}
 es_status esk_esp32_fabric_flash_advance(esk_esp32_fabric *f,uint64_t microseconds)
 {
     if(!f) return ES_EINVAL;
@@ -149,6 +158,10 @@ es_status esk_esp32_fabric_flash_deadline(const esk_esp32_fabric *f,uint64_t *mi
     if(!f || !microseconds) return ES_EINVAL;
     return f->flash ? esk_esp32_flashmap_flash_deadline(f->flash,microseconds) : ES_EUNSUPPORTED;
 }
+es_status esk_esp32_fabric_efuse_configure(esk_esp32_fabric *f,const uint32_t *words,size_t count)
+{ return f ? esk_esp32_efuse_configure(&f->efuse,words,count) : ES_EINVAL; }
+es_status esk_esp32_fabric_efuse_irq(const esk_esp32_fabric *f,int *asserted)
+{ return f ? esk_esp32_efuse_irq(&f->efuse,asserted) : ES_EINVAL; }
 es_status esk_esp32_fabric_remap(esk_esp32_fabric *f,unsigned cpu,int enabled)
 {
     if(!f || cpu>1) return ES_EINVAL;

@@ -9,8 +9,8 @@ typedef struct esk_esp32_fabric esk_esp32_fabric;
  * non-cache 128K, SRAM1 128K (reversed instruction words), SRAM2 200K, RTC
  * fast/slow 8K each. RTC fast is PRO-only. Optional read-only flash mapping
  * and an opt-in SPI1 read path are described below. No full cache/MMU/MPU,
- * other peripherals/DMA, RTC power/retention
- * or physical reset qualification. RAM starts zero only
+ * other peripherals/DMA (apart from the explicit eFuse read profile),
+ * RTC power/retention or physical reset qualification. RAM starts zero only
  * for deterministic setup. Serialized single-thread calls only; no re-entry. */
 es_status esk_esp32_fabric_create(esk_alloc *a,esk_esp32_fabric **out);
 void esk_esp32_fabric_destroy(esk_esp32_fabric *f);
@@ -40,9 +40,18 @@ es_status esk_esp32_fabric_spi1_irq(const esk_esp32_fabric *f,int *asserted);
  * between machine turns; APP clock gates do not stop this independent clock.
  * Program/erase require a fresh cache flush after completion before re-enable. */
 es_status esk_esp32_fabric_w25q32_configure(esk_esp32_fabric *f,int enabled);
+/* Giantec GT25Q32A-U matching JEDEC class; bounded subset in gt25q32.h.
+ * Same cache/time/attach contract, mutually exclusive with the Winbond fixture.
+ * No automatic identity selection or claimed package/die revision match. */
+es_status esk_esp32_fabric_gt25q32_configure(esk_esp32_fabric *f,int enabled);
 es_status esk_esp32_fabric_flash_advance(esk_esp32_fabric *f,uint64_t microseconds);
 /* Zero deadline means idle; failed calls leave output unchanged. */
 es_status esk_esp32_fabric_flash_deadline(const esk_esp32_fabric *f,uint64_t *microseconds);
+/* Explicit read-only eFuse image, see efuse.h. All 31 words required, in
+ * BLK0(7), BLK1(8), BLK2(8), BLK3(8) order. No factory defaults inferred.
+ * NULL/0 detaches. Host configuration is only allowed between machine turns. */
+es_status esk_esp32_fabric_efuse_configure(esk_esp32_fabric *f,const uint32_t *words,size_t count);
+es_status esk_esp32_fabric_efuse_irq(const esk_esp32_fabric *f,int *asserted);
 /* Host-controlled boot-remap bit, not a DPORT register model. */
 es_status esk_esp32_fabric_remap(esk_esp32_fabric *f,unsigned cpu,int enabled);
 /* All-or-nothing RAM image write through the selected core's address view. */

@@ -26,6 +26,14 @@ manufacturer documentation matches that ID; exact ordering/package remains
 unresolved. This identifies the measured unit more precisely than the listing,
 and differs from the separate Winbond test profile.
 
+The [explicit eFuse read/reload profile](esp32-efuse-read-profile.md) now handles
+that first access when a caller supplies all 31 uncoded words. A synthetic
+unprogrammed fixture advances ROM to 30 retired instructions and the next
+unimplemented RTC write at 0x3ff48000. It is not the owner's fuse dump and does
+not establish full boot. The [Giantec storage subset](esp32-giantec-profile.md)
+adds independently checked timing/WEL behavior for the matching JEDEC family;
+complete chip behavior remains unqualified.
+
 ## Reference material
 
 Primary references inspected for this investigation:

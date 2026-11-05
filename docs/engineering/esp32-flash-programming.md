@@ -22,6 +22,10 @@ That differs from this fixture's EF 40 16. See the
 [physical readout evidence](esp32-boot-verification.md). Selecting this Winbond
 part is a separate test configuration, not the owner's verified board profile.
 
+The matching family now has a separate [Giantec subset](esp32-giantec-profile.md),
+with its own timing and WEL semantics. It shares only the qualified common array
+engine with this adapter; Winbond identity/behavior is not substituted for Giantec.
+
 ## Qualified subset
 
 `w25q32.c` is an original protocol/state implementation with no ESP32 register

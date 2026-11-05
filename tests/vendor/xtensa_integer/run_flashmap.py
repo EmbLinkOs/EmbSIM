@@ -51,7 +51,7 @@ def main():
     with tempfile.TemporaryDirectory(prefix='embsim-flashmap-') as tmp:
         lib = Path(tmp) / 'flashmap.so'
         subprocess.run([args.cc, '-std=c99', '-Wall', '-Wextra', '-Wconversion', '-Werror', '-shared', '-fPIC',
-                        '-I' + str(ROOT / 'core'), '-I' + str(ROOT / 'include'), str(ROOT / 'core/mcu/esp32/flashmap.c'), str(ROOT / 'core/mcu/esp32/flashspi.c'), str(ROOT / 'core/mcu/esp32/w25q32.c'),
+                        '-I' + str(ROOT / 'core'), '-I' + str(ROOT / 'include'), str(ROOT / 'core/mcu/esp32/flashmap.c'), str(ROOT / 'core/mcu/esp32/flashspi.c'), str(ROOT / 'core/mcu/esp32/w25q32.c'), str(ROOT / 'core/mcu/esp32/nor32.c'), str(ROOT / 'core/mcu/esp32/gt25q32.c'),
                         str(ROOT / 'core/util/alloc.c'), '-o', str(lib)], check=True)
         api = C.CDLL(str(lib)); pointer = C.c_void_p
         def bind(name, result, *params):

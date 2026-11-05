@@ -110,6 +110,13 @@ configuration or printed SDK capacity must not substitute for hardware identity.
 
 ## Native EmbSIM result: blocked
 
+**Implementation follow-up:** the new [eFuse read profile](esp32-efuse-read-profile.md)
+accepts an explicitly supplied image. The synthetic unprogrammed fixture advances
+the same ROM to 30 retired instructions and an unimplemented RTC write at
+0x3ff48000/PC 0x4000fdcd. That is not the owner's factory image and still does not
+boot the application. The baseline no-eFuse-profile result below remains valid.
+
+
 The same merged image and Espressif QEMU-distributed PRO ROM were supplied to
 the native machine. No firmware PC was set past reset and no missing MMIO
 values were supplied to force boot onward. Result:

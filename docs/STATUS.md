@@ -7,7 +7,16 @@ does not mean the described behaviour exists.
 
 ## Original ESP32 dual-core target investigation (2026-11-04)
 
-**Boot verification, 2026-11-05:** a pinned unmodified ESP-IDF v4.4.7 example
+**Current implementation update:** an [explicit eFuse read/reload profile](engineering/esp32-efuse-read-profile.md)
+now supports None-coded input images, read protection and completion routing.
+With a supplied synthetic unprogrammed image, real ROM execution advances from
+seven to 30 retired instructions, then blocks on RTC control at 0x3ff48000.
+The owner's actual fuse image is not inferred. A separate
+[Giantec GT25Q32A-U storage subset](engineering/esp32-giantec-profile.md) now matches
+the reported ID, with independent timing/WEL behavior. Full native boot,
+complete chip behavior, OTP programming and SoC hardware consumers remain absent.
+
+**Initial no-eFuse-image boot verification, 2026-11-05:** a pinned unmodified ESP-IDF v4.4.7 example
 boots both schedulers and prints Hello world in Espressif QEMU. Native EmbSIM
 using the same image and QEMU-distributed PRO ROM fails after seven retired
 instructions: PC 0x4000fdd8, eFuse read 0x3ff5a000. This is a confirmed boot
