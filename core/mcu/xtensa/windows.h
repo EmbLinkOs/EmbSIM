@@ -4,6 +4,7 @@
 #define ESK_XTENSA_WINDOWS_H
 #include "mcu/xtensa/execute.h"
 #include "mcu/xtensa/interrupts.h"
+#define ESK_XT_PS_MASK UINT32_C(0x00070fff)
 #define ESK_XT_PS_EXCM UINT32_C(0x10)
 #define ESK_XT_PS_WOE UINT32_C(0x40000)
 /* Experimental LX6 64-AR register-window execution, NOT SoC support.

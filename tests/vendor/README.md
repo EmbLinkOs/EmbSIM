@@ -112,3 +112,8 @@ firmware suspend/resume APP during message/interrupt traffic: 256 runs,
 unchanged PC/registers on suspended turns and final control fields. Its counted
 suspended turns are instruction attempts, not physical clock cycles. All machine
 fixture runners now explicitly enable the documented APP clock field.
+
+`xtensa_integer/run_ps.py` takes actual ESP32 `--assembler` and `--objcopy` tools.
+It passes 3,456 PS read/write/exchange and RFI cases against a Python field/register
+oracle, checking every operand register and reserved-bit masking. It does not
+qualify full privilege/MMU behavior, physical RSYNC latency or processor reset.

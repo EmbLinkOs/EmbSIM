@@ -293,6 +293,34 @@ python tests/vendor/xtensa_integer/run_system_c.py \
   --nm /path/to/xtensa-esp32-elf-nm
 ```
 
+## Implemented: PS field masking and exchange
+
+RSR/WSR/XSR.PS expose only implemented fields: INTLEVEL/EXCM/UM/RING/OWB in
+bits 11..0 and CALLINC/WOE in bits 18..16 (mask `00070FFF`), as defined by the
+Xtensa ISA PS register table. Reserved bits read zero and are discarded on
+writes. XSR returns the old PS in its operand register and installs that
+register's prior value, with the same field mask. RFI copies only implemented
+PS bits from EPS without rewriting EPS storage.
+
+Existing register-window and privilege checks precede the exchange. Mask changes
+are one state transition; a pending interrupt forbidden by both old and new
+masks does not enter through an invented intermediate state. Subsequent eligible
+polls use the new mask. RING changes are qualified only from EXCM in these
+fixtures; full MMU/privilege behavior, synchronization/pipeline latency and a
+silicon reset sequence remain outside this subset.
+
+`test_xtensa_ps` passes 1,304 assertions across all operand registers, reserved
+bits, RFI levels 2..7, privilege rejection, window-overflow priority and atomic
+mask changes. `run_ps.py` passes 3,456 independently GNU-assembled PS/RFI cases
+against a Python register/field oracle. Actual compiled mailbox/control C
+handlers continue to pass with the masked PS transitions.
+
+```sh
+python tests/vendor/xtensa_integer/run_ps.py \
+  --assembler /path/to/xtensa-esp32-elf-as \
+  --objcopy /path/to/xtensa-esp32-elf-objcopy
+```
+
 ## Implemented: ESP32 CPU interrupts and explicit compare-clock ticks
 
 `interrupts.c` implements the configured ESP32 LX6 CPU input controller. The

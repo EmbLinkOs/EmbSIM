@@ -63,7 +63,7 @@ static uint32_t special_read(const esk_xtensa_windows *w,unsigned reg)
     switch (reg) {
     case 0:return w->lbeg; case 1:return w->lend; case 2:return w->lcount; case 3:return w->sar;
     case 12:return w->scompare1; case 72:return w->base; case 73:return w->start; case 177:return w->epc1;
-    case 192:return w->depc; case 230:return w->ps; case 232:return w->exccause; default:return w->excvaddr;
+    case 192:return w->depc; case 230:return w->ps&ESK_XT_PS_MASK; case 232:return w->exccause; default:return w->excvaddr;
     }
 }
 static void special_write(esk_xtensa_windows *w,unsigned reg,uint32_t value)
@@ -76,7 +76,7 @@ static void special_write(esk_xtensa_windows *w,unsigned reg,uint32_t value)
     case 72:w->base=value&15u;load(w);break;
     case 73:w->start=value&65535u;break;
     case 177:w->epc1=value;break; case 192:w->depc=value;break;
-    case 230:w->ps=value;break; case 232:w->exccause=value;break; default:w->excvaddr=value;break;
+    case 230:w->ps=value&ESK_XT_PS_MASK;break; case 232:w->exccause=value;break; default:w->excvaddr=value;break;
     }
 }
 /* Register references are checked before any access. Zero/compare branches do
@@ -149,7 +149,7 @@ es_status esk_xtensa_window_execute(esk_xtensa_windows *w, const esk_xtensa_memo
     else if ((word&UINT32_C(0xffff0f))==0x408000) kind=XT_ROTW;
     else if ((word&UINT32_C(0xff000f))==0x030000 || (word&UINT32_C(0xff000f))==0x130000 || (word&UINT32_C(0xff000f))==0x610000) {
         unsigned reg=(word>>8)&255u;
-        if (!special_valid(&next,reg) || (reg==227 && (word&UINT32_C(0xff000f))==0x030000) || ((word&UINT32_C(0xff000f))==0x610000 && reg!=3 && reg!=12))
+        if (!special_valid(&next,reg) || (reg==227 && (word&UINT32_C(0xff000f))==0x030000) || ((word&UINT32_C(0xff000f))==0x610000 && reg!=3 && reg!=12 && reg!=230))
             return reject(fault,ESK_XT_UNSUPPORTED,pc,pc,word);
         kind=XT_SPECIAL; mask=bit(t);
     }

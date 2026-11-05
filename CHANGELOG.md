@@ -5,6 +5,14 @@ versions follow semantic versioning. There is no release yet.
 
 ## Unreleased
 
+### Experimental Xtensa status-register correctness
+
+- Fixed PS writes/reads to mask reserved fields and added legal XSR.PS exchange.
+  RFI restores only implemented PS bits while preserving EPS storage.
+- Added 1,304 native checks and 3,456 independent GNU-assembled PS/RFI comparisons,
+  covering all operand registers, privilege/window priority and atomic interrupt
+  masking. No full reset, MMU or physical synchronization timing claim is added.
+
 ### Experimental ESP32 APP execution controls
 
 - Added DPORT APP clock-enable/run-stall and ROM-consumed boot-address fields.

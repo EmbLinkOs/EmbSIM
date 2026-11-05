@@ -65,7 +65,7 @@ es_status esk_xtensa_irq_poll(struct esk_xtensa_windows *w,unsigned *event)
 es_status esk_xtensa_irq_return(struct esk_xtensa_windows *w,unsigned level)
 {
     if (!w || !w->irq.enabled || level<2 || level>7) return ES_EUNSUPPORTED;
-    w->ps=w->irq.eps[level];w->cpu.pc=w->irq.epc[level];return ES_OK;
+    w->ps=w->irq.eps[level]&ESK_XT_PS_MASK;w->cpu.pc=w->irq.epc[level];return ES_OK;
 }
 int esk_xtensa_irq_special(unsigned reg)
 {

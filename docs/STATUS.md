@@ -80,6 +80,10 @@ comparisons and compiled control/mailbox stress (256 runs, 4,224 interrupts,
 128 replays, 551,232 retired instructions). Reset/release remains unsupported;
 the boot-address register does not bypass missing ROM code or set PC directly.
 Physical clock/pulse timing, power and cold boot are still unqualified.
+PS now masks reserved fields on read/write/exchange and RFI restoration;
+XSR.PS preserves its old-value result with privilege/window checks before the
+transition. This adds 1,304 native assertions and 3,456 independent assembled
+PS/RFI comparisons, including atomic interrupt-mask changes.
 No runnable ESP32 target is added, and the
 existing RISC-V ESP32-C3 is not a substitute.
 
