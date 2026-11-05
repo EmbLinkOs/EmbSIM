@@ -252,3 +252,9 @@ shared-RAM turns and runs 384 compiled C calls / twelve unchanged SDK helpers
 across UART0/1/2 on both native cores. It verifies overlapping FIFO bytes,
 extended counts/thresholds and bounded shared reset, and exercises the SDK RX
 drain helper. [Bank contract and omissions](../../docs/engineering/esp32-uart-bank.md).
+
+`xtensa_integer/run_mask_rom.py` checks 18,840 per-core external ROM mapping/
+alias observations and runs 1,024 compiled C calls to two unchanged ROM getter
+bodies using the actual SDK structure layout. It supplies distinct PRO/APP images
+and pins SDK/QEMU mapping inputs; this does not qualify physical ROM contents,
+compression, APP reset or SDK boot. [Mask-ROM contract](../../docs/engineering/esp32-mask-rom.md).

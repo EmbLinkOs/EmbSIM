@@ -1,6 +1,7 @@
 /* SPDX-License-Identifier: Apache-2.0 */
 /* Copyright 2026 Junior Deogracias */
-/* Address facts: ESP32 TRM v5.9, section 3.3.2. No vendor code copied. */
+/* Static map: ESP32 TRM v5.9 3.3.2; optional mask-ROM profile: ESP-IDF
+ * v4.4.7 and Espressif QEMU 9.2.2 map/alias facts. No vendor code copied. */
 #include "mcu/esp32/fabric.h"
 #include "mcu/esp32/flashmap.h"
 #include "mcu/esp32/efuse.h"
@@ -9,7 +10,7 @@ struct view { struct esk_esp32_fabric *f;unsigned cpu; };
 struct esk_esp32_fabric {
     esk_alloc *a;
     unsigned char sram0[0x20000],sram1[0x20000],sram2[0x32000],fast[0x2000],slow[0x2000];
-    unsigned char *rom[2];esk_esp32_flashmap *flash;
+    unsigned char *rom[2],*mask_rom[2];esk_esp32_flashmap *flash;
     esk_esp32_efuse efuse;
     unsigned remap[2];struct view view[2];
 };
@@ -26,14 +27,21 @@ static es_status locate(struct view *v,uint32_t addr,struct location *p)
         if(f->remap[v->cpu] && within(addr,0x400b0000,0x8000)) return ES_EUNSUPPORTED;
         offset=addr-0x400a0000;p->byte=f->sram1+(0x1fffcu-(offset&~3u))+(offset&3u);
         p->word_only=p->executable=1;
-    } else if(within(addr,0x40000000,0x60000)) {
+    } else if(within(addr,0x40000000,0x70000)) {
         if(f->remap[v->cpu] && addr<0x40008000) {
             offset=0x10000u+(addr-0x40000000);p->byte=f->sram1+(0x1fffcu-(offset&~3u))+(offset&3u);
-        } else { if(!f->rom[0]) return ES_EUNSUPPORTED;p->byte=f->rom[0]+(addr-0x40000000);p->readonly=1; }
+        } else {
+            if(f->mask_rom[v->cpu]) p->byte=f->mask_rom[v->cpu]+(addr-0x40000000);
+            else if(addr<0x40060000 && f->rom[0]) p->byte=f->rom[0]+(addr-0x40000000);
+            else return ES_EUNSUPPORTED;
+            p->readonly=1;
+        }
         p->word_only=p->executable=1;
     } else if(within(addr,0x3ff90000,0x10000)) {
-        if(!f->rom[1]) return ES_EUNSUPPORTED;
-        p->byte=f->rom[1]+(addr-0x3ff90000);p->readonly=1;
+        if(f->mask_rom[v->cpu]) p->byte=f->mask_rom[v->cpu]+0x60000u+(addr-0x3ff90000);
+        else if(f->rom[1]) p->byte=f->rom[1]+(addr-0x3ff90000);
+        else return ES_EUNSUPPORTED;
+        p->readonly=1;
     } else if(within(addr,0x3ff80000,0x2000)||within(addr,0x400c0000,0x2000)) {
         if(v->cpu) return ES_EUNSUPPORTED;
         offset=addr<0x40000000 ? addr-0x3ff80000 : addr-0x400c0000;
@@ -108,6 +116,8 @@ void esk_esp32_fabric_destroy(esk_esp32_fabric *f)
     if(!f) return;
     if(f->rom[0]) esk_free(f->a,f->rom[0],0x60000);
     if(f->rom[1]) esk_free(f->a,f->rom[1],0x10000);
+    if(f->mask_rom[0]) esk_free(f->a,f->mask_rom[0],0x70000);
+    if(f->mask_rom[1]) esk_free(f->a,f->mask_rom[1],0x70000);
     esk_esp32_flashmap_destroy(f->flash);
     esk_free(f->a,f,sizeof *f);
 }
@@ -117,6 +127,17 @@ es_status esk_esp32_fabric_rom(esk_esp32_fabric *f,unsigned which,const unsigned
     if(!f || which>1 || !data || len!=expected) return ES_EINVAL;
     copy=(unsigned char *)esk_malloc(f->a,len);if(!copy) return ES_ENOMEM;
     memcpy(copy,data,len);if(f->rom[which]) esk_free(f->a,f->rom[which],len);f->rom[which]=copy;return ES_OK;
+}
+es_status esk_esp32_fabric_mask_rom(esk_esp32_fabric *f,unsigned cpu,const unsigned char *data,size_t len)
+{
+    unsigned char *copy=NULL;
+    if(!f || cpu>1 || (!data && len) || (data && len!=0x70000u)) return ES_EINVAL;
+    if(data) {
+        copy=(unsigned char *)esk_malloc(f->a,len);if(!copy) return ES_ENOMEM;
+        memcpy(copy,data,len);
+    }
+    if(f->mask_rom[cpu]) esk_free(f->a,f->mask_rom[cpu],0x70000);
+    f->mask_rom[cpu]=copy;return ES_OK;
 }
 es_status esk_esp32_fabric_flash(esk_esp32_fabric *f,const unsigned char *data,size_t len)
 {

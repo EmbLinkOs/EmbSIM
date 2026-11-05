@@ -16,6 +16,20 @@ es_status esk_esp32_fabric_create(esk_alloc *a,esk_esp32_fabric **out);
 void esk_esp32_fabric_destroy(esk_esp32_fabric *f);
 /* Optional externally provided ROM0/ROM1, exact 384K/64K. No ROM is fabricated. */
 es_status esk_esp32_fabric_rom(esk_esp32_fabric *f,unsigned which,const unsigned char *data,size_t len);
+/* Explicit SDK mask-ROM profile: exact externally supplied 448K image per CPU.
+ * IROM 0x40000000..0x4006ffff; DROM 0x3ff90000..0x3ff9ffff aliases its
+ * final 64K. Both views read-only, IROM permits fetch/aligned data words,
+ * DROM permits narrow data but no fetch. SDK v4.4.7 defines this IROM range;
+ * Espressif QEMU uses this alias/image layout. TRM v5.9 marks the extension
+ * reserved: this opt-in profile does not alter the default 384K TRM view.
+ * PRO/APP inputs are independent; no image or missing bytes are fabricated.
+ * Low-32K boot-remap still takes precedence. NULL/0 detaches to legacy ROMs.
+ * Replacement failure preserves old bytes/aliases; RAM/remap/peer survive.
+ * No ROM-content/revision/authenticity, cache/bus/physical timing or APP boot
+ * qualification is inferred. Host configuration with CPUs paused, before CPU
+ * initialization or after explicit instruction-buffer invalidation. This host
+ * fixture API does not reset/invalidate CPU state or emulate silicon ROM writes. */
+es_status esk_esp32_fabric_mask_rom(esk_esp32_fabric *f,unsigned cpu,const unsigned char *data,size_t len);
 /* Opt into copied read-only external flash: whole 64K pages, at most 16MB.
  * Adds PID0/1 normal-mode MMU tables and a bounded cache-control/flush profile.
  * Tables start invalid by fixture policy. Edit while target cache disabled,

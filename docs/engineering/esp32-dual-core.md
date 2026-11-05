@@ -47,7 +47,11 @@ physical pin/clock/USB behavior remain absent.
 [UART bank/shared RAM](esp32-uart-bank.md) now extends normal mode to UART1/2,
 bounded overlapping allocations and idle coupled reset. The all-port fixture
 reaches 6,790 retirements, then instruction-ROM fetch at 0x40065c18 outside the
-currently exposed fabric window. Extended ROM mapping remains a separate task.
+currently exposed fabric window in that fixture.
+[Per-core SDK mask-ROM mapping](esp32-mask-rom.md) now supplies the extended
+IROM/DROM alias explicitly, preserving the default TRM view. Its additional
+fixture reaches 6,796 retirements, then TIMG0 RTCCALICFG1 read at 0x3ff5f06c.
+No timer-calibration result or full SDK boot is claimed.
 [Instruction timing](esp32-instruction-timing.md) still requires physical evidence;
 a buildable capture firmware is prepared without claiming calibrated latency. It is not the owner's fuse dump and does
 not establish full boot. The [Giantec storage subset](esp32-giantec-profile.md)

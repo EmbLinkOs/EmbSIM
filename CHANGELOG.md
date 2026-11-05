@@ -5,6 +5,19 @@ versions follow semantic versioning. There is no release yet.
 
 ## Unreleased
 
+### Original ESP32 per-core SDK mask-ROM mapping
+
+- Added explicit 448 KiB PRO/APP ROM profiles with coherent IROM/DROM views,
+  protected accesses, independent ownership, low-ROM remap precedence and
+  atomic replacement/fallback. Existing TRM-only ROM fixtures remain unchanged.
+- Resolved the SDK/QEMU mapping discrepancy explicitly: the TRM lists the last
+  64 KiB instruction range reserved, while SDK ROM symbols and Espressif's
+  reference use it. No vendor image or missing byte is invented by the API.
+- 1,170 native assertions, 18,840 independent mapping comparisons and 1,024
+  compiled C calls to two unchanged ROM getters pass. The additional explicit
+  profile advances native ROM to 6,796 retirements and TIMG0 RTCCALICFG1 read;
+  physical contents, calibration and full SDK boot remain unverified.
+
 ### Original ESP32 UART bank and shared FIFO RAM
 
 - Extended normal asynchronous execution to UART1/2, with per-port sources

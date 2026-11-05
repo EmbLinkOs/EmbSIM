@@ -3,8 +3,8 @@
 **Result on 2026-11-05: the owner's board reports ESP32-D0WD-V3 revision 3.1,
 JEDEC C4 60 16 and 4 MB flash. Giantec's GT25Q32A-U datasheet matches that ID;
 exact package/ordering suffix remains unconfirmed. The pinned SDK example boots
-in Espressif QEMU. Native EmbSIM reaches an instruction-ROM mapping boundary after 6,790 retired
-instructions with explicit synthetic eFuse/RTC, active GPIO and UART-bank fixtures; without an eFuse profile,
+in Espressif QEMU. Native EmbSIM reaches timer calibration after 6,796 retired
+instructions with explicit synthetic eFuse/RTC, active GPIO/UART-bank and mask-ROM fixtures; without an eFuse profile,
 the baseline stops at an eFuse read after seven.** Neither result establishes
 successful native boot.
 
@@ -114,7 +114,17 @@ configuration or printed SDK capacity must not substitute for hardware identity.
 
 ## Native EmbSIM result: blocked
 
-**Latest UART-bank follow-up:** [UART0/1/2 and shared RAM](esp32-uart-bank.md)
+**Latest mask-ROM follow-up:** the [explicit per-core SDK mask-ROM profile](esp32-mask-rom.md)
+resolves the extended IROM/DROM layout without changing the TRM-only default.
+With `--mask-rom-profile`, PRO retires 6,796 instructions / 6,797 attempts,
+then fails TIMG0 RTCCALICFG1 read at 0x3ff5f06c, PC 0x40008591, opcode 0x2222.
+The API requires an explicit full image; the diagnostic pads only the declared
+external reference tail like QEMU, not inferred silicon contents. The
+[mask-ROM evidence](../../tests/vendor/xtensa_integer/evidence/boot-with-mask-rom-2026-11-05.json)
+retains boot unverified. APP ROM getters are separately tested; APP reset/SDK
+boot remains unqualified.
+
+**Prior UART-bank follow-up:** [UART0/1/2 and shared RAM](esp32-uart-bank.md)
 passes the previous UART1 interrupt clear. With `--uart-bank-active-fixture`,
 PRO retires 6,790 instructions / 6,791 attempts, then fails fetch at 0x40065c18
 from a real CALL8 at 0x40007729. The current fabric exposes only the first 384 KiB

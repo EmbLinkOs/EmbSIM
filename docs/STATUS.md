@@ -7,7 +7,16 @@ does not mean the described behaviour exists.
 
 ## Original ESP32 dual-core target investigation (2026-11-04)
 
-**Latest UART-bank update:** the [normal UART0/1/2 bank](engineering/esp32-uart-bank.md)
+**Latest ROM-map update:** an [explicit per-core SDK mask-ROM profile](engineering/esp32-mask-rom.md)
+now supplies the 448 KiB IROM view and coherent DROM tail alias using external
+PRO/APP images. 1,170 native assertions, 18,840 independent comparisons and
+1,024 compiled C calls to two unchanged ROM getters pass. The PRO diagnostic
+with the additional profile reaches 6,796 retirements, then TIMG0 RTCCALICFG1
+read at 0x3ff5f06c/PC 0x40008591. The default TRM-only view and prior failure
+remain available. Physical ROM contents, timer calibration, full SDK boot and
+calibrated instruction timing remain unverified.
+
+**Prior UART-bank update:** the [normal UART0/1/2 bank](engineering/esp32-uart-bank.md)
 now shares one 1024-byte FIFO RAM, supports bounded allocations/overwrites and
 extended counts/thresholds, and coordinates idle UART1→UART2 TX reset. 271,883
 new native assertions, 4,096 shared-RAM referee turns and 384 compiled C calls

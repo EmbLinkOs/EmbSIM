@@ -25,6 +25,7 @@ ROM_SHA256='9115bbcd03da9f54d3baca5ad94d588a43da54ed332347137ba3dc9010df258b'
 
 def main():
     ap=argparse.ArgumentParser(description=__doc__)
+    ap.add_argument('--mask-rom-profile',action='store_true',help='explicit 448KiB SDK/QEMU IROM profile with DROM tail alias; zero-pad only the declared external-fixture tail')
     ap.add_argument('--rom',type=Path,required=True);ap.add_argument('--flash',type=Path,required=True)
     ap.add_argument('--efuse',type=Path,help='explicit JSON list of 31 raw None-coded fuse words; not inferred board defaults')
     ap.add_argument('--efuse-completion-period',type=int,default=64,help='external fixture event every N instruction attempts; not physical timing')
@@ -57,6 +58,7 @@ def main():
         destroy=bind('esk_esp32_machine_destroy',None,pointer)
         fabric=bind('esk_esp32_machine_fabric',pointer,pointer)
         install=bind('esk_esp32_fabric_rom',C.c_int,pointer,C.c_uint,pointer,C.c_size_t)
+        mask_rom=bind('esk_esp32_fabric_mask_rom',C.c_int,pointer,C.c_uint,pointer,C.c_size_t)
         flash=bind('esk_esp32_fabric_flash',C.c_int,pointer,pointer,C.c_size_t)
         efuse=bind('esk_esp32_fabric_efuse_configure',C.c_int,pointer,C.POINTER(C.c_uint32),C.c_size_t)
         complete=bind('esk_esp32_fabric_efuse_read_complete',C.c_int,pointer)
@@ -105,6 +107,9 @@ def main():
             assert install(ram,0,C.c_char_p(data),len(data))==0
             data=rom[0x60000:]+bytes(0x70000-len(rom));assert len(data)==65536
             assert install(ram,1,C.c_char_p(data),len(data))==0
+            if args.mask_rom_profile:
+                data=rom+bytes(0x70000-len(rom));assert mask_rom(ram,0,C.c_char_p(data),len(data))==0
+                report['mask_rom_profile']='explicit PRO 448KiB SDK/QEMU IROM; final 64KiB also aliases DROM; external image tail zero-padded like reference, not measured silicon bytes'
             assert flash(ram,C.c_char_p(image),len(image))==0 and spi(ram,1)==0
             w=core(machine,0);assert reset(w,1)==0 and region(w)==0 and memctl(w)==0 and prid(w,args.prid)==0 and run(machine,0,1)==0
             event=C.c_uint();fault=Fault();trace=deque(maxlen=12)
