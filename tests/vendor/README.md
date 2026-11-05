@@ -172,3 +172,13 @@ unqualified. Reproduction is in the context register contract above.
 replays retire 91,568 instructions. This is an opt-in single-line 03h read profile,
 not flash programming, DMA, physical timing or actual ROM/SDK boot. See the
 [SPI1 read contract and reproduction](../../docs/engineering/esp32-spi1-reads.md).
+
+`xtensa_integer/run_w25q32.py --datasheet` hash-checks the external Winbond
+W25Q32JV Rev.G PDF (needs `pdftotext`) and parses timing maxima and IQ ID:
+2,631 command/time comparisons, 219 completed operations, 37 ignored writes.
+`run_spi_c.py --program-workers` adds actual compiled write-enable/program/status
+polling before reading back and calling generated code: 32 workers, 32 exact
+replays, 125,856 retired instructions. Time is an explicit external fixture,
+not derived from instruction counts. This named unprotected chip profile is not
+a board BOM, full chip or ROM/SDK qualification. See
+[programming scope and reproduction](../../docs/engineering/esp32-flash-programming.md).

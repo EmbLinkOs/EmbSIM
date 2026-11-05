@@ -5,7 +5,8 @@
 
 Both cores serialize the shared controller with a compiled atomic lock. Some
 runs copy code from SPI into instruction RAM and call it. No vendor ROM/SDK boot,
-DMA, flash programming, physical timing or complete board qualification.
+DMA, physical timing or complete board qualification. --program-workers uses
+the explicitly selected unprotected W25Q32JV-IQ subset, not a board identity.
 """
 import argparse
 import ctypes as C
@@ -50,6 +51,40 @@ unsigned operation(unsigned address, unsigned length, unsigned char *out,
     return entry ? ((unsigned (*)(unsigned))entry)(value) : checksum;
 }
 '''
+PROGRAM_PREFIX = r"""
+    if(entry) {
+        unsigned sent=0;
+        while(sent<length) {
+            unsigned n=256-((address+sent)&255);
+            if(n>length-sent) n=length-sent;
+            if(n>64) n=64;
+            dev->ctrl.fastrd_mode=0;
+            dev->user.val=0x80000040;
+            spi_flash_ll_set_command(dev,6,8);
+            spi_flash_ll_user_start(dev);
+            while(!spi_flash_ll_cmd_is_done(dev)) { }
+            dev->user.val=0xc8000040;
+            spi_flash_ll_set_command(dev,2,8);
+            spi_flash_ll_set_addr_bitlen(dev,24);
+            spi_flash_ll_set_usr_address(dev,address+sent,24);
+            spi_flash_ll_set_mosi_bitlen(dev,n*8);
+            spi_flash_ll_set_miso_bitlen(dev,0);
+            for(unsigned i=0;i<n/4;i++) dev->data_buf[i]=((unsigned *)(out+sent))[i];
+            spi_flash_ll_user_start(dev);
+            while(!spi_flash_ll_cmd_is_done(dev)) { }
+            dev->user.val=0x90000040;
+            spi_flash_ll_set_command(dev,5,8);
+            spi_flash_ll_set_miso_bitlen(dev,8);
+            spi_flash_ll_set_mosi_bitlen(dev,0);
+            do {
+                spi_flash_ll_user_start(dev);
+                while(!spi_flash_ll_cmd_is_done(dev)) { }
+            } while(dev->data_buf[0]&1);
+            sent+=n;
+        }
+    }
+"""
+
 WORKER = 'unsigned worker(unsigned x) { return (x ^ TAG) + (x >> 7); }\n'
 
 
@@ -57,6 +92,7 @@ def main():
     ap=argparse.ArgumentParser(description=__doc__)
     for name in ['compiler','objcopy','linker','nm']: ap.add_argument('--'+name,required=True)
     ap.add_argument('--ll-header',type=Path,required=True);ap.add_argument('--struct-header',type=Path,required=True)
+    ap.add_argument('--program-workers',action='store_true')
     ap.add_argument('--cc',default='cc');args=ap.parse_args();rng=random.Random(0x5b11)
     ll=read_header(args.ll_header,'d1331e0d99ff2377e80e7ec4b8f314453345e68d894f5d2b3139c0e8069ae724')
     struct=read_header(args.struct_header,'97fffd958e992ea25af94e08bb6e5b6c7487671b3e070efa68e80d216db383b2')
@@ -70,7 +106,7 @@ def main():
             end+=1
         helpers.append(ll[match.start():end])
     notice=ll[:ll.index('#pragma once')]
-    total=0;calls=0;loaded=0
+    total=0;calls=0;loaded=0;busy_turns=0
     with tempfile.TemporaryDirectory(prefix='embsim-spi-c-') as tmp:
         out=Path(tmp);(out/'vendor-spi-struct.h').write_text(struct,encoding='utf-8')
         def compile_code(name,source,base,entry,flags=()):
@@ -83,17 +119,19 @@ def main():
             symbols={f[2]:int(f[0],16) for line in subprocess.check_output([args.nm,str(elf)],text=True).splitlines()
                      if len(f:=line.split())==3}
             return binary.read_bytes(),symbols[entry]
-        source=notice+'\n#include <stdint.h>\n#include <stdbool.h>\n#include "vendor-spi-struct.h"\n'+'\n'.join(helpers)+SOURCE
+        body=SOURCE.replace('    dev->ctrl.fastrd_mode=0;', PROGRAM_PREFIX+'    dev->ctrl.fastrd_mode=0;',1) if args.program_workers else SOURCE
+        source=notice+'\n#include <stdint.h>\n#include <stdbool.h>\n#include "vendor-spi-struct.h"\n'+'\n'.join(helpers)+body
         code,start=compile_code('operation',source,0x40080000,'operation')
-        image=bytearray(rng.getrandbits(8) for _ in range(4*65536));entries=[];lengths=[];tags=[0x12345678,0x98765432]
+        image=bytearray(rng.getrandbits(8) for _ in range(0x400000 if args.program_workers else 4*65536));entries=[];lengths=[];payloads=[];tags=[0x12345678,0x98765432]
         for cpu in range(2):
             worker,entry=compile_code('worker'+str(cpu),WORKER,0x40088000+cpu*4096,'worker',['-DTAG='+hex(tags[cpu])+'u'])
             worker+=bytes((-len(worker))%4);assert 16<len(worker)<=64
-            offset=0xfff0+cpu*65536;image[offset:offset+len(worker)]=worker
+            offset=0xfff0+cpu*65536;image[offset:offset+len(worker)]=b'\xff'*len(worker) if args.program_workers else worker
+            payloads.append(worker)
             entries.append(entry);lengths.append(len(worker))
         image=bytes(image);lib=out/'spi.so'
         sources=[ROOT/'core/mcu/xtensa'/n for n in ['integer.c','execute.c','windows.c','interrupts.c']]
-        sources += [ROOT/'core/mcu/esp32'/n for n in ['fabric.c','machine.c','matrix.c','flashmap.c','flashspi.c']]
+        sources += [ROOT/'core/mcu/esp32'/n for n in ['fabric.c','machine.c','matrix.c','flashmap.c','flashspi.c', 'w25q32.c']]
         sources += [ROOT/'core/util/alloc.c']
         subprocess.run([args.cc,'-std=c99','-Wall','-Wextra','-Wconversion','-Werror','-shared','-fPIC',
                         '-I'+str(ROOT/'core'),'-I'+str(ROOT/'include'),*map(str,sources),'-o',str(lib)],check=True)
@@ -106,6 +144,9 @@ def main():
         fabric=bind('esk_esp32_machine_fabric',pointer,pointer)
         bus_get=bind('esk_esp32_machine_bus',Memory,pointer,C.c_uint)
         load=bind('esk_esp32_fabric_load',C.c_int,pointer,C.c_uint,C.c_uint32,pointer,C.c_size_t)
+        select=bind('esk_esp32_fabric_w25q32_configure',C.c_int,pointer,C.c_int)
+        advance=bind('esk_esp32_fabric_flash_advance',C.c_int,pointer,C.c_uint64)
+        deadline=bind('esk_esp32_fabric_flash_deadline',C.c_int,pointer,C.POINTER(C.c_uint64))
         flash=bind('esk_esp32_fabric_flash',C.c_int,pointer,pointer,C.c_size_t)
         spi=bind('esk_esp32_fabric_spi1_configure',C.c_int,pointer,C.c_int)
         configure=bind('esk_esp32_machine_configure',C.c_int,pointer,C.c_uint,C.c_uint32)
@@ -118,7 +159,7 @@ def main():
                 value=rng.getrandbits(32);high=trial%2;entry=entries[cpu] if trial%4==0 else 0
                 size=lengths[cpu] if entry else rng.randint(1,32 if high else 64)
                 address=0xfff0+cpu*65536 if entry else rng.randint(0,len(image)-size)
-                data=image[address:address+size];wanted=0
+                data=payloads[cpu] if entry and args.program_workers else image[address:address+size];wanted=0
                 for byte in data:wanted=(wanted*33+byte)&0xffffffff
                 if entry:wanted=((value^tags[cpu])+(value>>7))&0xffffffff
                 params.append([address,size,0x3ffb8000+cpu*256,entry,value,high]);expected.append((wanted,data))
@@ -128,6 +169,7 @@ def main():
                 try:
                     ram=fabric(m);bus=bus_get(m,0)
                     assert flash(ram,C.c_char_p(image),len(image))==0 and spi(ram,1)==0
+                    if args.program_workers: assert select(ram,1)==0
                     assert load(ram,0,0x40080000,C.c_char_p(code),len(code))==0
                     assert bus.write(bus.ctx,0x3ff00030,4,1)==0
                     states=[]
@@ -135,9 +177,17 @@ def main():
                         assert configure(m,cpu,start)==0
                         w=core(m,cpu).contents;w.ps|=1<<16;w.cpu.a[1]=0x3ffd0000+cpu*4096;w.cpu.a[4]=0x7ffffff0
                         for n,arg in enumerate(params[cpu]):w.cpu.a[6+n]=arg
+                        if args.program_workers and params[cpu][3]:
+                            payload=payloads[cpu];assert load(ram,cpu,params[cpu][2],C.c_char_p(payload),len(payload))==0
                         states.append(w);assert run(m,cpu,1)==0
                     done=[False,False];event=C.c_uint();fault=Fault();trace=[];worker_steps=[0,0]
                     for tick in range(30000):
+                        # Explicit external flash-time fixture: 1 ms events every 37
+                        # scheduled turns. This is not a CPU instruction/cycle timing model.
+                        if args.program_workers:
+                            remaining=C.c_uint64();assert deadline(ram,C.byref(remaining))==0
+                            busy_turns+=remaining.value!=0
+                            if tick%37==0: assert advance(ram,1000)==0
                         cpu=(tick+trial)%2;w=states[cpu]
                         if done[cpu]:continue
                         if w.cpu.pc==0x7ffffff0:
@@ -166,7 +216,9 @@ def main():
                     else:previous=result
                 finally:destroy(m)
                 assert a.live_bytes==0
-        print(f'{calls} actual ESP32 SPI1 C reads, {loaded} SPI-loaded RAM workers, 32 exact replays, {total} retired instructions; seven unchanged SDK helper bodies')
+        if args.program_workers: assert busy_turns>0
+        action='SPI-programmed' if args.program_workers else 'SPI-loaded'
+        print(f'{calls} actual ESP32 SPI1 C reads, {loaded} {action} RAM workers, 32 exact replays, {total} retired instructions; {busy_turns} busy turns; seven unchanged SDK helper bodies')
 
 
 if __name__=='__main__':main()

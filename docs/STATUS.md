@@ -98,8 +98,9 @@ explicit flush/enable sequencing. Evidence: 7,289 native assertions, 488 parsed
 vendor-fact translations, 256 compiled mapped workers and 64 exact replays.
 Compiled PRO setup plus original test-ROM handoff also passes 128 reset cycles
 into a mapped worker. Immutable backing and disabled-cache table edits bound this
-profile; SPI programming, real cache tags/timing, live SDK mmap/invalidation,
-PSRAM/high PIDs and actual ROM/SDK/board boot remain unimplemented.
+profile; the default attachment omits SPI programming. Real cache tags/timing,
+live SDK mmap/invalidation, PSRAM/high PIDs and actual ROM/SDK/board boot remain
+unimplemented. The separate named-part fixture below adds bounded programming.
 The [CPU task-context register profile](engineering/esp32-context-registers.md)
 now implements unprivileged THREADPTR, privileged MISC0..3 and read-only PRID
 with an explicitly supplied fixture constant. PRID's full silicon value is still
@@ -120,8 +121,18 @@ require both caches disabled. Evidence: 37,466 native assertions, 27 parsed regi
 reference comparisons and 128 actual ESP32 C reads pass; 32 of these also load
 and execute a generated RAM worker (32 exact replays, 91,568 retired instructions).
 Seven unchanged SDK helper bodies are tested, not the full SDK initialization or
-boot stack. Flash program/erase, DMA, SPI timing, GPIO/pin mux and actual ROM/SDK
-boot remain unsupported.
+boot stack. The default attachment omits program/erase. DMA, SPI timing, GPIO/pin
+mux and actual ROM/SDK boot remain unsupported; the named-part option below
+extends the storage commands.
+An explicit [W25Q32JV-IQ programming profile](engineering/esp32-flash-programming.md)
+now adds write-enable/BUSY, page programming/wrap and aligned erase through SPI1.
+It requires an explicitly selected unprotected 4 MiB part fixture; the requested
+board's actual flash chip remains unverified. External microseconds drive
+conservative datasheet-maximum durations. Native tests and 2,631 independent
+command/time comparisons pass; compiled firmware programs and executes 32 RAM
+workers (32 exact replays, 125,856 retired instructions). Fresh post-completion
+flush is required before cache enable. Full chip/protection/electrical behavior,
+physical timing and real ROM/SDK boot remain unqualified.
 No runnable ESP32 target is added, and the
 existing RISC-V ESP32-C3 is not a substitute.
 

@@ -45,7 +45,25 @@ static es_status transfer(esk_esp32_flashspi *s,const unsigned char *image,size_
     s->slave=(s->slave&~UINT32_C(0x7800000))|((((s->slave>>23)+1u)&15u)<<23)|16u;
     return ES_OK;
 }
-es_status esk_esp32_flashspi_write(esk_esp32_flashspi *s,const unsigned char *image,size_t size,int caches_disabled,uint32_t address,unsigned bytes,uint32_t value)
+static es_status device_transfer(esk_esp32_flashspi *s,esk_esp32_flashspi_command_fn command,void *ctx,int caches_disabled)
+{
+    unsigned char tx[64],rx[64];unsigned i,first_tx=(s->user&0x2000000u) ? 32u : 0u,first_rx=(s->user&0x1000000u) ? 32u : 0u;
+    uint32_t tx_bits=(s->user&0x8000000u) ? s->mosi+1u : 0u,rx_bits=(s->user&0x10000000u) ? s->miso+1u : 0u;
+    es_status st;
+    if(!command || !caches_disabled || (s->ctrl&0x2000u) || !(s->user&0x80000000u) || (s->user&0x20000000u) ||
+       (s->user2>>28)!=7 || tx_bits%8u || rx_bits%8u || tx_bits>512u-first_tx*8u || rx_bits>512u-first_rx*8u ||
+       ((s->user&0x8000000u) && (s->user&0x10000000u))) return ES_EUNSUPPORTED;
+    for(i=0;i<tx_bits/8u;i++) { unsigned n=first_tx+i;tx[i]=(unsigned char)((s->buffer[n/4u]>>((n&3u)*8u))&255u); }
+    st=command(ctx,s->user2&65535u,(s->user&0x40000000u)!=0,s->addr>>8,tx,tx_bits/8u,rx,rx_bits/8u);
+    if(st!=ES_OK) return st;
+    for(i=0;i<rx_bits/8u;i++) {
+        unsigned n=first_rx+i,shift=(n&3u)*8u;
+        s->buffer[n/4u]=(s->buffer[n/4u]&~(UINT32_C(255)<<shift))|((uint32_t)rx[i]<<shift);
+    }
+    s->slave=(s->slave&~UINT32_C(0x7800000))|((((s->slave>>23)+1u)&15u)<<23)|16u;return ES_OK;
+}
+static es_status write_impl(esk_esp32_flashspi *s,const unsigned char *image,size_t size,int caches_disabled,uint32_t address,unsigned bytes,uint32_t value,
+    esk_esp32_flashspi_command_fn command,void *ctx,int device)
 {
     unsigned offset;es_status st;
     if(!s) return ES_EINVAL;
@@ -54,7 +72,7 @@ es_status esk_esp32_flashspi_write(esk_esp32_flashspi *s,const unsigned char *im
     switch(offset) {
     case 0:
         if(value&UINT32_C(0xfffb0000)) return ES_EUNSUPPORTED;
-        return (value&0x40000u) ? transfer(s,image,size,caches_disabled) : ES_OK;
+        return (value&0x40000u) ? (device ? device_transfer(s,command,ctx,caches_disabled) : transfer(s,image,size,caches_disabled)) : ES_OK;
     case 4:s->addr=value;break;
     case 8:
         if((value&UINT32_C(0x7f0dc00))!=0x208400u) return ES_EUNSUPPORTED;
@@ -62,8 +80,8 @@ es_status esk_esp32_flashspi_write(esk_esp32_flashspi *s,const unsigned char *im
     case 0x18:if(value!=0x80003043u) return ES_EUNSUPPORTED;break;
     case 0x1c:
         /* Preserve unqualified timing/slave/byte-order fields at reset values. */
-        if((value&UINT32_C(0x0efffcf1))!=0x40u) return ES_EUNSUPPORTED;
-        s->user=(value&UINT32_C(0xf1000000))|0x40u;break;
+        if((value&(device ? UINT32_C(0x04fffcf1) : UINT32_C(0x0efffcf1)))!=0x40u) return ES_EUNSUPPORTED;
+        s->user=(value&(device ? UINT32_C(0xfb000000) : UINT32_C(0xf1000000)))|0x40u;break;
     case 0x20:
         /* SDK and register comments disagree on address-length writability.
          * Only unchanged 24-bit configuration is qualified in this profile. */
@@ -80,4 +98,8 @@ es_status esk_esp32_flashspi_write(esk_esp32_flashspi *s,const unsigned char *im
     }
     return ES_OK;
 }
+es_status esk_esp32_flashspi_write(esk_esp32_flashspi *s,const unsigned char *image,size_t size,int caches_disabled,uint32_t address,unsigned bytes,uint32_t value)
+{ return write_impl(s,image,size,caches_disabled,address,bytes,value,NULL,NULL,0); }
+es_status esk_esp32_flashspi_device_write(esk_esp32_flashspi *s,esk_esp32_flashspi_command_fn command,void *ctx,int caches_disabled,uint32_t address,unsigned bytes,uint32_t value)
+{ if(!command) return ES_EINVAL;return write_impl(s,NULL,0,caches_disabled,address,bytes,value,command,ctx,1); }
 int esk_esp32_flashspi_irq(const esk_esp32_flashspi *s) { return s && (s->slave&0x210u)==0x210u; }

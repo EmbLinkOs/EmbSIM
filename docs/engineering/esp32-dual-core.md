@@ -815,8 +815,21 @@ are functional; unsupported modes/commands and missing extents fail unchanged.
 Evidence includes 37,466 native assertions, 27 parsed register defaults/384 reference cases
 and 128 actual ESP32 C reads using seven unchanged SDK helper bodies. Thirty-two
 runs load and call a generated RAM worker; 32 exact replays retire 91,568
-instructions. Physical flash identity/program/erase, SPI timing, DMA, pin mux,
-full SDK initialization and actual ROM/SDK/board boot remain unqualified.
+instructions. Physical flash identity, SPI timing, DMA, pin mux, full SDK
+initialization and actual ROM/SDK/board boot remain unqualified. The separate
+named-part fixture below adds bounded program/erase behavior.
+
+## Implemented: explicit W25Q32JV programming fixture
+
+The [named flash-part contract](esp32-flash-programming.md) adds an explicit
+unprotected W25Q32JV-IQ 4 MiB profile. It does not identify the requested board's
+actual flash part. Standard write-enable/status, page program/wrap and aligned
+erase use supplied external microseconds with conservative datasheet-maximum
+durations. SPI1 USER transmit/receive and cache re-enable boundaries are covered.
+Native tests, 2,631 independent command/time comparisons and actual compiled
+firmware pass: 32 programmed RAM workers, 32 exact replays and 125,856 retired
+instructions. Full chip/protection/power/electrical behavior, physical timing,
+complete SPI controller behavior and real ROM/SDK/board boot remain unqualified.
 
 ## Establish identity before catalog publication
 

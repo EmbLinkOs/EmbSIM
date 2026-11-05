@@ -5,6 +5,19 @@ versions follow semantic versioning. There is no release yet.
 
 ## Unreleased
 
+### Experimental explicit W25Q32JV flash programming
+
+- Added an explicitly selected, unprotected W25Q32JV-IQ 4 MiB profile with
+  write-enable/BUSY status, page programming/wrap and sector/block/chip erase.
+  External microseconds drive conservative datasheet-maximum durations.
+- Added SPI1 USER transmit/receive integration and post-completion cache flush
+  enforcement. Default immutable behavior remains available; the requested
+  board's actual chip is still unverified. Protection, suspend, electrical
+  timing, full chip behavior and ROM/SDK boot remain unimplemented.
+- Native tests and a datasheet-pinned independent oracle pass. Actual ESP32 C
+  programs code, polls BUSY and loads/runs it: 32 programmed workers, 32 exact
+  replays and 125,856 retired instructions.
+
 ### Experimental ESP32 SPI1 flash reads
 
 - Added an opt-in USER 03h single-line read path to the installed immutable
@@ -12,8 +25,8 @@ versions follow semantic versioning. There is no release yet.
   high/low data buffers. Both caches must be disabled for transfers.
 - Added completion/counter state and SPI1 matrix-source ownership, synchronized
   after instruction commit. Unsupported commands/modes and out-of-extent reads
-  fail unchanged. Programming, erase, DMA, timing and real ROM/SDK boot remain
-  unimplemented.
+  fail unchanged. This default read-only attachment omits programming/erase;
+  DMA, timing and real ROM/SDK boot remain unimplemented.
 - Added 37,466 native assertions, 27 parsed vendor register defaults/384 reference
   comparisons and actual ESP32 C with seven unchanged SDK helper bodies:
   128 reads, 32 SPI-loaded RAM workers, 32 replays and 91,568 retired instructions.

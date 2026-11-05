@@ -4,11 +4,13 @@
  * Original functional translation implementation, no vendor controller code. */
 #include "mcu/esp32/flashmap.h"
 #include "mcu/esp32/flashspi.h"
+#include "mcu/esp32/w25q32.h"
 #include <string.h>
 struct esk_esp32_flashmap {
     esk_alloc *a;unsigned char *image;size_t size;
     uint32_t table[2][256],ctrl[2],ctrl1[2],dirty[2];
     esk_esp32_flashspi spi1;int spi1_enabled;
+    esk_esp32_w25q32 nor;int nor_enabled;
 };
 es_status esk_esp32_flashmap_create(esk_alloc *a,esk_esp32_flashmap **out)
 {
@@ -33,10 +35,39 @@ es_status esk_esp32_flashmap_install(esk_esp32_flashmap *f,const unsigned char *
 {
     unsigned char *copy;
     if(!f || !data || !len || (len&65535u) || len>0x1000000u) return ES_EINVAL;
-    if((f->ctrl[0]|f->ctrl[1])&8u) return ES_EUNSUPPORTED;
+    if(f->nor_enabled || ((f->ctrl[0]|f->ctrl[1])&8u)) return ES_EUNSUPPORTED;
     copy=(unsigned char *)esk_malloc(f->a,len);if(!copy) return ES_ENOMEM;
     memcpy(copy,data,len);if(f->image) esk_free(f->a,f->image,f->size);
     f->image=copy;f->size=len;f->dirty[0]=f->dirty[1]=1;return ES_OK;
+}
+static es_status chip_command(void *ctx,unsigned command,int has_address,uint32_t address,const unsigned char *tx,size_t tx_len,unsigned char *rx,size_t rx_len)
+{
+    esk_esp32_flashmap *f=(esk_esp32_flashmap *)ctx;uint64_t before=f->nor.remaining_us;
+    es_status st=esk_esp32_w25q32_command(&f->nor,f->image,f->size,command,has_address,address,tx,tx_len,rx,rx_len);
+    if(st==ES_OK && !before && f->nor.remaining_us) f->dirty[0]=f->dirty[1]=1;
+    return st;
+}
+es_status esk_esp32_flashmap_w25q32_configure(esk_esp32_flashmap *f,int enabled)
+{
+    if(!f) return ES_EINVAL;
+    if(f->size!=0x400000u || ((f->ctrl[0]|f->ctrl[1])&8u) || f->nor.remaining_us) return ES_EUNSUPPORTED;
+    if(f->nor_enabled!=(enabled!=0)) { esk_esp32_w25q32_init(&f->nor);f->nor_enabled=enabled!=0; }
+    return ES_OK;
+}
+es_status esk_esp32_flashmap_flash_advance(esk_esp32_flashmap *f,uint64_t microseconds)
+{
+    uint64_t before;es_status st;
+    if(!f) return ES_EINVAL;
+    if(!f->nor_enabled) return ES_EUNSUPPORTED;
+    before=f->nor.remaining_us;st=esk_esp32_w25q32_advance(&f->nor,f->image,f->size,microseconds);
+    if(st==ES_OK && before && !f->nor.remaining_us) f->dirty[0]=f->dirty[1]=1;
+    return st;
+}
+es_status esk_esp32_flashmap_flash_deadline(const esk_esp32_flashmap *f,uint64_t *microseconds)
+{
+    if(!f || !microseconds) return ES_EINVAL;
+    if(!f->nor_enabled) return ES_EUNSUPPORTED;
+    *microseconds=f->nor.remaining_us;return ES_OK;
 }
 es_status esk_esp32_flashmap_spi1_configure(esk_esp32_flashmap *f,int enabled)
 {
@@ -73,7 +104,11 @@ es_status esk_esp32_flashmap_reg_write(esk_esp32_flashmap *f,uint32_t address,un
 {
     unsigned cpu,kind,index;uint32_t next;es_status st;
     if(!f) return ES_EINVAL;
-    if(f->spi1_enabled && address>=0x3ff42000 && address<0x3ff42400) return esk_esp32_flashspi_write(&f->spi1,f->image,f->size,((f->ctrl[0]|f->ctrl[1])&8u)==0,address,bytes,value);
+    if(f->spi1_enabled && address>=0x3ff42000 && address<0x3ff42400) {
+        int idle=((f->ctrl[0]|f->ctrl[1])&8u)==0;
+        return f->nor_enabled ? esk_esp32_flashspi_device_write(&f->spi1,chip_command,f,idle,address,bytes,value) :
+            esk_esp32_flashspi_write(&f->spi1,f->image,f->size,idle,address,bytes,value);
+    }
     st=decode(address,bytes,&cpu,&kind,&index);if(st!=ES_OK) return st;
     if(kind==0) {
         if((value&~UINT32_C(0x1ff)) || (f->ctrl[cpu]&8u)) return ES_EUNSUPPORTED;
@@ -83,7 +118,7 @@ es_status esk_esp32_flashmap_reg_write(esk_esp32_flashmap *f,uint32_t address,un
         /* Reject unsupported defined RW fields. RO/reserved bits are ignored. */
         if(value&UINT32_C(0x10fc4)) return ES_EUNSUPPORTED;
         if(flush && ((f->ctrl[cpu]|value)&8u)) return ES_EUNSUPPORTED;
-        if((value&8u) && f->dirty[cpu]) return ES_EUNSUPPORTED;
+        if((value&8u) && (f->dirty[cpu] || (f->nor_enabled && f->nor.remaining_us))) return ES_EUNSUPPORTED;
         next=(value&24u)|(f->ctrl[cpu]&32u);
         if(!(value&16u)) next&=~32u;
         if(flush) { next|=32u;f->dirty[cpu]=0; }

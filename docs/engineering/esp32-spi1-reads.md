@@ -107,6 +107,14 @@ helper execution is not the whole SDK initialization/common-command stack, an
 actual Espressif ROM, full interrupt-driven driver or bootloader acceptance.
 Retired instructions are not physical cycles. No hardware capture was collected.
 
+## Optional named programming attachment
+
+The default read-only profile above keeps its existing contract. An explicitly
+selected [W25Q32JV-IQ fixture](esp32-flash-programming.md) adds a bounded named-chip
+command backend, transmit phases and separately advanced programming time. Its
+scope and omissions are separate; this does not retroactively qualify arbitrary
+chips, the board BOM, full SDK initialization or physical SPI timing.
+
 ## References and reproduction
 
 Inspected 2026-11-05: ESP32 TRM v5.9 chapter 20, and these external ESP-IDF v4.4.7
