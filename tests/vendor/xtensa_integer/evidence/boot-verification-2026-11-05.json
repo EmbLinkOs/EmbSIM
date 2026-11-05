@@ -50,7 +50,8 @@
       "Hello world!"
     ],
     "flash_model": "gd25q32 selected by QEMU from 4 MiB backing, not a hardware identification",
-    "stop": "intentional 15-second host timeout while example countdown was running, not firmware failure"
+    "stop": "intentional 15-second host timeout while example countdown was running, not firmware failure",
+    "uart_log_normalization": "ANSI colors removed; LF line endings; trailing whitespace removed"
   },
   "native": {
     "boot_verified": false,

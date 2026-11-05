@@ -44,7 +44,7 @@ I (1551) cpu_start: Compile time:     Nov  5 2026 14:52:30
 I (1551) cpu_start: ELF file SHA256:  fe26855a26fcde4c...
 I (1552) cpu_start: ESP-IDF:          v4.4.7
 I (1552) cpu_start: Min chip rev:     v0.0
-I (1552) cpu_start: Max chip rev:     v3.99 
+I (1552) cpu_start: Max chip rev:     v3.99
 I (1552) cpu_start: Chip rev:         v0.0
 I (1554) heap_init: Initializing. RAM available for dynamic allocation:
 I (1555) heap_init: At 3FFAE6E0 len 00001920 (6 KiB): DRAM
@@ -117,7 +117,7 @@ I (13513) cpu_start: Compile time:     Nov  5 2026 14:52:30
 I (13514) cpu_start: ELF file SHA256:  fe26855a26fcde4c...
 I (13514) cpu_start: ESP-IDF:          v4.4.7
 I (13514) cpu_start: Min chip rev:     v0.0
-I (13514) cpu_start: Max chip rev:     v3.99 
+I (13514) cpu_start: Max chip rev:     v3.99
 I (13514) cpu_start: Chip rev:         v0.0
 I (13515) heap_init: Initializing. RAM available for dynamic allocation:
 I (13516) heap_init: At 3FFAE6E0 len 00001920 (6 KiB): DRAM
