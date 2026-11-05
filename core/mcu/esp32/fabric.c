@@ -124,6 +124,16 @@ es_status esk_esp32_fabric_flash(esk_esp32_fabric *f,const unsigned char *data,s
     if(st!=ES_OK) { esk_esp32_flashmap_destroy(created);return st; }
     f->flash=created;return ES_OK;
 }
+es_status esk_esp32_fabric_spi1_configure(esk_esp32_fabric *f,int enabled)
+{
+    if(!f) return ES_EINVAL;
+    return f->flash ? esk_esp32_flashmap_spi1_configure(f->flash,enabled) : ES_EUNSUPPORTED;
+}
+es_status esk_esp32_fabric_spi1_irq(const esk_esp32_fabric *f,int *asserted)
+{
+    if(!f || !asserted) return ES_EINVAL;
+    return f->flash ? esk_esp32_flashmap_spi1_irq(f->flash,asserted) : ES_EUNSUPPORTED;
+}
 es_status esk_esp32_fabric_remap(esk_esp32_fabric *f,unsigned cpu,int enabled)
 {
     if(!f || cpu>1) return ES_EINVAL;

@@ -7,6 +7,7 @@ struct esk_esp32_machine {
     esk_alloc *a;esk_esp32_fabric *fabric;
     esk_xtensa_windows cpu[2];uint64_t retired[2];unsigned running[2],executing;
     uint32_t app_clock,app_stall,app_boot,app_reset,app_reset_enabled,app_reset_vector,app_reset_pending;
+    unsigned spi1_owned;
     esk_esp32_matrix matrix;struct machine_view view[2];
 };
 /* Never mutate an executing CPU from a bus callback. Synchronize the
@@ -15,7 +16,12 @@ struct esk_esp32_machine {
  * across separate retired writes are latched even while the peer is paused. */
 static void sync_inputs(esk_esp32_machine *m)
 {
-    unsigned cpu,input;const uint32_t internal=UINT32_C(0x200188c0);
+    unsigned cpu,input;int asserted=0;const uint32_t internal=UINT32_C(0x200188c0);
+    if(esk_esp32_fabric_spi1_irq(m->fabric,&asserted)==ES_OK) {
+        (void)esk_esp32_matrix_source(&m->matrix,29,asserted);m->spi1_owned=1;
+    } else if(m->spi1_owned) {
+        (void)esk_esp32_matrix_source(&m->matrix,29,0);m->spi1_owned=0;
+    }
     for(cpu=0;cpu<2;cpu++) if(m->cpu[cpu].irq.enabled && !(cpu==1 && m->app_reset_enabled && m->app_reset)) {
         uint32_t levels=esk_esp32_matrix_levels(&m->matrix,cpu);
         for(input=0;input<32;input++) {
@@ -74,7 +80,9 @@ static es_status bus_write(void *ctx,uint32_t address,unsigned bytes,uint32_t va
         if(st==ES_OK && !v->m->executing) sync_inputs(v->m);
         return st;
     }
-    ram=esk_esp32_fabric_bus(v->m->fabric,v->cpu);return ram.write(ram.ctx,address,bytes,value);
+    ram=esk_esp32_fabric_bus(v->m->fabric,v->cpu);st=ram.write(ram.ctx,address,bytes,value);
+    if(st==ES_OK && !v->m->executing) sync_inputs(v->m);
+    return st;
 }
 static es_status bus_fetch(void *ctx,uint32_t address,unsigned bytes,uint32_t *value)
 {
@@ -94,7 +102,11 @@ esk_xtensa_memory esk_esp32_machine_bus(esk_esp32_machine *m,unsigned cpu)
 }
 es_status esk_esp32_machine_source(esk_esp32_machine *m,unsigned source,int asserted)
 {
-    es_status st;if(!m || m->executing) return ES_EINVAL;
+    es_status st;int asserted_now=0;if(!m || m->executing) return ES_EINVAL;
+    if(source==29) {
+        if(esk_esp32_fabric_spi1_irq(m->fabric,&asserted_now)==ES_OK) return ES_EUNSUPPORTED;
+        if(m->spi1_owned) sync_inputs(m);
+    }
     st=esk_esp32_matrix_source(&m->matrix,source,asserted);if(st==ES_OK) sync_inputs(m);return st;
 }
 es_status esk_esp32_machine_gpio_irq(esk_esp32_machine *m,unsigned cpu,int nmi,int asserted)

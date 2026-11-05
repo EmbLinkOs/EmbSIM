@@ -806,6 +806,18 @@ raises AllocaCause 5 before a stack move when restoration is needed. Another
 vendor alloca handler, scheduler, complete context switch or real ROM/SDK boot
 claim follows.
 
+## Implemented: bounded SPI1 immutable-flash reads
+
+The [SPI1 read contract](esp32-spi1-reads.md) adds an opt-in USER 03h single-line
+read path to the installed backing. Both caches must be disabled. Data-buffer
+packing, real address alignment, completion/counter state and matrix source 29
+are functional; unsupported modes/commands and missing extents fail unchanged.
+Evidence includes 37,466 native assertions, 27 parsed register defaults/384 reference cases
+and 128 actual ESP32 C reads using seven unchanged SDK helper bodies. Thirty-two
+runs load and call a generated RAM worker; 32 exact replays retire 91,568
+instructions. Physical flash identity/program/erase, SPI timing, DMA, pin mux,
+full SDK initialization and actual ROM/SDK/board boot remain unqualified.
+
 ## Establish identity before catalog publication
 
 The implementation needs a tuple, not a marketing name:

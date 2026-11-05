@@ -163,3 +163,12 @@ See [context register scope and reproduction](../../docs/engineering/esp32-conte
 compiled path keeps caller windows resident; native/assembler tests cover the
 missing-caller exception. Complete vendor alloca-handler restoration remains
 unqualified. Reproduction is in the context register contract above.
+
+`xtensa_integer/run_flashspi.py` takes pinned ESP-IDF v4.4.7 `--spi-reg` and
+`--soc-header`: 27 parsed register defaults and 384 read/address/IRQ comparisons.
+`run_spi_c.py` takes actual ESP32 compiler/objcopy/linker/nm plus pinned
+`--ll-header` and `--struct-header`. Seven unchanged SDK helper bodies drive
+128 native-bus SPI1 reads; 32 also load and call a RAM worker. Thirty-two exact
+replays retire 91,568 instructions. This is an opt-in single-line 03h read profile,
+not flash programming, DMA, physical timing or actual ROM/SDK boot. See the
+[SPI1 read contract and reproduction](../../docs/engineering/esp32-spi1-reads.md).

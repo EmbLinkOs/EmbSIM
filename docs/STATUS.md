@@ -113,6 +113,15 @@ changing SP. Evidence: 13,475 native assertions, 32,768 independent assembler
 comparisons and another 1,536 actual TLS C calls with dynamic stack buffers
 (16 replays, 253,812 retired instructions). Vendor alloca-handler restoration,
 preemptive scheduling and RTOS boot remain unqualified.
+An opt-in [SPI1 read profile](engineering/esp32-spi1-reads.md) now executes USER
+03h single-line reads against installed immutable flash backing, with receive
+buffers, completion/counter state and source-29 interrupt routing. Transfers
+require both caches disabled. Evidence: 37,466 native assertions, 27 parsed register defaults/384
+reference comparisons and 128 actual ESP32 C reads pass; 32 of these also load
+and execute a generated RAM worker (32 exact replays, 91,568 retired instructions).
+Seven unchanged SDK helper bodies are tested, not the full SDK initialization or
+boot stack. Flash program/erase, DMA, SPI timing, GPIO/pin mux and actual ROM/SDK
+boot remain unsupported.
 No runnable ESP32 target is added, and the
 existing RISC-V ESP32-C3 is not a substitute.
 

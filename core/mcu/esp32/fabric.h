@@ -8,7 +8,8 @@ typedef struct esk_esp32_fabric esk_esp32_fabric;
 /* Experimental static internal-memory profile, not the full SoC bus. SRAM0
  * non-cache 128K, SRAM1 128K (reversed instruction words), SRAM2 200K, RTC
  * fast/slow 8K each. RTC fast is PRO-only. Optional read-only flash mapping
- * is described below. No full cache/MMU/MPU, peripheral/DMA, RTC power/retention
+ * and an opt-in SPI1 read path are described below. No full cache/MMU/MPU,
+ * other peripherals/DMA, RTC power/retention
  * or physical reset qualification. RAM starts zero only
  * for deterministic setup. Serialized single-thread calls only; no re-entry. */
 es_status esk_esp32_fabric_create(esk_alloc *a,esk_esp32_fabric **out);
@@ -23,6 +24,12 @@ es_status esk_esp32_fabric_rom(esk_esp32_fabric *f,unsigned which,const unsigned
  * Replacement requires both caches disabled and preserves mappings; allocation
  * failure leaves the old image/state intact. Host calls only between turns. */
 es_status esk_esp32_fabric_flash(esk_esp32_fabric *f,const unsigned char *data,size_t len);
+/* Opt-in SPI1 USER 03h read path to the installed immutable backing. Both
+ * caches must be disabled during transfers. No chip ID/program/erase/timing.
+ * Enabling/disabling preserves SPI state; CPU-only reset also preserves it. */
+es_status esk_esp32_fabric_spi1_configure(esk_esp32_fabric *f,int enabled);
+/* ES_EUNSUPPORTED means disabled/unowned; output is unchanged on failure. */
+es_status esk_esp32_fabric_spi1_irq(const esk_esp32_fabric *f,int *asserted);
 /* Host-controlled boot-remap bit, not a DPORT register model. */
 es_status esk_esp32_fabric_remap(esk_esp32_fabric *f,unsigned cpu,int enabled);
 /* All-or-nothing RAM image write through the selected core's address view. */

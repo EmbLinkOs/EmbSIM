@@ -3,10 +3,12 @@
 /* Facts: ESP32 TRM v5.9 ch.3/4/12, ESP-IDF v4.4.7 soc/mmu.h and dport_reg.h.
  * Original functional translation implementation, no vendor controller code. */
 #include "mcu/esp32/flashmap.h"
+#include "mcu/esp32/flashspi.h"
 #include <string.h>
 struct esk_esp32_flashmap {
     esk_alloc *a;unsigned char *image;size_t size;
     uint32_t table[2][256],ctrl[2],ctrl1[2],dirty[2];
+    esk_esp32_flashspi spi1;int spi1_enabled;
 };
 es_status esk_esp32_flashmap_create(esk_alloc *a,esk_esp32_flashmap **out)
 {
@@ -14,7 +16,7 @@ es_status esk_esp32_flashmap_create(esk_alloc *a,esk_esp32_flashmap **out)
     if(!out) return ES_EINVAL;
     *out=NULL;if(!a) return ES_EINVAL;
     f=(esk_esp32_flashmap *)esk_calloc(a,1,sizeof *f);if(!f) return ES_ENOMEM;
-    f->a=a;
+    f->a=a;esk_esp32_flashspi_init(&f->spi1);
     for(cpu=0;cpu<2;cpu++) {
         f->ctrl[cpu]=0x10;f->ctrl1[cpu]=0x8ff;f->dirty[cpu]=1;
         for(i=0;i<256;i++) f->table[cpu][i]=0x100;
@@ -36,6 +38,18 @@ es_status esk_esp32_flashmap_install(esk_esp32_flashmap *f,const unsigned char *
     memcpy(copy,data,len);if(f->image) esk_free(f->a,f->image,f->size);
     f->image=copy;f->size=len;f->dirty[0]=f->dirty[1]=1;return ES_OK;
 }
+es_status esk_esp32_flashmap_spi1_configure(esk_esp32_flashmap *f,int enabled)
+{
+    if(!f) return ES_EINVAL;
+    if(enabled && !f->image) return ES_EUNSUPPORTED;
+    f->spi1_enabled=enabled!=0;return ES_OK;
+}
+es_status esk_esp32_flashmap_spi1_irq(const esk_esp32_flashmap *f,int *asserted)
+{
+    if(!f || !asserted) return ES_EINVAL;
+    if(!f->spi1_enabled) return ES_EUNSUPPORTED;
+    *asserted=esk_esp32_flashspi_irq(&f->spi1);return ES_OK;
+}
 /* kind=0 MMU entry, 1 control, 2 masks. Only PID0/1 entry ranges exist here. */
 static es_status decode(uint32_t address,unsigned bytes,unsigned *cpu,unsigned *kind,unsigned *index)
 {
@@ -51,6 +65,7 @@ es_status esk_esp32_flashmap_reg_read(const esk_esp32_flashmap *f,uint32_t addre
 {
     unsigned cpu,kind,index;es_status st;
     if(!f || !value) return ES_EINVAL;
+    if(f->spi1_enabled && address>=0x3ff42000 && address<0x3ff42400) return esk_esp32_flashspi_read(&f->spi1,address,bytes,value);
     st=decode(address,bytes,&cpu,&kind,&index);if(st!=ES_OK) return st;
     *value=kind==0 ? f->table[cpu][index] : kind==1 ? f->ctrl[cpu] : f->ctrl1[cpu];return ES_OK;
 }
@@ -58,6 +73,7 @@ es_status esk_esp32_flashmap_reg_write(esk_esp32_flashmap *f,uint32_t address,un
 {
     unsigned cpu,kind,index;uint32_t next;es_status st;
     if(!f) return ES_EINVAL;
+    if(f->spi1_enabled && address>=0x3ff42000 && address<0x3ff42400) return esk_esp32_flashspi_write(&f->spi1,f->image,f->size,((f->ctrl[0]|f->ctrl[1])&8u)==0,address,bytes,value);
     st=decode(address,bytes,&cpu,&kind,&index);if(st!=ES_OK) return st;
     if(kind==0) {
         if((value&~UINT32_C(0x1ff)) || (f->ctrl[cpu]&8u)) return ES_EUNSUPPORTED;

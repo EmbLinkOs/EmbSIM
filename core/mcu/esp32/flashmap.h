@@ -10,7 +10,9 @@
  * To keep immutable-image reads qualified without cache-coherence guesses,
  * table edits require the destination cache disabled and a fresh flush before
  * enabling. Flash replacement requires both caches disabled. Unsupported modes
- * fail unchanged. Initial invalid entries are fixture policy, not silicon reset.
+ * fail unchanged. Optional SPI1 USER reads use the same immutable backing
+ * under the separate flashspi.h contract. Initial invalid entries are fixture
+ * policy, not silicon reset.
  * No concurrent callers or re-entry. */
 typedef struct esk_esp32_flashmap esk_esp32_flashmap;
 es_status esk_esp32_flashmap_create(esk_alloc *a,esk_esp32_flashmap **out);
@@ -18,6 +20,9 @@ void esk_esp32_flashmap_destroy(esk_esp32_flashmap *f);
 /* Complete provided backing extent: 1..256 whole 64K pages, copied privately.
  * No chip identity/capacity is inferred and no missing bytes are fabricated. */
 es_status esk_esp32_flashmap_install(esk_esp32_flashmap *f,const unsigned char *data,size_t len);
+/* Explicit immutable SPI1 USER 03h read attachment; see flashspi.h. */
+es_status esk_esp32_flashmap_spi1_configure(esk_esp32_flashmap *f,int enabled);
+es_status esk_esp32_flashmap_spi1_irq(const esk_esp32_flashmap *f,int *asserted);
 es_status esk_esp32_flashmap_reg_read(const esk_esp32_flashmap *f,uint32_t address,unsigned bytes,uint32_t *value);
 es_status esk_esp32_flashmap_reg_write(esk_esp32_flashmap *f,uint32_t address,unsigned bytes,uint32_t value);
 es_status esk_esp32_flashmap_read(const esk_esp32_flashmap *f,unsigned cpu,uint32_t address,unsigned bytes,int fetch,uint32_t *value);

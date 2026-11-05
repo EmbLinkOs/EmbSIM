@@ -26,6 +26,9 @@ esk_esp32_fabric *esk_esp32_machine_fabric(esk_esp32_machine *m);
  * not irq_line on CPU peripheral input numbers. Internal timer/software and
  * profiling inputs remain CPU-local. No API is re-entrant or thread-safe. */
 esk_xtensa_memory esk_esp32_machine_bus(esk_esp32_machine *m,unsigned cpu);
+/* The opt-in SPI1 read profile owns matrix source 29 while enabled. Its
+ * completion/enable changes route after commit (immediately for host bus writes).
+ * External source injection into that owned slot fails explicitly. */
 es_status esk_esp32_machine_source(esk_esp32_machine *m,unsigned source,int asserted);
 es_status esk_esp32_machine_gpio_irq(esk_esp32_machine *m,unsigned cpu,int nmi,int asserted);
 es_status esk_esp32_machine_nmi_mask(esk_esp32_machine *m,unsigned cpu,int asserted);

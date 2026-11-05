@@ -5,6 +5,19 @@ versions follow semantic versioning. There is no release yet.
 
 ## Unreleased
 
+### Experimental ESP32 SPI1 flash reads
+
+- Added an opt-in USER 03h single-line read path to the installed immutable
+  flash backing, with real register addresses, 24-bit address alignment and
+  high/low data buffers. Both caches must be disabled for transfers.
+- Added completion/counter state and SPI1 matrix-source ownership, synchronized
+  after instruction commit. Unsupported commands/modes and out-of-extent reads
+  fail unchanged. Programming, erase, DMA, timing and real ROM/SDK boot remain
+  unimplemented.
+- Added 37,466 native assertions, 27 parsed vendor register defaults/384 reference
+  comparisons and actual ESP32 C with seven unchanged SDK helper bodies:
+  128 reads, 32 SPI-loaded RAM workers, 32 replays and 91,568 retired instructions.
+
 ### Experimental Xtensa dynamic stack allocation
 
 - Added MOVSP with wrapped caller-window checks and AllocaCause 5 before SP
