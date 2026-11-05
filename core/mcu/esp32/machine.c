@@ -2,10 +2,75 @@
 /* Copyright 2026 Junior Deogracias */
 #include "mcu/esp32/machine.h"
 #include <string.h>
+struct machine_view { struct esk_esp32_machine *m;unsigned cpu; };
 struct esk_esp32_machine {
     esk_alloc *a;esk_esp32_fabric *fabric;
-    esk_xtensa_windows cpu[2];uint64_t retired[2];unsigned running[2];
+    esk_xtensa_windows cpu[2];uint64_t retired[2];unsigned running[2],executing;
+    esk_esp32_matrix matrix;struct machine_view view[2];
 };
+/* Never mutate an executing CPU from a bus callback. Synchronize the
+ * combinatorial routing only outside execution or after instruction commit.
+ * Both cores are updated, including a debug-paused peer, so edge pulses
+ * across separate retired writes are latched even while the peer is paused. */
+static void sync_inputs(esk_esp32_machine *m)
+{
+    unsigned cpu,input;const uint32_t internal=UINT32_C(0x200188c0);
+    for(cpu=0;cpu<2;cpu++) if(m->cpu[cpu].irq.enabled) {
+        uint32_t levels=esk_esp32_matrix_levels(&m->matrix,cpu);
+        for(input=0;input<32;input++) {
+            uint32_t bit=UINT32_C(1)<<input;
+            if(!(bit&internal)) (void)esk_xtensa_irq_line(&m->cpu[cpu],input,(levels&bit)!=0);
+        }
+    }
+}
+static es_status bus_read(void *ctx,uint32_t address,unsigned bytes,uint32_t *value)
+{
+    struct machine_view *v=(struct machine_view *)ctx;esk_xtensa_memory ram;es_status st;
+    st=esk_esp32_matrix_read(&v->m->matrix,address,bytes,value);
+    if(st!=ES_EUNSUPPORTED) return st;
+    ram=esk_esp32_fabric_bus(v->m->fabric,v->cpu);return ram.read(ram.ctx,address,bytes,value);
+}
+static es_status bus_write(void *ctx,uint32_t address,unsigned bytes,uint32_t value)
+{
+    struct machine_view *v=(struct machine_view *)ctx;esk_xtensa_memory ram;es_status st;
+    st=esk_esp32_matrix_write(&v->m->matrix,address,bytes,value);
+    if(st!=ES_EUNSUPPORTED) {
+        if(st==ES_OK && !v->m->executing) sync_inputs(v->m);
+        return st;
+    }
+    ram=esk_esp32_fabric_bus(v->m->fabric,v->cpu);return ram.write(ram.ctx,address,bytes,value);
+}
+static es_status bus_fetch(void *ctx,uint32_t address,unsigned bytes,uint32_t *value)
+{
+    struct machine_view *v=(struct machine_view *)ctx;esk_xtensa_memory ram=esk_esp32_fabric_bus(v->m->fabric,v->cpu);
+    return ram.fetch(ram.ctx,address,bytes,value);
+}
+static es_status bus_cas(void *ctx,uint32_t address,uint32_t expected,uint32_t desired,uint32_t *observed)
+{
+    struct machine_view *v=(struct machine_view *)ctx;esk_xtensa_memory ram=esk_esp32_fabric_bus(v->m->fabric,v->cpu);
+    return ram.compare_exchange(ram.ctx,address,expected,desired,observed);
+}
+esk_xtensa_memory esk_esp32_machine_bus(esk_esp32_machine *m,unsigned cpu)
+{
+    esk_xtensa_memory bus={NULL,NULL,NULL,NULL,NULL};
+    if(m && cpu<2) { bus.ctx=&m->view[cpu];bus.read=bus_read;bus.write=bus_write;bus.fetch=bus_fetch;bus.compare_exchange=bus_cas; }
+    return bus;
+}
+es_status esk_esp32_machine_source(esk_esp32_machine *m,unsigned source,int asserted)
+{
+    es_status st;if(!m || m->executing) return ES_EINVAL;
+    st=esk_esp32_matrix_source(&m->matrix,source,asserted);if(st==ES_OK) sync_inputs(m);return st;
+}
+es_status esk_esp32_machine_gpio_irq(esk_esp32_machine *m,unsigned cpu,int nmi,int asserted)
+{
+    es_status st;if(!m || m->executing) return ES_EINVAL;
+    st=esk_esp32_matrix_gpio(&m->matrix,cpu,nmi,asserted);if(st==ES_OK) sync_inputs(m);return st;
+}
+es_status esk_esp32_machine_nmi_mask(esk_esp32_machine *m,unsigned cpu,int asserted)
+{
+    es_status st;if(!m || m->executing) return ES_EINVAL;
+    st=esk_esp32_matrix_nmi_mask(&m->matrix,cpu,asserted);if(st==ES_OK) sync_inputs(m);return st;
+}
 es_status esk_esp32_machine_create(esk_alloc *a,esk_esp32_machine **out)
 {
     esk_esp32_machine *m;es_status st;unsigned i;
@@ -14,7 +79,8 @@ es_status esk_esp32_machine_create(esk_alloc *a,esk_esp32_machine **out)
     m=(esk_esp32_machine *)esk_calloc(a,1,sizeof *m);if(!m) return ES_ENOMEM;
     m->a=a;st=esk_esp32_fabric_create(a,&m->fabric);
     if(st!=ES_OK) { esk_free(a,m,sizeof *m);return st; }
-    for(i=0;i<2;i++) esk_xtensa_windows_init(&m->cpu[i],0,NULL);
+    esk_esp32_matrix_init(&m->matrix);
+    for(i=0;i<2;i++) { esk_xtensa_windows_init(&m->cpu[i],0,NULL);m->view[i].m=m;m->view[i].cpu=i; }
     *out=m;return ES_OK;
 }
 void esk_esp32_machine_destroy(esk_esp32_machine *m)
@@ -41,8 +107,9 @@ es_status esk_esp32_machine_step(esk_esp32_machine *m,unsigned cpu,unsigned *eve
     if(fault) memset(fault,0,sizeof *fault);
     if(!m || cpu>1 || !event) return ES_EINVAL;
     if(!m->running[cpu]) { *event=19;return ES_OK; }
-    bus=esk_esp32_fabric_bus(m->fabric,cpu);
+    sync_inputs(m);bus=esk_esp32_machine_bus(m,cpu);m->executing=1;
     st=esk_xtensa_window_step(&m->cpu[cpu],&bus,event,fault);
+    m->executing=0;sync_inputs(m);
     if(st!=ES_OK) m->running[cpu]=0;
     else if(!*event) m->retired[cpu]++;
     return st;

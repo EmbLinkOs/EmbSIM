@@ -42,7 +42,8 @@ RFI and WAITI suspension/wake (11,571 native assertions). CCOUNT/CCOMPARE0..2
 use explicit supplied ticks, including WAITI wake and wraparound (81 assertions).
 Referees pass 2,048 vendor-configuration interrupt comparisons and 8,192
 clock/deadline comparisons against 263,719 individual ticks. The SoC interrupt
-matrix, peripheral routing, scheduler timing, SMP and board boot remain absent.
+matrix is now covered by a separate functional implementation below; peripheral
+generators, scheduler timing, full SMP and board boot remain absent.
 Conditional moves/min/max/high products/division/normalization and bit branches
 now pass 128 additional native assertions. SCOMPARE1/S32C1I require one indivisible
 bus callback, with no non-atomic fallback (67 assertions). Another 832 actual
@@ -54,11 +55,21 @@ two-context harness shares this RAM while keeping CPU/interrupt/clock state
 private. Native fixtures cover address/permission/remap/fault/wait boundaries;
 512 actual ESP32 compiled task executions and 128 replay comparisons pass through
 the native bus (229,322 instructions). This remains a bounded memory/execution
-harness: cache/MMU, DPORT hardware controls, complete SMP and SoC boot are absent.
+harness: cache/MMU, DPORT core reset/stall controls, complete SMP and SoC boot are absent.
 L32AI/S32RI now provide acquire/release ordering under the synchronous completed
 callback contract (30,732 native assertions). The compiled shared-bus acceptance
 includes acquire/CAS/release spinlocks protecting ordinary writes. Asynchronous
 transactions, cache coherence and physical timing remain unsupported.
+The interrupt matrix now exposes per-core DPORT maps/raw status, four shared
+software-generated interrupts, shared OR routes, disconnected internal-input
+selectors, core-local GPIO and explicit PID NMI-mask inputs. Firmware can wake a
+peer from WAITI, acknowledge its source and return. Delivery synchronizes after
+instruction commit, including paused-peer edges. New fixtures pass 64,374 matrix
+and 101 integration assertions; pinned-header referees pass 4,288 routes and 512
+combined-source/mask cases. Actual ESP32 C sender/assembled ISR acceptance passes
+128 mailbox executions, 2,112 interrupts and 64 exact replays (188,480 retired
+instructions). Peripheral generators, PID hardware, DPORT reset/stall, APB timing,
+flash/cache and boot remain absent; no complete ISR/RTOS or timing claim follows.
 No runnable ESP32 target is added, and the
 existing RISC-V ESP32-C3 is not a substitute.
 

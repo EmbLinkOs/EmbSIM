@@ -5,6 +5,21 @@ versions follow semantic versioning. There is no release yet.
 
 ## Unreleased
 
+### Experimental ESP32 interrupt matrix and cross-core signaling
+
+- Added per-core DPORT source maps/status, shared software-generated interrupts,
+  OR routing, internal-input disconnection, core-local GPIO inputs and explicit
+  NMI masking. Reserved sources/holes remain unsupported; peripheral generators
+  and PID hardware are not supplied by this controller.
+- Unified machine data access now routes MMIO and delivers inputs after CPU
+  instruction commit. A peer can wake from WAITI, acknowledge a source and RFI;
+  paused-peer edges and same-core MMIO IRQ updates survive correctly. No physical
+  APB timing, DPORT reset/stall, cache/flash, full SMP or boot claim is added.
+- Added 64,374 matrix/101 integration assertions and pinned-header referees for
+  4,288 routes/512 combined-source cases. Actual ESP32 C sender/assembled ISR
+  passes 128 mailbox runs, 2,112 interrupts and 64 exact replays (188,480 retired
+  instructions), preserving integer registers and stack guards.
+
 ### Experimental Xtensa acquire/release and shared spinlocks
 
 - Added L32AI/S32RI with scaled offsets, alias-safe access, alignment/failure

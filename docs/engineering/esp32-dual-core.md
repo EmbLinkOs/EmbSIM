@@ -1,6 +1,6 @@
 # Original ESP32 dual-core target: identity and implementation gates
 
-**Status: firmware inspection, experimental Xtensa execution and a two-context internal-RAM harness implemented; no runnable board target is added.** Requested by
+**Status: firmware inspection, experimental Xtensa execution, shared internal RAM and interrupt routing implemented; no runnable board target is added.** Requested by
  the owner on 2026-11-04. This is the original ESP32 family, not ESP32-C3,
 ESP32-S2 or ESP32-S3. The generic marketplace title “ESP-32 / ESP-32S
 WiFi+Bluetooth Dual Cores” does not identify a reproducible board revision.
@@ -370,10 +370,11 @@ python tests/vendor/xtensa_integer/run_timer_clock.py \
   --core-isa /path/to/xtensa-esp32-elf/include/xtensa/config/core-isa.h
 ```
 
-This is not the SoC interrupt matrix, peripheral source routing, cross-core
-interrupt generation, full ISR/RTOS context switching, debug/NMI cycle timing or
-board power behavior. No executable board target is registered. Those remain
-separate qualification gates rather than being inferred from CPU input tests.
+These CPU input tests alone do not establish SoC routing or cross-core
+interrupt generation. The separate matrix implementation below covers those
+functional paths. Full ISR/RTOS context switching, debug/NMI cycle timing and
+board power behavior remain separate qualification gates. No runnable board
+target is registered.
 
 ## Implemented: extended integer operations, bit branches and conditional store
 
@@ -531,6 +532,92 @@ or real-hardware qualification.
 
 ```sh
 python tests/vendor/xtensa_integer/run_machine_c.py \
+  --compiler /path/to/xtensa-esp32-elf-gcc \
+  --objcopy /path/to/xtensa-esp32-elf-objcopy \
+  --linker /path/to/xtensa-esp32-elf-ld \
+  --nm /path/to/xtensa-esp32-elf-nm
+```
+
+## Implemented: interrupt matrix and firmware-generated cross-core interrupts
+
+`core/mcu/esp32/matrix.c` implements the register-routing contract from TRM v5.9
+chapters 8 and 12. Each core has 69 numbered source slots; slots 41/42 are
+reserved and rejected. GPIO slots 22/23 have separate per-core input levels;
+other defined sources are shared. Peripheral generators are not implemented by
+this controller: external source levels must be supplied explicitly.
+
+| Register group | Address range (inclusive, 32-bit registers) | Behavior |
+| --- | --- | --- |
+| Software-generated sources 0..3 | `3FF000DC–3FF000E8` | Bit 0 asserts/clears shared sources 24..27 |
+| PRO source status 0..2 | `3FF000EC–3FF000F4` | Raw source levels, independent of routing and masks |
+| APP source status 0..2 | `3FF000F8–3FF00100` | Same shared sources, core-local GPIO slots |
+| PRO source maps | `3FF00104–3FF00214` | Five-bit CPU input selector, except reserved slots |
+| APP source maps | `3FF00218–3FF00328` | Independent selector for the other core |
+
+Map fields initialize to documented reset value 16, disconnecting the sources.
+Inputs 6, 7, 11, 15, 16 and 29 are CPU-internal: mapping a peripheral to any of
+these disables that route without driving or clearing the internal input.
+Other destinations OR all active mapped sources. Clearing one shared source
+cannot deassert an input while another mapped source remains asserted. Active
+sources can be remapped. Only defined field bits are stored/read; status writes
+are ignored. Reserved map holes and unrelated DPORT registers remain unsupported.
+The qualified bus profile requires aligned 32-bit accesses and rejects narrow
+or misaligned transactions; MMIO instruction fetch and CAS are unsupported.
+
+The two-context machine now exposes a unified data bus with these registers.
+Matrix changes from firmware writes reach CPU inputs only after instruction
+commit, avoiding mutation of a copied executing CPU state. Inputs are synchronized
+before each runnable turn and after each instruction, for both profiles, including
+a debug-paused peer. Separate high/low firmware writes therefore latch an edge
+even when the peer has no intervening execution turn. Host bus/input calls are
+allowed only between turns and synchronize immediately. Direct CPU `irq_line`
+calls for peripheral input numbers conflict with this ownership; use the machine's
+source/GPIO/NMI-mask APIs. Internal clock/software/profiling inputs remain
+CPU-local. This is a serialized functional model, not host-thread-safe routing.
+
+PID NMI-mask inputs are explicitly supplied per core and suppress only the
+matrix NMI output; raw status remains readable. The PID controller itself,
+source pulse shaping/minimum widths, APB/arbitration latency, hardware reset and
+power domains, other DPORT registers, peripheral source generators, flash/cache,
+SoC boot and real-hardware timing remain unqualified or absent. No vector address
+or peripheral behavior is invented from a source number. No board target is
+registered by this change.
+
+Proof:
+
+- `test_esp32_matrix`: 64,374 assertions across every defined source/destination,
+  reset fields, core isolation, GPIO-specific status, shared OR, remapping,
+  NMI masks, software-source fields, RO status and invalid accesses.
+- `test_esp32_ipi`: 101 assertions for a fetched sender, peer WAITI wake,
+  handler acknowledgement/RFI, paused-peer edge capture, same-core MMIO changes
+  surviving instruction commit, shared edge-input OR and internal-input isolation.
+- `run_matrix.py`: 4,288 independent vendor-addressed routes and 512 combined
+  source/map/mask comparisons. It parses the hash-pinned vendor headers below
+  for register addresses/defaults/source slots and CPU-internal input types.
+- `run_ipi_c.py`: actual ESP32-compiled windowed C sender plus assembled ISR,
+  128 mailbox runs, 2,112 routed interrupts, 64 exact instruction/event replays
+  and 188,480 retired instructions. The ISR saves/restores integer registers on
+  an EXCSAVE2 stack, uses EXCSAVE3 for the interrupted SP, clears the source and
+  publishes a release acknowledgement. Checks cover all messages, source clear,
+  stack guards, general registers, ABI return and window state. This is not a
+  complete production ISR, nested exception or RTOS context-switch proof.
+- The native shared-RAM atomic/spinlock acceptance still passes unchanged.
+
+External reference headers (ESP-IDF v4.4.7, used as facts, not linked code):
+
+- [soc/dport_reg.h](https://github.com/espressif/esp-idf/blob/v4.4.7/components/soc/esp32/include/soc/dport_reg.h),
+  SHA-256 `38deaa4ef02016ee9cdf490a9bfe4b587f11d1d1e6a2329dc858a50b9b248817`.
+- [soc/soc.h](https://github.com/espressif/esp-idf/blob/v4.4.7/components/soc/esp32/include/soc/soc.h),
+  SHA-256 `7a7148c288d7c289c961810e5617fa7b14d105b28349a45f772150b1e0845dd3`.
+- The hash-pinned actual ESP32 `core-isa.h` described above supplies CPU input
+  types. No vendor controller implementation or ROM is embedded.
+
+```sh
+python tests/vendor/xtensa_integer/run_matrix.py \
+  --dport-reg /path/to/esp-idf/components/soc/esp32/include/soc/dport_reg.h \
+  --soc-header /path/to/esp-idf/components/soc/esp32/include/soc/soc.h \
+  --core-isa /path/to/xtensa-esp32-elf/include/xtensa/config/core-isa.h
+python tests/vendor/xtensa_integer/run_ipi_c.py \
   --compiler /path/to/xtensa-esp32-elf-gcc \
   --objcopy /path/to/xtensa-esp32-elf-objcopy \
   --linker /path/to/xtensa-esp32-elf-ld \

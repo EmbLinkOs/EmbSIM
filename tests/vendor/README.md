@@ -85,3 +85,18 @@ Python memory callbacks: 512 task executions, 128 deterministic schedule replays
 retirement. Supply `--compiler`, `--objcopy`, `--linker`, `--nm`. This is a
 serialized functional harness, not DPORT/ROM boot, cache/coherence, cycle timing
 or full SMP qualification.
+
+`xtensa_integer/run_matrix.py` takes `--dport-reg`, `--soc-header` and `--core-isa`
+external hash-pinned ESP-IDF v4.4.7/toolchain headers. Parsed vendor register
+addresses/defaults, source numbers and CPU input types drive 4,288 routing and
+512 combined-source/mask comparisons against the native controller. No vendor
+implementation is linked. Reproduction and header hashes are in the target
+contract linked above.
+
+`xtensa_integer/run_ipi_c.py` takes the actual ESP32 `--compiler`, `--objcopy`,
+`--linker` and `--nm`. A compiled C sender uses DPORT MMIO to wake a WAITI peer;
+an assembled context-saving ISR acknowledges its source and publishes a release
+ACK. No Python memory/interrupt callbacks: 128 mailbox runs, 2,112 interrupts,
+64 exact replays, 188,480 retired instructions. Checks messages, source clear,
+stack guards, general registers and ABI/window return. Not full ISR/RTOS, PID,
+peripheral generators, APB timing or SoC boot qualification.
