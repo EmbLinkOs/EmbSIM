@@ -31,6 +31,15 @@ void esk_xtensa_windows_init(esk_xtensa_windows *w, uint32_t pc, const uint32_t 
     memset(w,0,sizeof *w); w->cpu.pc=pc; w->ps=ESK_XT_PS_WOE; w->start=1;
     if (vectors) memcpy(w->vectors,vectors,sizeof w->vectors);
 }
+static void loop_buffer_flush(esk_xtensa_windows *w)
+{
+    memset(w->loopbuf_valid,0,sizeof w->loopbuf_valid);
+}
+es_status esk_xtensa_memctl_configure(esk_xtensa_windows *w)
+{
+    if(!w) return ES_EINVAL;
+    w->memctl=1;w->memctl_enabled=1;w->loopbuf_base=w->loopbuf_end=0;loop_buffer_flush(w);return ES_OK;
+}
 es_status esk_xtensa_region_configure(esk_xtensa_windows *w)
 {
     unsigned bank,entry;if(!w) return ES_EINVAL;
@@ -82,6 +91,7 @@ es_status esk_xtensa_lx6_reset(esk_xtensa_windows *w,unsigned vector_input)
     if(!w || vector_input>1) return ES_EINVAL;
     (void)esk_xtensa_atomctl_configure(w);
     if(w->region_enabled) (void)esk_xtensa_region_configure(w);
+    if(w->memctl_enabled) (void)esk_xtensa_memctl_configure(w);
     save(w);w->base&=15u;w->start&=65535u;
     w->ps=0x1f;w->lcount=0;w->cpu.pc=vector_input ? 0x40000400u : 0x50000000u;
     w->exceptions_enabled=1;w->irq.enabled=1;w->irq.waiting=0;
@@ -107,6 +117,7 @@ es_status esk_xtensa_raise_exception(esk_xtensa_windows *w, unsigned cause,
     if (!w->exceptions_enabled) return ES_EUNSUPPORTED;
     if (w->ps&ESK_XT_PS_EXCM) { w->depc=w->cpu.pc; index=2; }
     else { w->epc1=w->cpu.pc; index=(w->ps&32u) ? 1u : 0u; }
+    if(w->memctl_enabled) loop_buffer_flush(w);
     w->exccause=cause;
     if (has_address) w->excvaddr=address;
     w->ps|=ESK_XT_PS_EXCM;
@@ -116,7 +127,7 @@ es_status esk_xtensa_raise_exception(esk_xtensa_windows *w, unsigned cause,
 }
 static int special_valid(const esk_xtensa_windows *w,unsigned reg)
 {
-    return (w->irq.enabled && esk_xtensa_irq_special(reg)) || (reg==99 && w->atomctl_enabled) || reg<=3 || reg==12 || reg==72 || reg==73 || reg==177 || reg==192 || reg==230 || (reg==231 && w->vecbase_enabled) || reg==232 || reg==238 || (reg>=244 && reg<=247) || (reg==235 && w->prid_enabled);
+    return (w->irq.enabled && esk_xtensa_irq_special(reg)) || (reg==97 && w->memctl_enabled) || (reg==99 && w->atomctl_enabled) || reg<=3 || reg==12 || reg==72 || reg==73 || reg==177 || reg==192 || reg==230 || (reg==231 && w->vecbase_enabled) || reg==232 || reg==238 || (reg>=244 && reg<=247) || (reg==235 && w->prid_enabled);
 }
 static uint32_t special_read(const esk_xtensa_windows *w,unsigned reg)
 {
@@ -124,7 +135,7 @@ static uint32_t special_read(const esk_xtensa_windows *w,unsigned reg)
     if (esk_xtensa_irq_special(reg)) { uint32_t value=0; (void)esk_xtensa_irq_read(w,reg,&value); return value; }
     switch (reg) {
     case 0:return w->lbeg; case 1:return w->lend; case 2:return w->lcount; case 3:return w->sar;
-    case 99:return w->atomctl; case 12:return w->scompare1; case 72:return w->base; case 73:return w->start; case 177:return w->epc1;
+    case 97:return w->memctl; case 99:return w->atomctl; case 12:return w->scompare1; case 72:return w->base; case 73:return w->start; case 177:return w->epc1;
     case 192:return w->depc; case 230:return w->ps&ESK_XT_PS_MASK&~(w->region_enabled ? UINT32_C(0xc0) : 0u); case 235:return w->prid; case 231:return w->vecbase; case 232:return w->exccause; default:return w->excvaddr;
     }
 }
@@ -133,8 +144,9 @@ static void special_write(esk_xtensa_windows *w,unsigned reg,uint32_t value)
     if(reg>=244 && reg<=247) { w->misc[reg-244]=value;return; }
     if (esk_xtensa_irq_special(reg)) { (void)esk_xtensa_irq_write(w,reg,value); return; }
     switch (reg) {
-    case 0:w->lbeg=value;break; case 1:w->lend=value;break; case 2:w->lcount=value;break;
+    case 0:w->lbeg=value;loop_buffer_flush(w);break; case 1:w->lend=value;loop_buffer_flush(w);break; case 2:w->lcount=value;break;
     case 3:w->sar=value&63u;break;
+    case 97:w->memctl=value;if(!value) loop_buffer_flush(w);break;
     case 99:w->atomctl=value;break;
     case 12:w->scompare1=value;break;
     case 72:w->base=value&15u;load(w);break;
@@ -214,7 +226,7 @@ es_status esk_xtensa_window_execute(esk_xtensa_windows *w, const esk_xtensa_memo
     else if ((word&UINT32_C(0xffff0f))==0x408000) kind=XT_ROTW;
     else if ((word&UINT32_C(0xff000f))==0x030000 || (word&UINT32_C(0xff000f))==0x130000 || (word&UINT32_C(0xff000f))==0x610000) {
         unsigned reg=(word>>8)&255u;
-        if (!special_valid(&next,reg) || (reg==227 && (word&UINT32_C(0xff000f))==0x030000) || ((word&UINT32_C(0xff000f))==0x610000 && reg!=3 && reg!=12 && reg!=230 && reg!=231 && reg!=99 && !(reg>=244 && reg<=247)) || (reg==235 && (word&UINT32_C(0xff000f))!=0x030000))
+        if (!special_valid(&next,reg) || (reg==227 && (word&UINT32_C(0xff000f))==0x030000) || ((word&UINT32_C(0xff000f))==0x610000 && reg!=3 && reg!=12 && reg!=230 && reg!=231 && reg!=99 && reg!=97 && !(reg>=244 && reg<=247)) || (reg==235 && (word&UINT32_C(0xff000f))!=0x030000))
             return reject(fault,ESK_XT_UNSUPPORTED,pc,pc,word);
         kind=XT_SPECIAL; mask=bit(t);
     }
@@ -258,7 +270,7 @@ es_status esk_xtensa_window_execute(esk_xtensa_windows *w, const esk_xtensa_memo
         st=esk_xtensa_raise_exception(&next,8,0,0,event); if (st==ES_OK) *w=next; return st;
     }
     e=overflow(&next,mask);
-    if (e) { *w=next; *event=e; return ES_OK; }
+    if (e) { if(next.memctl_enabled) loop_buffer_flush(&next);*w=next; *event=e; return ES_OK; }
     if(next.region_enabled) {
         uint32_t address=0;unsigned bytes=0,cause=0;int write=0,has=0;
         if(kind==XT_ATOMIC) { address=next.cpu.a[s]+((word>>16)<<2);bytes=4;write=1;has=1; }
@@ -323,7 +335,7 @@ es_status esk_xtensa_window_execute(esk_xtensa_windows *w, const esk_xtensa_memo
         uint32_t form=word&UINT32_C(0xff000f);
         if (form==0x030000) next.cpu.a[t]=old;
         else {
-            if((reg==99 && (value&~UINT32_C(63))) || (reg==231 && (value&1023u))) return reject(fault,ESK_XT_UNSUPPORTED,pc,pc,word);
+            if((reg==97 && (value&~UINT32_C(1))) || (reg==99 && (value&~UINT32_C(63))) || (reg==231 && (value&1023u))) return reject(fault,ESK_XT_UNSUPPORTED,pc,pc,word);
             special_write(&next,reg,value);if(form==0x610000) next.cpu.a[t]=old;
         }
         next.cpu.pc=pc+3;
@@ -364,6 +376,7 @@ es_status esk_xtensa_window_execute(esk_xtensa_windows *w, const esk_xtensa_memo
         else joined=(uint64_t)next.cpu.a[s]<<32 | next.cpu.a[t];
         next.cpu.a[r]=(uint32_t)(joined>>next.sar); next.cpu.pc=pc+3;
     } else if (kind==XT_FENCE) {
+        if(word==0x002000 && next.memctl_enabled) loop_buffer_flush(&next);
         if(next.region_enabled && (word==0x002000 || word==0x002030)) {
             unsigned bank=word==0x002030 ? 1u : 0u;
             memcpy(next.region_active[bank],next.region[bank],sizeof next.region[bank]);
@@ -422,27 +435,45 @@ es_status esk_xtensa_window_execute(esk_xtensa_windows *w, const esk_xtensa_memo
 es_status esk_xtensa_window_step(esk_xtensa_windows *w, const esk_xtensa_memory *memory,
                                  unsigned *event, esk_xtensa_fault *fault)
 {
-    unsigned char code[3]; unsigned i,width=2; size_t used; uint32_t value;
-    if (event) *event=0;
-    if (fault) memset(fault,0,sizeof *fault);
-    if (!w || !event) return ES_EINVAL;
-    if (w->irq.enabled) {
-        es_status st=esk_xtensa_irq_poll(w,event);
-        if (st!=ES_OK || *event) return st;
-        if (w->irq.waiting) { *event=18; return ES_OK; }
+    unsigned char code[3];unsigned i,width=2;size_t used;uint32_t value;esk_xtensa_windows fetched;es_status st;int buffering;
+    if(event) *event=0;
+    if(fault) memset(fault,0,sizeof *fault);
+    if(!w || !event) return ES_EINVAL;
+    if(w->irq.enabled) {
+        st=esk_xtensa_irq_poll(w,event);
+        if(st!=ES_OK || *event) { if(st==ES_OK && w->memctl_enabled) loop_buffer_flush(w);return st; }
+        if(w->irq.waiting) { *event=18;return ES_OK; }
     }
-    for (i=0;i<width;i++) {
-        uint32_t address=w->cpu.pc+i;unsigned cause=0;
+    fetched=*w;
+    buffering=w->memctl_enabled && (w->memctl&1u) && !(w->ps&ESK_XT_PS_EXCM) && w->lbeg<w->lend;
+    if(buffering && (fetched.loopbuf_base!=w->lbeg || fetched.loopbuf_end!=w->lend)) {
+        loop_buffer_flush(&fetched);fetched.loopbuf_base=w->lbeg;fetched.loopbuf_end=w->lend;
+    }
+    for(i=0;i<width;i++) {
+        uint32_t address=w->cpu.pc+i,offset=address-fetched.loopbuf_base;unsigned cause=0;
         es_status permission=region_access(w,address,1,2,&cause);
+        int eligible=buffering && address>=fetched.loopbuf_base && address<fetched.loopbuf_end && offset<256;
         if(permission!=ES_OK) {
             if(cause && w->exceptions_enabled) return esk_xtensa_raise_exception(w,cause,address,1,event);
             return reject(fault,cause ? ESK_XT_PROTECTION : ESK_XT_UNSUPPORTED,w->cpu.pc,address,0);
         }
-        if (!memory || (!memory->fetch && !memory->read) ||
-            (memory->fetch ? memory->fetch : memory->read)(memory->ctx,address,1,&value)!=ES_OK)
-            return reject(fault,ESK_XT_FETCH,w->cpu.pc,address,0);
+        if(eligible && (fetched.loopbuf_valid[offset/32]&(UINT32_C(1)<<(offset%32)))) value=fetched.loopbuf[offset];
+        else {
+            if(!memory || (!memory->fetch && !memory->read) ||
+               (memory->fetch ? memory->fetch : memory->read)(memory->ctx,address,1,&value)!=ES_OK)
+                return reject(fault,ESK_XT_FETCH,w->cpu.pc,address,0);
+            if(eligible) {
+                fetched.loopbuf[offset]=(unsigned char)(value&255u);
+                fetched.loopbuf_valid[offset/32]|=UINT32_C(1)<<(offset%32);
+            }
+        }
         code[i]=(unsigned char)(value&255u);
-        if (i==0 && (code[0]&15u)<8) width=3;
+        if(i==0 && (code[0]&15u)<8) width=3;
     }
-    return esk_xtensa_window_execute(w,memory,code,width,&used,event,fault);
+    st=esk_xtensa_window_execute(&fetched,memory,code,width,&used,event,fault);
+    if(st==ES_OK) {
+        if(*event && fetched.memctl_enabled) loop_buffer_flush(&fetched);
+        *w=fetched;
+    }
+    return st;
 }

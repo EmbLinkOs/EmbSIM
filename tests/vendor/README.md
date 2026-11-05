@@ -218,3 +218,13 @@ and actual assembler/compiler tools: 266,240 TLB instruction/register/alias
 comparisons, plus 32 C maintenance calls/480 instructions on the native bus.
 See the [region-protection contract](../../docs/engineering/esp32-region-protection.md)
 for synchronization, access rights, one-ring behavior and omitted memory features.
+
+`xtensa_integer/run_memctl.py` checks 96 independently assembled MEMCTL register
+cases and 20 actual ESP32 C calls/20 hardware loops/2,332 instructions with the
+functional buffer enabled/disabled. See the [MEMCTL contract](../../docs/engineering/esp32-memctl-loop-buffer.md)
+for the explicit fill policy and unqualified silicon timing.
+
+The [cycle-capture project](xtensa_integer/cycle_probe/README.md) builds with
+ESP-IDF v4.4.7/actual ESP32 GCC and emits 3,672 framed IRAM kernel observations.
+A complete QEMU control-flow/protocol run and analyzer rejection tests pass;
+this is not physical measurement or a calibrated native instruction-time model.

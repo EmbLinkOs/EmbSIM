@@ -101,7 +101,11 @@ architecturally non-removing invalidate behavior for these fixed tables.
 - Existing flat-memory, windows, exceptions, atomic, timer, TLS, reset, mapped
   flash, SPI programming and eFuse compiler/vendor fixtures also rerun.
 
-The external real-ROM probe completes both instruction/data maintenance loops
+The subsequent [MEMCTL profile](esp32-memctl-loop-buffer.md) now reaches RTC
+reset-state read after 6,692 instructions. The historical region-only result
+below retains its original source scope.
+
+The external real-ROM probe at this milestone completes both instruction/data maintenance loops
 and ISYNC/DSYNC, retires **545 instructions**, then stops at unsupported
 **RSR.MEMCTL**, opcode 0x036120, PC 0x400004f2. The
 [hash-recorded result](../../tests/vendor/xtensa_integer/evidence/boot-with-regions-2026-11-05.json)

@@ -32,7 +32,11 @@ unprogrammed fixture with explicit read-completion events advances ROM to 440
 retired instructions in the prior profile. With
 [atomic-operation control](esp32-atomic-control.md), it now reaches 451 instructions
 in the prior profile. With [fixed-region protection](esp32-region-protection.md),
-it reaches 545 instructions and unsupported RSR.MEMCTL at PC 0x400004f2. It is not the owner's fuse dump and does
+it reached 545 instructions in the prior profile.
+[Functional MEMCTL/loop buffering](esp32-memctl-loop-buffer.md) now advances it to
+6,692 instructions and an RTC reset-state read at 0x3ff48034/PC 0x400081df.
+[Instruction timing](esp32-instruction-timing.md) still requires physical evidence;
+a buildable capture firmware is prepared without claiming calibrated latency. It is not the owner's fuse dump and does
 not establish full boot. The [Giantec storage subset](esp32-giantec-profile.md)
 adds independently checked timing/WEL behavior for the matching JEDEC family;
 complete chip behavior remains unqualified.

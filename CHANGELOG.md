@@ -5,6 +5,23 @@ versions follow semantic versioning. There is no release yet.
 
 ## Unreleased
 
+### Original ESP32 MEMCTL and timing qualification tools
+
+- Added opt-in MEMCTL bit 0 with reset, privileged read/write/exchange and a
+  256-byte functional loop-buffer policy, including disable/ISYNC/bounds/reset/
+  exception invalidation, protected hits and failed-fetch/decode rollback.
+  Exact silicon fill/replacement, fetch geometry and instruction timing remain
+  unqualified. Legacy fixtures retain explicit opt-in.
+- 268,225 native assertions, 96 GNU register comparisons and 20 compiled C
+  hardware-loop calls pass. Native ROM reaches 6,692 instructions, then blocks
+  on RTC reset-state read at 0x3ff48034, PC 0x400081df. SDK boot remains unverified.
+- Added buildable ESP-IDF cycle-capture firmware and strict log analysis for
+  both cores, loop-buffer modes, nine IRAM kernels and 3,672 observations.
+  Actual ESP32 GCC build and a complete QEMU protocol run pass. No physical
+  board was programmed/measured, and no instruction latency model is inferred
+  from emulator values. Invalid/incomplete captures cannot claim qualification.
+
+
 ### Original ESP32 region protection
 
 - Added an explicit eight-region instruction/data protection profile, all ten

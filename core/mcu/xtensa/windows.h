@@ -30,6 +30,8 @@ typedef struct esk_xtensa_windows {
     uint32_t threadptr,misc[4],prid,prid_enabled;
     uint32_t atomctl,atomctl_enabled;
     uint32_t region_enabled,region[2][8],region_active[2][8];
+    uint32_t memctl,memctl_enabled,loopbuf_base,loopbuf_end,loopbuf_valid[8];
+    unsigned char loopbuf[256];
 } esk_xtensa_windows;
 /* event 0: retired; 1..6: window transition; 7/8/9: kernel/user/double exception;
  * 11..17: accepted interrupt level 1..7; 18: suspended WAITI (step only).
@@ -44,6 +46,15 @@ typedef struct esk_xtensa_windows {
  * configuration. This supplies a constant board/SoC input, not a guessed ESP32
  * silicon ID or a live pin-waveform model; it survives supported CPU reset. */
 es_status esk_xtensa_prid_configure(esk_xtensa_windows *state,uint32_t value);
+/* Opt-in original-ESP32 MEMCTL SR97 bit 0, reset 1, 256-byte loop buffer.
+ * Fetches in the first 256 bytes of [LBEG,LEND) are captured and replayed.
+ * This deterministic fill/exception-flush policy is NOT qualified silicon
+ * fetch geometry, replacement, latency or instruction timing. ISYNC, disable,
+ * bound writes, CPU reset and exception/interrupt entries invalidate it.
+ * Region permissions still apply to hits. Unsupported upper MEMCTL bits fail.
+ * execute has no instruction fetch; step owns buffer fill/replay and rollback.
+ * No physical Xtensa/device-cache or pipeline timing claim. */
+es_status esk_xtensa_memctl_configure(esk_xtensa_windows *state);
 /* Original-ESP32 Region Protection Option: eight identity-mapped 512MiB
  * regions per ITLB/DTLB, attributes reset to 2. Explicit opt-in; CPU reset
  * resets tables only while enabled. One hardware ring, no Xtensa I/D cache.

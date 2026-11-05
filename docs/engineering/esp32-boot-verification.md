@@ -3,7 +3,7 @@
 **Result on 2026-11-05: the owner's board reports ESP32-D0WD-V3 revision 3.1,
 JEDEC C4 60 16 and 4 MB flash. Giantec's GT25Q32A-U datasheet matches that ID;
 exact package/ordering suffix remains unconfirmed. The pinned SDK example boots
-in Espressif QEMU. Native EmbSIM stops at unsupported RSR.MEMCTL after 545 retired
+in Espressif QEMU. Native EmbSIM stops at RTC reset-state read after 6,692 retired
 instructions with the new explicit synthetic eFuse image; without that profile,
 the baseline stops at an eFuse read after seven.** Neither result establishes
 successful native boot.
@@ -114,7 +114,12 @@ configuration or printed SDK capacity must not substitute for hardware identity.
 
 ## Native EmbSIM result: blocked
 
-**Latest follow-up:** [Region protection](esp32-region-protection.md) now completes
+**Latest follow-up:** [Functional MEMCTL/loop buffering](esp32-memctl-loop-buffer.md)
+now passes initialization and advances to 6,692 retirements, blocked at
+RTC_CNTL_RESET_STATE_REG read 0x3ff48034/PC 0x400081df. The buffer policy does not
+qualify physical instruction timing. Native SDK boot remains unverified.
+
+**Prior region-protection result:** [Region protection](esp32-region-protection.md) now completes
 both instruction/data setup loops and barriers. The explicit-input probe reaches
 545 retirements and unsupported RSR.MEMCTL at PC 0x400004f2. Full SDK boot remains
 unverified.
@@ -146,7 +151,7 @@ fault                load failure (kind 5), status -1
 Pinned SDK `soc/esp32/include/soc/efuse_reg.h` identifies that address as
 `EFUSE_BLK0_RDATA0_REG`. This baseline deliberately has no eFuse profile
 attached. With the new explicit image attached, the first observed blocker
-moved first to WSR.ATOMCTL, then WITLB, and now RSR.MEMCTL, as recorded above. The earlier synchronous profile took
+moved first to WSR.ATOMCTL, then WITLB, then RSR.MEMCTL, and now the RTC reset-state read, as recorded above. The earlier synchronous profile took
 the ROM failure path and requested a software reset through RTC options;
 it did not pass the eFuse handshake. RTC/strapping/reset state,
 further eFuse behavior, dedicated flash

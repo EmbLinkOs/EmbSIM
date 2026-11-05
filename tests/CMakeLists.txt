@@ -20,6 +20,8 @@ add_test(NAME catalog_fixtures COMMAND embsim_cli catalog validate ${CMAKE_SOURC
 # protocol conformance suite over the stdio and WebSocket transports.
 find_package(Python3 COMPONENTS Interpreter QUIET)
 if(Python3_Interpreter_FOUND)
+  add_test(NAME esp32_cycle_capture COMMAND ${Python3_EXECUTABLE}
+           ${CMAKE_SOURCE_DIR}/tests/vendor/xtensa_integer/cycle_probe/test_analyze.py)
   add_test(NAME esp32_image COMMAND ${Python3_EXECUTABLE} ${CMAKE_SOURCE_DIR}/tests/protocol/test_esp32_image.py
            --embsim $<TARGET_FILE:embsim_cli> WORKING_DIRECTORY ${CMAKE_SOURCE_DIR})
   add_test(NAME electrical_feedback COMMAND ${Python3_EXECUTABLE} ${CMAKE_SOURCE_DIR}/tests/protocol/test_electrical_feedback.py
