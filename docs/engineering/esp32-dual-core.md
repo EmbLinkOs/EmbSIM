@@ -1,6 +1,6 @@
 # Original ESP32 dual-core target: identity and implementation gates
 
-**Status: firmware inspection, experimental Xtensa execution, shared internal RAM, interrupt routing, APP controls and bounded reset/vector profiles implemented; no runnable board target is added.** Requested by
+**Status: firmware inspection, experimental Xtensa execution, shared internal RAM, interrupt routing, APP controls and bounded reset/vector and read-only mapped-flash profiles implemented; no runnable board target is added.** Requested by
  the owner on 2026-11-04. This is the original ESP32 family, not ESP32-C3,
 ESP32-S2 or ESP32-S3. The generic marketplace title “ESP-32 / ESP-32S
 WiFi+Bluetooth Dual Cores” does not identify a reproducible board revision.
@@ -524,7 +524,8 @@ A host-configured per-core boot-remap view aliases the first 32 KiB of ROM0 to
 SRAM1 instruction addresses `400B0000–400B8000`, disabling that original
 instruction alias for the selected core while preserving its data view and the
 other core's mapping. This is not a DPORT register implementation. Cache SRAM,
-flash/MMU windows, peripheral addresses and unmapped holes fail explicitly.
+unknown peripheral addresses and unmapped holes fail explicitly. Flash/MMU
+windows require the separate opt-in mapped-flash profile below.
 ROM must be provided externally at its exact region size; none is fabricated or
 bundled. Host RAM loading preflights the entire range before writing. A failed
 ROM allocation preserves the installed ROM.
@@ -743,6 +744,21 @@ comparisons and 512 vendor-control-field comparisons. A compiled supervisor and
 worker pass 128 reset cycles through an original temporary test-ROM program
 (11,904 retired instructions, 16 exact replays). This is not Espressif ROM,
 complete silicon reset, MMU/cache or real SDK/board boot qualification.
+
+## Implemented: read-only mapped flash for PID0/1
+
+The [flash mapping contract and reproduction](esp32-flash-mapping.md) describe
+the two normal-mode tables, actual cache-control/mask addresses, immutable backing,
+flush sequencing and access checks. Compiled firmware can program mappings in
+internal RAM and execute code/read data at flash virtual addresses. Unsupported
+live-remap/cache-tag/timing, SPI programming, PSRAM/high-PID and lock/page modes
+remain explicit gaps; this does not qualify full SDK cache/mmap behavior.
+
+Evidence: 7,289 native assertions, 488 vendor-fact translations, six control/flush
+comparisons and 256 actual compiled mapped workers with per-core code/data
+mappings (11,264 retired instructions, 64 replays). The original test-ROM reset
+path also passes 128 cycles into a flash-mapped worker (15,360 instructions,
+16 replays). Actual Espressif ROM/SDK/board boot remains unimplemented.
 
 ## Implemented: standalone firmware integrity inspection
 

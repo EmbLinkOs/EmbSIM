@@ -2,12 +2,13 @@
 /* Copyright 2026 Junior Deogracias */
 /* Address facts: ESP32 TRM v5.9, section 3.3.2. No vendor code copied. */
 #include "mcu/esp32/fabric.h"
+#include "mcu/esp32/flashmap.h"
 #include <string.h>
 struct view { struct esk_esp32_fabric *f;unsigned cpu; };
 struct esk_esp32_fabric {
     esk_alloc *a;
     unsigned char sram0[0x20000],sram1[0x20000],sram2[0x32000],fast[0x2000],slow[0x2000];
-    unsigned char *rom[2];
+    unsigned char *rom[2];esk_esp32_flashmap *flash;
     unsigned remap[2];struct view view[2];
 };
 struct location { unsigned char *byte;int readonly,word_only,executable,atomic; };
@@ -54,13 +55,34 @@ static es_status access(struct view *v,uint32_t address,unsigned bytes,int fetch
     else { for(i=0;i<bytes;i++) result|=(uint32_t)*at[i].byte<<(8*i);*value=result; }
     return ES_OK;
 }
-static es_status read_bus(void *ctx,uint32_t a,unsigned n,uint32_t *v) { return access((struct view *)ctx,a,n,0,0,v); }
-static es_status fetch_bus(void *ctx,uint32_t a,unsigned n,uint32_t *v) { return access((struct view *)ctx,a,n,1,0,v); }
-static es_status write_bus(void *ctx,uint32_t a,unsigned n,uint32_t value) { return access((struct view *)ctx,a,n,0,1,&value); }
+static es_status read_bus(void *ctx,uint32_t a,unsigned n,uint32_t *v)
+{
+    struct view *view=(struct view *)ctx;es_status st;
+    if(!view) return ES_EINVAL;
+    if(view->f->flash) {
+        st=esk_esp32_flashmap_reg_read(view->f->flash,a,n,v);if(st!=ES_EUNSUPPORTED) return st;
+        st=esk_esp32_flashmap_read(view->f->flash,view->cpu,a,n,0,v);if(st!=ES_EUNSUPPORTED) return st;
+    }
+    return access(view,a,n,0,0,v);
+}
+static es_status fetch_bus(void *ctx,uint32_t a,unsigned n,uint32_t *v)
+{
+    struct view *view=(struct view *)ctx;es_status st;
+    if(!view) return ES_EINVAL;
+    if(view->f->flash) { st=esk_esp32_flashmap_read(view->f->flash,view->cpu,a,n,1,v);if(st!=ES_EUNSUPPORTED) return st; }
+    return access(view,a,n,1,0,v);
+}
+static es_status write_bus(void *ctx,uint32_t a,unsigned n,uint32_t value)
+{
+    struct view *view=(struct view *)ctx;es_status st;
+    if(!view) return ES_EINVAL;
+    if(view->f->flash) { st=esk_esp32_flashmap_reg_write(view->f->flash,a,n,value);if(st!=ES_EUNSUPPORTED) return st; }
+    return access(view,a,n,0,1,&value);
+}
 static es_status cas_bus(void *ctx,uint32_t address,uint32_t expected,uint32_t desired,uint32_t *observed)
 {
     struct view *v=(struct view *)ctx;struct location at;uint32_t old;es_status st;
-    if(!observed || (address&3u)) return ES_EINVAL;
+    if(!v || !observed || (address&3u)) return ES_EINVAL;
     st=locate(v,address,&at);if(st!=ES_OK) return st;
     if(!at.atomic) return ES_EUNSUPPORTED;
     st=read_bus(ctx,address,4,&old);if(st!=ES_OK) return st;
@@ -82,6 +104,7 @@ void esk_esp32_fabric_destroy(esk_esp32_fabric *f)
     if(!f) return;
     if(f->rom[0]) esk_free(f->a,f->rom[0],0x60000);
     if(f->rom[1]) esk_free(f->a,f->rom[1],0x10000);
+    esk_esp32_flashmap_destroy(f->flash);
     esk_free(f->a,f,sizeof *f);
 }
 es_status esk_esp32_fabric_rom(esk_esp32_fabric *f,unsigned which,const unsigned char *data,size_t len)
@@ -90,6 +113,16 @@ es_status esk_esp32_fabric_rom(esk_esp32_fabric *f,unsigned which,const unsigned
     if(!f || which>1 || !data || len!=expected) return ES_EINVAL;
     copy=(unsigned char *)esk_malloc(f->a,len);if(!copy) return ES_ENOMEM;
     memcpy(copy,data,len);if(f->rom[which]) esk_free(f->a,f->rom[which],len);f->rom[which]=copy;return ES_OK;
+}
+es_status esk_esp32_fabric_flash(esk_esp32_fabric *f,const unsigned char *data,size_t len)
+{
+    esk_esp32_flashmap *created=NULL;es_status st;
+    if(!f || !data || !len || (len&65535u) || len>0x1000000u) return ES_EINVAL;
+    if(f->flash) return esk_esp32_flashmap_install(f->flash,data,len);
+    st=esk_esp32_flashmap_create(f->a,&created);if(st!=ES_OK) return st;
+    st=esk_esp32_flashmap_install(created,data,len);
+    if(st!=ES_OK) { esk_esp32_flashmap_destroy(created);return st; }
+    f->flash=created;return ES_OK;
 }
 es_status esk_esp32_fabric_remap(esk_esp32_fabric *f,unsigned cpu,int enabled)
 {

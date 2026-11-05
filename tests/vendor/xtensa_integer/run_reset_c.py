@@ -26,6 +26,16 @@ unsigned supervisor(unsigned boot,unsigned token) {
     *reset=1;
     *clock=1;
     *stall=0;
+#if MAPPED_FLASH
+    volatile unsigned *cache=(volatile unsigned *)0x3ff00058;
+    volatile unsigned *mmu=(volatile unsigned *)0x3ff12000;
+    *cache=0;
+    mmu[77]=0;
+    cache[1]=cache[1]&~1u;
+    *cache=16;
+    while(!(*cache&32)) { }
+    *cache=24;
+#endif
     mailbox[0]=token;
     mailbox[1]=0;
     *address=boot;
@@ -80,7 +90,7 @@ def main():
     ap = argparse.ArgumentParser(description=__doc__)
     for name in ['compiler', 'objcopy', 'linker', 'nm']:
         ap.add_argument('--' + name, required=True)
-    ap.add_argument('--cc', default='cc'); args = ap.parse_args()
+    ap.add_argument('--cc', default='cc'); ap.add_argument('--flash-worker', action='store_true'); args = ap.parse_args()
     with tempfile.TemporaryDirectory(prefix='embsim-reset-c-') as tmp:
         out = Path(tmp)
         def compile_image(name, source, base, entry, assembly=False):
@@ -88,7 +98,7 @@ def main():
             elf, binary = out / (name + '.elf'), out / (name + '.bin')
             src.write_text(source, encoding='utf-8')
             subprocess.run([args.compiler, '-B' + str(Path(args.compiler).parent) + '/', '-O1',
-                            '-mtext-section-literals', '-ffreestanding', '-fno-builtin', '-c', str(src), '-o', str(obj)], check=True)
+                            '-DMAPPED_FLASH=' + str(int(args.flash_worker)), '-mtext-section-literals', '-ffreestanding', '-fno-builtin', '-c', str(src), '-o', str(obj)], check=True)
             subprocess.run([args.linker, '--no-relax', '-Ttext=' + hex(base), '--entry=' + entry,
                             str(obj), '-o', str(elf)], check=True)
             subprocess.run([args.objcopy, '-O', 'binary', '--only-section=.text', str(elf), str(binary)], check=True)
@@ -96,12 +106,18 @@ def main():
                        if len(f := line.split()) == 3}
             return binary.read_bytes(), symbols
         code, symbols = compile_image('tasks', SOURCE, 0x40080000, 'supervisor')
+        flash_image = None
+        if args.flash_worker:
+            worker_source = 'unsigned worker(void)' + SOURCE.split('unsigned worker(void)', 1)[1]
+            worker, flash_symbols = compile_image('flashworker', worker_source, 0x400d0000, 'worker')
+            assert len(worker) < 65536
+            flash_image = worker + bytes(65536 - len(worker)); symbols['worker'] = flash_symbols['worker']
         rom, rom_symbols = compile_image('rom', ROM, 0x40000000, 'reset_entry', True)
         assert rom_symbols['reset_entry'] == 0x40000400 and len(rom) < 0x60000
         rom = rom + bytes(0x60000 - len(rom))  # original test fixture, not a product ROM
         lib = out / 'reset.so'
         sources = [ROOT / 'core/mcu/xtensa' / n for n in ['integer.c', 'execute.c', 'windows.c', 'interrupts.c']]
-        sources += [ROOT / 'core/mcu/esp32' / n for n in ['fabric.c', 'machine.c', 'matrix.c']]
+        sources += [ROOT / 'core/mcu/esp32' / n for n in ['fabric.c', 'machine.c', 'matrix.c', 'flashmap.c']]
         sources += [ROOT / 'core/util/alloc.c']
         subprocess.run([args.cc, '-std=c99', '-Wall', '-Wextra', '-Wconversion', '-Werror', '-shared', '-fPIC',
                         '-I' + str(ROOT / 'core'), '-I' + str(ROOT / 'include'), *map(str, sources), '-o', str(lib)], check=True)
@@ -114,6 +130,7 @@ def main():
         fabric = bind('esk_esp32_machine_fabric', pointer, pointer)
         bus_get = bind('esk_esp32_machine_bus', Memory, pointer, C.c_uint)
         load = bind('esk_esp32_fabric_load', C.c_int, pointer, C.c_uint, C.c_uint32, pointer, C.c_size_t)
+        install_flash = bind('esk_esp32_fabric_flash', C.c_int, pointer, pointer, C.c_size_t)
         install_rom = bind('esk_esp32_fabric_rom', C.c_int, pointer, C.c_uint, pointer, C.c_size_t)
         configure = bind('esk_esp32_machine_configure', C.c_int, pointer, C.c_uint, C.c_uint32)
         reset_profile = bind('esk_esp32_machine_app_reset_configure', C.c_int, pointer, C.c_uint)
@@ -122,7 +139,7 @@ def main():
         run = bind('esk_esp32_machine_run_core', C.c_int, pointer, C.c_uint, C.c_int)
         step = bind('esk_esp32_machine_step', C.c_int, pointer, C.c_uint, C.POINTER(C.c_uint), C.POINTER(Fault))
         pending = bind('esk_xtensa_irq_pending', C.c_uint32, C.POINTER(Windows))
-        total = 0; cycles = 0; rom_entries = 0; held = 0
+        total = 0; cycles = 0; rom_entries = 0; held = 0; flash_fetches = 0
         for trial in range(16):
             replay_trace = None
             for replay in range(2):
@@ -132,6 +149,7 @@ def main():
                     ram = fabric(machine); bus = bus_get(machine, 0); value = C.c_uint32()
                     assert load(ram, 0, 0x40080000, C.c_char_p(code), len(code)) == 0
                     assert install_rom(ram, 0, C.c_char_p(rom), len(rom)) == 0
+                    if flash_image is not None: assert install_flash(ram, C.c_char_p(flash_image), len(flash_image)) == 0
                     assert reset_profile(machine, 1) == 0 and run(machine, 1, 1) == 0
                     app = core(machine, 1).contents; app.irq.intenable = 0xffffffff
                     # A live peripheral source must survive CPU-only resets. ROM
@@ -162,6 +180,7 @@ def main():
                                     assert app.cpu.pc == 0x40000400 and app.vecbase == 0x40000000
                                     assert app.ps == 0x1f and app.lcount == 0
                                     entered = True; rom_entries += 1
+                            if cpu == 1 and 0x400d0000 <= app.cpu.pc < 0x400e0000: flash_fetches += 1
                             status = step(machine, cpu, C.byref(event), C.byref(fault))
                             assert status == 0 and event.value in [0, 18, 20, 22], (status, cpu, hex(fault.pc), hex(fault.opcode), event.value)
                             total += event.value == 0; held += event.value == 22
@@ -185,7 +204,8 @@ def main():
                     destroy(machine)
                 assert allocator.live_bytes == 0
         assert held > 0
-        print(f'{cycles} compiled reset/worker cycles, {rom_entries} static test-ROM entries, 16 exact replays, {total} retired instructions; {held} reset-held turns')
+        if args.flash_worker: assert flash_fetches > 0
+        print(f'{cycles} compiled reset/worker cycles, {rom_entries} static test-ROM entries, 16 exact replays, {total} retired instructions; {held} reset-held turns; {flash_fetches} mapped-flash instructions')
 
 
 if __name__ == '__main__':

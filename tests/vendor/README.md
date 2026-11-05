@@ -131,3 +131,18 @@ calls a compiled worker: 128 cycles, 128 static ROM entries, 16 exact replays,
 11,904 retired instructions. No Python memory callback or host APP PC shortcut.
 This is not Espressif ROM, full reset/MMU/cache, SDK or board boot qualification.
 See [reset/vector scope](../../docs/engineering/esp32-reset-vectors.md).
+
+`xtensa_integer/run_flashmap.py` takes `--dport-reg`, `--soc-header`, `--core-isa`
+and the pinned `--mmu-header`: 488 parsed-vendor translation comparisons, six
+initial-control/flush comparisons and per-window mask checks. `run_flash_c.py`
+takes the actual ESP32 compiler/objcopy/linker/nm paths: 256 compiled workers
+execute different physical code/data at identical virtual addresses on the two
+cores (64 exact replays, 11,264 retired instructions, 2,048 from flash).
+
+Add `--flash-worker` to `run_reset_c.py` for compiled PRO MMU/cache setup followed
+by original test-ROM handoff into a mapped worker: 128 cycles, 16 replays,
+15,360 retired instructions (1,664 from flash). Neither path uses Python memory
+callbacks. These checks qualify immutable PID0/1 mappings with disabled-cache
+edits and explicit flush; they do not qualify physical flash/SPI, live remap,
+cache tags/timing or real ROM/SDK boot. See the
+[flash profile contract](../../docs/engineering/esp32-flash-mapping.md).

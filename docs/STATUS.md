@@ -55,7 +55,7 @@ two-context harness shares this RAM while keeping CPU/interrupt/clock state
 private. Native fixtures cover address/permission/remap/fault/wait boundaries;
 512 actual ESP32 compiled task executions and 128 replay comparisons pass through
 the native bus (229,322 instructions). This remains a bounded memory/execution
-harness: cache/MMU, complete reset domains, full SMP and SoC boot are absent.
+harness: complete cache/MMU, reset domains and full SMP and SoC boot are absent.
 L32AI/S32RI now provide acquire/release ordering under the synchronous completed
 callback contract (30,732 native assertions). The compiled shared-bus acceptance
 includes acquire/CAS/release spinlocks protecting ordinary writes. Asynchronous
@@ -69,7 +69,7 @@ and 103 integration assertions; pinned-header referees pass 4,288 routes and 512
 combined-source/mask cases. Actual ESP32 C sender/C handler acceptance with an
 assembled entry/return wrapper passes 256 mailbox executions, 4,224 interrupts and 128 exact replays (512,128 retired
 instructions), in both directions. Peripheral generators, PID hardware, complete reset domains, APB timing,
-flash/cache and boot remain absent; no complete ISR/RTOS or timing claim follows.
+complete flash/cache and boot remain absent; no complete ISR/RTOS or timing claim follows.
 APP clock/stall fields and the ROM-consumed boot-address register now work
 through the machine bus. APP starts clock-disabled; fixture setup explicitly
 enables it. Gate/stall stops fetch/retirement and resumes at the same PC, without
@@ -92,6 +92,14 @@ state. Evidence: 2,281 CPU/104 machine assertions, 3,072 assembled VECBASE acces
 960 vendor-offset dispatches and 128 reset-address comparisons. Original test-ROM
 handoff passes 128 compiled supervisor/worker cycles and 16 exact replays.
 Actual Espressif ROM, full reset-domain behavior and SDK/board boot remain absent.
+An opt-in [read-only mapped-flash profile](engineering/esp32-flash-mapping.md)
+now supports PID0/1 normal-mode per-core tables, 64 KiB pages, access masks and
+explicit flush/enable sequencing. Evidence: 7,289 native assertions, 488 parsed
+vendor-fact translations, 256 compiled mapped workers and 64 exact replays.
+Compiled PRO setup plus original test-ROM handoff also passes 128 reset cycles
+into a mapped worker. Immutable backing and disabled-cache table edits bound this
+profile; SPI programming, real cache tags/timing, live SDK mmap/invalidation,
+PSRAM/high PIDs and actual ROM/SDK/board boot remain unimplemented.
 No runnable ESP32 target is added, and the
 existing RISC-V ESP32-C3 is not a substitute.
 

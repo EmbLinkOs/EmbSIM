@@ -5,6 +5,20 @@ versions follow semantic versioning. There is no release yet.
 
 ## Unreleased
 
+### Experimental ESP32 read-only mapped flash
+
+- Added copied whole-page flash backing, per-core PID0/1 normal-mode MMU tables,
+  real cache-control/mask addresses and a functional flush/enable sequence.
+  On-chip memory keeps priority; invalid/masked/out-of-extent reads fail without
+  fabricated bytes. Allocation/replacement failures preserve old state.
+- Table edits require the destination cache disabled and a fresh flush. No live
+  remap coherence, cache tags/timing, SPI programming, high-PID/PSRAM/lock/page
+  modes, actual ROM or complete SDK/board boot support is claimed.
+- Added 7,289 native assertions, 488 parsed-vendor translations and 256 compiled
+  per-core mapped workers (64 exact replays, 11,264 retired instructions). The
+  original test-ROM reset path also passes 128 cycles into a mapped C worker
+  (16 replays, 15,360 retired instructions).
+
 ### Experimental ESP32 CPU reset and vector relocation
 
 - Added the supported CPU reset subset with explicit static vector selection,
