@@ -16,7 +16,7 @@ import json
 from pathlib import Path
 import subprocess
 import tempfile
-from run_execute import ROOT, Fault
+from run_execute import ROOT, Fault, Memory
 from run_windows_c import Windows
 from run_machine_c import Allocator
 
@@ -25,6 +25,8 @@ ROM_SHA256='9115bbcd03da9f54d3baca5ad94d588a43da54ed332347137ba3dc9010df258b'
 
 def main():
     ap=argparse.ArgumentParser(description=__doc__)
+    ap.add_argument('--rtc-cal-initial-period-ticks',type=int,help='optional explicit source-1 full-period XTAL tick count before reset; requires rtc-cal fixture, not a frequency or physical measurement')
+    ap.add_argument('--rtc-cal-fixture',action='store_true',help='explicit TIMG0 cycling control 0x13000, prior value 0, no supplied clock periods; not physical oscillator/calibration history')
     ap.add_argument('--mask-rom-profile',action='store_true',help='explicit 448KiB SDK/QEMU IROM profile with DROM tail alias; zero-pad only the declared external-fixture tail')
     ap.add_argument('--rom',type=Path,required=True);ap.add_argument('--flash',type=Path,required=True)
     ap.add_argument('--efuse',type=Path,help='explicit JSON list of 31 raw None-coded fuse words; not inferred board defaults')
@@ -37,6 +39,7 @@ def main():
     ap.add_argument('--prid',type=lambda value:int(value,0),default=0xcdcd,help='PRO PRID; SDK documents 0xcdcd; 0 reproduces historical invalid-ID fixture')
     ap.add_argument('--report',type=Path);ap.add_argument('--steps',type=int,default=100000)
     ap.add_argument('--cc',default='cc');args=ap.parse_args()
+    if args.rtc_cal_initial_period_ticks is not None and (not args.rtc_cal_fixture or not 1<=args.rtc_cal_initial_period_ticks<=0x1ffffff):ap.error('initial calibration ticks require --rtc-cal-fixture and range 1..0x1ffffff')
     if not 1<=args.efuse_completion_period<=1000000:ap.error('--efuse-completion-period must be 1..1000000')
     if not 0<=args.prid<=0xffffffff:ap.error('--prid must be uint32')
     if not 1<=args.steps<=1000000:ap.error('--steps must be 1..1000000')
@@ -46,7 +49,7 @@ def main():
     with tempfile.TemporaryDirectory(prefix='embsim-native-rom-probe-') as tmp:
         lib=Path(tmp)/'probe.so'
         sources=[ROOT/'core/mcu/xtensa'/n for n in ['integer.c','execute.c','windows.c','interrupts.c']]
-        sources += [ROOT/'core/mcu/esp32'/n for n in ['fabric.c', 'efuse.c','machine.c','uart.c','gpio.c','matrix.c','flashmap.c','flashspi.c','w25q32.c', 'nor32.c', 'gt25q32.c']]
+        sources += [ROOT/'core/mcu/esp32'/n for n in ['fabric.c', 'efuse.c','machine.c','rtc_cal.c','uart.c','gpio.c','matrix.c','flashmap.c','flashspi.c','w25q32.c', 'nor32.c', 'gt25q32.c']]
         sources += [ROOT/'core/util/alloc.c']
         subprocess.run([args.cc,'-std=c99','-Wall','-Wextra','-Wconversion','-Werror','-shared','-fPIC',
                         '-I'+str(ROOT/'core'),'-I'+str(ROOT/'include'),*map(str,sources),'-o',str(lib)],check=True)
@@ -56,6 +59,7 @@ def main():
         init=bind('esk_alloc_init',None,C.POINTER(Allocator),pointer)
         create=bind('esk_esp32_machine_create',C.c_int,C.POINTER(Allocator),C.POINTER(pointer))
         destroy=bind('esk_esp32_machine_destroy',None,pointer)
+        bus_get=bind('esk_esp32_machine_bus',Memory,pointer,C.c_uint)
         fabric=bind('esk_esp32_machine_fabric',pointer,pointer)
         install=bind('esk_esp32_fabric_rom',C.c_int,pointer,C.c_uint,pointer,C.c_size_t)
         mask_rom=bind('esk_esp32_fabric_mask_rom',C.c_int,pointer,C.c_uint,pointer,C.c_size_t)
@@ -67,6 +71,8 @@ def main():
         uart=bind('esk_esp32_machine_uart_configure',C.c_int,pointer,C.c_int,C.c_int,C.c_int,C.c_int)
         uart_port=bind('esk_esp32_machine_uart_port_configure',C.c_int,pointer,C.c_uint,C.c_int,C.c_int,C.c_int,C.c_int)
         gpio=bind('esk_esp32_machine_gpio_configure',C.c_int,pointer,C.POINTER(C.c_uint32),C.c_size_t)
+        calibration_period=bind('esk_esp32_machine_rtc_cal_period',C.c_int,pointer,C.c_uint,C.c_uint32)
+        calibration=bind('esk_esp32_machine_rtc_cal_configure',C.c_int,pointer,C.c_int,C.c_uint32,C.c_uint32)
         rtc=bind('esk_esp32_machine_rtc_configure',C.c_int,pointer,C.c_uint32,C.POINTER(C.c_uint32),C.c_size_t)
         memctl=bind('esk_xtensa_memctl_configure',C.c_int,C.POINTER(Windows))
         region=bind('esk_xtensa_region_configure',C.c_int,C.POINTER(Windows))
@@ -85,6 +91,14 @@ def main():
                 'flash_profile':'immutable SPI1 fixture, not a physical flash identity'}
         try:
             ram=fabric(machine)
+            if args.rtc_cal_fixture:
+                assert calibration(machine,1,0x13000,0)==0
+                report['rtc_cal_fixture']='explicit TIMG0 cycling control 0x13000, initial value 0; not measured oscillator or POR calibration history'
+                if args.rtc_cal_initial_period_ticks is not None:
+                    assert calibration_period(machine,1,args.rtc_cal_initial_period_ticks)==0
+                    report['rtc_cal_initial_period_ticks']=args.rtc_cal_initial_period_ticks
+                    report['rtc_cal_period_note']='one explicit source-1 full-period event before PRO execution, no automatic instruction-to-time conversion or physical frequency claim'
+                else:report['rtc_cal_period_note']='no clock periods supplied; unclocked fixture exercises ROM fallback, not detection of owner 40MHz crystal'
             if args.uart_bank_active_fixture:
                 for port in range(3):assert uart_port(machine,port,1,1,0,0)==0
                 report['uart_bank_fixture']='normal UART0/1/2, default disjoint shared FIFO allocations, empty FIFOs, explicit RXD=1 CTS=0 DSR=0 per port, no serial-clock advancement or board pinmux'
@@ -125,6 +139,10 @@ def main():
                                   pc=hex(fault.pc if status else pc),opcode=hex(fault.opcode),address=hex(fault.address),
                                   fault_kind=fault.kind,attempts=attempt+1)
                     break
+            if args.rtc_cal_fixture:
+                bus=bus_get(machine,0);measured=C.c_uint32()
+                assert bus.read(bus.ctx,0x3ff5f06c,4,C.byref(measured))==0
+                report['rtc_cal_value_after_stop']=hex(measured.value>>7)
             report['region_readback']=[list(bank) for bank in w.contents.region]
             report['region_access_attributes']=[list(bank) for bank in w.contents.region_active]
             report.update(efuse_completions=completions,retired_before_stop=retired(machine,0),trace_tail=list(trace))

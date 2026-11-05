@@ -5,6 +5,20 @@ versions follow semantic versioning. There is no release yet.
 
 ## Unreleased
 
+### Original ESP32 TIMG0 RTC calibration counter
+
+- Added explicit calibration snapshots, selected-period XTAL-tick counting,
+  one-shot READY/completed results, single-period cycling, stalls and rearm.
+  CPU execution/MMIO reads do not manufacture clock progress.
+- Added RO protection, unsupported-mode/overflow rollback, shared CPU buses and
+  CPU-reset retention. Full clock-tree/gating/oscillator behavior, larger cycling
+  windows, TIMG1 and physical timing remain unqualified.
+- 919,967 native assertions, 19,208 independent comparisons and 486 compiled
+  C harness calls using ten unchanged SDK access macros pass. This does not
+  claim the full SDK calibration function runs unchanged.
+- Native ROM reaches 6,872 retirements, then per-pin pad-hold read, with explicit
+  unclocked/synthetic-period fixtures. Both preserve boot-unverified status.
+
 ### Original ESP32 per-core SDK mask-ROM mapping
 
 - Added explicit 448 KiB PRO/APP ROM profiles with coherent IROM/DROM views,

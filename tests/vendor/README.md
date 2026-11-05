@@ -258,3 +258,10 @@ alias observations and runs 1,024 compiled C calls to two unchanged ROM getter
 bodies using the actual SDK structure layout. It supplies distinct PRO/APP images
 and pins SDK/QEMU mapping inputs; this does not qualify physical ROM contents,
 compression, APP reset or SDK boot. [Mask-ROM contract](../../docs/engineering/esp32-mask-rom.md).
+
+`xtensa_integer/run_rtc_cal.py` checks 19,208 calibration period/result/READY
+observations and runs 486 compiled C harness calls using ten unchanged SDK access
+macros on both cores. Explicit clock records exercise one-shot completion,
+single-period cycling and stalled state. This does not qualify the complete SDK
+clock-enable/delay/calibration functions or physical frequency/timing.
+[Counter/controller contract](../../docs/engineering/esp32-rtc-calibration.md).

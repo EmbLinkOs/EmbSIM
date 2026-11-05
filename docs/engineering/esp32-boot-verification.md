@@ -3,8 +3,8 @@
 **Result on 2026-11-05: the owner's board reports ESP32-D0WD-V3 revision 3.1,
 JEDEC C4 60 16 and 4 MB flash. Giantec's GT25Q32A-U datasheet matches that ID;
 exact package/ordering suffix remains unconfirmed. The pinned SDK example boots
-in Espressif QEMU. Native EmbSIM reaches timer calibration after 6,796 retired
-instructions with explicit synthetic eFuse/RTC, active GPIO/UART-bank and mask-ROM fixtures; without an eFuse profile,
+in Espressif QEMU. Native EmbSIM reaches per-pin pad hold after 6,872 retired
+instructions with explicit synthetic eFuse/RTC/GPIO/UART-bank/mask-ROM/calibration fixtures; without an eFuse profile,
 the baseline stops at an eFuse read after seven.** Neither result establishes
 successful native boot.
 
@@ -114,7 +114,18 @@ configuration or printed SDK capacity must not substitute for hardware identity.
 
 ## Native EmbSIM result: blocked
 
-**Latest mask-ROM follow-up:** the [explicit per-core SDK mask-ROM profile](esp32-mask-rom.md)
+**Latest RTC-calibration follow-up:** the [TIMG0 counter/controller](esp32-rtc-calibration.md)
+uses explicit full-period XTAL tick inputs rather than inferred instruction time.
+The additional `--rtc-cal-fixture` reaches 6,872 retirements / 6,873 attempts,
+then RTC_IO_DIG_PAD_HOLD read at 0x3ff48474, PC 0x4000a67d, opcode 0x298.
+By default it has no clock input and follows a ROM fallback; it does not verify
+40 MHz detection. `--rtc-cal-initial-period-ticks 1280` supplies one synthetic
+period and retains result 0x500. Both stop at the same next register and remain
+boot unverified. [Unclocked evidence](../../tests/vendor/xtensa_integer/evidence/boot-with-rtc-cal-unclocked-2026-11-06.json)
+and [period evidence](../../tests/vendor/xtensa_integer/evidence/boot-with-rtc-cal-period-2026-11-06.json)
+record the fixture inputs separately; neither is a physical clock capture.
+
+**Prior mask-ROM follow-up:** the [explicit per-core SDK mask-ROM profile](esp32-mask-rom.md)
 resolves the extended IROM/DROM layout without changing the TRM-only default.
 With `--mask-rom-profile`, PRO retires 6,796 instructions / 6,797 attempts,
 then fails TIMG0 RTCCALICFG1 read at 0x3ff5f06c, PC 0x40008591, opcode 0x2222.

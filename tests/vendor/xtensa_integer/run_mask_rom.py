@@ -42,7 +42,7 @@ def main():
     entries={name:int(re.search(r'PROVIDE\s*\(\s*'+name+r'\s*=\s*(0x[0-9a-fA-F]+)',symbols)[1],16) for name in helpers}
     with tempfile.TemporaryDirectory(prefix='embsim-mask-rom-') as tmp:
         out=Path(tmp);lib=out/'rom.so';sources=[ROOT/'core/mcu/xtensa'/n for n in ['integer.c','execute.c','windows.c','interrupts.c']]
-        sources += [ROOT/'core/mcu/esp32'/n for n in ['fabric.c','efuse.c','machine.c','uart.c','gpio.c','matrix.c','flashmap.c','flashspi.c','w25q32.c','nor32.c','gt25q32.c']]
+        sources += [ROOT/'core/mcu/esp32'/n for n in ['fabric.c','efuse.c','machine.c','rtc_cal.c','uart.c','gpio.c','matrix.c','flashmap.c','flashspi.c','w25q32.c','nor32.c','gt25q32.c']]
         sources += [ROOT/'core/util/alloc.c']
         subprocess.run([args.cc,'-std=c99','-Wall','-Wextra','-Wconversion','-Werror','-shared','-fPIC','-I'+str(ROOT/'core'),'-I'+str(ROOT/'include'),*map(str,sources),'-o',str(lib)],check=True)
         api=C.CDLL(str(lib));pointer=C.c_void_p

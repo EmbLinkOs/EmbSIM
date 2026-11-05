@@ -9,7 +9,7 @@ struct esk_esp32_machine {
     uint32_t app_clock,app_stall,app_boot,app_reset,app_reset_enabled,app_reset_vector,app_reset_pending;
     unsigned spi1_owned,efuse_owned,uart_owned[3];
     uint32_t rtc_enabled,rtc_state,rtc_store[8];
-    esk_esp32_gpio gpio;esk_esp32_uart_bank uart;
+    esk_esp32_rtc_cal calibration;esk_esp32_gpio gpio;esk_esp32_uart_bank uart;
     esk_esp32_matrix matrix;struct machine_view view[2];
 };
 /* Never mutate an executing CPU from a bus callback. Synchronize the
@@ -108,6 +108,7 @@ static es_status control_write(esk_esp32_machine *m,uint32_t address,unsigned by
 static es_status bus_read(void *ctx,uint32_t address,unsigned bytes,uint32_t *value)
 {
     struct machine_view *v=(struct machine_view *)ctx;esk_xtensa_memory ram;es_status st;
+    st=esk_esp32_rtc_cal_read(&v->m->calibration,address,bytes,value);if(st!=ES_EUNSUPPORTED) return st;
     st=control_read(v->m,address,bytes,value);if(st!=ES_EUNSUPPORTED) return st;
     st=esk_esp32_uart_bank_read(&v->m->uart,address,bytes,value);
     if(st!=ES_EUNSUPPORTED) { if(st==ES_OK && !v->m->executing) sync_inputs(v->m);return st; }
@@ -119,6 +120,7 @@ static es_status bus_read(void *ctx,uint32_t address,unsigned bytes,uint32_t *va
 static es_status bus_write(void *ctx,uint32_t address,unsigned bytes,uint32_t value)
 {
     struct machine_view *v=(struct machine_view *)ctx;esk_xtensa_memory ram;es_status st;
+    st=esk_esp32_rtc_cal_write(&v->m->calibration,address,bytes,value);if(st!=ES_EUNSUPPORTED) return st;
     st=control_write(v->m,address,bytes,value);
     if(st!=ES_EUNSUPPORTED) {
         if(st==ES_OK && !v->m->executing) { apply_reset(v->m);sync_inputs(v->m); }
@@ -212,7 +214,7 @@ es_status esk_esp32_machine_create(esk_alloc *a,esk_esp32_machine **out)
     m=(esk_esp32_machine *)esk_calloc(a,1,sizeof *m);if(!m) return ES_ENOMEM;
     m->a=a;st=esk_esp32_fabric_create(a,&m->fabric);
     if(st!=ES_OK) { esk_free(a,m,sizeof *m);return st; }
-    esk_esp32_matrix_init(&m->matrix);esk_esp32_gpio_init(&m->gpio);esk_esp32_uart_bank_init(&m->uart);
+    esk_esp32_matrix_init(&m->matrix);esk_esp32_gpio_init(&m->gpio);esk_esp32_uart_bank_init(&m->uart);esk_esp32_rtc_cal_init(&m->calibration);
     for(i=0;i<2;i++) { esk_xtensa_windows_init(&m->cpu[i],0,NULL);m->view[i].m=m;m->view[i].cpu=i; }
     *out=m;return ES_OK;
 }
@@ -311,3 +313,8 @@ es_status esk_esp32_machine_uart_timeout(esk_esp32_machine *m)
 { return esk_esp32_machine_uart_port_timeout(m,0); }
 es_status esk_esp32_machine_uart_advance(esk_esp32_machine *m,uint64_t ticks,esk_esp32_uart_emit emit,void *ctx)
 { return esk_esp32_machine_uart_port_advance(m,0,ticks,emit,ctx); }
+
+es_status esk_esp32_machine_rtc_cal_configure(esk_esp32_machine *m,int on,uint32_t control,uint32_t value)
+{ return !m || m->executing ? ES_EINVAL : esk_esp32_rtc_cal_configure(&m->calibration,on,control,value); }
+es_status esk_esp32_machine_rtc_cal_period(esk_esp32_machine *m,unsigned source,uint32_t xtal_ticks)
+{ return !m || m->executing ? ES_EINVAL : esk_esp32_rtc_cal_period(&m->calibration,source,xtal_ticks); }

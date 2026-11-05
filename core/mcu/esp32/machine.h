@@ -6,6 +6,7 @@
 #include "mcu/esp32/matrix.h"
 #include "mcu/esp32/gpio.h"
 #include "mcu/esp32/uart.h"
+#include "mcu/esp32/rtc_cal.h"
 #include "mcu/xtensa/windows.h"
 typedef struct esk_esp32_machine esk_esp32_machine;
 /* Experimental two-context execution harness over shared internal memory.
@@ -58,6 +59,10 @@ es_status esk_esp32_machine_uart_advance(esk_esp32_machine *m,uint64_t ticks,esk
 es_status esk_esp32_machine_source(esk_esp32_machine *m,unsigned source,int asserted);
 es_status esk_esp32_machine_gpio_irq(esk_esp32_machine *m,unsigned cpu,int nmi,int asserted);
 es_status esk_esp32_machine_nmi_mask(esk_esp32_machine *m,unsigned cpu,int asserted);
+/* Explicit TIMG0 calibration profile and full selected-clock periods; see
+ * rtc_cal.h. No frequencies, elapsed CPU time or oscillator history inferred. */
+es_status esk_esp32_machine_rtc_cal_configure(esk_esp32_machine *m,int on,uint32_t control,uint32_t value);
+es_status esk_esp32_machine_rtc_cal_period(esk_esp32_machine *m,unsigned source,uint32_t xtal_ticks);
 /* Opt-in RTC reset-state and eight retention-register snapshot. All eight
  * initial words are explicit because hardware power-on contents are undefined.
  * reset_state supplies only bits 13:0: vector selects and raw cause latches;

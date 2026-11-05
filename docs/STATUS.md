@@ -7,7 +7,16 @@ does not mean the described behaviour exists.
 
 ## Original ESP32 dual-core target investigation (2026-11-04)
 
-**Latest ROM-map update:** an [explicit per-core SDK mask-ROM profile](engineering/esp32-mask-rom.md)
+**Latest RTC-calibration update:** the [TIMG0 counter/controller profile](engineering/esp32-rtc-calibration.md)
+now counts explicitly supplied XTAL ticks over selected-clock periods, with
+one-shot completion and single-period cycling. 919,967 native assertions,
+19,208 independent comparisons and 486 compiled C harness calls using unchanged
+SDK access macros pass. The diagnostic with an additional explicit calibration
+fixture reaches 6,872 retirements, then RTC_IO_DIG_PAD_HOLD read at 0x3ff48474.
+The unclocked and synthetic-period cases are recorded separately; neither
+verifies oscillator frequency, physical calibration, full SDK boot or CPU timing.
+
+**Prior ROM-map update:** an [explicit per-core SDK mask-ROM profile](engineering/esp32-mask-rom.md)
 now supplies the 448 KiB IROM view and coherent DROM tail alias using external
 PRO/APP images. 1,170 native assertions, 18,840 independent comparisons and
 1,024 compiled C calls to two unchanged ROM getters pass. The PRO diagnostic
