@@ -3,8 +3,8 @@
 **Result on 2026-11-05: the owner's board reports ESP32-D0WD-V3 revision 3.1,
 JEDEC C4 60 16 and 4 MB flash. Giantec's GT25Q32A-U datasheet matches that ID;
 exact package/ordering suffix remains unconfirmed. The pinned SDK example boots
-in Espressif QEMU. Native EmbSIM stops at an RTC analog-configuration read after 6,698 retired
-instructions with explicit synthetic eFuse and RTC snapshots; without an eFuse profile,
+in Espressif QEMU. Native EmbSIM reaches UART0 initialization after 6,734 retired
+instructions with explicit synthetic eFuse/RTC and active GPIO fixtures; without an eFuse profile,
 the baseline stops at an eFuse read after seven.** Neither result establishes
 successful native boot.
 
@@ -114,10 +114,16 @@ configuration or printed SDK capacity must not substitute for hardware identity.
 
 ## Native EmbSIM result: blocked
 
-**Latest follow-up:** [RTC reset-state/retention](esp32-rtc-reset-retention.md)
+**Latest follow-up:** [Software GPIO/global hold](esp32-gpio-pad-hold.md) now
+handles the pad-hold portion of DIG_ISO with an explicit routing fixture. The
+probe reaches 6,734 retirements, blocked at UART0 INT_CLR write 0x3ff40010,
+PC 0x4000900b. The earlier 0x3ff48088 label was wrong: it is DIG_ISO, not ANA_CONF.
+The active fixture does not qualify full isolation, physical GPIO or board boot.
+
+**Prior RTC-only result:** [RTC reset-state/retention](esp32-rtc-reset-retention.md)
 now supplies protected causes/vector latches and retained words from an explicit
 snapshot. With the synthetic power-on fixture, the probe reaches 6,698 retirements
-and RTC_CNTL_ANA_CONF_REG read 0x3ff48088/PC 0x4000770a. Native boot remains blocked;
+and RTC_CNTL_DIG_ISO_REG read 0x3ff48088/PC 0x4000770a. Native boot remains blocked;
 the snapshot is not a capture of owner RTC state.
 
 **Prior MEMCTL-only result:** [Functional MEMCTL/loop buffering](esp32-memctl-loop-buffer.md)

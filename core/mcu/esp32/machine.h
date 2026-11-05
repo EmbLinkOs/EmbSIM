@@ -4,6 +4,7 @@
 #define ESK_ESP32_MACHINE_H
 #include "mcu/esp32/fabric.h"
 #include "mcu/esp32/matrix.h"
+#include "mcu/esp32/gpio.h"
 #include "mcu/xtensa/windows.h"
 typedef struct esk_esp32_machine esk_esp32_machine;
 /* Experimental two-context execution harness over shared internal memory.
@@ -27,6 +28,13 @@ esk_esp32_fabric *esk_esp32_machine_fabric(esk_esp32_machine *m);
  * not irq_line on CPU peripheral input numbers. Internal timer/software and
  * profiling inputs remain CPU-local. No API is re-entrant or thread-safe. */
 esk_xtensa_memory esk_esp32_machine_bus(esk_esp32_machine *m,unsigned cpu);
+/* Explicit software-GPIO route fixture; see gpio.h for config ordering and
+ * electrical/pinmux/IRQ limitations. No board pad defaults are inferred.
+ * Mutating inputs/querying projected pads is permitted only between turns. */
+es_status esk_esp32_machine_gpio_configure(esk_esp32_machine *m,const uint32_t *config,size_t count);
+es_status esk_esp32_machine_gpio_input(esk_esp32_machine *m,unsigned pin,int known,int high);
+es_status esk_esp32_machine_gpio_output(const esk_esp32_machine *m,unsigned pin,esk_esp32_gpio_pad *pad);
+es_status esk_esp32_machine_gpio_auto_hold_event(esk_esp32_machine *m);
 /* Opt-in SPI1 owns matrix source 29; the eFuse profile owns source 44.
  * Both ownerships are active only while their respective profiles are enabled.
  * completion/enable changes route after commit (immediately for host bus writes).

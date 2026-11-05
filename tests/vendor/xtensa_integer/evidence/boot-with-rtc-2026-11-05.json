@@ -81,12 +81,13 @@
     "0x40007707",
     "0x4000770a"
   ],
-  "next_blocker": "RTC_CNTL_ANA_CONF_REG read at 0x3ff48088, PC 0x4000770a; native SDK boot unverified",
+  "next_blocker": "RTC_CNTL_DIG_ISO_REG read at 0x3ff48088, PC 0x4000770a; native SDK boot unverified",
   "fixture_note": "Explicit power-on snapshot causes/vector selects and all-zero retention words, not owner RTC state or automatic physical power-on defaults",
   "sources_sha256": {
     "core/mcu/esp32/machine.c": "2791c0c6ad839ec9c120c1beefccdd427f9add8775643fbcf7bfdb48440f79b4",
     "core/mcu/esp32/machine.h": "02c5d94eef8f49de2f3f9e5652483f1e4109f8af6daf8d264a89ba90e3adc3b0",
     "core/mcu/xtensa/windows.c": "0d642d048a310250f5954f9a4ae41b6a1e2cb0888ed1afdcf20a9165dc39a0e9",
     "tests/vendor/xtensa_integer/probe_rom_boot.py": "4ab35f601e9f416f8b7adeb37207af5edf72d6fcf3f51209098dc92269e0847c"
-  }
+  },
+  "register_label_correction": "0x3ff48088 is DIG_ISO per pinned rtc_cntl_reg.h; prior descriptive ANA_CONF label was wrong. Observed fault/address/PC/count are unchanged."
 }

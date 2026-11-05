@@ -74,11 +74,15 @@ ABI call setup is explicit. This exercises the supplied PRO-ROM routine; it is
 not APP-specific ROM qualification, complete SDK boot or a physical RTC capture.
 No ROM bytes are embedded in the runner/application/repository.
 
+The subsequent [GPIO/pad-hold profile](esp32-gpio-pad-hold.md) now advances the
+probe further, to UART initialization after 6,734 instructions. Historical RTC-only
+evidence below retains its source/fixture scope; its DIG_ISO label is corrected.
+
 With `--rtc-power-on-fixture`, the diagnostic explicitly supplies reason 1 for
 each core, both vector selects 1 and eight zero retention words. These are chosen
 snapshot inputs, not measured owner state or automatic defaults. The same external
 ROM/SDK image now retires **6,698 instructions**, then fails at
-**RTC_CNTL_ANA_CONF_REG** read 0x3ff48088, PC 0x4000770a, opcode 0x0258. The
+**RTC_CNTL_DIG_ISO_REG** read 0x3ff48088, PC 0x4000770a, opcode 0x0258. The
 [recorded result](../../tests/vendor/xtensa_integer/evidence/boot-with-rtc-2026-11-05.json)
 remains blocked. Without that additional fixture, the existing 6,692-instruction
 reset-state-read failure remains valid. No unknown-MMIO fallback or PC shortcut

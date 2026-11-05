@@ -234,3 +234,9 @@ unchanged external PRO-ROM reset-reason helper: 1,281 comparisons, 256 calls and
 1,792 instructions. Explicit snapshots are required; complete RTC/power domains
 and native boot remain unqualified. See the
 [RTC contract](../../docs/engineering/esp32-rtc-reset-retention.md).
+
+`xtensa_integer/run_gpio.py` checks 2,048 independent GPIO latch/pad cases and
+216 interactive C calls/25,380 instructions with nine unchanged SDK helpers.
+Input changes and held-output checks use native buses and explicit route/latch
+fixtures, not a complete IO_MUX/electrical/Deep-sleep/board model. See the
+[GPIO/pad-hold contract](../../docs/engineering/esp32-gpio-pad-hold.md).

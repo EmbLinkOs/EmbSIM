@@ -5,6 +5,22 @@ versions follow semantic versioning. There is no release yet.
 
 ## Unreleased
 
+### Original ESP32 software GPIO and global pad hold
+
+- Added explicit software-route GPIO fixtures, shared two-bank latches and
+  set/clear aliases, input-only protection, open-drain/HiZ outputs and externally
+  resolved inputs. Unresolved enabled inputs fail instead of becoming zero.
+- Added global pad hold/auto-hold/clear with captured output controls and live
+  inputs. Non-pad isolation/power changes remain unsupported, as do complete
+  IO_MUX/matrix/IRQ/electrical behavior and physical board bindings.
+- Corrected the former ANA_CONF label: 0x3ff48088 is DIG_ISO in the pinned SDK.
+  Earlier observed fault addresses/counts remain unchanged and annotated.
+- 3,313 native assertions, 2,048 independent latch/pad comparisons and 216
+  interactive compiled ESP32 C calls with nine unchanged SDK helpers pass.
+  With the additional explicit active GPIO fixture, native ROM reaches 6,734
+  instructions and UART0 INT_CLR write at 0x3ff40010; full SDK boot is unverified.
+
+
 ### Original ESP32 RTC reset state and retention
 
 - Added an explicit RTC reset-state/eight-word retention snapshot profile.
@@ -14,7 +30,7 @@ versions follow semantic versioning. There is no release yet.
 - 53,787 native assertions and 1,281 pinned field/retention/reset comparisons
   pass; the unchanged external PRO-ROM reset-reason helper passes 256 calls.
 - With an additional explicit synthetic power-on RTC snapshot, native ROM
-  reaches 6,698 instructions and blocks on analog configuration read 0x3ff48088.
+  reaches 6,698 instructions and blocks on digital isolation control read 0x3ff48088.
   Unknown RTC controls, global/power/watchdog/wakeup behavior, native SDK boot
   and physical instruction timing remain unqualified.
 

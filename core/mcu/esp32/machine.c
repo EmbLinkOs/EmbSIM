@@ -9,6 +9,7 @@ struct esk_esp32_machine {
     uint32_t app_clock,app_stall,app_boot,app_reset,app_reset_enabled,app_reset_vector,app_reset_pending;
     unsigned spi1_owned,efuse_owned;
     uint32_t rtc_enabled,rtc_state,rtc_store[8];
+    esk_esp32_gpio gpio;
     esk_esp32_matrix matrix;struct machine_view view[2];
 };
 /* Never mutate an executing CPU from a bus callback. Synchronize the
@@ -101,6 +102,7 @@ static es_status bus_read(void *ctx,uint32_t address,unsigned bytes,uint32_t *va
 {
     struct machine_view *v=(struct machine_view *)ctx;esk_xtensa_memory ram;es_status st;
     st=control_read(v->m,address,bytes,value);if(st!=ES_EUNSUPPORTED) return st;
+    st=esk_esp32_gpio_read(&v->m->gpio,address,bytes,value);if(st!=ES_EUNSUPPORTED) return st;
     st=esk_esp32_matrix_read(&v->m->matrix,address,bytes,value);
     if(st!=ES_EUNSUPPORTED) return st;
     ram=esk_esp32_fabric_bus(v->m->fabric,v->cpu);return ram.read(ram.ctx,address,bytes,value);
@@ -113,6 +115,7 @@ static es_status bus_write(void *ctx,uint32_t address,unsigned bytes,uint32_t va
         if(st==ES_OK && !v->m->executing) { apply_reset(v->m);sync_inputs(v->m); }
         return st;
     }
+    st=esk_esp32_gpio_write(&v->m->gpio,address,bytes,value);if(st!=ES_EUNSUPPORTED) return st;
     st=esk_esp32_matrix_write(&v->m->matrix,address,bytes,value);
     if(st!=ES_EUNSUPPORTED) {
         if(st==ES_OK && !v->m->executing) sync_inputs(v->m);
@@ -194,7 +197,7 @@ es_status esk_esp32_machine_create(esk_alloc *a,esk_esp32_machine **out)
     m=(esk_esp32_machine *)esk_calloc(a,1,sizeof *m);if(!m) return ES_ENOMEM;
     m->a=a;st=esk_esp32_fabric_create(a,&m->fabric);
     if(st!=ES_OK) { esk_free(a,m,sizeof *m);return st; }
-    esk_esp32_matrix_init(&m->matrix);
+    esk_esp32_matrix_init(&m->matrix);esk_esp32_gpio_init(&m->gpio);
     for(i=0;i<2;i++) { esk_xtensa_windows_init(&m->cpu[i],0,NULL);m->view[i].m=m;m->view[i].cpu=i; }
     *out=m;return ES_OK;
 }
@@ -245,3 +248,12 @@ es_status esk_esp32_machine_round(esk_esp32_machine *m,unsigned events[2],unsign
     return ES_OK;
 }
 uint64_t esk_esp32_machine_retired(const esk_esp32_machine *m,unsigned cpu) { return m && cpu<2 ? m->retired[cpu] : 0; }
+
+es_status esk_esp32_machine_gpio_configure(esk_esp32_machine *m,const uint32_t *config,size_t count)
+{ return !m || m->executing ? ES_EINVAL : esk_esp32_gpio_configure(&m->gpio,config,count); }
+es_status esk_esp32_machine_gpio_input(esk_esp32_machine *m,unsigned pin,int known,int high)
+{ return !m || m->executing ? ES_EINVAL : esk_esp32_gpio_input(&m->gpio,pin,known,high); }
+es_status esk_esp32_machine_gpio_output(const esk_esp32_machine *m,unsigned pin,esk_esp32_gpio_pad *pad)
+{ return !m || m->executing ? ES_EINVAL : esk_esp32_gpio_output(&m->gpio,pin,pad); }
+es_status esk_esp32_machine_gpio_auto_hold_event(esk_esp32_machine *m)
+{ return !m || m->executing ? ES_EINVAL : esk_esp32_gpio_auto_hold_event(&m->gpio); }

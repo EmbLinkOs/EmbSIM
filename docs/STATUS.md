@@ -7,13 +7,20 @@ does not mean the described behaviour exists.
 
 ## Original ESP32 dual-core target investigation (2026-11-04)
 
+**Latest GPIO update:** the [software-GPIO/pad-hold profile](engineering/esp32-gpio-pad-hold.md)
+now supports explicit routes, live resolved inputs, projected drive/HiZ and hold
+capture/clear. With all explicit probe fixtures it reaches 6,734 instructions,
+then UART0 INT_CLR write at 0x3ff40010/PC 0x4000900b. Full GPIO/IO_MUX, electrical
+loading, board binding, power isolation and native SDK boot remain incomplete.
+The earlier 0x3ff48088 blocker was DIG_ISO; its former analog label is corrected.
+
 **Current implementation update:** an [explicit eFuse read/reload profile](engineering/esp32-efuse-read-profile.md)
 now supports None-coded input images, read protection and completion routing.
 With a supplied synthetic unprogrammed image, real ROM execution advances from
 seven to 6,692 retired instructions without an RTC snapshot. With the new
 [RTC reset/retention profile](engineering/esp32-rtc-reset-retention.md) and an
 explicit synthetic power-on snapshot, it reaches 6,698 instructions, then blocks
-on analog configuration read at 0x3ff48088, PC 0x4000770a. [MEMCTL](engineering/esp32-memctl-loop-buffer.md) now
+on digital isolation control read at 0x3ff48088, PC 0x4000770a. [MEMCTL](engineering/esp32-memctl-loop-buffer.md) now
 has reset/control and a bounded functional loop-buffer profile. Its physical
 fill/fetch/pipeline timing remains unqualified.
 [Region protection](engineering/esp32-region-protection.md) now implements fixed

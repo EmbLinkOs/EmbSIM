@@ -36,7 +36,10 @@ it reached 545 instructions in the prior profile.
 [Functional MEMCTL/loop buffering](esp32-memctl-loop-buffer.md) now advances it to
 6,692 instructions without an RTC snapshot. Adding the
 [explicit RTC reset/retention fixture](esp32-rtc-reset-retention.md) reaches 6,698
-and the next analog-configuration read at 0x3ff48088/PC 0x4000770a.
+and the next digital-isolation-control read at 0x3ff48088/PC 0x4000770a.
+[Software GPIO and pad hold](esp32-gpio-pad-hold.md) adds another explicit fixture
+and advances the probe to UART0 INT_CLR after 6,734 instructions. Full GPIO/IO_MUX,
+board wiring and electrical loading remain unqualified.
 [Instruction timing](esp32-instruction-timing.md) still requires physical evidence;
 a buildable capture firmware is prepared without claiming calibrated latency. It is not the owner's fuse dump and does
 not establish full boot. The [Giantec storage subset](esp32-giantec-profile.md)

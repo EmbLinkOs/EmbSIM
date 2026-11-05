@@ -63,7 +63,7 @@ values and five loop counts pass: **20 calls, 20 compiled hardware loops and
 is explicit. No CPU timing is inferred from retirement or provider fetch counts.
 
 The subsequent [RTC reset/retention profile](esp32-rtc-reset-retention.md), with
-an additional explicit synthetic snapshot, now advances to analog configuration
+an additional explicit synthetic snapshot, now advances to digital isolation control
 read after 6,698 instructions. The historical MEMCTL-only result below retains
 its original source/fixture scope.
 
