@@ -51,6 +51,8 @@ es_status esk_esp32_fabric_flash_deadline(const esk_esp32_fabric *f,uint64_t *mi
  * BLK0(7), BLK1(8), BLK2(8), BLK3(8) order. No factory defaults inferred.
  * NULL/0 detaches. Host configuration is only allowed between machine turns. */
 es_status esk_esp32_fabric_efuse_configure(esk_esp32_fabric *f,const uint32_t *words,size_t count);
+/* Explicit external completion; next machine step synchronizes source 44. */
+es_status esk_esp32_fabric_efuse_read_complete(esk_esp32_fabric *f);
 es_status esk_esp32_fabric_efuse_irq(const esk_esp32_fabric *f,int *asserted);
 /* Host-controlled boot-remap bit, not a DPORT register model. */
 es_status esk_esp32_fabric_remap(esk_esp32_fabric *f,unsigned cpu,int enabled);

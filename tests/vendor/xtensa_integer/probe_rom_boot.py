@@ -27,8 +27,12 @@ def main():
     ap=argparse.ArgumentParser(description=__doc__)
     ap.add_argument('--rom',type=Path,required=True);ap.add_argument('--flash',type=Path,required=True)
     ap.add_argument('--efuse',type=Path,help='explicit JSON list of 31 raw None-coded fuse words; not inferred board defaults')
+    ap.add_argument('--efuse-completion-period',type=int,default=64,help='external fixture event every N instruction attempts; not physical timing')
+    ap.add_argument('--prid',type=lambda value:int(value,0),default=0xcdcd,help='PRO PRID; SDK documents 0xcdcd; 0 reproduces historical invalid-ID fixture')
     ap.add_argument('--report',type=Path);ap.add_argument('--steps',type=int,default=100000)
     ap.add_argument('--cc',default='cc');args=ap.parse_args()
+    if not 1<=args.efuse_completion_period<=1000000:ap.error('--efuse-completion-period must be 1..1000000')
+    if not 0<=args.prid<=0xffffffff:ap.error('--prid must be uint32')
     if not 1<=args.steps<=1000000:ap.error('--steps must be 1..1000000')
     rom=args.rom.read_bytes();image=args.flash.read_bytes()
     if hashlib.sha256(rom).hexdigest()!=ROM_SHA256:ap.error('expected pinned Espressif QEMU 9.2.2 PRO ROM')
@@ -50,6 +54,7 @@ def main():
         install=bind('esk_esp32_fabric_rom',C.c_int,pointer,C.c_uint,pointer,C.c_size_t)
         flash=bind('esk_esp32_fabric_flash',C.c_int,pointer,pointer,C.c_size_t)
         efuse=bind('esk_esp32_fabric_efuse_configure',C.c_int,pointer,C.POINTER(C.c_uint32),C.c_size_t)
+        complete=bind('esk_esp32_fabric_efuse_read_complete',C.c_int,pointer)
         spi=bind('esk_esp32_fabric_spi1_configure',C.c_int,pointer,C.c_int)
         core=bind('esk_esp32_machine_core',C.POINTER(Windows),pointer,C.c_uint)
         reset=bind('esk_xtensa_lx6_reset',C.c_int,C.POINTER(Windows),C.c_uint)
@@ -61,7 +66,8 @@ def main():
         assert create(C.byref(allocator),C.byref(machine))==0
         report={'boot_verified':False,'outcome':'step_budget_inconclusive','core':'PRO only',
                 'rom_sha256':ROM_SHA256,'flash_sha256':hashlib.sha256(image).hexdigest(),
-                'reset_vector':'0x40000400','prid_fixture':'0x00000000 (not silicon-qualified)',
+                'reset_vector':'0x40000400','prid_fixture':f'0x{args.prid:08x}',
+                'prid_reference':'ESP-IDF v4.4.7 xtensa_context.h documents PRO=0xcdcd, APP=0xabab; not a hardware readout',
                 'rom_tail_policy':'zero-fill absent DROM tail to match QEMU region setup, not silicon contents',
                 'flash_profile':'immutable SPI1 fixture, not a physical flash identity'}
         try:
@@ -77,16 +83,21 @@ def main():
             data=rom[0x60000:]+bytes(0x70000-len(rom));assert len(data)==65536
             assert install(ram,1,C.c_char_p(data),len(data))==0
             assert flash(ram,C.c_char_p(image),len(image))==0 and spi(ram,1)==0
-            w=core(machine,0);assert reset(w,1)==0 and prid(w,0)==0 and run(machine,0,1)==0
+            w=core(machine,0);assert reset(w,1)==0 and prid(w,args.prid)==0 and run(machine,0,1)==0
             event=C.c_uint();fault=Fault();trace=deque(maxlen=12)
+            completions=0
+            report['efuse_completion_fixture']=f'one external completion opportunity every {args.efuse_completion_period} instruction attempts; not physical timing'
             for attempt in range(args.steps):
+                if args.efuse and attempt%args.efuse_completion_period==0:
+                    completion=complete(ram);assert completion in (0,-8)
+                    completions+=completion==0
                 pc=w.contents.cpu.pc;status=step(machine,0,C.byref(event),C.byref(fault));trace.append(hex(pc))
                 if status or event.value>=18:
                     report.update(outcome='blocked' if status else 'suspended',status=status,event=event.value,
                                   pc=hex(fault.pc if status else pc),opcode=hex(fault.opcode),address=hex(fault.address),
                                   fault_kind=fault.kind,attempts=attempt+1)
                     break
-            report.update(retired_before_stop=retired(machine,0),trace_tail=list(trace))
+            report.update(efuse_completions=completions,retired_before_stop=retired(machine,0),trace_tail=list(trace))
         finally:destroy(machine)
         assert allocator.live_bytes==0
     output=json.dumps(report,indent=2)+'\n'

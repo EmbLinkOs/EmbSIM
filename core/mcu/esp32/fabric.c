@@ -181,3 +181,6 @@ esk_xtensa_memory esk_esp32_fabric_bus(esk_esp32_fabric *f,unsigned cpu)
     if(f && cpu<2) { bus.ctx=&f->view[cpu];bus.read=read_bus;bus.write=write_bus;bus.compare_exchange=cas_bus;bus.fetch=fetch_bus; }
     return bus;
 }
+
+es_status esk_esp32_fabric_efuse_read_complete(esk_esp32_fabric *f)
+{ return f ? esk_esp32_efuse_read_complete(&f->efuse) : ES_EINVAL; }

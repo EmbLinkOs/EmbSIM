@@ -39,6 +39,20 @@ static void reload_interrupt_and_failures(void)
     before=f;CHECK_EQ(esk_esp32_efuse_write(&f,0x3ff5a104,4,1),ES_EUNSUPPORTED);CHECK_EQ(memcmp(&f,&before,sizeof f),0);
     CHECK_EQ(esk_esp32_efuse_write(&f,0x3ff5a0fc,4,0x5aa5),ES_OK);
     CHECK_EQ(esk_esp32_efuse_write(&f,0x3ff5a104,4,1),ES_OK);
+    CHECK_EQ(esk_esp32_efuse_read(&f,0x3ff5a104,4,&value),ES_OK);CHECK_EQ(value,1);
+    CHECK_EQ(esk_esp32_efuse_read(&f,0x3ff5a108,4,&value),ES_OK);CHECK_EQ(value,0);
+    before=f;CHECK_EQ(esk_esp32_efuse_write(&f,0x3ff5a104,4,1),ES_EUNSUPPORTED);CHECK_EQ(memcmp(&f,&before,sizeof f),0);
+    CHECK_EQ(esk_esp32_efuse_write(&f,0x3ff5a0fc,4,0),ES_EUNSUPPORTED);CHECK_EQ(memcmp(&f,&before,sizeof f),0);
+    for(i=0;i<64;i++) {
+        CHECK_EQ(esk_esp32_efuse_read(&f,0x3ff5a104,4,&value),ES_OK);CHECK_EQ(value,1);
+        CHECK_EQ(esk_esp32_efuse_irq(&f,&irq),ES_OK);CHECK_EQ(irq,0);
+    }
+    CHECK_EQ(esk_esp32_efuse_write(&f,0x3ff5a104,4,0),ES_OK);CHECK_EQ(f.pending,1);
+    before=f;CHECK_EQ(esk_esp32_efuse_write(&f,stage_reg(0),4,0),ES_EUNSUPPORTED);CHECK_EQ(memcmp(&f,&before,sizeof f),0);
+    CHECK_EQ(esk_esp32_efuse_read(&f,0x3ff5a100,4,&value),ES_EUNSUPPORTED);
+    CHECK_EQ(esk_esp32_efuse_read_complete(&f),ES_OK);
+    before=f;CHECK_EQ(esk_esp32_efuse_read_complete(&f),ES_EUNSUPPORTED);CHECK_EQ(memcmp(&f,&before,sizeof f),0);
+    CHECK_EQ(esk_esp32_efuse_read(&f,0x3ff5a104,4,&value),ES_OK);CHECK_EQ(value,0);
     CHECK_EQ(esk_esp32_efuse_read(&f,0x3ff5a108,4,&value),ES_OK);CHECK_EQ(value,1);
     CHECK_EQ(esk_esp32_efuse_read(&f,0x3ff5a10c,4,&value),ES_OK);CHECK_EQ(value,0);
     CHECK_EQ(esk_esp32_efuse_write(&f,0x3ff5a110,4,1),ES_OK);CHECK_EQ(esk_esp32_efuse_irq(&f,&irq),ES_OK);CHECK_EQ(irq,1);
@@ -69,7 +83,11 @@ static void native_bus_and_reset_retention(void)
     CHECK_EQ(esk_esp32_machine_configure(m,0,0x40080000),ES_OK);w=esk_esp32_machine_core(m,0);
     w->irq.enabled=1;w->irq.intenable=1u<<19;w->irq.vectors[2]=0x40084000;w->cpu.a[2]=0x3ff5a104;w->cpu.a[3]=1;
     CHECK_EQ(esk_esp32_machine_run_core(m,0,1),ES_OK);CHECK_EQ(esk_esp32_machine_step(m,0,&event,&fault),ES_OK);
-    CHECK_EQ(event,0);CHECK_EQ(w->cpu.pc,0x40080003);CHECK(w->irq.lines&(1u<<19));
+    CHECK_EQ(event,0);CHECK_EQ(w->cpu.pc,0x40080003);CHECK(!(w->irq.lines&(1u<<19)));
+    CHECK_EQ(esk_esp32_machine_app_reset_configure(m,1),ES_OK);
+    CHECK_EQ(bus.read(bus.ctx,0x3ff5a104,4,&value),ES_OK);CHECK_EQ(value,1);
+    CHECK_EQ(esk_esp32_fabric_efuse_irq(f,&irq),ES_OK);CHECK_EQ(irq,0);
+    CHECK_EQ(esk_esp32_fabric_efuse_read_complete(f),ES_OK);
     CHECK_EQ(esk_esp32_machine_step(m,0,&event,&fault),ES_OK);CHECK_EQ(event,12);CHECK_EQ(w->irq.epc[2],0x40080003);
     CHECK_EQ(esk_esp32_machine_app_reset_configure(m,1),ES_OK);CHECK_EQ(esk_esp32_fabric_efuse_irq(f,&irq),ES_OK);CHECK_EQ(irq,1);
     CHECK_EQ(bus.read(bus.ctx,data_reg(1),4,&value),ES_OK);CHECK_EQ(value,0x12345678);

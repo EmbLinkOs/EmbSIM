@@ -37,5 +37,6 @@
     "core/mcu/esp32/efuse.c": "baecfd564120f4b91c47371a9494bb7e60f2f26f60796573a74e341299df8ba8",
     "core/mcu/esp32/fabric.c": "553c3ac5e11e48adb71403ab3c3b5083efad942fd32cdf81c13ce7fd317075f5",
     "core/mcu/esp32/machine.c": "4f2b66295588c3420f9079c6fa488ca58f4c094c7b8bd17957c506b46767be51"
-  }
+  },
+  "historical_scope": "Superseded synchronous-read model; ROM observes CMD=0 immediately and requests software reset. Not successful eFuse handshake; see boot-with-efuse-completion-2026-11-05.json."
 }

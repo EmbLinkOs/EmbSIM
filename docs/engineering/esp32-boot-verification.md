@@ -3,8 +3,10 @@
 **Result on 2026-11-05: the owner's board reports ESP32-D0WD-V3 revision 3.1,
 JEDEC C4 60 16 and 4 MB flash. Giantec's GT25Q32A-U datasheet matches that ID;
 exact package/ordering suffix remains unconfirmed. The pinned SDK example boots
-in Espressif QEMU; native EmbSIM fails at the eFuse read after seven retired
-instructions.** Passing fixtures and CI do not establish successful native boot.
+in Espressif QEMU. Native EmbSIM stops at unsupported WSR.ATOMCTL after 440 retired
+instructions with the new explicit synthetic eFuse image; without that profile,
+the baseline stops at an eFuse read after seven.** Neither result establishes
+successful native boot.
 
 ## Physical readout and manufacturer match
 
@@ -37,8 +39,10 @@ markings or an authenticated BOM would resolve the remaining ordering details.
 
 The observed ID differs from the W25Q32JV-IQ fixture's EF 40 16. That Winbond
 fixture must not be selected as verified hardware for this board or relabeled
-with C4 without qualifying Giantec-specific behavior. No runtime chip profile
-was changed by this evidence update; a Giantec model still needs qualification.
+with C4 without qualifying Giantec-specific behavior. The subsequent
+[named Giantec profile](esp32-giantec-profile.md) now qualifies a bounded standard
+SPI array protocol and separately selected timing bounds. It does not establish
+the exact fitted die or complete chip/board behavior.
 
 ## Listing and nominal module evidence
 
@@ -112,8 +116,8 @@ configuration or printed SDK capacity must not substitute for hardware identity.
 
 **Implementation follow-up:** the new [eFuse read profile](esp32-efuse-read-profile.md)
 accepts an explicitly supplied image. The synthetic unprogrammed fixture advances
-the same ROM to 30 retired instructions and an unimplemented RTC write at
-0x3ff48000/PC 0x4000fdcd. That is not the owner's factory image and still does not
+the same ROM to 440 retired instructions and an unsupported WSR.ATOMCTL at
+PC 0x40000488, with explicitly supplied controller-completion events. That is not the owner's factory image and still does not
 boot the application. The baseline no-eFuse-profile result below remains valid.
 
 
@@ -131,14 +135,18 @@ fault                load failure (kind 5), status -1
 ```
 
 Pinned SDK `soc/esp32/include/soc/efuse_reg.h` identifies that address as
-`EFUSE_BLK0_RDATA0_REG`. The current bus has no eFuse controller/profile. This
-is the **first observed blocker**, not a claim that adding one register would
-finish boot. RTC/strapping/reset state, further eFuse behavior, dedicated flash
+`EFUSE_BLK0_RDATA0_REG`. This baseline deliberately has no eFuse profile
+attached. With the new explicit image attached, the first observed blocker
+moves to WSR.ATOMCTL, as recorded above. The earlier synchronous profile took
+the ROM failure path and requested a software reset through RTC options;
+it did not pass the eFuse handshake. RTC/strapping/reset state,
+further eFuse behavior, dedicated flash
 commands/cache modes, other MMIO and complete CPU/SDK execution remain separate
 requirements. Dummy zero reads would hide this gap and cannot verify boot.
 
-The probe uses the supported CPU reset profile and an explicit PRID=0 fixture,
-not a silicon-qualified full PRID. It installs only the PRO ROM; APP-specific
+The probe uses the supported CPU reset profile. Its default PRO PRID=0xcdcd
+comes from pinned ESP-IDF `xtensa_context.h`, not a readout of the owner chip.
+Use `--prid 0` to reproduce the historical explicit invalid-ID fixture. It installs only the PRO ROM; APP-specific
 ROM behavior is not tested. Missing DROM tail bytes are zero-filled to match the
 QEMU region setup, not asserted as physical ROM contents. The blob is an
 Espressif QEMU distribution input, not an authenticated dump of the owner's chip.

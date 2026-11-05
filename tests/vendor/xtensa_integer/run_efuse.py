@@ -20,7 +20,7 @@ from run_matrix import read_header
 
 
 class EFuse(C.Structure):
-    _fields_=[(name,C.c_uint32*31) for name in ['image','read','write']]+[(name,C.c_uint32) for name in ['enabled','clock','conf','raw','enable','dac','date']]
+    _fields_=[(name,C.c_uint32*31) for name in ['image','read','write']]+[(name,C.c_uint32) for name in ['enabled','clock','conf','raw','enable','dac','date','pending']]
 
 
 def main():
@@ -71,6 +71,8 @@ def main():
         fi=bind('esk_esp32_efuse_init',None,C.POINTER(EFuse));fc=bind('esk_esp32_efuse_configure',C.c_int,C.POINTER(EFuse),C.POINTER(C.c_uint32),C.c_size_t)
         fr=bind('esk_esp32_efuse_read',C.c_int,C.POINTER(EFuse),C.c_uint32,C.c_uint,C.POINTER(C.c_uint32))
         fw=bind('esk_esp32_efuse_write',C.c_int,C.POINTER(EFuse),C.c_uint32,C.c_uint,C.c_uint32)
+        complete=bind('esk_esp32_efuse_read_complete',C.c_int,C.POINTER(EFuse))
+        finish=bind('esk_esp32_fabric_efuse_read_complete',C.c_int,pointer)
         comparisons=0;value=C.c_uint32()
         for words,expected in zip(images,visible):
             state=EFuse();fi(C.byref(state));raw=(C.c_uint32*31)(*words);assert fc(C.byref(state),raw,31)==0
@@ -81,6 +83,8 @@ def main():
                 comparisons+=2
             assert fw(C.byref(state),address('EFUSE_CONF_REG'),4,0x5aa5)==0
             assert fw(C.byref(state),address('EFUSE_CMD_REG'),4,1)==0
+            assert fr(C.byref(state),address('EFUSE_CMD_REG'),4,C.byref(value))==0 and value.value==1
+            assert complete(C.byref(state))==0
             assert fr(C.byref(state),address('EFUSE_INT_RAW_REG'),4,C.byref(value))==0 and value.value==1
         # Unchanged register header and helper bodies; only minimal MMIO glue is
         # supplied here, rather than linking a vendor controller implementation.
@@ -124,7 +128,8 @@ unsigned inspect(unsigned *out) {
                     states.append(w);assert run(m,cpu,1)==0
                 done=[False,False];event=C.c_uint();fault=Fault()
                 for turn in range(2000):
-                    cpu=turn%2;w=states[cpu]
+                    cpu=0 if not done[0] else 1;w=states[cpu]
+                    if turn%17==0:assert finish(ram) in (0,-8)
                     if done[cpu]:continue
                     if w.cpu.pc==0x7ffffff0:
                         done[cpu]=True

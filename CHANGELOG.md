@@ -11,7 +11,9 @@ versions follow semantic versioning. There is no release yet.
   read protection, completion status and source-44 routing. OTP programming,
   other coding schemes and hardware fuse consumers remain unqualified.
 - A supplied synthetic unprogrammed image advances the real ROM probe from seven
-  to 30 retired instructions; boot now blocks on RTC control at 0x3ff48000.
+  to 440 retired instructions with explicit read-completion events; boot now blocks
+  on WSR.ATOMCTL at PC 0x40000488. Immediate completion previously selected the
+  ROM failure/reset path; reads now stay active until an external completion event.
   This does not establish native SDK boot or reproduce the owner's fuse contents.
 - Added a separate Giantec GT25Q32A-U subset matching reported C4 60 16, with
   independently qualified maximum-duration and WEL policies. Shared array code

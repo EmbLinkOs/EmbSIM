@@ -10,7 +10,9 @@ does not mean the described behaviour exists.
 **Current implementation update:** an [explicit eFuse read/reload profile](engineering/esp32-efuse-read-profile.md)
 now supports None-coded input images, read protection and completion routing.
 With a supplied synthetic unprogrammed image, real ROM execution advances from
-seven to 30 retired instructions, then blocks on RTC control at 0x3ff48000.
+seven to 440 retired instructions, then blocks on WSR.ATOMCTL at PC 0x40000488.
+Read completion is an explicit external event; no physical duration is inferred.
+The earlier synchronous profile took the ROM failure/reset path.
 The owner's actual fuse image is not inferred. A separate
 [Giantec GT25Q32A-U storage subset](engineering/esp32-giantec-profile.md) now matches
 the reported ID, with independent timing/WEL behavior. Full native boot,
