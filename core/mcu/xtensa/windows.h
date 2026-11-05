@@ -28,6 +28,7 @@ typedef struct esk_xtensa_windows {
     uint32_t vectors[6]; /* overflow4, underflow4, overflow8, underflow8, overflow12, underflow12 */
     uint32_t vecbase,vecbase_enabled;
     uint32_t threadptr,misc[4],prid,prid_enabled;
+    uint32_t atomctl,atomctl_enabled;
 } esk_xtensa_windows;
 /* event 0: retired; 1..6: window transition; 7/8/9: kernel/user/double exception;
  * 11..17: accepted interrupt level 1..7; 18: suspended WAITI (step only).
@@ -42,6 +43,13 @@ typedef struct esk_xtensa_windows {
  * configuration. This supplies a constant board/SoC input, not a guessed ESP32
  * silicon ID or a live pin-waveform model; it survives supported CPU reset. */
 es_status esk_xtensa_prid_configure(esk_xtensa_windows *state,uint32_t value);
+/* Opt-in conditional-store ATOMCTL SR99, six bits, reset 0x28.
+ * RSR/WSR/XSR privileged; reserved upper-bit writes fail unchanged.
+ * S32C1I requires bus atomic_type: LOCAL ignores fields; 0 raises cause 3,
+ * 1 uses indivisible RCW callback; internal cache (2) / reserved (3) fail.
+ * Cache/internal-operation, Exclusive Access, bus waveforms/timing unqualified.
+ * Legacy ABI fixtures remain disabled until opt-in; CPU reset enables it. */
+es_status esk_xtensa_atomctl_configure(esk_xtensa_windows *state);
 /* Explicit ESP32 relocatable-vector profile. Only 1024-aligned bases are
  * qualified; unaligned/lock-bit writes fail unchanged rather than guessing
  * silicon masking. Aligned RSR/WSR/XSR.VECBASE use SR231 when enabled.

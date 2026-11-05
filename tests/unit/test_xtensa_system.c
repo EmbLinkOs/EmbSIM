@@ -115,7 +115,7 @@ static void fetched_syscall_program(void)
     static const unsigned char program[]={0x0c,0x72,0,0x50,0,0x1b,0x22,0x3d,0xf0};
     static const unsigned char handler[]={0x30,0xb1,3,0x3b,0x33,0x30,0xb1,0x13,0,0x30,0};
     static const uint32_t evectors[3]={0x1040,0x1080,0x10c0};
-    unsigned char data[256]={0};esk_xtensa_windows w;esk_xtensa_memory bus={data,code_read,NULL,NULL,NULL};
+    unsigned char data[256]={0};esk_xtensa_windows w;esk_xtensa_memory bus={data,code_read,NULL,NULL,NULL,NULL};
     esk_xtensa_fault fault;unsigned event,steps=0,entries=0;
     memcpy(data,program,sizeof program);memcpy(data+64,handler,sizeof handler);
     esk_xtensa_windows_init(&w,0x1000,NULL);esk_xtensa_exception_configure(&w,evectors);

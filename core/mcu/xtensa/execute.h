@@ -16,6 +16,7 @@
  * Callbacks must not re-enter or mutate the executing CPU state. Queue its
  * input/clock changes for instruction boundaries; these APIs are not thread-safe. */
 typedef struct esk_xtensa_state { uint32_t a[16], pc; } esk_xtensa_state;
+enum { ESK_XT_MEM_LOCAL, ESK_XT_MEM_BYPASS, ESK_XT_MEM_WRITETHROUGH, ESK_XT_MEM_WRITEBACK };
 typedef struct esk_xtensa_memory {
     void *ctx;
     es_status (*read)(void *ctx, uint32_t address, unsigned bytes, uint32_t *value);
@@ -26,6 +27,11 @@ typedef struct esk_xtensa_memory {
     es_status (*compare_exchange)(void *ctx,uint32_t address,uint32_t expected,uint32_t desired,uint32_t *observed);
     /* Optional instruction-bus access. Null uses read for legacy flat test buses. */
     es_status (*fetch)(void *ctx,uint32_t address,unsigned bytes,uint32_t *value);
+    /* Optional pure classification for ATOMCTL-enabled conditional stores.
+     * Must classify the complete aligned word without an access/side effect.
+     * LOCAL bypasses ATOMCTL; other values select its BY/WT/WB field.
+     * Unknown attributes must fail, never silently select bypass. */
+    es_status (*atomic_type)(void *ctx,uint32_t address,unsigned *type);
 } esk_xtensa_memory;
 enum { ESK_XT_OK, ESK_XT_UNSUPPORTED, ESK_XT_TRUNCATED, ESK_XT_FETCH,
        ESK_XT_ALIGN, ESK_XT_LOAD, ESK_XT_STORE, ESK_XT_DIV_ZERO, ESK_XT_ATOMIC };

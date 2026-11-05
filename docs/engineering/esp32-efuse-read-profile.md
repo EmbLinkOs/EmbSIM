@@ -72,7 +72,11 @@ header/helper extraction retains Espressif's Apache-2.0 notice. Synthetic fuse
 images contain no owner's keys, MAC or calibration. This is selected helper
 acceptance, not the full burn stack or SDK boot.
 
-## Real ROM probe and next blocker
+## Real ROM probe and subsequent blockers
+
+The subsequent [ATOMCTL implementation](esp32-atomic-control.md) now advances
+this probe to WITLB at PC 0x400004c9 after 451 retirements. The historical
+eFuse-only result below retains the previous source/profile scope.
 
 The previous no-image probe still stops at eFuse after seven retired instructions.
 With the explicitly selected

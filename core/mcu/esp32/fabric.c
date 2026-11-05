@@ -175,10 +175,19 @@ es_status esk_esp32_fabric_load(esk_esp32_fabric *f,unsigned cpu,uint32_t addr,c
     for(i=0;i<len;i++) { (void)locate(&f->view[cpu],addr+(uint32_t)i,&at);*at.byte=data[i]; }
     return ES_OK;
 }
+static es_status atomic_type(void *ctx,uint32_t address,unsigned *type)
+{
+    struct view *v=(struct view *)ctx;struct location at;es_status st;
+    if(!v || !type || (address&3u)) return ES_EINVAL;
+    st=locate(v,address,&at);if(st!=ES_OK || !at.atomic) return ES_EUNSUPPORTED;
+    /* Qualified writable SRAM2/SRAM1 lies inside the core's configured
+     * DataRAM0 window. No external cacheability/PSRAM type is guessed. */
+    *type=ESK_XT_MEM_LOCAL;return ES_OK;
+}
 esk_xtensa_memory esk_esp32_fabric_bus(esk_esp32_fabric *f,unsigned cpu)
 {
-    esk_xtensa_memory bus={NULL,NULL,NULL,NULL,NULL};
-    if(f && cpu<2) { bus.ctx=&f->view[cpu];bus.read=read_bus;bus.write=write_bus;bus.compare_exchange=cas_bus;bus.fetch=fetch_bus; }
+    esk_xtensa_memory bus={NULL,NULL,NULL,NULL,NULL,NULL};
+    if(f && cpu<2) { bus.ctx=&f->view[cpu];bus.read=read_bus;bus.write=write_bus;bus.compare_exchange=cas_bus;bus.fetch=fetch_bus;bus.atomic_type=atomic_type; }
     return bus;
 }
 

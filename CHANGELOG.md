@@ -5,6 +5,20 @@ versions follow semantic versioning. There is no release yet.
 
 ## Unreleased
 
+### Original ESP32 CPU atomic control
+
+- Added opt-in privileged RSR/WSR/XSR.ATOMCTL, six-bit state/reset and explicit
+  memory-type classification for conditional stores. Local DataRAM ignores its
+  fields; RCW uses the indivisible bus callback; mode 0 dispatches cause 3.
+  Internal cache/reserved operations and unknown attributes fail unchanged.
+- The native fabric supplies qualified SRAM data attributes to both CPU views.
+  CPU reset enables/resets ATOMCTL; legacy ABI fixtures retain explicit opt-in.
+- 23,665 native atomic assertions, 3,072 GNU-assembled register comparisons and
+  128 actual ESP32 C calls/2,816 instructions pass. Native real-ROM probing now
+  reaches 451 instructions and stops at WITLB, PC 0x400004c9. Complete memory
+  attributes, caches and ROM-to-SDK boot remain unverified.
+
+
 ### Original ESP32 eFuse reads and Giantec storage
 
 - Added an explicit None-coded 31-word eFuse image/read/reload profile, software

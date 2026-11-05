@@ -104,7 +104,26 @@ static void allocation_failures(void)
     CHECK_EQ(bus.fetch(bus.ctx,0x40000000,4,&v),ES_OK);CHECK_EQ(v,0x67676767);
     esk_esp32_fabric_destroy(f);free(rom);CHECK_EQ(a.live_bytes,0);
 }
+static void atomic_memory_attributes(void)
+{
+    esk_alloc a;esk_esp32_fabric *f=NULL;esk_xtensa_memory bus;unsigned cpu,i,type=99;
+    const uint32_t local[]={0x3ffae000,0x3ffdfffc,0x3ffe0000,0x3ffffffc};
+    const uint32_t unknown[]={0x3ff80000,0x40080000,0x400a0000,0x3f400000,0x3f800000,0x50000000,0x3ff5a000};
+    esk_alloc_init(&a,NULL);CHECK_EQ(esk_esp32_fabric_create(&a,&f),ES_OK);
+    for(cpu=0;cpu<2;cpu++) {
+        bus=esk_esp32_fabric_bus(f,cpu);
+        for(i=0;i<sizeof local/sizeof local[0];i++) {
+            CHECK_EQ(bus.atomic_type(bus.ctx,local[i],&type),ES_OK);CHECK_EQ(type,ESK_XT_MEM_LOCAL);
+        }
+        for(i=0;i<sizeof unknown/sizeof unknown[0];i++) {
+            type=99;CHECK_EQ(bus.atomic_type(bus.ctx,unknown[i],&type),ES_EUNSUPPORTED);CHECK_EQ(type,99);
+        }
+        CHECK_EQ(bus.atomic_type(bus.ctx,local[0]+1,&type),ES_EINVAL);
+        CHECK_EQ(bus.atomic_type(bus.ctx,local[0],NULL),ES_EINVAL);
+    }
+    esk_esp32_fabric_destroy(f);CHECK_EQ(a.live_bytes,0);
+}
 TEST_MAIN_BEGIN
     (void)t_str_eq;
-    RUN(address_views);RUN(rom_and_remap);RUN(allocation_failures);
+    RUN(address_views);RUN(rom_and_remap);RUN(allocation_failures);RUN(atomic_memory_attributes);
 TEST_MAIN_END

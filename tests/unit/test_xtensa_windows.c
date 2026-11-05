@@ -132,7 +132,7 @@ static es_status mem_write(void *ctx,uint32_t address,unsigned bytes,uint32_t va
 static void exception_memory(void)
 {
     esk_xtensa_windows w,before; unsigned event;
-    test_memory m={0x89abcdef,0,0,0}; esk_xtensa_memory bus={&m,mem_read,mem_write,NULL,NULL};
+    test_memory m={0x89abcdef,0,0,0}; esk_xtensa_memory bus={&m,mem_read,mem_write,NULL,NULL,NULL};
     esk_xtensa_windows_init(&w,0x40000000,vectors); w.cpu.a[3]=192; before=w;
     CHECK_EQ(execute_bus(&w,&bus,0x090320,3,&event),ES_EUNSUPPORTED); /* L32E only in EXCM */
     CHECK_EQ(m.reads,0); CHECK_EQ(memcmp(&w,&before,sizeof w),0);

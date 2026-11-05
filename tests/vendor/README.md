@@ -206,3 +206,9 @@ PDF and an independent array/time oracle. `run_spi_c.py --program-workers
 128 reads, 32 programmed workers, 32 replays, 139,520 instructions, 432 observed
 BUSY reads. The external-time schedule is artificial, not processor timing.
 See [Giantec scope](../../docs/engineering/esp32-giantec-profile.md).
+
+`xtensa_integer/run_atomctl.py` uses actual ESP32 assembler/compiler tools for
+3,072 register comparisons and 128 C local-SRAM conditional-store calls/2,816
+instructions through the native bus. It covers all 64 ATOMCTL values on both
+cores; internal cache and complete MMU/boot remain unqualified. See the
+[atomic-control contract](../../docs/engineering/esp32-atomic-control.md).

@@ -99,10 +99,15 @@ static es_status bus_cas(void *ctx,uint32_t address,uint32_t expected,uint32_t d
     struct machine_view *v=(struct machine_view *)ctx;esk_xtensa_memory ram=esk_esp32_fabric_bus(v->m->fabric,v->cpu);
     return ram.compare_exchange(ram.ctx,address,expected,desired,observed);
 }
+static es_status bus_atomic_type(void *ctx,uint32_t address,unsigned *type)
+{
+    struct machine_view *v=(struct machine_view *)ctx;esk_xtensa_memory ram=esk_esp32_fabric_bus(v->m->fabric,v->cpu);
+    return ram.atomic_type(ram.ctx,address,type);
+}
 esk_xtensa_memory esk_esp32_machine_bus(esk_esp32_machine *m,unsigned cpu)
 {
-    esk_xtensa_memory bus={NULL,NULL,NULL,NULL,NULL};
-    if(m && cpu<2) { bus.ctx=&m->view[cpu];bus.read=bus_read;bus.write=bus_write;bus.fetch=bus_fetch;bus.compare_exchange=bus_cas; }
+    esk_xtensa_memory bus={NULL,NULL,NULL,NULL,NULL,NULL};
+    if(m && cpu<2) { bus.ctx=&m->view[cpu];bus.read=bus_read;bus.write=bus_write;bus.fetch=bus_fetch;bus.atomic_type=bus_atomic_type;bus.compare_exchange=bus_cas; }
     return bus;
 }
 es_status esk_esp32_machine_source(esk_esp32_machine *m,unsigned source,int asserted)

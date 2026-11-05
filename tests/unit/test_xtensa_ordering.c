@@ -26,7 +26,7 @@ static void registers_offsets_and_faults(void)
     unsigned t,s,k,store,event;esk_xtensa_fault fault;
     for(t=0;t<16;t++) for(s=0;s<16;s++) for(k=0;k<3;k++) for(store=0;store<2;store++) {
         esk_xtensa_windows w,before;fixture f={0,0x89abcdef,0,0,0};uint32_t expected,address;
-        esk_xtensa_memory bus={&f,read_word,write_word,NULL,NULL};
+        esk_xtensa_memory bus={&f,read_word,write_word,NULL,NULL,NULL};
         unsigned offset=k==2 ? 255u : k;
         esk_xtensa_windows_init(&w,0x40080000,NULL);
         w.cpu.a[t]=0x12345678;w.cpu.a[s]=0x3ffb0000;
@@ -52,7 +52,7 @@ static void window_priority(void)
     unsigned store,event;esk_xtensa_fault fault;
     uint32_t vectors[6]={0x40081000,0x40081100,0x40081200,0x40081300,0x40081400,0x40081500};
     for(store=0;store<2;store++) {
-        esk_xtensa_windows w;fixture f={0,0,0,0,0};esk_xtensa_memory bus={&f,read_word,write_word,NULL,NULL};
+        esk_xtensa_windows w;fixture f={0,0,0,0,0};esk_xtensa_memory bus={&f,read_word,write_word,NULL,NULL,NULL};
         esk_xtensa_windows_init(&w,0x40080000,vectors);w.start=7;
         CHECK_EQ(execute(&w,&bus,8,3,0,(int)store,&event,&fault),ES_OK);
         CHECK_EQ(event,1);CHECK_EQ(w.cpu.pc,vectors[0]);CHECK_EQ(f.reads,0);CHECK_EQ(f.writes,0);

@@ -32,8 +32,11 @@ Write = C.CFUNCTYPE(C.c_int, C.c_void_p, C.c_uint32, C.c_uint, C.c_uint32)
 CAS = C.CFUNCTYPE(C.c_int, C.c_void_p, C.c_uint32, C.c_uint32, C.c_uint32, C.POINTER(C.c_uint32))
 
 
+AtomicType = C.CFUNCTYPE(C.c_int, C.c_void_p, C.c_uint32, C.POINTER(C.c_uint))
+
+
 class Memory(C.Structure):
-    _fields_ = [('ctx', C.c_void_p), ('read', Read), ('write', Write), ('compare_exchange', CAS), ('fetch', Read)]
+    _fields_ = [('ctx', C.c_void_p), ('read', Read), ('write', Write), ('compare_exchange', CAS), ('fetch', Read), ('atomic_type', AtomicType)]
 
 
 def main():
