@@ -5,6 +5,21 @@ versions follow semantic versioning. There is no release yet.
 
 ## Unreleased
 
+### Experimental ESP32 internal memory and two-context harness
+
+- Added native SRAM0/1/2 and RTC memory views, including SRAM1's reversed
+  instruction-word ordering, CPU0-only RTC fast access and per-core boot-remap
+  views. Optional ROM is externally supplied; cache, flash, peripheral and
+  unmapped accesses remain unsupported. Host image loads preflight all writes.
+- Separated instruction fetch from data access, retaining existing flat-bus
+  fallback. Serialized SRAM1/2 compare-exchange now backs two independent CPU
+  contexts with shared RAM, explicit pause/resume, fault isolation and private
+  interrupt/clock state. No guessed clock ticks or silicon reset defaults.
+- Added exhaustive SRAM1 alias/boundary/failure fixtures and native-bus acceptance
+  with actual ESP32 compiled tasks: 256 executions, 64 deterministic schedule
+  replays and 65,590 instructions. This is not a runnable board target, ROM boot,
+  DPORT/cache/coherence implementation, host-thread safety or complete SMP.
+
 ### Experimental Xtensa integer and conditional-store extension
 
 - Added conditional moves, signed/unsigned min/max, high products, division and

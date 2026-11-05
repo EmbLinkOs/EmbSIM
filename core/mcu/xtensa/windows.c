@@ -303,7 +303,8 @@ es_status esk_xtensa_window_step(esk_xtensa_windows *w, const esk_xtensa_memory 
     }
     for (i=0;i<width;i++) {
         uint32_t address=w->cpu.pc+i;
-        if (!memory || !memory->read || memory->read(memory->ctx,address,1,&value)!=ES_OK)
+        if (!memory || (!memory->fetch && !memory->read) ||
+            (memory->fetch ? memory->fetch : memory->read)(memory->ctx,address,1,&value)!=ES_OK)
             return reject(fault,ESK_XT_FETCH,w->cpu.pc,address,0);
         code[i]=(unsigned char)(value&255u);
         if (i==0 && (code[0]&15u)<8) width=3;

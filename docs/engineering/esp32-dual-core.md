@@ -1,6 +1,6 @@
 # Original ESP32 dual-core target: identity and implementation gates
 
-**Status: firmware inspection and experimental integer/window/loop execution implemented; no executable target is added.** Requested by
+**Status: firmware inspection, experimental Xtensa execution and a two-context internal-RAM harness implemented; no runnable board target is added.** Requested by
  the owner on 2026-11-04. This is the original ESP32 family, not ESP32-C3,
 ESP32-S2 or ESP32-S3. The generic marketplace title “ESP-32 / ESP-32S
 WiFi+Bluetooth Dual Cores” does not identify a reproducible board revision.
@@ -438,6 +438,77 @@ callback contract under that interleaving, not a completed dual-core SoC.
 
 ```sh
 python tests/vendor/xtensa_integer/run_atomic_c.py \
+  --compiler /path/to/xtensa-esp32-elf-gcc \
+  --objcopy /path/to/xtensa-esp32-elf-objcopy \
+  --linker /path/to/xtensa-esp32-elf-ld \
+  --nm /path/to/xtensa-esp32-elf-nm
+```
+
+## Implemented: internal RAM and two-context execution harness
+
+`core/mcu/esp32/fabric.c` implements a bounded native memory provider from
+ESP32 TRM v5.9 section 3.3.2 and ESP-IDF v4.4.7's
+[SoC address definitions](https://github.com/espressif/esp-idf/blob/v4.4.7/components/soc/esp32/include/soc/soc.h).
+It is not the complete SoC bus. RAM is initialized to zero for deterministic
+fixtures, not as a claim about silicon power-on contents.
+
+| Region | Address range (end exclusive) | Implemented access |
+| --- | --- | --- |
+| SRAM0, non-cache portion | `40080000–400A0000` | Instruction fetch and aligned data words |
+| SRAM1 data | `3FFE0000–40000000` | Data bytes/halfwords/words and CAS |
+| SRAM1 instruction | `400A0000–400C0000` | Fetch and aligned data words, reversed word ordering |
+| SRAM2 | `3FFAE000–3FFE0000` | Data bytes/halfwords/words and CAS |
+| RTC fast | `3FF80000–3FF82000`, `400C0000–400C2000` | CPU0 only; data view and instruction alias |
+| RTC slow | `50000000–50002000` | Both cores, data and instruction fetch |
+| ROM0 | `40000000–40060000` | Read-only fetch/aligned data words, only with supplied ROM |
+| ROM1 | `3FF90000–3FFA0000` | Read-only data, only with supplied ROM |
+
+SRAM1 instruction words reverse the data view's order without reversing byte
+lanes: `3FFE0000` aliases `400BFFFC`, and `3FFFFFFC` aliases `400A0000`.
+The instruction engine now uses an optional distinct fetch callback; existing
+flat providers retain the read fallback. This lets narrow instruction fetches
+work while rejecting narrow data accesses to instruction-only views.
+
+A host-configured per-core boot-remap view aliases the first 32 KiB of ROM0 to
+SRAM1 instruction addresses `400B0000–400B8000`, disabling that original
+instruction alias for the selected core while preserving its data view and the
+other core's mapping. This is not a DPORT register implementation. Cache SRAM,
+flash/MMU windows, peripheral addresses and unmapped holes fail explicitly.
+ROM must be provided externally at its exact region size; none is fabricated or
+bundled. Host RAM loading preflights the entire range before writing. A failed
+ROM allocation preserves the installed ROM.
+
+`core/mcu/esp32/machine.c` owns two separate window/exception/interrupt/clock
+profiles sharing this provider. Explicit debug controls configure an entry,
+pause/resume a core and step one instruction boundary at a time. A round executes
+CPU0 then CPU1 and stops at the first failure; earlier successful turns remain
+committed. A failing core pauses at its fault. Paused cores report event 19;
+WAITI retains event 18 and does not block the peer. Only retired instructions
+increment each core's counter; exceptions and suspended turns do not. Clock
+advancement remains explicit and private to each profile.
+
+All calls have one serialized owner. Native SRAM1/2 CAS performs its read and
+conditional write within one callback, so instruction-interleaved contexts
+cannot intervene. This is not host-thread-safe memory, cache/coherence,
+arbitration, an instruction-to-cycle model, DPORT reset/release/stall, retention,
+DMA or a complete SMP machine. Reconfiguring one profile preserves shared RAM
+and remap settings and is explicitly not a silicon reset sequence. No CPU
+constructor, board picker entry, boot ROM execution or ESP-IDF boot is added.
+
+Native fixtures pass 360,531 memory assertions and 84 machine assertions: every
+SRAM1 word and byte lane, remap isolation, RTC
+restrictions, rejected access widths/holes, all-or-nothing loading, allocation
+failure, shared conditional stores, independent state, fault ordering and
+one-core WAITI/timer wake while its peer continues. The separate compiled runner
+uses no Python memory/CAS callbacks: actual ESP32 GCC output runs two increment
+loops against native shared RAM, checking final count, the sum of distinct
+returned increments, unsigned wrap, caller/window/stack preservation, retirement
+and exact replay equality. It passes 256 task executions and 64 schedule replays
+(65,590 instructions). This is functional interleaving evidence, not full SMP
+or real-hardware qualification.
+
+```sh
+python tests/vendor/xtensa_integer/run_machine_c.py \
   --compiler /path/to/xtensa-esp32-elf-gcc \
   --objcopy /path/to/xtensa-esp32-elf-objcopy \
   --linker /path/to/xtensa-esp32-elf-ld \

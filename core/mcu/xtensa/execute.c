@@ -132,7 +132,8 @@ es_status esk_xtensa_step(esk_xtensa_state *state, const esk_xtensa_memory *memo
     if (!state) return ES_EINVAL;
     for (i = 0; i < width; i++) {
         uint32_t addr = state->pc + i;
-        if (!memory || !memory->read || memory->read(memory->ctx, addr, 1, &v) != ES_OK)
+        if (!memory || (!memory->fetch && !memory->read) ||
+            (memory->fetch ? memory->fetch : memory->read)(memory->ctx, addr, 1, &v) != ES_OK)
             return fail(fault, ESK_XT_FETCH, state->pc, addr, 0);
         code[i] = (unsigned char)(v & 255u);
         if (i == 0 && (code[0] & 15u) < 8) width = 3;

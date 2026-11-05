@@ -76,3 +76,11 @@ division functions: 832 executions, including 64 pairs of instruction-interleave
 execution states forcing a CAS retry. Supply `--compiler`, `--objcopy`, `--linker`
 and `--nm`. Its callback is a serialized fixture, not a host-thread-safe shared
 SoC RAM model or proof of full SMP/coherence.
+
+`xtensa_integer/run_machine_c.py` uses the same actual ESP32 tools to execute two
+compiled atomic increment loops through native internal RAM and CAS, without
+Python memory callbacks: 256 task executions, 64 deterministic schedule replays,
+65,590 instructions. It checks counts, sums, wrap, return/window/stack state and
+retirement. Supply `--compiler`, `--objcopy`, `--linker`, `--nm`. This is a
+serialized functional harness, not DPORT/ROM boot, cache/coherence, cycle timing
+or full SMP qualification.

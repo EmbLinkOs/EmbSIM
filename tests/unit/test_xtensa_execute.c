@@ -42,7 +42,7 @@ static void program(void)
         0x4b,0x22, 0x0b,0x33, 0x56,0x43,0xff, 0x45,0,0,
         0xc6,0,0, 0x4a,0x44, 0x0d,0xf0, 0x3d,0xf0
     };
-    memory m = {{0},0,0,0,0}; esk_xtensa_memory bus = {&m,read_mem,write_mem,NULL};
+    memory m = {{0},0,0,0,0}; esk_xtensa_memory bus = {&m,read_mem,write_mem,NULL,NULL};
     esk_xtensa_state s = {{0},0}; esk_xtensa_fault f; unsigned i, steps = 0;
     memcpy(m.data, code, sizeof code);
     for (i = 0; i < 4; i++) m.data[256+i*4] = (unsigned char)(i+1);
@@ -53,7 +53,7 @@ static void program(void)
 }
 static void memory_and_faults(void)
 {
-    memory m = {{0},0,0,0,0}; esk_xtensa_memory bus = {&m,read_mem,write_mem,NULL};
+    memory m = {{0},0,0,0,0}; esk_xtensa_memory bus = {&m,read_mem,write_mem,NULL,NULL};
     esk_xtensa_state s = {{0},0}, before; esk_xtensa_fault f;
     s.a[2]=UINT32_C(0x89abcdef); s.a[3]=256;
     CHECK_EQ(execute(&s,&bus,0x006322,3,&f),ES_OK); /* s32i a2,a3,0 */

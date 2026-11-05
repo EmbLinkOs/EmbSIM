@@ -20,6 +20,8 @@ typedef struct esk_xtensa_memory {
      * Return original memory in observed on success, whether matched or not.
      * On failure no write may complete. No read/write fallback is allowed. */
     es_status (*compare_exchange)(void *ctx,uint32_t address,uint32_t expected,uint32_t desired,uint32_t *observed);
+    /* Optional instruction-bus access. Null uses read for legacy flat test buses. */
+    es_status (*fetch)(void *ctx,uint32_t address,unsigned bytes,uint32_t *value);
 } esk_xtensa_memory;
 enum { ESK_XT_OK, ESK_XT_UNSUPPORTED, ESK_XT_TRUNCATED, ESK_XT_FETCH,
        ESK_XT_ALIGN, ESK_XT_LOAD, ESK_XT_STORE, ESK_XT_DIV_ZERO, ESK_XT_ATOMIC };
@@ -33,7 +35,7 @@ es_status esk_xtensa_execute(esk_xtensa_state *state, const esk_xtensa_memory *m
 es_status esk_xtensa_execute_flow(esk_xtensa_state *state, const esk_xtensa_memory *memory,
                                   const unsigned char *code, size_t available,
                                   size_t *consumed, esk_xtensa_fault *fault, unsigned *sequential);
-/* Fetch exactly 2/3 bytes through byte reads, then execute one instruction. */
+/* Fetch exactly 2/3 bytes through fetch (or read fallback), then execute. */
 es_status esk_xtensa_step(esk_xtensa_state *state, const esk_xtensa_memory *memory,
                           esk_xtensa_fault *fault);
 #endif

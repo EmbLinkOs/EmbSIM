@@ -33,7 +33,7 @@ CAS = C.CFUNCTYPE(C.c_int, C.c_void_p, C.c_uint32, C.c_uint32, C.c_uint32, C.POI
 
 
 class Memory(C.Structure):
-    _fields_ = [('ctx', C.c_void_p), ('read', Read), ('write', Write), ('compare_exchange', CAS)]
+    _fields_ = [('ctx', C.c_void_p), ('read', Read), ('write', Write), ('compare_exchange', CAS), ('fetch', Read)]
 
 
 def main():

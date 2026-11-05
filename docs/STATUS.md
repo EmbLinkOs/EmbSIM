@@ -47,7 +47,14 @@ Conditional moves/min/max/high products/division/normalization and bit branches
 now pass 128 additional native assertions. SCOMPARE1/S32C1I require one indivisible
 bus callback, with no non-atomic fallback (67 assertions). Another 832 actual
 ESP32 compiled atomic/division runs pass, including 64 interleaved increment
-pairs that force retry. This does not establish a shared SoC bus or full SMP.
+pairs that force retry. A native internal-memory provider now adds SRAM0/1/2,
+word-reversed SRAM1 instruction aliases, PRO-only RTC fast RAM, shared RTC slow
+RAM, optional external ROM and per-core host-controlled boot remap. A serialized
+two-context harness shares this RAM while keeping CPU/interrupt/clock state
+private. Native fixtures cover address/permission/remap/fault/wait boundaries;
+256 actual ESP32 compiled task executions and 64 replay comparisons pass through
+the native bus (65,590 instructions). This remains a bounded memory/execution
+harness: cache/MMU, DPORT hardware controls, complete SMP and SoC boot are absent.
 No runnable ESP32 target is added, and the
 existing RISC-V ESP32-C3 is not a substitute.
 

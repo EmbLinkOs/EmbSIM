@@ -30,7 +30,7 @@ static es_status execute(esk_xtensa_windows *w,const esk_xtensa_memory *bus,uint
 }
 static void compare_and_alias(void)
 {
-    bus_state b={0};esk_xtensa_memory bus={&b,read_mem,write_mem,cas};
+    bus_state b={0};esk_xtensa_memory bus={&b,read_mem,write_mem,cas,NULL};
     esk_xtensa_windows one,two;unsigned event;esk_xtensa_fault f;
     esk_xtensa_windows_init(&one,0x40000000,NULL);esk_xtensa_windows_init(&two,0x40001000,NULL);
     one.cpu.a[3]=256;one.cpu.a[2]=1;two.cpu.a[3]=256;two.cpu.a[2]=2;
@@ -50,7 +50,7 @@ static void compare_and_alias(void)
 }
 static void failures_and_window_priority(void)
 {
-    bus_state b={9,0,0,0,0,0,0,0};esk_xtensa_memory bus={&b,read_mem,write_mem,cas};
+    bus_state b={9,0,0,0,0,0,0,0};esk_xtensa_memory bus={&b,read_mem,write_mem,cas,NULL};
     esk_xtensa_windows w,before;unsigned event,calls;esk_xtensa_fault f;
     esk_xtensa_windows_init(&w,0x40000000,NULL);w.cpu.a[3]=257;w.cpu.a[2]=5;w.scompare1=9;before=w;
     CHECK_EQ(execute(&w,&bus,0x00e322,&event,&f),ES_EINVAL);CHECK_EQ(f.kind,ESK_XT_ALIGN);
