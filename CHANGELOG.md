@@ -14,7 +14,7 @@ versions follow semantic versioning. There is no release yet.
   controls, live resolved input samples, raw register changes and CPU-reset
   retention. Unsupported/package-specific bits fail without partial capture.
 - 3,455 new native assertions, 4,096 independent transition turns and 256 compiled
-  C calls with eleven unchanged SDK helpers pass. Native ROM now reaches 6,902
+  C calls with eight unchanged SDK helpers pass. Native ROM now reaches 6,902
   retirements, then IO_MUX U0TXD read; full pin routing/SDK boot remain unfinished.
 
 ### Original ESP32 TIMG0 RTC calibration counter

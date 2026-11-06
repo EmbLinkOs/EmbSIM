@@ -85,7 +85,7 @@ register and all captures; no supported bit is partially applied first.
   projected outputs plus raw register/status/input observations across mixed
   local/global/unhold/auto-hold events.
 - **256 actual ESP32 C interactive calls / 30,592 retired instructions** run on
-  both native CPUs using **eleven unchanged SDK helper bodies**. The C program
+  both native CPUs using **eight unchanged SDK helper bodies**. The C program
   uses the SDK's real hold-mask array, enables a pin hold, changes output controls,
   reads a live button/input, then releases the hold. Host events add/remove a
   global hold while the local hold remains set. Output and input-only operating
@@ -100,7 +100,8 @@ Add the following to the [existing GPIO reproduction command](esp32-gpio-pad-hol
 --gpio-periph "$IDF_PATH/components/soc/esp32/gpio_periph.c"
 ```
 
-The default command keeps its original scope. In the extended mode the linker
+The default command keeps its original scope. Its nine helpers and the extended
+mode's eight helpers cover eleven distinct SDK helper bodies in total. In the extended mode the linker
 places the SDK mapping constant in the test image's read-only data section, and
 the fixture loads both `.text` and `.rodata` into the supplied IRAM image. The
 native CPU reads the real compiled lookup table; the host does not replace it.

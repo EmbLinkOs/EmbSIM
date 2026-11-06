@@ -90,6 +90,7 @@ def main():
     def address(name):return 0x3ff44000+int(re.search(r'#define\s+GPIO_'+name+r'_REG\s+\(DR_REG_GPIO_BASE\s*\+\s*(0x[0-9a-f]+)\)',reg)[1],16)
     helpers=[]
     names= ['output_enable','output_disable','od_enable','od_disable','set_level','get_level','deep_sleep_hold_en','deep_sleep_hold_dis','deep_sleep_hold_is_en']+(['hold_en','hold_dis'] if args.per_pin_hold else [])
+    if args.per_pin_hold:names=[n for n in names if not n.startswith('deep_sleep_')]
     for name in names:
         match=re.search(r'^static inline [^\n]*\bgpio_ll_'+name+r'\([^\n]*\)\n\{',ll,re.M);assert match,name
         end=match.end();depth=1

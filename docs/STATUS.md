@@ -10,7 +10,7 @@ does not mean the described behaviour exists.
 **Latest digital pad-hold update:** [Per-pin digital hold](engineering/esp32-digital-pad-hold.md)
 now follows the SDK bit mapping and combines local/global/auto-hold causes with
 FORCE_UNHOLD precedence and independent pad snapshots. 3,455 new native checks,
-4,096 independent transition turns and 256 compiled C calls using eleven unchanged
+4,096 independent transition turns and 256 compiled C calls using eight unchanged
 SDK helpers pass. Native ROM now reaches 6,902 retirements and IO_MUX U0TXD read
 at 0x3ff49088. RTC pad-specific hold, IO_MUX/peripheral routing, physical board
 behavior and complete SDK boot remain unqualified.
