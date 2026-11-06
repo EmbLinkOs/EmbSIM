@@ -5,6 +5,224 @@ maintained by hand until evidence tooling exists. It is not a generated
 support matrix. Specifications define target contracts; their acceptance
 does not mean the described behaviour exists.
 
+## Original ESP32 dual-core target investigation (2026-11-04)
+
+**Latest digital pad-hold update:** [Per-pin digital hold](engineering/esp32-digital-pad-hold.md)
+now follows the SDK bit mapping and combines local/global/auto-hold causes with
+FORCE_UNHOLD precedence and independent pad snapshots. 3,455 new native checks,
+4,096 independent transition turns and 256 compiled C calls using eight unchanged
+SDK helpers pass. Native ROM now reaches 6,902 retirements and IO_MUX U0TXD read
+at 0x3ff49088. RTC pad-specific hold, IO_MUX/peripheral routing, physical board
+behavior and complete SDK boot remain unqualified.
+
+**Prior RTC-calibration update:** the [TIMG0 counter/controller profile](engineering/esp32-rtc-calibration.md)
+now counts explicitly supplied XTAL ticks over selected-clock periods, with
+one-shot completion and single-period cycling. 919,967 native assertions,
+19,208 independent comparisons and 486 compiled C harness calls using unchanged
+SDK access macros pass. The diagnostic with an additional explicit calibration
+fixture reaches 6,872 retirements, then RTC_IO_DIG_PAD_HOLD read at 0x3ff48474.
+The unclocked and synthetic-period cases are recorded separately; neither
+verifies oscillator frequency, physical calibration, full SDK boot or CPU timing.
+
+**Prior ROM-map update:** an [explicit per-core SDK mask-ROM profile](engineering/esp32-mask-rom.md)
+now supplies the 448 KiB IROM view and coherent DROM tail alias using external
+PRO/APP images. 1,170 native assertions, 18,840 independent comparisons and
+1,024 compiled C calls to two unchanged ROM getters pass. The PRO diagnostic
+with the additional profile reaches 6,796 retirements, then TIMG0 RTCCALICFG1
+read at 0x3ff5f06c/PC 0x40008591. The default TRM-only view and prior failure
+remain available. Physical ROM contents, timer calibration, full SDK boot and
+calibrated instruction timing remain unverified.
+
+**Prior UART-bank update:** the [normal UART0/1/2 bank](engineering/esp32-uart-bank.md)
+now shares one 1024-byte FIFO RAM, supports bounded allocations/overwrites and
+extended counts/thresholds, and coordinates idle UART1→UART2 TX reset. 271,883
+new native assertions, 4,096 shared-RAM referee turns and 384 compiled C calls
+with twelve unchanged SDK helpers pass. Native ROM with all three explicit UART
+fixtures reaches 6,790 retirements, then an unmapped instruction-ROM fetch at
+0x40065c18. Extended ROM mapping, advanced UART modes, full physical clock/pin/USB
+integration and complete SDK boot remain unqualified.
+
+**Prior UART0 update:** the [normal asynchronous UART0 profile](engineering/esp32-uart0.md)
+now supports fixed TX/RX FIFOs, explicit source-clock framing, CTS gating, decoded
+RX/error input and interrupt source 34 on both native core views. 915,199 native
+assertions, 316,077 independent bit/frame comparisons and 128 compiled C calls
+with eleven unchanged SDK helpers pass. The additional explicit UART0 fixture
+reaches 6,737 retirements, then UART1 INT_CLR write 0x3ff50010/PC 0x40009013.
+UART1/2, advanced modes, full clocks/pin/electrical/USB integration and native SDK
+boot remain unimplemented. Serial-clock advancement does not calibrate CPU timing.
+
+**Prior GPIO update:** the [software-GPIO/pad-hold profile](engineering/esp32-gpio-pad-hold.md)
+now supports explicit routes, live resolved inputs, projected drive/HiZ and hold
+capture/clear. With all explicit probe fixtures it reaches 6,734 instructions,
+then UART0 INT_CLR write at 0x3ff40010/PC 0x4000900b. Full GPIO/IO_MUX, electrical
+loading, board binding, power isolation and native SDK boot remain incomplete.
+The earlier 0x3ff48088 blocker was DIG_ISO; its former analog label is corrected.
+
+**Current implementation update:** an [explicit eFuse read/reload profile](engineering/esp32-efuse-read-profile.md)
+now supports None-coded input images, read protection and completion routing.
+With a supplied synthetic unprogrammed image, real ROM execution advances from
+seven to 6,692 retired instructions without an RTC snapshot. With the new
+[RTC reset/retention profile](engineering/esp32-rtc-reset-retention.md) and an
+explicit synthetic power-on snapshot, it reaches 6,698 instructions, then blocks
+on digital isolation control read at 0x3ff48088, PC 0x4000770a. [MEMCTL](engineering/esp32-memctl-loop-buffer.md) now
+has reset/control and a bounded functional loop-buffer profile. Its physical
+fill/fetch/pipeline timing remains unqualified.
+[Region protection](engineering/esp32-region-protection.md) now implements fixed
+ITLB/DTLB maintenance, synchronized permissions and causes 20/28/29.
+[ATOMCTL](engineering/esp32-atomic-control.md) now has six-bit privileged register
+access, reset, memory-type selection, local/RCW atomics and cause-3 dispatch.
+Internal cache operations, complete memory-system and physical loop-buffer
+behavior, and full SDK boot remain absent. The [timing qualification tools](engineering/esp32-instruction-timing.md)
+now build a hardware cycle-capture firmware and validate complete logs; no
+physical capture or calibrated instruction-time model exists yet.
+Read completion is an explicit external event; no physical duration is inferred.
+The earlier synchronous profile took the ROM failure/reset path.
+The owner's actual fuse image is not inferred. A separate
+[Giantec GT25Q32A-U storage subset](engineering/esp32-giantec-profile.md) now matches
+the reported ID, with independent timing/WEL behavior. Full native boot,
+complete chip behavior, OTP programming and SoC hardware consumers remain absent.
+
+**Initial no-eFuse-image boot verification, 2026-11-05:** a pinned unmodified ESP-IDF v4.4.7 example
+boots both schedulers and prints Hello world in Espressif QEMU. Native EmbSIM
+using the same image and QEMU-distributed PRO ROM fails after seven retired
+instructions: PC 0x4000fdd8, eFuse read 0x3ff5a000. This is a confirmed boot
+blocker, not successful SDK/board boot. The owner subsequently supplied a
+physical esptool readout: ESP32-D0WD-V3 v3.1, 40 MHz crystal, JEDEC C4 60 16,
+4 MB detected flash and a 3.3 V strapping setting. Giantec's GT25Q32A-U datasheet
+matches the ID; exact ordering/package remains unresolved. The Winbond fixture
+is a different part and does not qualify this board.
+[Evidence and reproduction](engineering/esp32-boot-verification.md) separate
+reference success, native failure and unresolved hardware identity.
+
+The owner requested an original dual-core ESP32 development board. The listing
+is now tied to TECNOIOT ASIN B07N97DD1B: the advertised photo shows a
+30-pin ESP-WROOM-32 board. Exact PCB revision and BOM remain unverified.
+[Identity and implementation
+gates](engineering/esp32-dual-core.md) document the new Xtensa LX6 backend,
+dual-core SoC, board circuits, radio, low-power and qualification work needed.
+Native `image-info esp32` now validates standalone image headers, segments, XOR
+checksum and optional SHA-256, with explicit rejection of signed/encrypted/merged
+images. An experimental, unregistered Xtensa integer kernel now executes the
+wide arithmetic/logic/immediate/low-multiply subset against a supplied register
+window: 111 native assertions and 9,728 separately assembled all-register comparisons
+pass. Mixed-width fetch, compact arithmetic, non-windowed calls/returns, conditional
+branches and callback memory access now execute an assembled summing/subroutine
+program. The execution test passes 618 assertions; a separate assembler/linker
+referee passes 4,800 execution cases and 1,152 failed accesses. Complete
+exception/interrupt behavior, full ISA, SMP, SoC boot and timing remain
+unimplemented. The new 64-AR window engine implements windowed calls/ENTRY/RETW,
+lazy spill/fill exception transitions, RFWO/RFWU retries, selected special
+registers and hardware loops (1,337 native assertions). The actual Espressif
+ESP32 GCC toolchain passes 128 shallow windowed C runs. A further suite executes
+ESP-IDF's actual spill/fill handler instruction bodies through the bus, passing
+224 windowed-ABI runs (160 C, 64 assembly) and all six event paths with matching
+overflow/underflow counts. This does not establish ESP-IDF boot or SoC fidelity.
+Additionally, 96 compiler-generated C executions (sum/sort/copy,
+33,472 fetched instructions) pass buffer, guard, return and callee-save checks.
+SAR setup/variable shifts and exchange, RSIL state and selected opt-in XEA2
+syscall/illegal/privilege/nested entry/return now pass 785 native assertions.
+An additional 7,040 real ESP32 compiled bit-manipulation executions pass (37,818
+fetched instructions). Unknown instructions and ambiguous bus failures are not
+assigned invented exception causes. The optional CPU interrupt profile now adds
+32-input priority/type handling, masks, NMI edges, saved high-level contexts,
+RFI and WAITI suspension/wake (11,571 native assertions). CCOUNT/CCOMPARE0..2
+use explicit supplied ticks, including WAITI wake and wraparound (81 assertions).
+Referees pass 2,048 vendor-configuration interrupt comparisons and 8,192
+clock/deadline comparisons against 263,719 individual ticks. The SoC interrupt
+matrix is now covered by a separate functional implementation below; peripheral
+generators, scheduler timing, full SMP and board boot remain absent.
+Conditional moves/min/max/high products/division/normalization and bit branches
+now pass 128 additional native assertions. SCOMPARE1/S32C1I require one indivisible
+bus callback, with no non-atomic fallback (67 assertions). Another 832 actual
+ESP32 compiled atomic/division runs pass, including 64 interleaved increment
+pairs that force retry. A native internal-memory provider now adds SRAM0/1/2,
+word-reversed SRAM1 instruction aliases, PRO-only RTC fast RAM, shared RTC slow
+RAM, optional external ROM and per-core host-controlled boot remap. A serialized
+two-context harness shares this RAM while keeping CPU/interrupt/clock state
+private. Native fixtures cover address/permission/remap/fault/wait boundaries;
+512 actual ESP32 compiled task executions and 128 replay comparisons pass through
+the native bus (229,322 instructions). This remains a bounded memory/execution
+harness: complete cache/MMU, reset domains and full SMP and SoC boot are absent.
+L32AI/S32RI now provide acquire/release ordering under the synchronous completed
+callback contract (30,732 native assertions). The compiled shared-bus acceptance
+includes acquire/CAS/release spinlocks protecting ordinary writes. Asynchronous
+transactions, cache coherence and physical timing remain unsupported.
+The interrupt matrix now exposes per-core DPORT maps/raw status, four shared
+software-generated interrupts, shared OR routes, disconnected internal-input
+selectors, core-local GPIO and explicit PID NMI-mask inputs. Firmware can wake a
+peer from WAITI, acknowledge its source and return. Delivery synchronizes after
+instruction commit, including paused-peer edges. New fixtures pass 64,374 matrix
+and 103 integration assertions; pinned-header referees pass 4,288 routes and 512
+combined-source/mask cases. Actual ESP32 C sender/C handler acceptance with an
+assembled entry/return wrapper passes 256 mailbox executions, 4,224 interrupts and 128 exact replays (512,128 retired
+instructions), in both directions. Peripheral generators, PID hardware, complete reset domains, APB timing,
+complete flash/cache and boot remain absent; no complete ISR/RTOS or timing claim follows.
+APP clock/stall fields and the ROM-consumed boot-address register now work
+through the machine bus. APP starts clock-disabled; fixture setup explicitly
+enables it. Gate/stall stops fetch/retirement and resumes at the same PC, without
+resetting shared state. Gate-aware supplied-clock/deadline APIs suppress APP
+counter ticks while gated. New evidence: 163 native assertions, 384 vendor-field
+comparisons and compiled control/mailbox stress (256 runs, 4,224 interrupts,
+128 replays, 551,232 retired instructions). APP reset/release requires the separate opt-in supported reset profile below;
+the boot-address register does not bypass missing ROM code or set PC directly.
+Physical clock/pulse timing, power and cold boot are still unqualified.
+PS now masks reserved fields on read/write/exchange and RFI restoration;
+XSR.PS preserves its old-value result with privilege/window checks before the
+transition. This adds 1,304 native assertions and 3,456 independent assembled
+PS/RFI comparisons, including atomic interrupt-mask changes.
+A [bounded reset/vector profile](engineering/esp32-reset-vectors.md) now supports
+explicit static reset-input selection, PS/LCOUNT/VECBASE reset fields and aligned
+VECBASE relocation with fixed vendor offsets. Undefined CPU register values use
+an explicit fixture policy, not a silicon retention claim. Opt-in APP reset input
+holds/releases the core after instruction commit and preserves shared source
+state. Evidence: 2,281 CPU/104 machine assertions, 3,072 assembled VECBASE accesses,
+960 vendor-offset dispatches and 128 reset-address comparisons. Original test-ROM
+handoff passes 128 compiled supervisor/worker cycles and 16 exact replays.
+Actual Espressif ROM, full reset-domain behavior and SDK/board boot remain absent.
+An opt-in [read-only mapped-flash profile](engineering/esp32-flash-mapping.md)
+now supports PID0/1 normal-mode per-core tables, 64 KiB pages, access masks and
+explicit flush/enable sequencing. Evidence: 7,289 native assertions, 488 parsed
+vendor-fact translations, 256 compiled mapped workers and 64 exact replays.
+Compiled PRO setup plus original test-ROM handoff also passes 128 reset cycles
+into a mapped worker. Immutable backing and disabled-cache table edits bound this
+profile; the default attachment omits SPI programming. Real cache tags/timing,
+live SDK mmap/invalidation, PSRAM/high PIDs and actual ROM/SDK/board boot remain
+unimplemented. The separate named-part fixture below adds bounded programming.
+The [CPU task-context register profile](engineering/esp32-context-registers.md)
+now implements unprivileged THREADPTR, privileged MISC0..3 and read-only PRID
+with an explicitly supplied fixture constant. PRID's full silicon value is still
+unverified; the SDK's bit-13 core extraction is tested without inventing it.
+Evidence: 9,723 native context/access/reset assertions, 7,680 independent assembler
+comparisons and 1,536 actual ESP32-compiled TLS calls across six persistent banks
+(16 exact replays, 52,224 retired instructions). Firmware selects the banks;
+this does not establish a scheduler, interrupt-driven task switching or SDK boot.
+MOVSP now implements caller-window checks and configured AllocaCause 5 before
+changing SP. Evidence: 13,475 native assertions, 32,768 independent assembler
+comparisons and another 1,536 actual TLS C calls with dynamic stack buffers
+(16 replays, 253,812 retired instructions). Vendor alloca-handler restoration,
+preemptive scheduling and RTOS boot remain unqualified.
+An opt-in [SPI1 read profile](engineering/esp32-spi1-reads.md) now executes USER
+03h single-line reads against installed immutable flash backing, with receive
+buffers, completion/counter state and source-29 interrupt routing. Transfers
+require both caches disabled. Evidence: 37,466 native assertions, 27 parsed register defaults/384
+reference comparisons and 128 actual ESP32 C reads pass; 32 of these also load
+and execute a generated RAM worker (32 exact replays, 91,568 retired instructions).
+Seven unchanged SDK helper bodies are tested, not the full SDK initialization or
+boot stack. The default attachment omits program/erase. DMA, SPI timing, GPIO/pin
+mux and actual ROM/SDK boot remain unsupported; the named-part option below
+extends the storage commands.
+An explicit [W25Q32JV-IQ programming profile](engineering/esp32-flash-programming.md)
+now adds write-enable/BUSY, page programming/wrap and aligned erase through SPI1.
+It requires an explicitly selected unprotected 4 MiB part fixture; the requested
+board reports Giantec-matching C4 60 16, different from this fixture's EF 40 16.
+External microseconds drive conservative datasheet-maximum durations. Native tests and 2,631 independent
+command/time comparisons pass; compiled firmware programs and executes 32 RAM
+workers (32 exact replays, 125,856 retired instructions). Fresh post-completion
+flush is required before cache enable. Full chip/protection/electrical behavior,
+physical timing and real ROM/SDK boot remain unqualified.
+No runnable ESP32 target is added, and the
+existing RISC-V ESP32-C3 is not a substitute.
+
 ## The library's categories (2026-11-03)
 
 Parts are filed by category and sub-category as Proteus's device picker and
