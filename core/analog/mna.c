@@ -898,7 +898,7 @@ es_status esk_island_add_device(esk_island *isl, esk_comp *c, const esk_adev_ops
     mna *p = (mna *)isl->priv;
     esk_adev *d;
     int k;
-    if (!ops || npins < 0 || npins > 8 || p->started)
+    if (!ops || npins < 0 || npins > ESK_ADEV_MAX_PINS || p->started)
         return ES_EINVAL;
     d = dev_new(isl, ops);
     if (!d)
@@ -965,7 +965,7 @@ static es_status setup_devices(esk_island *isl)
         if (d->state)
             memset(d->state, 0, d->ops->state_size);
         d->nbranch = 0;
-        for (k = 0; k < 8; k++)
+        for (k = 0; k < ESK_ADEV_MAX_PINS; k++)
             d->i_last[k] = 0.0;
         if (d->ops->setup) {
             es_status s2 = d->ops->setup(d);

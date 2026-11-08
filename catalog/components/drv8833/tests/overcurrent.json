@@ -1,0 +1,126 @@
+{
+ "schema_version": 1,
+ "kind": "component_test",
+ "name": "overcurrent",
+ "description": "Bridge A's outputs shorted through 0.1 ohm (13 A from 6 V) trip its overcurrent protection 4 us after the 1 ms wake: the bridge turns off and nFAULT, pulled up to 3.3 V, goes low; 1.35 ms later it retries, nFAULT rises, and the short trips it again. Bridge B drives its 10 ohm load throughout.",
+ "policy": "electrical",
+ "until": "3ms",
+ "circuit": {
+  "components": [
+   {
+    "id": "VM",
+    "component": "emblink/vsource",
+    "params": {
+     "kind": "dc",
+     "dc": 6.0
+    }
+   },
+   {
+    "id": "VL",
+    "component": "emblink/vsource",
+    "params": {
+     "kind": "dc",
+     "dc": 3.3
+    }
+   },
+   {
+    "id": "DUT",
+    "component": "emblink/drv8833"
+   },
+   {
+    "id": "RSH",
+    "component": "emblink/resistor",
+    "params": {
+     "resistance": 0.1
+    }
+   },
+   {
+    "id": "RL",
+    "component": "emblink/resistor",
+    "params": {
+     "resistance": 10
+    }
+   },
+   {
+    "id": "RP",
+    "component": "emblink/resistor",
+    "params": {
+     "resistance": 10000
+    }
+   },
+   {
+    "id": "G",
+    "component": "emblink/gnd"
+   }
+  ],
+  "nets": {
+   "VM": [
+    "VM.+",
+    "DUT.VM"
+   ],
+   "LOGIC": [
+    "VL.+",
+    "DUT.AIN1",
+    "DUT.BIN1",
+    "DUT.nSLEEP",
+    "RP.1"
+   ],
+   "A1": [
+    "DUT.AOUT1",
+    "RSH.1"
+   ],
+   "A2": [
+    "DUT.AOUT2",
+    "RSH.2"
+   ],
+   "B1": [
+    "DUT.BOUT1",
+    "RL.1"
+   ],
+   "B2": [
+    "DUT.BOUT2",
+    "RL.2"
+   ],
+   "NFAULT": [
+    "DUT.nFAULT",
+    "RP.2"
+   ],
+   "GND": [
+    "VM.-",
+    "VL.-",
+    "DUT.GND",
+    "DUT.AISEN",
+    "DUT.BISEN",
+    "DUT.AIN2",
+    "DUT.BIN2",
+    "G.GND"
+   ]
+  }
+ },
+ "expect": {
+  "net:NFAULT": {
+   "at": "0.9ms",
+   "min_v": 3.2
+  },
+  "output:DUT.A.fault": {
+   "at": "1.5ms",
+   "equals": true
+  },
+  "output:DUT.A.state": {
+   "at": "1.5ms",
+   "equals": "coast"
+  },
+  "output:DUT.B.state": {
+   "at": "1.5ms",
+   "equals": "forward"
+  },
+  "output:DUT.A.chopping": {
+   "at": "2.5ms",
+   "equals": false
+  },
+  "output:DUT.A.current": {
+   "at": "2.356ms",
+   "min": 10
+  }
+ }
+}

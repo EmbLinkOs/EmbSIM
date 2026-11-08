@@ -5,7 +5,7 @@ maintained by hand until evidence tooling exists. It is not a generated
 support matrix. Specifications define target contracts; their acceptance
 does not mean the described behaviour exists.
 
-## DC motors, the robot's first parts (2026-11-08)
+## DC motors and their driver, the robot's first parts (2026-11-08)
 
 M7's robot on the floor begins with its motors. `dc_motor`
 (`core/analog/motor.c`, SPEC-004) is a brushed DC motor in the analog
@@ -23,7 +23,29 @@ at its 13 ms mechanical time constant; `stall`: 1.5 A under 0.74 kg cm;
 0.148 kg cm, 0.79 W, 31 % at 0.42 A, against Pololu's 490 rpm, 0.16 kg
 cm, 0.80 W, 32 %. Not yet: the winding's inductance and rotor's inertia
 measured (Pololu publishes neither: estimates), the commutator's ripple,
-heating, a motor driver, the encoder, the robot itself.
+heating, the encoder, the robot itself.
+
+The motors' driver: `h_bridge` (`core/analog/hbridge.c`) is one bridge of
+an integrated driver. Its FETs drive from VM through their on-resistance,
+so a motor slows as the battery sags, and coast through their body diodes.
+Its logic inputs are read as voltages through the datasheet's thresholds,
+with deglitch, propagation delay, dead time, sleep and wake, undervoltage
+lockout, current chopping and overcurrent shutdown. `emblink/drv8833` is
+Texas Instruments' DRV8833, two such bridges with its datasheet's values.
+
+Evidence, its eight fixtures:
+- 4.83 V across 10 ohm from 5 V (200 + 160 mohm);
+- OUT1 following IN1 1.1 us later, a 300 ns pulse lost to the deglitch,
+  and the 450 ns dead time on reversal;
+- the 2.6 V lockout, and the wake after recovery;
+- the gearmotor at 6 V spinning up to 640 rpm;
+- 0.5 ohm on AISEN holding it at 0.38 to 0.40 A;
+- a short tripping the overcurrent protection, with nFAULT low and the
+  1.35 ms retry;
+- 1.6 uA asleep and 1.7 mA awake.
+
+Not yet: the thermal shutdown, switching edges, the TB6612FNG and L293D
+parts on the primitive.
 
 ## The library's categories (2026-11-03)
 

@@ -208,6 +208,35 @@ optional gearbox:
   shaft's angle (integrated at accepted steps and on to now while the island
   sleeps), its torque and the electrical and mechanical power.
 
+`h_bridge` (pins `IN1`, `IN2`, `PWM`, `EN`, `OUT1`, `OUT2`, `VM`, `GND`,
+`SEN`, `FAULT`) is one H-bridge of an integrated motor driver:
+- **Power stage.** Each output is a half-bridge: a high-side FET from `VM`
+  and a low-side FET to `SEN` (the sense resistor's top, or ground), each a
+  resistance set from VM between two datasheet points, each with its body
+  diode. An output driven high therefore sits at VM less its FET's drop, and
+  a motor coasting recirculates its current through the diodes.
+- **Logic.** The inputs are node voltages to `GND` through Schmitt
+  thresholds, with their pulldowns (and `EN`'s clamp). `mode` picks the
+  truth table: `in_in` (DRV8833), `in_in_pwm` (TB6612FNG), `half` (L293D).
+  With `sleep`, `EN` is nSLEEP: low resets the logic, and `t_wake` passes
+  after it rises.
+- **Timing.** The logic state changes only on accepted steps, as the
+  thyristors' does. An input is taken `t_deg` after it changes (the
+  deglitch; a shorter pulse is lost) and reaches the outputs `t_prop` after
+  it began. An output crossing between high and low is off for `t_dead`.
+  Each of these times, the wake, the chopping clock and the overcurrent
+  timers is a breakpoint of the device, and a change of the FETs' state
+  touches the island.
+- **Protection.** Undervoltage lockout on VM resets the logic. With `vtrip`,
+  current chopping goes to slow decay (both low sides on) when `SEN` passes
+  `vtrip`, until the next edge of the `f_chop` clock, then blanks the
+  comparator for `t_blank`. With `iocp`, a FET carrying more than `iocp` for
+  `t_ocp_deg` shuts the bridge down for `t_ocp`, its open-drain `FAULT`
+  pulled low meanwhile.
+- **Inside.** An input's or the comparator's crossing between two accepted
+  steps is taken at the second. The FETs switch instantly; the die's
+  temperature is not modelled.
+
 `ptc_fuse` (pins `1`, `2`) is a polymeric PTC resettable fuse, a resistance that
 heats itself:
 - **Thermal model.** Two thermal nodes: the polymer core (`c_core`, `r_core`

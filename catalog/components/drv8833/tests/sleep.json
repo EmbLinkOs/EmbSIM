@@ -1,0 +1,56 @@
+{
+ "schema_version": 1,
+ "kind": "component_test",
+ "name": "sleep",
+ "description": "nSLEEP left low (its 500 kohm pulldown): both bridges asleep, outputs off, 1.6 uA from VM at 5 V. Bridge A's quiescent current is the device's.",
+ "policy": "electrical",
+ "until": "1ms",
+ "circuit": {
+  "components": [
+   {
+    "id": "VM",
+    "component": "emblink/vsource",
+    "params": {
+     "kind": "dc",
+     "dc": 5.0
+    }
+   },
+   {
+    "id": "DUT",
+    "component": "emblink/drv8833"
+   },
+   {
+    "id": "G",
+    "component": "emblink/gnd"
+   }
+  ],
+  "nets": {
+   "VM": [
+    "VM.+",
+    "DUT.VM"
+   ],
+   "GND": [
+    "VM.-",
+    "DUT.GND",
+    "DUT.AISEN",
+    "DUT.BISEN",
+    "G.GND"
+   ]
+  }
+ },
+ "expect": {
+  "output:DUT.A.asleep": {
+   "at": "0.5ms",
+   "equals": true
+  },
+  "output:DUT.B.state": {
+   "at": "0.5ms",
+   "equals": "coast"
+  },
+  "output:DUT.A.supply_current": {
+   "at": "0.5ms",
+   "min": 1.5e-06,
+   "max": 1.8e-06
+  }
+ }
+}

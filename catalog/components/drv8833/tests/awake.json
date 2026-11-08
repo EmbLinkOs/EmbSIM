@@ -1,0 +1,69 @@
+{
+ "schema_version": 1,
+ "kind": "component_test",
+ "name": "awake",
+ "description": "nSLEEP high and every input low: awake and coasting, 1.7 mA from VM at 5 V.",
+ "policy": "electrical",
+ "until": "3ms",
+ "circuit": {
+  "components": [
+   {
+    "id": "VM",
+    "component": "emblink/vsource",
+    "params": {
+     "kind": "dc",
+     "dc": 5.0
+    }
+   },
+   {
+    "id": "VL",
+    "component": "emblink/vsource",
+    "params": {
+     "kind": "dc",
+     "dc": 3.3
+    }
+   },
+   {
+    "id": "DUT",
+    "component": "emblink/drv8833"
+   },
+   {
+    "id": "G",
+    "component": "emblink/gnd"
+   }
+  ],
+  "nets": {
+   "VM": [
+    "VM.+",
+    "DUT.VM"
+   ],
+   "LOGIC": [
+    "VL.+",
+    "DUT.nSLEEP"
+   ],
+   "GND": [
+    "VM.-",
+    "VL.-",
+    "DUT.GND",
+    "DUT.AISEN",
+    "DUT.BISEN",
+    "G.GND"
+   ]
+  }
+ },
+ "expect": {
+  "output:DUT.A.asleep": {
+   "at": "2ms",
+   "equals": false
+  },
+  "output:DUT.A.state": {
+   "at": "2ms",
+   "equals": "coast"
+  },
+  "output:DUT.A.supply_current": {
+   "at": "2ms",
+   "min": 0.0016,
+   "max": 0.0018
+  }
+ }
+}

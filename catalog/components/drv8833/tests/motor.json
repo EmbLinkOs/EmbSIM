@@ -1,0 +1,90 @@
+{
+ "schema_version": 1,
+ "kind": "component_test",
+ "name": "motor",
+ "description": "A Pololu 50:1 micro metal gearmotor on bridge A at VM = 6 V, AIN1 high from the MCU's 3.3 V: after the 1 ms wake its current rises on the winding's L/R toward its stall current less the bridge's 0.36 ohm (6 / 4.36 = 1.38 A) and it spins up to about 640 rpm, a little under the 650 rpm it reaches straight from the supply; bridge B, its inputs low, coasts.",
+ "policy": "electrical",
+ "until": "150ms",
+ "circuit": {
+  "components": [
+   {
+    "id": "VM",
+    "component": "emblink/vsource",
+    "params": {
+     "kind": "dc",
+     "dc": 6.0
+    }
+   },
+   {
+    "id": "VL",
+    "component": "emblink/vsource",
+    "params": {
+     "kind": "dc",
+     "dc": 3.3
+    }
+   },
+   {
+    "id": "DUT",
+    "component": "emblink/drv8833"
+   },
+   {
+    "id": "M",
+    "component": "emblink/pololu_3073_gearmotor"
+   },
+   {
+    "id": "G",
+    "component": "emblink/gnd"
+   }
+  ],
+  "nets": {
+   "VM": [
+    "VM.+",
+    "DUT.VM"
+   ],
+   "LOGIC": [
+    "VL.+",
+    "DUT.AIN1",
+    "DUT.nSLEEP"
+   ],
+   "A": [
+    "DUT.AOUT1",
+    "M.+"
+   ],
+   "B": [
+    "DUT.AOUT2",
+    "M.-"
+   ],
+   "GND": [
+    "VM.-",
+    "VL.-",
+    "DUT.GND",
+    "DUT.AISEN",
+    "DUT.BISEN",
+    "DUT.AIN2",
+    "DUT.BIN1",
+    "DUT.BIN2",
+    "G.GND"
+   ]
+  }
+ },
+ "expect": {
+  "output:DUT.A.state": {
+   "at": "0.5ms",
+   "equals": "coast"
+  },
+  "output:M.current": {
+   "at": "1.8ms",
+   "min": 1.15,
+   "max": 1.38
+  },
+  "output:M.rpm": {
+   "at": "140ms",
+   "min": 620,
+   "max": 650
+  },
+  "output:DUT.B.state": {
+   "at": "140ms",
+   "equals": "coast"
+  }
+ }
+}

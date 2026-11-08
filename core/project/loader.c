@@ -460,7 +460,9 @@ static es_status expand_composite(es_session *s, graph *g, const char *id, const
             names[i] = esk_json_get_str(esk_json_at(pins, i), "name", "?");
             esk_pin_model_family(NULL, &models[i]);
             models[i].kind = ESK_PIN_NC;
-            if (!esk_json_get(ports, names[i]))
+            /* a pin declared nc (a charge pump's capacitor, not modelled) needs no port */
+            if (!esk_json_get(ports, names[i]) &&
+                !esk_str_eq(esk_json_get_str(esk_json_get(esk_json_at(pins, i), "model"), "kind", ""), "nc"))
                 ld_diag(s, ES_SEV_WARNING, "catalog.port_missing", id, "composite %s has no port for pin %s", item->id, names[i]);
         }
         st = esk_engine_add_comp(&s->eng, id, item->id, &composite_shell_ops, names, models, (uint32_t)np, params, item->desc, out);

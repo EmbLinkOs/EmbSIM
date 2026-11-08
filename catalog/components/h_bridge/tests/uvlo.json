@@ -1,0 +1,114 @@
+{
+ "schema_version": 1,
+ "kind": "component_test",
+ "name": "uvlo",
+ "description": "VM sagging from 5 V to 2.5 V (2 to 3 ms) passes the 2.6 V lockout: the bridge turns off and its logic resets; back at 5 V (from 5 ms) it wakes again 1 ms later and drives the 10 ohm load.",
+ "policy": "electrical",
+ "until": "7ms",
+ "circuit": {
+  "components": [
+   {
+    "id": "VM",
+    "component": "emblink/vsource",
+    "params": {
+     "kind": "pwl",
+     "points": [
+      [
+       0,
+       5
+      ],
+      [
+       0.002,
+       5
+      ],
+      [
+       0.003,
+       2.5
+      ],
+      [
+       0.005,
+       2.5
+      ],
+      [
+       0.00501,
+       5
+      ]
+     ]
+    }
+   },
+   {
+    "id": "VL",
+    "component": "emblink/vsource",
+    "params": {
+     "kind": "dc",
+     "dc": 3.3
+    }
+   },
+   {
+    "id": "DUT",
+    "component": "emblink/h_bridge"
+   },
+   {
+    "id": "RL",
+    "component": "emblink/resistor",
+    "params": {
+     "resistance": 10
+    }
+   },
+   {
+    "id": "G",
+    "component": "emblink/gnd"
+   }
+  ],
+  "nets": {
+   "VM": [
+    "VM.+",
+    "DUT.VM"
+   ],
+   "LOGIC": [
+    "VL.+",
+    "DUT.EN",
+    "DUT.IN1"
+   ],
+   "A": [
+    "DUT.OUT1",
+    "RL.1"
+   ],
+   "B": [
+    "DUT.OUT2",
+    "RL.2"
+   ],
+   "GND": [
+    "VM.-",
+    "VL.-",
+    "DUT.GND",
+    "DUT.SEN",
+    "DUT.IN2",
+    "G.GND"
+   ]
+  }
+ },
+ "expect": {
+  "output:DUT.state": {
+   "at": "1.9ms",
+   "equals": "forward"
+  },
+  "output:DUT.undervoltage": {
+   "at": "4ms",
+   "equals": true
+  },
+  "output:DUT.out1": {
+   "at": "4ms",
+   "equals": "off"
+  },
+  "output:DUT.asleep": {
+   "at": "5.5ms",
+   "equals": true
+  },
+  "output:DUT.vout": {
+   "at": "6.5ms",
+   "min": 4.78,
+   "max": 4.88
+  }
+ }
+}

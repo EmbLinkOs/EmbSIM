@@ -1323,14 +1323,14 @@ es_status esk_engine_partition(esk_engine *e)
     /* devices and bridges */
     for (i = 0; i < e->comps.len && st == ES_OK; i++) {
         esk_comp *c = e->comps.data[i];
-        esk_pin *pins[8];
+        esk_pin *pins[ESK_ADEV_MAX_PINS];
         int np = 0;
         esk_island *isl = NULL;
         for (k = 0; k < c->npins; k++) {
             esk_pin *p = &c->pins[k];
             if (p->net && p->net->island) {
                 if (comp_is_electrical(c)) {
-                    if (np < 8) pins[np++] = p;
+                    if (np < ESK_ADEV_MAX_PINS) pins[np++] = p;
                     isl = p->net->island;
                     p->analog_node = p->net->node;
                 } else if (p->model.kind == ESK_PIN_DIGITAL_OUT || p->model.kind == ESK_PIN_DIGITAL_IN ||
@@ -1345,7 +1345,7 @@ es_status esk_engine_partition(esk_engine *e)
              * a description may list them in any order */
             int nnames, all = 1, named = 0;
             const char *const *names = esk_adev_pin_names(c->ops->adev, &nnames);
-            esk_pin *byname[8];
+            esk_pin *byname[ESK_ADEV_MAX_PINS];
             for (k = 0; names && k < (size_t)nnames; k++) {
                 esk_pin *p = esk_comp_pin(c, names[k]);
                 all = all && p && p->net && p->net->island == isl;

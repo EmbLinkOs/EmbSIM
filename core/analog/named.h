@@ -47,6 +47,13 @@ void esk_ptc_on_time(esk_adev *d, es_time_t now);
 /* a brushed DC motor (motor.c): its load torque changed */
 extern const esk_adev_ops esk_dc_motor_ops;
 void esk_motor_on_input(esk_adev *d, es_time_t now);
+/* Shockley junction helpers shared by the devices (devices.c): a junction's
+ * current and slope at a voltage, SPICE's pnjlim, and its critical voltage */
+void esk_pn_eval(double v, double is, double nvt, double *id, double *gd);
+double esk_pnjlim(double vnew, double vold, double vt, double vcrit);
+double esk_vcrit(double is, double nvt);
+/* an H-bridge motor driver's bridge (hbridge.c) */
+extern const esk_adev_ops esk_h_bridge_ops;
 void esk_environmental_on_time(esk_adev *d, es_time_t now);
 void esk_environmental_on_input(esk_adev *d, es_time_t now);
 #endif

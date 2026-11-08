@@ -1,0 +1,95 @@
+{
+ "schema_version": 1,
+ "kind": "component_test",
+ "name": "chopping",
+ "description": "A 0.5 ohm sense resistor on AISEN sets the chopping current to 200 mV / 0.5 ohm = 0.4 A: the gearmotor starting at 6 V, which would draw 1.38 A, is held near 0.4 A by slow-decay chopping on the 50 kHz clock while it spins up.",
+ "policy": "electrical",
+ "until": "8ms",
+ "circuit": {
+  "components": [
+   {
+    "id": "VM",
+    "component": "emblink/vsource",
+    "params": {
+     "kind": "dc",
+     "dc": 6.0
+    }
+   },
+   {
+    "id": "VL",
+    "component": "emblink/vsource",
+    "params": {
+     "kind": "dc",
+     "dc": 3.3
+    }
+   },
+   {
+    "id": "DUT",
+    "component": "emblink/drv8833"
+   },
+   {
+    "id": "M",
+    "component": "emblink/pololu_3073_gearmotor"
+   },
+   {
+    "id": "RS",
+    "component": "emblink/resistor",
+    "params": {
+     "resistance": 0.5
+    }
+   },
+   {
+    "id": "G",
+    "component": "emblink/gnd"
+   }
+  ],
+  "nets": {
+   "VM": [
+    "VM.+",
+    "DUT.VM"
+   ],
+   "LOGIC": [
+    "VL.+",
+    "DUT.AIN1",
+    "DUT.nSLEEP"
+   ],
+   "A": [
+    "DUT.AOUT1",
+    "M.+"
+   ],
+   "B": [
+    "DUT.AOUT2",
+    "M.-"
+   ],
+   "SEN": [
+    "DUT.AISEN",
+    "RS.1"
+   ],
+   "GND": [
+    "VM.-",
+    "VL.-",
+    "DUT.GND",
+    "RS.2",
+    "DUT.BISEN",
+    "DUT.AIN2",
+    "DUT.BIN1",
+    "DUT.BIN2",
+    "G.GND"
+   ]
+  }
+ },
+ "expect": {
+  "output:M.current": {
+   "between": [
+    "2ms",
+    "7ms"
+   ],
+   "min": 0.3,
+   "max": 0.45
+  },
+  "output:M.rpm": {
+   "at": "7ms",
+   "min": 5
+  }
+ }
+}

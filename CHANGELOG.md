@@ -5,7 +5,7 @@ versions follow semantic versioning. There is no release yet.
 
 ## Unreleased
 
-### DC motors: the first of the robot's parts (M7)
+### DC motors and their driver: the first of the robot's parts (M7)
 
 - Added the analog primitive `dc_motor` (`core/analog/motor.c`, SPEC-004): a
   brushed DC motor whose winding (resistance, inductance, back EMF) and
@@ -18,6 +18,22 @@ versions follow semantic versioning. There is no release yet.
   specifications (650 rpm and 0.15 A unloaded, 1.5 A and 0.74 kg cm
   stalled at 6 V; best efficiency within 6 % of Pololu's), with four
   fixtures (no load, start, stall, reverse).
+- Added the analog primitive `h_bridge` (`core/analog/hbridge.c`, SPEC-004):
+  one bridge of a motor driver. Its FETs drive from VM through their
+  on-resistance, with body diodes, so a motor slows as its supply sags.
+  - logic inputs read as voltages through Schmitt thresholds and pulldowns
+  - the DRV8833, TB6612FNG and L293D truth tables
+  - deglitch, propagation delay and dead time
+  - nSLEEP and its wake time, undervoltage lockout
+  - current chopping on a sense resistor
+  - overcurrent shutdown with retry and an open-drain fault output
+- Added `emblink/h_bridge` (the primitive as a part, the DRV8833's values)
+  and `emblink/drv8833`, Texas Instruments' DRV8833 dual H-bridge driver,
+  as two bridges with the datasheet's values, and eight fixtures (forward,
+  timing, UVLO; a gearmotor driven, current chopping at 0.4 A, overcurrent
+  and nFAULT, sleep and awake supply currents).
+- An analog primitive takes up to 16 terminals (8 before), and a
+  composite's pin declared `nc` needs no port.
 
 ### A library sorted the way an EDA sorts it
 
