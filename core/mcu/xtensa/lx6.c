@@ -301,7 +301,9 @@ static int dbreak_hit(struct lx6 *c, u32 a, int n, int store)
         u32 ctl = c->dbreakc[i], mask;
         if (!(ctl & (store ? 0x80000000u : 0x40000000u)))
             continue;
-        mask = ~(ctl & 0x3fu);
+        /* MASK's set bits are the low address bits compared (ESP-IDF's
+         * 32-byte stack-end watchpoint: 0x20, bits 4:0 ignored) */
+        mask = 0xffffffc0u | (ctl & 0x3fu);
         if (((a ^ c->dbreaka[i]) & mask) == 0 ||
             (((a + (u32)n - 1u) ^ c->dbreaka[i]) & mask) == 0) {
             if ((c->ps & PS_INTLEVEL) < DEBUG_LEVEL) {

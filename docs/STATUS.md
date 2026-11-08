@@ -19,7 +19,9 @@ scenarios `esp32_hello_world` (9/9), `esp32_blink` (6/6),
 reading a 24LC256 at 400 kHz), `esp32_gptimer` (17/17), `esp32_uart_echo`
 (6/6), `esp32_real_time_stats` (10/10) , `esp32_blink_strip` (7/7, a
 WS2812B through the RMT) and `esp32_adc_oneshot_read` (6/6, ADC1 and ADC2
-with the eFuse Vref's calibration). Not yet: Wi-Fi and Bluetooth, the
+with the eFuse Vref's calibration); Arduino-ESP32's AnalogReadSerial,
+ReadAnalogVoltage, DigitalReadSerial, GetChipID and RepeatTimer for "ESP32
+Dev Module" (`tests/vendor/arduino-esp32`, `ESP32_*`). Not yet: Wi-Fi and Bluetooth, the
 double-precision accelerator's instructions, the peripherals the
 description's fidelity lists (I2S, SPI2/3, the DACs, ...),
 sleep. The standalone harness below remains as its own qualification

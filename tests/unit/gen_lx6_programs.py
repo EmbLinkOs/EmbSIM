@@ -217,6 +217,33 @@ kernel:
     wsr.intenable a9
     rfe
 """,
+    # a store watchpoint over 32 bytes as ESP-IDF sets one (DBREAKC 0x20:
+    # address bits 4:0 ignored): a store past it misses, one in it takes
+    # the debug exception (level 6) before it is done
+    "dbreak": """
+    movi a2, vectors
+    wsr.vecbase a2
+    movi a6, 0
+    movi a3, 0x3ffb0040
+    wsr.dbreaka0 a3
+    movi a4, 0x80000020
+    wsr.dbreakc0 a4
+    isync
+    movi a5, 0x55
+    s32i a5, a3, 32         # 0x3ffb0060: outside
+    s32i a5, a3, 28         # 0x3ffb005c: inside
+    l32i a9, a3, 28         # the store was done after the handler
+    j .
+    .align 1024
+vectors:
+    .org vectors + 0x280
+debug:
+    addi a6, a6, 1
+    rsr.debugcause a7
+    movi a8, 0
+    wsr.dbreakc0 a8
+    rfi 6
+""",
     "float": """
     movi a2, 1
     wsr.cpenable a2

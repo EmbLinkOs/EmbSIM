@@ -31,7 +31,11 @@ versions follow semantic versioning. There is no release yet.
   24LC256, `esp32_gptimer` 17/17, `esp32_uart_echo` 6/6 on UART2,
   `esp32_real_time_stats` 10/10 across both cores,
   `esp32_blink_strip` 7/7 on a WS2812B through the RMT,
-  `esp32_adc_oneshot_read` 6/6 with the eFuse Vref's calibration; the UARTs keep
+  `esp32_adc_oneshot_read` 6/6 with the eFuse Vref's calibration;
+  Arduino-ESP32's AnalogReadSerial, ReadAnalogVoltage, DigitalReadSerial,
+  GetChipID and RepeatTimer for "ESP32 Dev Module" in
+  `tests/vendor/arduino-esp32` (`ESP32_*`); DBREAKC's MASK now marks the
+  address bits compared, as ESP-IDF's stack-end watchpoint has it; the UARTs keep
   MEM_RX_STATUS's addresses, from which ESP-IDF counts the bytes waiting); `test_lx6` checks the core with programs from Espressif's assembler.
 
 ### Original ESP32 digital per-pin hold

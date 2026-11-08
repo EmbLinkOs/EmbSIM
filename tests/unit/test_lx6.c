@@ -287,6 +287,18 @@ static void test_timer(void)
     close32(&t);
 }
 
+static void test_dbreak(void)
+{
+    t32 t;
+    if (!OPEN(t, dbreak, DBREAK))
+        return;
+    CHECK(run_to_end(&t, 200));
+    CHECK_EQ(a(&t, 6), 1u);              /* one hit: the store inside */
+    CHECK_EQ(a(&t, 7) & 0x4u, 0x4u);     /* DEBUGCAUSE: DBREAK */
+    CHECK_EQ(a(&t, 9), 0x55u);           /* the store done after it */
+    close32(&t);
+}
+
 static void test_float(void)
 {
     t32 t;
@@ -345,6 +357,7 @@ RUN(test_memory);
 RUN(test_windows);
 RUN(test_syscall);
 RUN(test_timer);
+RUN(test_dbreak);
 RUN(test_float);
 RUN(test_mac16);
 RUN(test_app_cpu_rom_data);
