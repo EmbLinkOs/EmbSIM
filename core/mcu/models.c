@@ -5,6 +5,7 @@
 #include <string.h>
 
 #include "mcu/avr/avr.h"
+#include "mcu/esp32/soc/esp32.h"
 #include "mcu/esp32c3/esp32c3.h"
 #include "mcu/nrf52/nrf52.h"
 #include "mcu/pic24/pic24.h"
@@ -61,6 +62,16 @@ static const struct esk_rf_model_type model_types[] = {
     { "fe310-aon", &esk_fe310_aon_ops, esk_fe310_aon_create },
     { "fe310-pwm", &esk_fe310_pwm_ops, esk_fe310_pwm_create },
     { "fe310-spi", &esk_fe310_spi_ops, esk_fe310_spi_create },
+    { "esp32-dport", &esk_esp32_dport_ops, esk_esp32_dport_create },
+    { "esp32-efuse", &esk_esp32_efuse_ops, esk_esp32_efuse_create },
+    { "esp32-rtc", &esk_esp32_rtc_ops, esk_esp32_rtc_create },
+    { "esp32-uart", &esk_esp32_uart_ops, esk_esp32_uart_create },
+    { "esp32-apbctrl", &esk_esp32_apbctrl_ops, esk_esp32_apbctrl_create },
+    { "esp32-gpio", &esk_esp32_gpio_ops, esk_esp32_gpio_create },
+    { "esp32-spi", &esk_esp32_spi_ops, esk_esp32_spi_create },
+    { "esp32-timg", &esk_esp32_timg_ops, esk_esp32_timg_create },
+    { "esp32-sha", &esk_esp32_sha_ops, esk_esp32_sha_create },
+    { "esp32-iomux", &esk_esp32_iomux_ops, esk_esp32_iomux_create },
     { "esp32c3-intmtx", &esk_esp32c3_intmtx_ops, esk_esp32c3_intmtx_create },
     { "esp32c3-uart", &esk_esp32c3_uart_ops, esk_esp32c3_uart_create },
     { "esp32c3-rtc", &esk_esp32c3_rtc_ops, esk_esp32c3_rtc_create },

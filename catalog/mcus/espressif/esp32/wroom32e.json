@@ -1,0 +1,205 @@
+{
+  "schema_version": 1,
+  "kind": "package",
+  "id": "espressif/esp32/wroom32e",
+  "name": "ESP32-WROOM-32E",
+  "description": "The ESP32-WROOM-32E module (ESP32-WROOM-32E & WROOM-32UE datasheet v1.7, table 3-1), 18 x 25.5 mm, 38 pads and the exposed ground pad: an ESP32-D0WD-V3 with its 40 MHz crystal, a 4 MB quad SPI flash on GPIO6-11 (which the module keeps to itself) and the antenna, so the module is the chip in another package. Pads that are GPIOs carry the GPIO's signal; the module's pad name is in each one's doc.",
+  "pins": [
+    {
+      "number": 1,
+      "signal": "GND"
+    },
+    {
+      "number": 2,
+      "signal": "VDD3P3",
+      "doc": "pin 3V3, the module's supply"
+    },
+    {
+      "number": 3,
+      "signal": "CHIP_EN",
+      "doc": "pin EN: high on, low off and reset"
+    },
+    {
+      "number": 4,
+      "signal": "GPIO36",
+      "doc": "pin SENSOR_VP: input only"
+    },
+    {
+      "number": 5,
+      "signal": "GPIO39",
+      "doc": "pin SENSOR_VN: input only"
+    },
+    {
+      "number": 6,
+      "signal": "GPIO34",
+      "doc": "pin IO34: input only"
+    },
+    {
+      "number": 7,
+      "signal": "GPIO35",
+      "doc": "pin IO35: input only"
+    },
+    {
+      "number": 8,
+      "signal": "GPIO32",
+      "doc": "pin IO32, XTAL_32K_P"
+    },
+    {
+      "number": 9,
+      "signal": "GPIO33",
+      "doc": "pin IO33, XTAL_32K_N"
+    },
+    {
+      "number": 10,
+      "signal": "GPIO25",
+      "doc": "pin IO25, DAC_1"
+    },
+    {
+      "number": 11,
+      "signal": "GPIO26",
+      "doc": "pin IO26, DAC_2"
+    },
+    {
+      "number": 12,
+      "signal": "GPIO27",
+      "doc": "pin IO27"
+    },
+    {
+      "number": 13,
+      "signal": "GPIO14",
+      "doc": "pin IO14, MTMS"
+    },
+    {
+      "number": 14,
+      "signal": "GPIO12",
+      "doc": "pin IO12, MTDI: a strapping pin (VDD_SDIO)"
+    },
+    {
+      "number": 15,
+      "signal": "GND"
+    },
+    {
+      "number": 16,
+      "signal": "GPIO13",
+      "doc": "pin IO13, MTCK"
+    },
+    {
+      "number": 17,
+      "signal": "NC",
+      "doc": "not connected (the in-package flash's SD2 on other modules)"
+    },
+    {
+      "number": 18,
+      "signal": "NC"
+    },
+    {
+      "number": 19,
+      "signal": "NC"
+    },
+    {
+      "number": 20,
+      "signal": "NC"
+    },
+    {
+      "number": 21,
+      "signal": "NC"
+    },
+    {
+      "number": 22,
+      "signal": "NC"
+    },
+    {
+      "number": 23,
+      "signal": "GPIO15",
+      "doc": "pin IO15, MTDO: a strapping pin (the ROM's messages)"
+    },
+    {
+      "number": 24,
+      "signal": "GPIO2",
+      "doc": "pin IO2: a strapping pin"
+    },
+    {
+      "number": 25,
+      "signal": "GPIO0",
+      "doc": "pin IO0: a strapping pin (boot mode)"
+    },
+    {
+      "number": 26,
+      "signal": "GPIO4",
+      "doc": "pin IO4"
+    },
+    {
+      "number": 27,
+      "signal": "GPIO16",
+      "doc": "pin IO16"
+    },
+    {
+      "number": 28,
+      "signal": "GPIO17",
+      "doc": "pin IO17"
+    },
+    {
+      "number": 29,
+      "signal": "GPIO5",
+      "doc": "pin IO5: a strapping pin (SDIO timing)"
+    },
+    {
+      "number": 30,
+      "signal": "GPIO18",
+      "doc": "pin IO18"
+    },
+    {
+      "number": 31,
+      "signal": "GPIO19",
+      "doc": "pin IO19"
+    },
+    {
+      "number": 32,
+      "signal": "NC"
+    },
+    {
+      "number": 33,
+      "signal": "GPIO21",
+      "doc": "pin IO21"
+    },
+    {
+      "number": 34,
+      "signal": "GPIO3",
+      "doc": "pin RXD0, U0RXD"
+    },
+    {
+      "number": 35,
+      "signal": "GPIO1",
+      "doc": "pin TXD0, U0TXD"
+    },
+    {
+      "number": 36,
+      "signal": "GPIO22",
+      "doc": "pin IO22"
+    },
+    {
+      "number": 37,
+      "signal": "GPIO23",
+      "doc": "pin IO23"
+    },
+    {
+      "number": 38,
+      "signal": "GND"
+    },
+    {
+      "number": 39,
+      "signal": "GND",
+      "doc": "the exposed pad"
+    }
+  ],
+  "provenance": {
+    "author": "EmbSIM",
+    "license": "Apache-2.0",
+    "sources": [
+      {
+        "title": "ESP32-WROOM-32E & ESP32-WROOM-32UE datasheet (Espressif)",
+        "rev": "v1.7"
+      }
+    ]
+  }
+}

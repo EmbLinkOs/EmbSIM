@@ -853,6 +853,15 @@ struct esk_rf_reg *esk_rf_reg(struct esk_rf_periph *p, const char *name)
     return 0;
 }
 
+struct esk_rf_reg *esk_rf_reg_at(struct esk_rf_periph *p, u32 off)
+{
+    int i;
+    for (i = 0; p && i < p->nreg; i++)
+        if (p->reg[i]->addr - p->base == off)
+            return p->reg[i];
+    return 0;
+}
+
 u64 esk_rf_mask(const struct esk_rf_reg *r, const char *field)
 {
     int i;

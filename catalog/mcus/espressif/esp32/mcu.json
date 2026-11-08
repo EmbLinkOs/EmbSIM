@@ -1,0 +1,310 @@
+{
+  "schema_version": 1,
+  "kind": "mcu",
+  "id": "espressif/esp32",
+  "version": "0.1.0",
+  "name": "ESP32",
+  "description": "Espressif ESP32 (ESP32-D0WD-V3, chip revision v3.1): two Xtensa LX6 cores at up to 240 MHz, 520 KiB of SRAM, 448 KiB of ROM, 16 KiB of RTC memory, external SPI flash behind the cores' caches, Wi-Fi and Bluetooth.",
+  "keywords": [
+    "xtensa",
+    "lx6",
+    "espressif",
+    "esp32",
+    "esp32-d0wd-v3",
+    "dual-core"
+  ],
+  "vendor": "espressif",
+  "family": "esp32",
+  "core": {
+    "backend": "xtensa",
+    "model": "esp32-lx6",
+    "cores": 2,
+    "timing_tier": "estimated",
+    "fpu": true,
+    "mpu": false,
+    "endian": "little",
+    "reset_pc": "0x40000400"
+  },
+  "memory": [
+    {
+      "name": "rom",
+      "base": "0x40000000",
+      "size": "448K",
+      "kind": "rom",
+      "file": "rom.bin",
+      "doc": "Internal ROM0 (384 KiB) and ROM1 (64 KiB) on the instruction bus (TRM v5 table 3.3-1, ESP-IDF's SOC_IROM_MASK_HIGH 0x40070000): the boot ROM of chip revision v3, its image made by tools/importers/esprom.py (--base 0x40000000 --size 0x70000 --data-table 0x4000D4EC:0x4000D4F8, the Bluetooth controller's entry; --data-table 0x4000D4F8:0x4000D5C8, the ROM's copy table of its RAM variables' initial values) from Espressif's esp32_rev300_rom.elf (espressif/esp-rom-elfs 20241011, Apache-2.0: LICENSES/Apache-2.0.txt; the ROM's code is Copyright (c) 2015-2022 Espressif Systems (Shanghai) Co. Ltd.). It equals byte for byte the image Espressif's QEMU loads (esp32-v3-rom.bin, sha256 9115bbcd...258b) over its 455,722 bytes; the rest reads zeros"
+    },
+    {
+      "name": "rom1_data",
+      "base": "0x3FF90000",
+      "size": "64K",
+      "kind": "alias",
+      "target": "0x40060000",
+      "doc": "Internal ROM1 on the data bus"
+    },
+    {
+      "name": "sram0",
+      "base": "0x40070000",
+      "size": "192K",
+      "kind": "ram",
+      "doc": "Internal SRAM0 on the instruction bus: its first 64 KiB the cores' flash caches once they are enabled, the rest IRAM"
+    },
+    {
+      "name": "sram2",
+      "base": "0x3FFAE000",
+      "size": "200K",
+      "kind": "ram",
+      "doc": "Internal SRAM2 on the data bus (DRAM)"
+    },
+    {
+      "name": "sram1",
+      "base": "0x3FFE0000",
+      "size": "128K",
+      "kind": "ram",
+      "main": true,
+      "doc": "Internal SRAM1 on the data bus (DRAM), where the ROM keeps its data and stacks"
+    },
+    {
+      "name": "rtc_fast",
+      "base": "0x3FF80000",
+      "size": "8K",
+      "kind": "ram",
+      "doc": "RTC FAST memory on the data bus, kept in deep sleep"
+    },
+    {
+      "name": "rtc_fast_ibus",
+      "base": "0x400C0000",
+      "size": "8K",
+      "kind": "alias",
+      "target": "0x3FF80000",
+      "doc": "RTC FAST memory on the instruction bus"
+    },
+    {
+      "name": "rtc_slow",
+      "base": "0x50000000",
+      "size": "8K",
+      "kind": "ram",
+      "doc": "RTC SLOW memory, kept in deep sleep, the ULP coprocessor's"
+    },
+    {
+      "name": "flash",
+      "base": "0x0",
+      "size": "4M",
+      "kind": "external",
+      "erased": "0xFFFFFFFF",
+      "doc": "The module's 4 MB SPI flash, reached through SPI0 and SPI1 and read in place through the caches"
+    },
+    {
+      "name": "flash_drom",
+      "base": "0x3F400000",
+      "size": "4M",
+      "kind": "window",
+      "doc": "The data bus's window on the flash (DROM0, TRM table 3.3-3): 64 pages of 64 KB that MMU entries 0-63 map"
+    },
+    {
+      "name": "flash_irom",
+      "base": "0x400D0000",
+      "size": "0x330000",
+      "kind": "window",
+      "doc": "The instruction bus's window on the flash (IROM0 from the first whole page after RTC FAST memory to 0x403FFFFF): MMU entries 77-127"
+    }
+  ],
+  "clocks": {
+    "sources": [
+      {
+        "name": "xtal",
+        "hz": 40000000,
+        "doc": "The module's 40 MHz crystal (XTL_CLK); the CPU runs from it out of reset"
+      },
+      {
+        "name": "rc_fast",
+        "hz": 8000000,
+        "doc": "The internal 8 MHz RC oscillator (RC_FAST_CLK, 8MD256 its /256)"
+      },
+      {
+        "name": "rc_slow",
+        "hz": 150000,
+        "doc": "The internal 150 kHz RC oscillator (RTC_SLOW_CLK's default)"
+      },
+      {
+        "name": "pll",
+        "hz": 320000000,
+        "doc": "PLL_CLK, 320 MHz (or 480 MHz) from the crystal"
+      }
+    ],
+    "reset_core_hz": 40000000,
+    "max_core_hz": 240000000
+  },
+  "register_file": {
+    "format": "embsim",
+    "file": "registers.json",
+    "vendored": true,
+    "license": "Apache-2.0 (converted from Espressif's esp32.svd, Copyright 2024 Espressif Systems (Shanghai) PTE LTD; LICENSES/Apache-2.0.txt)"
+  },
+  "peripherals": [
+    {
+      "match": "DPORT",
+      "model": "esp32-dport",
+      "order": 0
+    },
+    {
+      "match": "RTC_CNTL",
+      "model": "esp32-rtc",
+      "order": 1
+    },
+    {
+      "match": "APB_CTRL",
+      "model": "esp32-apbctrl",
+      "order": 1
+    },
+    {
+      "match": "EFUSE",
+      "model": "esp32-efuse"
+    },
+    {
+      "match": "UART?",
+      "model": "esp32-uart"
+    },
+    {
+      "match": "IO_MUX",
+      "model": "esp32-iomux",
+      "order": 0
+    },
+    {
+      "match": "GPIO",
+      "model": "esp32-gpio",
+      "order": 1
+    },
+    {
+      "match": "SPI0",
+      "model": "esp32-spi"
+    },
+    {
+      "match": "SPI1",
+      "model": "esp32-spi"
+    },
+    {
+      "match": "TIMG?",
+      "model": "esp32-timg"
+    },
+    {
+      "match": "SHA",
+      "model": "esp32-sha"
+    }
+  ],
+  "io": {
+    "family": "cmos_3v3",
+    "ports": [
+      {
+        "name": "GPIO",
+        "pins": 40,
+        "mask": "0xFFFFFFFFFF"
+      }
+    ],
+    "electrical": {
+      "vdd": 3.3,
+      "voh": 2.64,
+      "vol": 0.33,
+      "rout": 20,
+      "vih": 2.475,
+      "vil": 0.825,
+      "hysteresis": 0.1,
+      "rpull": 45000,
+      "leak_a": 5e-08,
+      "ioh_max": 0.04,
+      "iol_max": 0.028
+    }
+  },
+  "console": {
+    "default": "UART0"
+  },
+  "fidelity": {
+    "functional": {
+      "claims": "Work in progress.",
+      "omissions": [],
+      "validation": []
+    },
+    "timed": {
+      "claims": "Instruction timing estimated.",
+      "omissions": [],
+      "validation": []
+    },
+    "electrical": {
+      "claims": "GPIO pin-model defaults at 3.3 V.",
+      "omissions": [],
+      "validation": []
+    }
+  },
+  "provenance": {
+    "author": "EmbSIM",
+    "license": "Apache-2.0",
+    "sources": [
+      {
+        "title": "ESP32 Technical Reference Manual",
+        "rev": "v5.2"
+      },
+      {
+        "title": "ESP32 Series Datasheet",
+        "rev": "v4.8"
+      },
+      {
+        "title": "Espressif esp32.svd (espressif/svd)",
+        "rev": "be20aa1"
+      },
+      {
+        "title": "Espressif esp-rom-elfs, esp32_rev300_rom.elf",
+        "rev": "20241011"
+      }
+    ],
+    "notes": "The register description is converted from Espressif's Apache-2.0 SVD; the boot ROM's image from Espressif's Apache-2.0 ROM ELF."
+  },
+  "signals": [
+    "GPIO0",
+    "GPIO1",
+    "GPIO2",
+    "GPIO3",
+    "GPIO4",
+    "GPIO5",
+    "GPIO6",
+    "GPIO7",
+    "GPIO8",
+    "GPIO9",
+    "GPIO10",
+    "GPIO11",
+    "GPIO12",
+    "GPIO13",
+    "GPIO14",
+    "GPIO15",
+    "GPIO16",
+    "GPIO17",
+    "GPIO18",
+    "GPIO19",
+    "GPIO21",
+    "GPIO22",
+    "GPIO23",
+    "GPIO25",
+    "GPIO26",
+    "GPIO27",
+    "GPIO32",
+    "GPIO33",
+    "GPIO34",
+    "GPIO35",
+    "GPIO36",
+    "GPIO37",
+    "GPIO38",
+    "GPIO39",
+    "CHIP_EN",
+    "GND",
+    "LNA_IN",
+    "VDD3P3",
+    "VDD3P3_CPU",
+    "VDD3P3_RTC",
+    "VDDA",
+    "VDD_SDIO",
+    "XTAL_N",
+    "XTAL_P"
+  ],
+  "packages": {
+    "wroom32e": "wroom32e.json"
+  }
+}

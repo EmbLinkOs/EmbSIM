@@ -1,0 +1,25 @@
+{
+  "schema_version": 1,
+  "kind": "board",
+  "id": "emblink/esp32_devkitc",
+  "version": "0.1.0",
+  "name": "ESP32-DevKitC V4",
+  "description": "Espressif's ESP32-DevKitC V4 with an ESP32-WROOM-32E module.",
+  "keywords": ["esp32", "devkitc", "esp32-wroom-32e", "xtensa", "espressif"],
+  "revision": "V4",
+  "mcu": {"ref": "espressif/esp32", "package": "wroom32e", "instance": "U1"},
+  "oscillators": {"hse": {"hz": 40000000, "source": "external_crystal"}},
+  "components": [],
+  "nets": {
+    "3V3": ["U1.VDD3P3"],
+    "GND": ["U1.GND"],
+    "EN": ["U1.CHIP_EN"],
+    "GPIO0": ["U1.GPIO0"],
+    "GPIO1": ["U1.GPIO1"],
+    "GPIO3": ["U1.GPIO3"]
+  },
+  "ports": {},
+  "console": {"peripheral": "UART0", "tx": "GPIO1", "rx": "GPIO3", "baud": 115200},
+  "fidelity": {"functional": {"claims": "Work in progress.", "omissions": [], "validation": []}},
+  "provenance": {"author": "EmbSIM", "license": "Apache-2.0", "sources": []}
+}
