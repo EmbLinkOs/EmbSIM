@@ -1,0 +1,42 @@
+{
+ "schema_version": 1,
+ "kind": "scenario",
+ "name": "esp32_dac_oneshot",
+ "until": "3s",
+ "description": "dac/dac_oneshot on the ESP32: each DAC steps its code by 10 every 500 ms (DAC2 half a second behind), VDD3P3_RTC x code / 255 on its pad, and ADC2 (channels 8 and 9, GPIO25 and GPIO26, 12 dB) reads the pads every 100 ms. With this chip's Vref (1170 mV) ADC2's fitted line is a = 56320, b = 128 mV: code 10 (129.4 mV) reads 2, 20 reads 152, 30 reads 303, 40 reads 453, 50 (647.1 mV) reads 604. The example prints with a bare \\n.",
+ "inputs": [],
+ "assertions": [
+  {
+   "id": "started",
+   "at": "1s",
+   "probe": "console",
+   "expect": {
+    "contains": "DAC channel 0 value:    2\tDAC channel 1 value:    0\n"
+   }
+  },
+  {
+   "id": "steps",
+   "at": "2900ms",
+   "probe": "console",
+   "expect": {
+    "contains": "DAC channel 0 value:  152\tDAC channel 1 value:    2\n"
+   }
+  },
+  {
+   "id": "steps2",
+   "at": "2900ms",
+   "probe": "console",
+   "expect": {
+    "contains": "DAC channel 0 value:  453\tDAC channel 1 value:  303\n"
+   }
+  },
+  {
+   "id": "code50",
+   "at": "2900ms",
+   "probe": "console",
+   "expect": {
+    "contains": "DAC channel 0 value:  604\tDAC channel 1 value:  453\n"
+   }
+  }
+ ]
+}

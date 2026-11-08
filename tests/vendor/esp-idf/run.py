@@ -80,6 +80,7 @@ EXAMPLES = {
     "esp32_real_time_stats": "examples/system/freertos/real_time_stats",
     "esp32_blink_strip": "examples/get-started/blink",
     "esp32_adc_oneshot_read": "examples/peripherals/adc/oneshot_read",
+    "esp32_dac_oneshot": "examples/peripherals/dac/dac_oneshot",
 }
 # the target an example is built for, when not the ESP32-C3 (its board in
 # examples/<name>/project.json), and the toolchain that target needs
@@ -93,6 +94,7 @@ TARGETS = {
     "esp32_real_time_stats": "esp32",
     "esp32_blink_strip": "esp32",
     "esp32_adc_oneshot_read": "esp32",
+    "esp32_dac_oneshot": "esp32",
 }
 TOOLCHAINS = {"esp32c3": "riscv32-esp-elf-gcc", "esp32": "xtensa-esp32-elf-gcc"}
 # examples built only for another's project (with examples/<name>/'s

@@ -20,6 +20,7 @@
  *   i2c.c     I2C0 and I2C1
  *   rmt.c     the remote control peripheral's eight channels
  *   adc.c     the SAR ADCs as SENS's RTC controller drives them
+ *   rtcio.c   the RTC IO MUX's DACs
  *   misc.c    the random number generator, the AHB view of the
  *             peripherals */
 #ifndef ESK_MCU_ESP32_SOC_H
@@ -61,6 +62,11 @@ extern const struct esk_dev_ops esk_esp32_rmt_ops;
 void *esk_esp32_rmt_create(struct esk_mach *s, struct esk_rf_periph *p);
 extern const struct esk_dev_ops esk_esp32_adc_ops;
 void *esk_esp32_adc_create(struct esk_mach *s, struct esk_rf_periph *p);
+extern const struct esk_dev_ops esk_esp32_rtcio_ops;
+void *esk_esp32_rtcio_create(struct esk_mach *s, struct esk_rf_periph *p);
+/* DAC1 on GPIO25, DAC2 on GPIO26 (rtcio.c): 1 and the voltage it drives
+ * behind its output resistance, or 0 when the pad is not the DAC's */
+int esk_esp32_dac_out(struct esk_mach *m, int gpio, double *volts, double *rout);
 extern const struct esk_dev_ops esk_esp32_sha_ops;
 void *esk_esp32_sha_create(struct esk_mach *s, struct esk_rf_periph *p);
 /* the RNG and the AHB view of the peripherals (misc.c): 0, or -1 */

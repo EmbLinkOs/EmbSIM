@@ -773,6 +773,8 @@ static int h_pin_volts(void *ctx, int port, int bit, double *v)
     n = p->net;
     if (n->island)
         *v = esk_net_voltage_now(p->net); /* an ADC samples it now */
+    else if (st->pq[port][bit].cfg.aout)
+        *v = st->pq[port][bit].cfg.volts; /* the pin's own DAC, alone on its net */
     else
         *v = esk_net_value(n) == ESK_L1 ? st->m.vdd : 0.0;
     return 1;

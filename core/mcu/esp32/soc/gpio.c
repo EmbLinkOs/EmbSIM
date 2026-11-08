@@ -265,6 +265,12 @@ again:
         o.pull = wpu && !wpd ? 1 : wpd && !wpu ? 2 : 0;
         o.af = af || (mux_sel(k, n) == 0 && n == 3) /* U0RXD */ || (rx >> n & 1u);
         o.analog = !(mux & MUX_FUN_IE) && !oe;
+        if (esk_esp32_dac_out(s, n, &o.volts, &o.aout_r)) { /* a DAC's pad */
+            o.aout = 1;
+            o.analog = 1;
+            o.drive = -1;
+            drive = 0;
+        }
         if (s->host.pin_cfg && (!k->known || memcmp(&k->cfg[n], &o, sizeof o) != 0))
             s->host.pin_cfg(s->host.ctx, n / 16, n % 16, &o);
         k->cfg[n] = o;
