@@ -32,6 +32,11 @@ versions follow semantic versioning. There is no release yet.
   as two bridges with the datasheet's values, and eight fixtures (forward,
   timing, UVLO; a gearmotor driven, current chopping at 0.4 A, overcurrent
   and nFAULT, sleep and awake supply currents).
+- Added `emblink/tb6612fng`, Toshiba's TB6612FNG dual motor driver: the
+  primitive's VCC terminal gives it thresholds at 0.3/0.7 VCC and a VCC
+  lockout (1.9/2.2 V), with 0.5 ohm outputs, 50/230 ns dead times and
+  standby at 1 uA, and four fixtures (a gearmotor driven, PWM-low brake,
+  standby, VCC-relative thresholds and lockout).
 - An analog primitive takes up to 16 terminals (8 before), and a
   composite's pin declared `nc` needs no port.
 

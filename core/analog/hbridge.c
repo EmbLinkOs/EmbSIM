@@ -6,7 +6,8 @@
  *
  * Terminals: the logic inputs IN1, IN2, PWM and EN, the outputs OUT1 and
  * OUT2, the motor supply VM, the logic ground GND, the low-side return SEN
- * (the sense resistor's top, or GND) and the open-drain FAULT output. Each
+ * (the sense resistor's top, or GND), the open-drain FAULT output and the
+ * logic supply VCC (used with vcc_ref, else left open). Each
  * output is a half-bridge: a high-side FET from VM (ron_hs) and a low-side
  * FET to SEN (ron_ls), each with its body diode (OUT to VM, SEN to OUT), so
  * a motor's current recirculates through the diodes while both FETs are off
@@ -31,8 +32,14 @@
  * Timing: an input change is taken after it holds t_deg (the deglitch
  * filter; shorter pulses are lost) and reaches the outputs t_prop after it
  * began; an output passing between high and low is off for t_dead (the
- * break-before-make). VM below uvlo (falling; uvlo + uvlo_hys rising)
- * disables the bridge and resets its logic.
+ * break-before-make; t_dead_lh for low to high when it differs). VM below
+ * uvlo (falling; uvlo + uvlo_hys rising) disables the bridge and resets
+ * its logic.
+ *
+ * With vcc_ref (TB6612FNG), the logic has its own supply VCC: the input
+ * thresholds are the fractions vil_frac and vih_frac of it (vhys about
+ * their mean, in volts), the lockout watches VCC instead of VM, and the
+ * quiescent currents are drawn from VCC.
  *
  * Current control (vtrip > 0): while the bridge drives, SEN above vtrip
  * (I x Rsense) switches it to slow decay (both low sides on) until the
@@ -54,7 +61,7 @@
 #include <math.h>
 #include <string.h>
 
-enum { HB_IN1, HB_IN2, HB_PWM, HB_EN, HB_OUT1, HB_OUT2, HB_VM, HB_GND, HB_SEN, HB_FAULT, HB_NPINS };
+enum { HB_IN1, HB_IN2, HB_PWM, HB_EN, HB_OUT1, HB_OUT2, HB_VM, HB_GND, HB_SEN, HB_FAULT, HB_VCC, HB_NPINS };
 enum { HB_Z, HB_H, HB_L };
 enum { HB_MODE_IN_IN, HB_MODE_IN_IN_PWM, HB_MODE_HALF };
 
@@ -68,13 +75,14 @@ typedef struct hb_cmd {
 } hb_cmd;
 
 typedef struct hb_state {
-    int mode, sleep;
+    int mode, sleep, vcc_ref;
+    double vil_frac, vih_frac, hys_v[HB_NIN];
     double ron_hs_hi, ron_ls_hi, ron_hs_lo, ron_ls_lo, vm_lo, vm_hi, ron_hs, ron_ls, goff;
     double bd_is, bd_nvt, bd_vcrit;
     double rpd, rpd_en, vt_rise[HB_NIN], vt_fall[HB_NIN];
     double en_clamp, z_is, z_nvt, z_vcrit;
     double iq, iq_sleep, uvlo, uvlo_hys, vtrip, iocp, fault_r;
-    es_time_t t_deg, t_prop, t_dead, t_wake, t_blank, t_chop, t_ocp_deg, t_ocp;
+    es_time_t t_deg, t_prop, t_dead, t_dead_lh, t_wake, t_blank, t_chop, t_ocp_deg, t_ocp;
     /* the inputs: as seen at the last accepted step, and as taken */
     int raw[HB_NIN], filt[HB_NIN];
     int pend[HB_NIN];           /* raw differs from filt: taken at deg_at */
@@ -96,6 +104,18 @@ static double par(const esk_adev *d, const char *name, double fallback)
 {
     double v;
     return d->comp && esk_comp_param_double(d->comp, name, &v) == 0 ? v : fallback;
+}
+
+/* a boolean parameter (true/false, or a number) */
+static int par_b(const esk_adev *d, const char *name, int fallback)
+{
+    int b;
+    double v;
+    if (d->comp && esk_comp_param_bool(d->comp, name, &b) == 0)
+        return b != 0;
+    if (d->comp && esk_comp_param_double(d->comp, name, &v) == 0)
+        return v != 0.0;
+    return fallback;
 }
 
 static es_time_t par_t(const esk_adev *d, const char *name, double fallback_s)
@@ -124,13 +144,16 @@ static es_status hb_setup(esk_adev *d)
     double bd_vf = par(d, "bd_vf", 0.8), bd_if = par(d, "bd_if", 1.0);
     int k;
     if (d->nnodes < HB_NPINS) {
-        bad_param(d, "pins", "an h_bridge has ten terminals");
+        bad_param(d, "pins", "an h_bridge has eleven terminals");
         return ES_EINVAL;
     }
     s->mode = !strcmp(mode, "in_in_pwm") ? HB_MODE_IN_IN_PWM : !strcmp(mode, "half") ? HB_MODE_HALF : HB_MODE_IN_IN;
     if (strcmp(mode, "in_in") && strcmp(mode, "in_in_pwm") && strcmp(mode, "half"))
         bad_param(d, "mode", "in_in, in_in_pwm or half");
-    s->sleep = par(d, "sleep", s->mode == HB_MODE_IN_IN ? 1.0 : 0.0) != 0.0;
+    s->sleep = par_b(d, "sleep", s->mode == HB_MODE_IN_IN);
+    s->vcc_ref = par_b(d, "vcc_ref", 0);
+    s->vil_frac = par(d, "vil_frac", 0.3);
+    s->vih_frac = par(d, "vih_frac", 0.7);
     s->ron_hs_hi = par(d, "ron_hs", 0.2);
     s->ron_ls_hi = par(d, "ron_ls", 0.16);
     s->ron_hs_lo = par(d, "ron_hs_low", s->ron_hs_hi);
@@ -152,6 +175,7 @@ static es_status hb_setup(esk_adev *d)
     s->t_deg = par_t(d, "t_deg", 450e-9);
     s->t_prop = par_t(d, "t_prop", 1.1e-6);
     s->t_dead = par_t(d, "t_dead", 450e-9);
+    s->t_dead_lh = par_t(d, "t_dead_lh", (double)s->t_dead * 1e-12);
     s->t_wake = par_t(d, "t_wake", s->sleep ? 1e-3 : 0.0);
     s->t_blank = par_t(d, "t_blank", 3.75e-6);
     s->t_chop = par_t(d, "t_chop", 1.0 / par(d, "f_chop", 50e3));
@@ -161,7 +185,7 @@ static es_status hb_setup(esk_adev *d)
         !(s->vm_hi > s->vm_lo) || !(s->goff > 0.0) || !(s->bd_nvt > 0.0) || !(bd_vf > 0.0) || !(bd_if > 0.0) ||
         s->rpd < 0.0 || s->rpd_en < 0.0 || s->iq < 0.0 || s->iq_sleep < 0.0 || s->en_clamp < 0.0 ||
         s->vtrip < 0.0 || s->iocp < 0.0 || !(s->fault_r > 0.0) || !(vih > vil) || !(en_vih > en_vil) ||
-        hys < 0.0 || en_hys < 0.0 || s->t_prop < s->t_deg || !s->t_chop) {
+        hys < 0.0 || en_hys < 0.0 || !(s->vih_frac > s->vil_frac) || s->vil_frac < 0.0 || s->vih_frac > 1.0 || s->t_prop < s->t_deg || !s->t_chop) {
         bad_param(d, "h_bridge", "resistances, VM points, junction and thresholds out of range");
         return ES_EINVAL;
     }
@@ -174,6 +198,7 @@ static es_status hb_setup(esk_adev *d)
         double mid = 0.5 * (lo + hi);
         s->vt_rise[k] = mid + 0.5 * h;
         s->vt_fall[k] = mid - 0.5 * h;
+        s->hys_v[k] = h;
     }
     /* the clamp: 100 uA at en_clamp, n = 1.5 */
     s->z_nvt = 1.5 * HB_VT;
@@ -243,9 +268,12 @@ static void hb_load(esk_adev *d, esk_amatrix *m)
     }
     if (s->en_clamp > 0.0)
         hb_diode(d, m, HB_EN, HB_GND, &s->vz_old, s->z_is, s->z_nvt, s->z_vcrit, hb_zx(s, 0.0));
-    v = esk_am_v(m, vm, gnd);
-    hb_iq(s->awake || !s->sleep ? s->iq : s->iq_sleep, v, &i, &g);
-    stamp_nl(m, vm, gnd, g + 1e-12, i, v);
+    {
+        int sup = s->vcc_ref ? d->node[HB_VCC] : vm;
+        v = esk_am_v(m, sup, gnd);
+        hb_iq(s->awake || !s->sleep ? s->iq : s->iq_sleep, v, &i, &g);
+        stamp_nl(m, sup, gnd, g + 1e-12, i, v);
+    }
     esk_am_stamp_g(m, d->node[HB_FAULT], gnd, s->fault ? 1.0 / s->fault_r : 1e-9);
 }
 
@@ -353,8 +381,11 @@ static void hb_currents(esk_adev *d)
         esk_pn_eval(hb_zx(s, node_v(d, HB_EN) - vgnd), s->z_is, s->z_nvt, &i, &g);
         FLOW(HB_EN, HB_GND, i);
     }
-    hb_iq(s->awake || !s->sleep ? s->iq : s->iq_sleep, vm - vgnd, &i, &g);
-    FLOW(HB_VM, HB_GND, i);
+    {
+        int sup = s->vcc_ref ? HB_VCC : HB_VM;
+        hb_iq(s->awake || !s->sleep ? s->iq : s->iq_sleep, node_v(d, sup) - vgnd, &i, &g);
+        FLOW(sup, HB_GND, i);
+    }
     FLOW(HB_FAULT, HB_GND, (node_v(d, HB_FAULT) - vgnd) * (s->fault ? 1.0 / s->fault_r : 1e-9));
 #undef FLOW
 }
@@ -363,6 +394,7 @@ static void hb_accept(esk_adev *d, es_time_t t)
 {
     hb_state *s = (hb_state *)d->state;
     double vgnd = node_v(d, HB_GND), vm = node_v(d, HB_VM) - vgnd;
+    double vcc = node_v(d, HB_VCC) - vgnd, vsup = s->vcc_ref ? vcc : vm;
     int before[2];
     int k, taken = 0;
     before[0] = s->eff[0];
@@ -376,7 +408,7 @@ static void hb_accept(esk_adev *d, es_time_t t)
     }
     /* undervoltage lockout: below it everything is off and reset */
     if (!s->powered || s->uvlo_on) {
-        if (vm > s->uvlo + s->uvlo_hys) {
+        if (vsup > s->uvlo + s->uvlo_hys) {
             s->powered = 1;
             s->uvlo_on = 0;
             hb_logic_reset(s);
@@ -387,7 +419,7 @@ static void hb_accept(esk_adev *d, es_time_t t)
             for (k = 0; k < HB_NIN; k++)
                 s->filt[k] = s->raw[k] = 0;
         }
-    } else if (vm < s->uvlo) {
+    } else if (vsup < s->uvlo) {
         s->uvlo_on = 1;
         s->awake = s->waking = 0;
         hb_logic_reset(s);
@@ -396,9 +428,15 @@ static void hb_accept(esk_adev *d, es_time_t t)
     for (k = 0; k < HB_NIN; k++) {
         double v = node_v(d, k) - vgnd;
         int r = s->raw[k];
-        if (!r && v > s->vt_rise[k])
+        double rise = s->vt_rise[k], fall = s->vt_fall[k];
+        if (s->vcc_ref) {
+            double mid = 0.5 * (s->vil_frac + s->vih_frac) * vcc;
+            rise = mid + 0.5 * s->hys_v[k];
+            fall = mid - 0.5 * s->hys_v[k];
+        }
+        if (!r && v > rise)
             r = 1;
-        else if (r && v < s->vt_fall[k])
+        else if (r && v < fall)
             r = 0;
         if (r != s->raw[k]) {
             s->raw[k] = r;
@@ -499,8 +537,10 @@ static void hb_accept(esk_adev *d, es_time_t t)
         if (!hb_driving(s->want) && hb_driving(w))
             s->blank_end = t + s->t_blank;
         for (k = 0; k < 2; k++) {
-            if ((s->want[k] == HB_H && w[k] == HB_L) || (s->want[k] == HB_L && w[k] == HB_H))
+            if (s->want[k] == HB_H && w[k] == HB_L)
                 s->dead_until[k] = t + s->t_dead;
+            else if (s->want[k] == HB_L && w[k] == HB_H)
+                s->dead_until[k] = t + s->t_dead_lh;
             s->want[k] = w[k];
             s->eff[k] = t < s->dead_until[k] ? HB_Z : w[k];
         }
@@ -568,6 +608,8 @@ static void hb_observe(esk_adev *d, esk_json *o)
     /* the load current, out of OUT1 (into the motor) */
     esk_json_set_number(a, o, "current", -d->i_last[HB_OUT1]);
     esk_json_set_number(a, o, "supply_current", d->i_last[HB_VM]);
+    if (s->vcc_ref)
+        esk_json_set_number(a, o, "logic_current", d->i_last[HB_VCC]);
     esk_json_set_number(a, o, "vout", node_v(d, HB_OUT1) - node_v(d, HB_OUT2));
     esk_json_set_bool(a, o, "fault", s->fault != 0);
     esk_json_set_bool(a, o, "asleep", s->sleep && !s->awake);

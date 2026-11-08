@@ -1,0 +1,80 @@
+{
+ "schema_version": 1,
+ "kind": "component_test",
+ "name": "pwm_brake",
+ "description": "PWMA low with AIN1 high and AIN2 low is a short brake: both of channel A's outputs low, the motor's terminals shorted through the lower FETs.",
+ "policy": "electrical",
+ "until": "1ms",
+ "circuit": {
+  "components": [
+   {
+    "id": "VM",
+    "component": "emblink/vsource",
+    "params": {
+     "kind": "dc",
+     "dc": 6.0
+    }
+   },
+   {
+    "id": "VC",
+    "component": "emblink/vsource",
+    "params": {
+     "kind": "dc",
+     "dc": 3.3
+    }
+   },
+   {
+    "id": "DUT",
+    "component": "emblink/tb6612fng"
+   },
+   {
+    "id": "M",
+    "component": "emblink/pololu_3073_gearmotor"
+   },
+   {
+    "id": "G",
+    "component": "emblink/gnd"
+   }
+  ],
+  "nets": {
+   "VM": [
+    "VM.+",
+    "DUT.VM1"
+   ],
+   "VCC": [
+    "VC.+",
+    "DUT.VCC",
+    "DUT.STBY",
+    "DUT.AIN1"
+   ],
+   "A": [
+    "DUT.AO1",
+    "M.+"
+   ],
+   "B": [
+    "DUT.AO2",
+    "M.-"
+   ],
+   "GND": [
+    "VM.-",
+    "VC.-",
+    "DUT.GND",
+    "DUT.PGND1",
+    "DUT.PGND2",
+    "G.GND",
+    "DUT.AIN2",
+    "DUT.PWMA"
+   ]
+  }
+ },
+ "expect": {
+  "output:DUT.A.state": {
+   "at": "0.5ms",
+   "equals": "brake"
+  },
+  "output:DUT.A.out1": {
+   "at": "0.5ms",
+   "equals": "low"
+  }
+ }
+}

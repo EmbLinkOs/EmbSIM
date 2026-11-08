@@ -11,5 +11,6 @@
   <line class="s" id="pin-vm" x1="40" y1="0" x2="40" y2="10"/><text class="p" x="40" y="17" text-anchor="middle">VM</text>
   <line class="s" id="pin-gnd" x1="30" y1="100" x2="30" y2="90"/><text class="p" x="30" y="87" text-anchor="middle">GND</text>
   <line class="s" id="pin-sen" x1="50" y1="100" x2="50" y2="90"/><text class="p" x="50" y="87" text-anchor="middle">SEN</text>
+  <line class="s" id="pin-vcc" x1="60" y1="0" x2="60" y2="10"/><text class="p" x="60" y="17" text-anchor="middle">VCC</text>
   <text class="t" x="45" y="48" text-anchor="middle">H-bridge</text>
 </svg>

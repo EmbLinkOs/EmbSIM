@@ -103,6 +103,15 @@
    },
    "doc": "Fault output, open drain, low while a fault is asserted",
    "required": false
+  },
+  {
+   "name": "VCC",
+   "number": 11,
+   "model": {
+    "kind": "passive"
+   },
+   "doc": "Logic supply (vcc_ref true); otherwise unused",
+   "required": false
   }
  ],
  "params": {
@@ -425,6 +434,37 @@
    "max": 10,
    "doc": "Start-up time from nSLEEP high (sleep true)",
    "advanced": true
+  },
+  "vcc_ref": {
+   "type": "boolean",
+   "default": false,
+   "doc": "The logic has its own supply VCC (TB6612FNG): thresholds are fractions of VCC, the lockout watches VCC, and the quiescent current is drawn from it",
+   "advanced": true
+  },
+  "vil_frac": {
+   "type": "number",
+   "default": 0.3,
+   "min": 0,
+   "max": 1,
+   "doc": "Input low threshold as a fraction of VCC (vcc_ref)",
+   "advanced": true
+  },
+  "vih_frac": {
+   "type": "number",
+   "default": 0.7,
+   "min": 0,
+   "max": 1,
+   "doc": "Input high threshold as a fraction of VCC (vcc_ref)",
+   "advanced": true
+  },
+  "t_dead_lh": {
+   "type": "number",
+   "unit": "s",
+   "default": 4.5e-07,
+   "min": 0,
+   "max": 1,
+   "doc": "Dead time of an output passing from low to high (t_dead is high to low)",
+   "advanced": true
   }
  },
  "outputs": [
@@ -475,6 +515,12 @@
    "type": "number",
    "unit": "A",
    "doc": "Into VM"
+  },
+  {
+   "name": "logic_current",
+   "type": "number",
+   "unit": "A",
+   "doc": "Into VCC (vcc_ref)"
   },
   {
    "name": "power",
@@ -537,7 +583,11 @@
    "t_deg": "t_deg",
    "t_prop": "t_prop",
    "t_dead": "t_dead",
-   "t_wake": "t_wake"
+   "t_wake": "t_wake",
+   "vcc_ref": "vcc_ref",
+   "vil_frac": "vil_frac",
+   "vih_frac": "vih_frac",
+   "t_dead_lh": "t_dead_lh"
   }
  },
  "symbol": {
@@ -594,6 +644,11 @@
     "x": 50,
     "y": 100,
     "side": "bottom"
+   },
+   "VCC": {
+    "x": 60,
+    "y": 0,
+    "side": "top"
    }
   }
  },
@@ -629,24 +684,24 @@
  "tests": [
   "tests/*.json"
  ],
-  "i18n": {
-    "fr": {
-      "source": "b3764521b87b",
-      "description": "Un pont en H d'un pilote de moteur intégré : deux demi-ponts de MOSFET avec leurs diodes de structure entre VM et le retour bas, commandés par des entrées logiques lues en tensions à travers des seuils à hystérésis et des résistances de rappel, avec la table de vérité de la fiche technique (DRV8833 IN/IN, TB6612FNG IN/IN/PWM ou L293D demi-pont avec validation), le filtre anti-parasites, le délai de propagation, le temps mort, la veille et le réveil, le verrouillage en sous-tension, le découpage du courant sur une résistance de mesure et la coupure en surintensité avec une sortie de défaut à drain ouvert. Les sorties sont alimentées depuis VM à travers la résistance à l'état passant des MOSFET : un moteur ralentit quand son alimentation faiblit. Valeurs par défaut : celles du DRV8833.",
-      "fidelity": {
-        "timed": {
-          "claims": "Comme en électrique."
-        },
-        "electrical": {
-          "claims": "Résolu avec le circuit (la primitive h_bridge) : le MOSFET haut de chaque sortie depuis VM et le MOSFET bas vers SEN, en résistances à l'état passant fixées selon VM entre deux points de la fiche technique, leurs diodes de structure, les seuils, l'hystérésis et les résistances de rappel des entrées, la table de vérité de son mode, le filtre anti-parasites, le délai de propagation et le temps mort, le temps de réveil de nSLEEP, le verrouillage en sous-tension, le découpage du courant en décroissance lente sur l'horloge f_chop avec masquage, et la coupure en surintensité avec sa reprise et la sortie FAULT à drain ouvert.",
-          "omissions": [
-            "les temps de montée et de descente des MOSFET (commutation instantanée)",
-            "la limitation analogique du courant des MOSFET pendant le filtrage de la surintensité",
-            "la température de la puce et la coupure thermique",
-            "le passage d'un seuil par une entrée entre deux pas de l'îlot est pris au second"
-          ]
-        }
-      }
+ "i18n": {
+  "fr": {
+   "source": "b3764521b87b",
+   "description": "Un pont en H d'un pilote de moteur intégré : deux demi-ponts de MOSFET avec leurs diodes de structure entre VM et le retour bas, commandés par des entrées logiques lues en tensions à travers des seuils à hystérésis et des résistances de rappel, avec la table de vérité de la fiche technique (DRV8833 IN/IN, TB6612FNG IN/IN/PWM ou L293D demi-pont avec validation), le filtre anti-parasites, le délai de propagation, le temps mort, la veille et le réveil, le verrouillage en sous-tension, le découpage du courant sur une résistance de mesure et la coupure en surintensité avec une sortie de défaut à drain ouvert. Les sorties sont alimentées depuis VM à travers la résistance à l'état passant des MOSFET : un moteur ralentit quand son alimentation faiblit. Valeurs par défaut : celles du DRV8833.",
+   "fidelity": {
+    "timed": {
+     "claims": "Comme en électrique."
+    },
+    "electrical": {
+     "claims": "Résolu avec le circuit (la primitive h_bridge) : le MOSFET haut de chaque sortie depuis VM et le MOSFET bas vers SEN, en résistances à l'état passant fixées selon VM entre deux points de la fiche technique, leurs diodes de structure, les seuils, l'hystérésis et les résistances de rappel des entrées, la table de vérité de son mode, le filtre anti-parasites, le délai de propagation et le temps mort, le temps de réveil de nSLEEP, le verrouillage en sous-tension, le découpage du courant en décroissance lente sur l'horloge f_chop avec masquage, et la coupure en surintensité avec sa reprise et la sortie FAULT à drain ouvert.",
+     "omissions": [
+      "les temps de montée et de descente des MOSFET (commutation instantanée)",
+      "la limitation analogique du courant des MOSFET pendant le filtrage de la surintensité",
+      "la température de la puce et la coupure thermique",
+      "le passage d'un seuil par une entrée entre deux pas de l'îlot est pris au second"
+     ]
     }
+   }
   }
+ }
 }

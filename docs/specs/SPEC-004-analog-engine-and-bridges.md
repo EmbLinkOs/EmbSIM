@@ -209,7 +209,7 @@ optional gearbox:
   sleeps), its torque and the electrical and mechanical power.
 
 `h_bridge` (pins `IN1`, `IN2`, `PWM`, `EN`, `OUT1`, `OUT2`, `VM`, `GND`,
-`SEN`, `FAULT`) is one H-bridge of an integrated motor driver:
+`SEN`, `FAULT`, `VCC`) is one H-bridge of an integrated motor driver:
 - **Power stage.** Each output is a half-bridge: a high-side FET from `VM`
   and a low-side FET to `SEN` (the sense resistor's top, or ground), each a
   resistance set from VM between two datasheet points, each with its body
@@ -219,7 +219,9 @@ optional gearbox:
   thresholds, with their pulldowns (and `EN`'s clamp). `mode` picks the
   truth table: `in_in` (DRV8833), `in_in_pwm` (TB6612FNG), `half` (L293D).
   With `sleep`, `EN` is nSLEEP: low resets the logic, and `t_wake` passes
-  after it rises.
+  after it rises. With `vcc_ref`, the logic has its own supply on `VCC`:
+  the thresholds are fractions of it, the lockout watches it and the
+  quiescent current is drawn from it (TB6612FNG).
 - **Timing.** The logic state changes only on accepted steps, as the
   thyristors' does. An input is taken `t_deg` after it changes (the
   deglitch; a shorter pulse is lost) and reaches the outputs `t_prop` after

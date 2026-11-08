@@ -1,0 +1,96 @@
+{
+ "schema_version": 1,
+ "kind": "component_test",
+ "name": "drive",
+ "description": "VCC 3.3 V, VM 6 V, STBY high. Channel A (AIN1 high, AIN2 low, PWMA high) turns a Pololu 50:1 gearmotor clockwise: about 1.33 A at start through 0.5 ohm of LDMOS, then about 640 rpm. Channel B with BIN1 and BIN2 high is in short brake.",
+ "policy": "electrical",
+ "until": "150ms",
+ "circuit": {
+  "components": [
+   {
+    "id": "VM",
+    "component": "emblink/vsource",
+    "params": {
+     "kind": "dc",
+     "dc": 6.0
+    }
+   },
+   {
+    "id": "VC",
+    "component": "emblink/vsource",
+    "params": {
+     "kind": "dc",
+     "dc": 3.3
+    }
+   },
+   {
+    "id": "DUT",
+    "component": "emblink/tb6612fng"
+   },
+   {
+    "id": "M",
+    "component": "emblink/pololu_3073_gearmotor"
+   },
+   {
+    "id": "G",
+    "component": "emblink/gnd"
+   }
+  ],
+  "nets": {
+   "VM": [
+    "VM.+",
+    "DUT.VM1",
+    "DUT.VM2",
+    "DUT.VM3"
+   ],
+   "VCC": [
+    "VC.+",
+    "DUT.VCC",
+    "DUT.STBY",
+    "DUT.AIN1",
+    "DUT.PWMA",
+    "DUT.BIN1",
+    "DUT.BIN2"
+   ],
+   "A": [
+    "DUT.AO1",
+    "DUT.AO1_2",
+    "M.+"
+   ],
+   "B": [
+    "DUT.AO2",
+    "DUT.AO2_2",
+    "M.-"
+   ],
+   "GND": [
+    "VM.-",
+    "VC.-",
+    "DUT.GND",
+    "DUT.PGND1",
+    "DUT.PGND2",
+    "G.GND",
+    "DUT.AIN2"
+   ]
+  }
+ },
+ "expect": {
+  "output:DUT.A.state": {
+   "at": "1ms",
+   "equals": "forward"
+  },
+  "output:M.current": {
+   "at": "0.5ms",
+   "min": 1.1,
+   "max": 1.34
+  },
+  "output:M.rpm": {
+   "at": "140ms",
+   "min": 620,
+   "max": 650
+  },
+  "output:DUT.B.state": {
+   "at": "1ms",
+   "equals": "brake"
+  }
+ }
+}

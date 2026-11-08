@@ -44,8 +44,13 @@ Evidence, its eight fixtures:
   1.35 ms retry;
 - 1.6 uA asleep and 1.7 mA awake.
 
-Not yet: the thermal shutdown, switching edges, the TB6612FNG and L293D
-parts on the primitive.
+`emblink/tb6612fng` is Toshiba's TB6612FNG on the same primitive, its logic
+referred to its own VCC supply. Its fixtures cover the gearmotor at 6 V
+(640 rpm), PWM low braking, standby under 1 uA, and inputs and lockout
+following VCC.
+
+Not yet: the thermal shutdown, switching edges, the L293D on the
+primitive.
 
 ## The library's categories (2026-11-03)
 

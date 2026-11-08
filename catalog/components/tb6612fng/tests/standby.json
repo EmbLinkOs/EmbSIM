@@ -1,0 +1,71 @@
+{
+ "schema_version": 1,
+ "kind": "component_test",
+ "name": "standby",
+ "description": "STBY low (its 200 kohm pulldown): both channels off whatever their inputs, under 1 uA from VCC.",
+ "policy": "electrical",
+ "until": "1ms",
+ "circuit": {
+  "components": [
+   {
+    "id": "VM",
+    "component": "emblink/vsource",
+    "params": {
+     "kind": "dc",
+     "dc": 6.0
+    }
+   },
+   {
+    "id": "VC",
+    "component": "emblink/vsource",
+    "params": {
+     "kind": "dc",
+     "dc": 3.3
+    }
+   },
+   {
+    "id": "DUT",
+    "component": "emblink/tb6612fng"
+   },
+   {
+    "id": "G",
+    "component": "emblink/gnd"
+   }
+  ],
+  "nets": {
+   "VM": [
+    "VM.+",
+    "DUT.VM1"
+   ],
+   "VCC": [
+    "VC.+",
+    "DUT.VCC",
+    "DUT.AIN1",
+    "DUT.PWMA"
+   ],
+   "GND": [
+    "VM.-",
+    "VC.-",
+    "DUT.GND",
+    "DUT.PGND1",
+    "DUT.PGND2",
+    "G.GND"
+   ]
+  }
+ },
+ "expect": {
+  "output:DUT.A.state": {
+   "at": "0.5ms",
+   "equals": "coast"
+  },
+  "output:DUT.A.asleep": {
+   "at": "0.5ms",
+   "equals": true
+  },
+  "output:DUT.A.logic_current": {
+   "at": "0.5ms",
+   "min": 9e-07,
+   "max": 1.1e-06
+  }
+ }
+}

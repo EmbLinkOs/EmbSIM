@@ -47,7 +47,7 @@ const char *const *esk_adev_pin_names(const esk_adev_ops *ops, int *n)
                              *const xfmr[] = { "P1", "P2", "S1", "S2" },
                              *const xfmr_ct[] = { "P1", "P2", "S1", "CT", "S2" },
                              *const triac[] = { "MT2", "MT1", "G" }, *const diac[] = { "A1", "A2" },
-                             *const hbr[] = { "IN1", "IN2", "PWM", "EN", "OUT1", "OUT2", "VM", "GND", "SEN", "FAULT" };
+                             *const hbr[] = { "IN1", "IN2", "PWM", "EN", "OUT1", "OUT2", "VM", "GND", "SEN", "FAULT", "VCC" };
     static const struct { const char *name; const char *const *pins; int n; } table[] = {
         { "environment_resistor", env, 2 }, { "ptc_fuse", two, 2 }, { "photodiode", dio, 2 }, { "optocoupler", opto, 4 },
         { "relay_contacts", relay, 5 }, { "spdt_contact", spdt, 3 },
@@ -57,7 +57,7 @@ const char *const *esk_adev_pin_names(const esk_adev_ops *ops, int *n)
         { "nmos", mos, 3 }, { "pmos", mos, 3 }, { "opamp", amp, 5 }, { "regulator", reg, 3 }, { "pull", one, 1 },
         { "usb_meter", reg, 3 }, { "instrument_input", src, 2 }, { "power_profiler", ppk, 3 }, { "oscilloscope", scope, 5 },
         { "multimeter", dmm, 4 }, { "transformer", xfmr, 4 }, { "transformer_ct", xfmr_ct, 5 },
-        { "triac", triac, 3 }, { "diac", diac, 2 }, { "dc_motor", src, 2 }, { "h_bridge", hbr, 10 },
+        { "triac", triac, 3 }, { "diac", diac, 2 }, { "dc_motor", src, 2 }, { "h_bridge", hbr, 11 },
     };
     size_t i;
     for (i = 0; ops && i < sizeof table / sizeof table[0]; i++)

@@ -1,0 +1,539 @@
+{
+ "schema_version": 1,
+ "kind": "component",
+ "id": "emblink/tb6612fng",
+ "version": "1.0.0",
+ "name": "TB6612FNG dual DC motor driver",
+ "category": "analog_ics",
+ "subcategory": "drivers",
+ "description": "Toshiba TB6612FNG dual H-bridge driver (SSOP24) for two brushed DC motors, VM up to 15 V and logic from VCC 2.7 to 5.5 V. Each channel's IN1/IN2/PWM select CW, CCW, short brake or stop (PWM low brakes), STBY low puts both in standby; the LDMOS outputs drive from VM through 0.5 ohm (upper + lower), with 1 V regenerative diodes, 50/230 ns dead time and inputs at 0.3/0.7 VCC with 200 kohm pulldowns; VCC below 1.9 V turns it off until 2.2 V.",
+ "keywords": [
+  "TB6612FNG",
+  "TB6612",
+  "motor driver",
+  "h-bridge",
+  "dual h-bridge",
+  "dc motor",
+  "Toshiba",
+  "robot"
+ ],
+ "part": {
+  "manufacturer": "Toshiba",
+  "mpn": "TB6612FNG",
+  "package": "SSOP24",
+  "datasheet": "https://toshiba.semicon-storage.com/info/docget.jsp?did=10660&prodName=TB6612FNG"
+ },
+ "pins": [
+  {
+   "name": "AO1",
+   "number": 1,
+   "model": {
+    "kind": "passive"
+   },
+   "doc": "Channel A output 1",
+   "required": false
+  },
+  {
+   "name": "AO1_2",
+   "number": 2,
+   "model": {
+    "kind": "passive"
+   },
+   "doc": "Channel A output 1 (second pin, joined to pin 1)",
+   "required": false
+  },
+  {
+   "name": "PGND1",
+   "number": 3,
+   "model": {
+    "kind": "passive"
+   },
+   "doc": "Power ground 1",
+   "required": false
+  },
+  {
+   "name": "PGND1_2",
+   "number": 4,
+   "model": {
+    "kind": "passive"
+   },
+   "doc": "Power ground 1 (second pin, joined to pin 3)",
+   "required": false
+  },
+  {
+   "name": "AO2",
+   "number": 5,
+   "model": {
+    "kind": "passive"
+   },
+   "doc": "Channel A output 2",
+   "required": false
+  },
+  {
+   "name": "AO2_2",
+   "number": 6,
+   "model": {
+    "kind": "passive"
+   },
+   "doc": "Channel A output 2 (second pin, joined to pin 5)",
+   "required": false
+  },
+  {
+   "name": "BO2",
+   "number": 7,
+   "model": {
+    "kind": "passive"
+   },
+   "doc": "Channel B output 2",
+   "required": false
+  },
+  {
+   "name": "BO2_2",
+   "number": 8,
+   "model": {
+    "kind": "passive"
+   },
+   "doc": "Channel B output 2 (second pin, joined to pin 7)",
+   "required": false
+  },
+  {
+   "name": "PGND2",
+   "number": 9,
+   "model": {
+    "kind": "passive"
+   },
+   "doc": "Power ground 2",
+   "required": false
+  },
+  {
+   "name": "PGND2_2",
+   "number": 10,
+   "model": {
+    "kind": "passive"
+   },
+   "doc": "Power ground 2 (second pin, joined to pin 9)",
+   "required": false
+  },
+  {
+   "name": "BO1",
+   "number": 11,
+   "model": {
+    "kind": "passive"
+   },
+   "doc": "Channel B output 1",
+   "required": false
+  },
+  {
+   "name": "BO1_2",
+   "number": 12,
+   "model": {
+    "kind": "passive"
+   },
+   "doc": "Channel B output 1 (second pin, joined to pin 11)",
+   "required": false
+  },
+  {
+   "name": "VM2",
+   "number": 13,
+   "model": {
+    "kind": "passive"
+   },
+   "doc": "Motor supply (joined to VM1 and VM3)",
+   "required": false
+  },
+  {
+   "name": "VM3",
+   "number": 14,
+   "model": {
+    "kind": "passive"
+   },
+   "doc": "Motor supply",
+   "required": false
+  },
+  {
+   "name": "PWMB",
+   "number": 15,
+   "model": {
+    "kind": "passive"
+   },
+   "doc": "Channel B PWM input; 200 kohm pulldown",
+   "required": false
+  },
+  {
+   "name": "BIN2",
+   "number": 16,
+   "model": {
+    "kind": "passive"
+   },
+   "doc": "Channel B input 2; 200 kohm pulldown",
+   "required": false
+  },
+  {
+   "name": "BIN1",
+   "number": 17,
+   "model": {
+    "kind": "passive"
+   },
+   "doc": "Channel B input 1; 200 kohm pulldown",
+   "required": false
+  },
+  {
+   "name": "GND",
+   "number": 18,
+   "model": {
+    "kind": "passive"
+   },
+   "doc": "Small signal ground"
+  },
+  {
+   "name": "STBY",
+   "number": 19,
+   "model": {
+    "kind": "passive"
+   },
+   "doc": "Low: standby (outputs off); 200 kohm pulldown",
+   "required": false
+  },
+  {
+   "name": "VCC",
+   "number": 20,
+   "model": {
+    "kind": "passive"
+   },
+   "doc": "Small signal supply, 2.7 to 5.5 V"
+  },
+  {
+   "name": "AIN1",
+   "number": 21,
+   "model": {
+    "kind": "passive"
+   },
+   "doc": "Channel A input 1; 200 kohm pulldown",
+   "required": false
+  },
+  {
+   "name": "AIN2",
+   "number": 22,
+   "model": {
+    "kind": "passive"
+   },
+   "doc": "Channel A input 2; 200 kohm pulldown",
+   "required": false
+  },
+  {
+   "name": "PWMA",
+   "number": 23,
+   "model": {
+    "kind": "passive"
+   },
+   "doc": "Channel A PWM input; 200 kohm pulldown",
+   "required": false
+  },
+  {
+   "name": "VM1",
+   "number": 24,
+   "model": {
+    "kind": "passive"
+   },
+   "doc": "Motor supply, up to 15 V"
+  }
+ ],
+ "params": {},
+ "model": {
+  "composite": {
+   "components": [
+    {
+     "id": "A",
+     "component": "emblink/h_bridge",
+     "params": {
+      "mode": "in_in_pwm",
+      "sleep": true,
+      "vcc_ref": true,
+      "vil_frac": 0.3,
+      "vih_frac": 0.7,
+      "vhys": 0,
+      "en_vhys": 0,
+      "ron_hs": 0.25,
+      "ron_ls": 0.25,
+      "ron_hs_low": 0.25,
+      "ron_ls_low": 0.25,
+      "bd_vf": 1.0,
+      "bd_if": 1.0,
+      "rpd": 200000.0,
+      "uvlo": 1.9,
+      "uvlo_hys": 0.3,
+      "vtrip": 0,
+      "iocp": 0,
+      "t_deg": 0,
+      "t_prop": 0,
+      "t_dead": 5e-08,
+      "t_dead_lh": 2.3e-07,
+      "t_wake": 0,
+      "rpd_en": 200000.0,
+      "iq": 0.0011,
+      "iq_sleep": 1e-06
+     }
+    },
+    {
+     "id": "B",
+     "component": "emblink/h_bridge",
+     "params": {
+      "mode": "in_in_pwm",
+      "sleep": true,
+      "vcc_ref": true,
+      "vil_frac": 0.3,
+      "vih_frac": 0.7,
+      "vhys": 0,
+      "en_vhys": 0,
+      "ron_hs": 0.25,
+      "ron_ls": 0.25,
+      "ron_hs_low": 0.25,
+      "ron_ls_low": 0.25,
+      "bd_vf": 1.0,
+      "bd_if": 1.0,
+      "rpd": 200000.0,
+      "uvlo": 1.9,
+      "uvlo_hys": 0.3,
+      "vtrip": 0,
+      "iocp": 0,
+      "t_deg": 0,
+      "t_prop": 0,
+      "t_dead": 5e-08,
+      "t_dead_lh": 2.3e-07,
+      "t_wake": 0,
+      "rpd_en": 0,
+      "iq": 0,
+      "iq_sleep": 0
+     }
+    }
+   ],
+   "nets": {
+    "STBY": [
+     "A.EN",
+     "B.EN"
+    ],
+    "VM": [
+     "A.VM",
+     "B.VM"
+    ],
+    "GND": [
+     "A.GND",
+     "B.GND"
+    ],
+    "VCC": [
+     "A.VCC",
+     "B.VCC"
+    ]
+   },
+   "ports": {
+    "AO1": "A.OUT1",
+    "AO1_2": "A.OUT1",
+    "PGND1": "A.SEN",
+    "PGND1_2": "A.SEN",
+    "AO2": "A.OUT2",
+    "AO2_2": "A.OUT2",
+    "BO2": "B.OUT2",
+    "BO2_2": "B.OUT2",
+    "PGND2": "B.SEN",
+    "PGND2_2": "B.SEN",
+    "BO1": "B.OUT1",
+    "BO1_2": "B.OUT1",
+    "VM1": "A.VM",
+    "VM2": "A.VM",
+    "VM3": "A.VM",
+    "PWMB": "B.PWM",
+    "BIN2": "B.IN2",
+    "BIN1": "B.IN1",
+    "GND": "A.GND",
+    "STBY": "A.EN",
+    "VCC": "A.VCC",
+    "AIN1": "A.IN1",
+    "AIN2": "A.IN2",
+    "PWMA": "A.PWM"
+   }
+  }
+ },
+ "symbol": {
+  "svg": "symbol.svg",
+  "width": 100,
+  "height": 120,
+  "pins": {
+   "STBY": {
+    "x": 0,
+    "y": 20,
+    "side": "left"
+   },
+   "AIN1": {
+    "x": 0,
+    "y": 30,
+    "side": "left"
+   },
+   "AIN2": {
+    "x": 0,
+    "y": 40,
+    "side": "left"
+   },
+   "PWMA": {
+    "x": 0,
+    "y": 50,
+    "side": "left"
+   },
+   "BIN1": {
+    "x": 0,
+    "y": 70,
+    "side": "left"
+   },
+   "BIN2": {
+    "x": 0,
+    "y": 80,
+    "side": "left"
+   },
+   "PWMB": {
+    "x": 0,
+    "y": 90,
+    "side": "left"
+   },
+   "AO1": {
+    "x": 100,
+    "y": 20,
+    "side": "right"
+   },
+   "AO1_2": {
+    "x": 100,
+    "y": 30,
+    "side": "right"
+   },
+   "AO2": {
+    "x": 100,
+    "y": 40,
+    "side": "right"
+   },
+   "AO2_2": {
+    "x": 100,
+    "y": 50,
+    "side": "right"
+   },
+   "BO1": {
+    "x": 100,
+    "y": 70,
+    "side": "right"
+   },
+   "BO1_2": {
+    "x": 100,
+    "y": 80,
+    "side": "right"
+   },
+   "BO2": {
+    "x": 100,
+    "y": 90,
+    "side": "right"
+   },
+   "BO2_2": {
+    "x": 100,
+    "y": 100,
+    "side": "right"
+   },
+   "VCC": {
+    "x": 20,
+    "y": 0,
+    "side": "top"
+   },
+   "VM1": {
+    "x": 40,
+    "y": 0,
+    "side": "top"
+   },
+   "VM2": {
+    "x": 60,
+    "y": 0,
+    "side": "top"
+   },
+   "VM3": {
+    "x": 80,
+    "y": 0,
+    "side": "top"
+   },
+   "GND": {
+    "x": 20,
+    "y": 120,
+    "side": "bottom"
+   },
+   "PGND1": {
+    "x": 40,
+    "y": 120,
+    "side": "bottom"
+   },
+   "PGND1_2": {
+    "x": 50,
+    "y": 120,
+    "side": "bottom"
+   },
+   "PGND2": {
+    "x": 70,
+    "y": 120,
+    "side": "bottom"
+   },
+   "PGND2_2": {
+    "x": 80,
+    "y": 120,
+    "side": "bottom"
+   }
+  }
+ },
+ "fidelity": {
+  "functional": null,
+  "timed": {
+   "claims": "As electrical.",
+   "omissions": []
+  },
+  "electrical": {
+   "claims": "Two bridges solved with the circuit (the primitive h_bridge, by way of emblink/h_bridge): the datasheet's H-SW control table (IN1 IN2 PWM STBY), the output saturation of 0.5 V at 1 A (0.5 ohm upper + lower), the 1 V regenerative diodes, input thresholds at 0.3 and 0.7 VCC with 200 kohm pulldowns, standby at 1 uA, 1.1 mA from VCC when on, the 50 ns (high to low) and 230 ns (low to high) dead times, and the VCC lockout at 1.9 V released at 2.2 V.",
+   "omissions": [
+    "the split of the 0.5 ohm output saturation between the upper and lower FETs (0.25 ohm each assumed) and its change with VM",
+    "the propagation delay and input hysteresis, which the datasheet does not give (none modelled)",
+    "the output rise and fall times (24 and 41 ns; instant switching)",
+    "the die's temperature and thermal shutdown (175 C)",
+    "the supply current's rise with VCC (1.1 mA at 3 V, 1.5 mA at 5.5 V: 1.1 mA modelled)",
+    "an input's crossing between two of the circuit's steps is taken at the second"
+   ],
+   "validation": [
+    "tests/*.json"
+   ]
+  }
+ },
+ "provenance": {
+  "author": "EmbSIM",
+  "license": "Apache-2.0",
+  "sources": [
+   {
+    "title": "Toshiba TB6612FNG Driver IC for Dual DC motor datasheet",
+    "url": "https://toshiba.semicon-storage.com/info/docget.jsp?did=10660&prodName=TB6612FNG"
+   }
+  ]
+ },
+ "tests": [
+  "tests/*.json"
+ ],
+  "i18n": {
+    "fr": {
+      "source": "d5d7def10a53",
+      "description": "Pilote double pont en H TB6612FNG de Toshiba (SSOP24) pour deux moteurs à courant continu à balais, VM jusqu'à 15 V et logique alimentée par VCC de 2,7 à 5,5 V. Les entrées IN1/IN2/PWM de chaque canal choisissent sens horaire, sens antihoraire, frein court ou arrêt (PWM bas freine) ; STBY bas met les deux canaux en veille ; les sorties LDMOS sont alimentées depuis VM à travers 0,5 Ω (haut + bas), avec des diodes de récupération de 1 V, un temps mort de 50/230 ns et des entrées à 0,3/0,7 VCC avec des résistances de rappel de 200 kΩ ; VCC sous 1,9 V l'éteint jusqu'à 2,2 V.",
+      "fidelity": {
+        "timed": {
+          "claims": "Comme en électrique."
+        },
+        "electrical": {
+          "claims": "Deux ponts résolus avec le circuit (la primitive h_bridge, par emblink/h_bridge) : la table de commande H-SW de la fiche technique (IN1 IN2 PWM STBY), la tension de saturation de sortie de 0,5 V à 1 A (0,5 Ω haut + bas), les diodes de récupération de 1 V, les seuils d'entrée à 0,3 et 0,7 VCC avec des résistances de rappel de 200 kΩ, la veille à 1 µA, 1,1 mA tiré de VCC en marche, les temps morts de 50 ns (haut vers bas) et 230 ns (bas vers haut), et le verrouillage de VCC à 1,9 V relâché à 2,2 V.",
+          "omissions": [
+            "la répartition des 0,5 Ω de saturation entre MOSFET haut et bas (0,25 Ω chacun supposé) et sa variation avec VM",
+            "le délai de propagation et l'hystérésis des entrées, que la fiche technique ne donne pas (non modélisés)",
+            "les temps de montée et de descente des sorties (24 et 41 ns ; commutation instantanée)",
+            "la température de la puce et la coupure thermique (175 °C)",
+            "la hausse du courant d'alimentation avec VCC (1,1 mA à 3 V, 1,5 mA à 5,5 V : 1,1 mA modélisé)",
+            "le passage d'un seuil par une entrée entre deux pas du circuit est pris au second"
+          ]
+        }
+      }
+    }
+  }
+}
