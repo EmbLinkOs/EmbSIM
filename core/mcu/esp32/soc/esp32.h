@@ -19,6 +19,7 @@
  *   ledc.c    the LED PWM controller
  *   i2c.c     I2C0 and I2C1
  *   rmt.c     the remote control peripheral's eight channels
+ *   adc.c     the SAR ADCs as SENS's RTC controller drives them
  *   misc.c    the random number generator, the AHB view of the
  *             peripherals */
 #ifndef ESK_MCU_ESP32_SOC_H
@@ -58,6 +59,8 @@ extern const struct esk_dev_ops esk_esp32_i2c_ops;
 void *esk_esp32_i2c_create(struct esk_mach *s, struct esk_rf_periph *p);
 extern const struct esk_dev_ops esk_esp32_rmt_ops;
 void *esk_esp32_rmt_create(struct esk_mach *s, struct esk_rf_periph *p);
+extern const struct esk_dev_ops esk_esp32_adc_ops;
+void *esk_esp32_adc_create(struct esk_mach *s, struct esk_rf_periph *p);
 extern const struct esk_dev_ops esk_esp32_sha_ops;
 void *esk_esp32_sha_create(struct esk_mach *s, struct esk_rf_periph *p);
 /* the RNG and the AHB view of the peripherals (misc.c): 0, or -1 */
