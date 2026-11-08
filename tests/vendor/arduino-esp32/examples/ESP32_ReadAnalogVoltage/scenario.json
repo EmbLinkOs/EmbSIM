@@ -1,0 +1,18 @@
+{
+ "schema_version": 1,
+ "kind": "scenario",
+ "name": "ESP32_ReadAnalogVoltage",
+ "until": "1200ms",
+ "description": "ReadAnalogVoltage on the ESP32: the sketch converts as for the Uno (value x 5.0 / 1023), so the ESP32's 12-bit 1118 for 1.1 V prints 5.46, as it does on a real ESP32.",
+ "inputs": [],
+ "assertions": [
+  {
+   "id": "reads",
+   "at": "1s",
+   "probe": "console",
+   "expect": {
+    "contains": "\r\n5.46\r\n5.46\r\n5.46\r\n"
+   }
+  }
+ ]
+}

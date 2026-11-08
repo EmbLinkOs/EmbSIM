@@ -40,7 +40,15 @@ for the user's own use unless that licence allows distributing it.
                                  (repeatable) a memory inside a peripheral
                                  the SVD leaves out, as WORDS 32-bit
                                  registers NAME0, NAME1, ... (the ESP32-C3's
-                                 RMT RAM); recorded likewise"""
+                                 RMT RAM); recorded likewise
+    --resolve-overlaps           fields that share bits, which some SVDs
+                                 list as alternative views of one register
+                                 (Espressif's: a whole-register STATUS
+                                 beside its parts): a field containing
+                                 another is taken out, and of fields over
+                                 the same bits the first is kept; recorded
+                                 likewise (after --reserve, so a wrong
+                                 field can be taken out first)"""
 import argparse
 import json
 import re
@@ -308,6 +316,36 @@ def apply_reserved(doc: dict, specs: list[str]) -> None:
         doc["source"] += "; fields reserved by the reference manual taken out: " + ", ".join(done)
 
 
+def resolve_overlaps(doc: dict) -> None:
+    """In each register, fields that contain another taken out, and of
+    fields over the same bits all but the first."""
+    done = []
+    for p in doc["peripherals"]:
+        for r in p.get("registers", []):
+            fields = r.get("fields", [])
+            masks = [((1 << f[2]) - 1) << f[1] for f in fields]
+            out = set()
+            for i, mi in enumerate(masks):
+                for j, mj in enumerate(masks):
+                    if i == j or j in out:
+                        continue
+                    if mi == mj and j < i:
+                        out.add(i)  # the same bits: the first kept
+                    elif mi != mj and mi & mj == mj:
+                        out.add(i)  # i contains j
+            kept = [f for k, f in enumerate(fields) if k not in out]
+            masks = [((1 << f[2]) - 1) << f[1] for f in kept]
+            if any(masks[a] & masks[b] for a in range(len(masks)) for b in range(a + 1, len(masks))):
+                raise SystemExit(f"--resolve-overlaps: {p['name']}.{r['name']}: fields still overlap; "
+                                 "take the wrong one out with --reserve")
+            if not out:
+                continue
+            r["fields"] = kept
+            done.append(f"{p['name']}.{r['name']} ({', '.join(fields[k][0] for k in sorted(out))})")
+    if done:
+        doc["source"] += "; overlapping fields taken out: " + ", ".join(done)
+
+
 def apply_merges(doc: dict, specs: list[str]) -> None:
     """The one-bit fields NAME0..NAMEn, contiguous, joined into NAME."""
     done = []
@@ -412,6 +450,8 @@ def main(argv: Optional[list[str]] = None) -> int:
                     help="one-bit fields NAME0..NAMEn joined into NAME")
     ap.add_argument("--reserve", action="append", default=[], metavar="PERIPH.REG.NAME",
                     help="a field whose bits the reference manual reserves, taken out")
+    ap.add_argument("--resolve-overlaps", action="store_true",
+                    help="fields containing another, or repeating its bits, taken out")
     args = ap.parse_args(argv)
     doc = convert(args.svd, args.id or (args.svd.stem.lower() + "/registers"))
     apply_drops(doc, args.drop)
@@ -421,6 +461,8 @@ def main(argv: Optional[list[str]] = None) -> int:
     apply_registers(doc, args.register)
     apply_fields(doc, args.field)
     apply_reserved(doc, args.reserve)
+    if args.resolve_overlaps:
+        resolve_overlaps(doc)
     apply_resets(doc, args.reset)
     apply_interrupts(doc, args.interrupts)
     args.output.write_text(json.dumps(doc, indent=1) + "\n", encoding="utf-8")

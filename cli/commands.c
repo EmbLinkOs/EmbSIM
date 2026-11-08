@@ -13,6 +13,7 @@
 #include "embsim/embsim.h"
 #include "host/host.h"
 #include "mcu/analysis.h"
+#include "mcu/esp32/image.h"
 #include "mcu/mcu.h"
 #include "protocol/protocol.h"
 #include "session/session_priv.h"
@@ -79,6 +80,7 @@ static void usage_to(FILE *out)
           "  board list|info ID [--pins]\n"
           "  mcu pins ID [PIN] [--json]    the alternate functions and ADC channels on each pin\n"
           "  mcu signal ID SIGNAL [--json] the pins and AF numbers that carry a signal (TIM2_CH3)\n"
+          "  image-info esp32 FILE        validate a standalone original-ESP32 image and report segments\n"
           "  models                      list the model primitives\n"
           "  version [--json]\n"
           "  --help, --version\n"
@@ -1955,6 +1957,35 @@ static int cmd_models(const char *argv0)
     return 0;
 }
 
+static int cmd_esp32_image(int argc, char **argv)
+{
+    esk_alloc a;
+    char *data = NULL, why[256]; size_t len = 0; unsigned i;
+    esk_esp32_image image;
+    es_status st;
+    if (argc != 2 || strcmp(argv[0], "esp32")) {
+        fputs("usage: embsim image-info esp32 FILE\n", stderr); return 2;
+    }
+    esk_alloc_init(&a, NULL);
+    if (esk_host_read_file(&a, argv[1], &data, &len) != ES_OK) {
+        fputs("embsim: cannot read firmware image\n", stderr); return 2;
+    }
+    st = esk_esp32_image_inspect((const unsigned char *)data, len, &image, why, sizeof why);
+    esk_free(&a, data, len + 1);
+    if (st != ES_OK) { fprintf(stderr, "embsim: %s\n", why); return 2; }
+    printf("Original ESP32 image: entry 0x%08lx, %u segments, XOR verified, SHA-256 %s\n",
+           (unsigned long)image.entry, image.count, image.has_digest ? "verified" : "absent");
+    printf("SPI flash mode %u, size code %u, frequency code %u; revision legacy %u, min %u, max %u (raw)\n",
+           image.flash_mode, image.flash_size_code, image.flash_frequency_code,
+           image.min_revision_legacy, image.min_revision, image.max_revision);
+    for (i = 0; i < image.count; i++)
+        printf("  segment %u: address 0x%08lx, %lu bytes, file offset %lu\n", i,
+               (unsigned long)image.segment[i].address, (unsigned long)image.segment[i].length,
+               (unsigned long)image.segment[i].offset);
+    puts("Integrity only: does not establish memory-map validity, authenticity, board compatibility or executable target support.");
+    return 0;
+}
+
 int embsim_cli_main(int argc, char **argv);
 int embsim_cli_main(int argc, char **argv)
 {
@@ -1981,6 +2012,7 @@ int embsim_cli_main(int argc, char **argv)
     if (!strcmp(cmd, "toolchains")) return cmd_toolchains(argv[0]);
     if (!strcmp(cmd, "catalog")) return cmd_catalog(argc - 2, argv + 2, argv[0]);
     if (!strcmp(cmd, "board")) return cmd_board(argc - 2, argv + 2, argv[0]);
+    if (!strcmp(cmd, "image-info")) return cmd_esp32_image(argc - 2, argv + 2);
     if (!strcmp(cmd, "models")) return cmd_models(argv[0]);
     if (!strcmp(cmd, "mcu")) return cmd_mcu(argc - 2, argv + 2, argv[0]);
     if (!strcmp(cmd, "version") || !strcmp(cmd, "--version")) {

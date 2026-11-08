@@ -12,6 +12,7 @@
 #include "mcu/build.h"
 #include "mcu/mips/mips.h"
 #include "mcu/pic24/pic24.h"
+#include "mcu/xtensa/lx6.h"
 #include "mcu/rf.h"
 #include "util/num.h"
 #include "util/str.h"
@@ -202,6 +203,9 @@ es_status esk_mach_build(struct esk_mach *m, const esk_json *mcu, const esk_json
         st = esk_riscv_create(m, esk_json_get_str(core, "model", ""), reset_pc, &cpu);
         if (st == ES_OK && esk_json_get(core, "pmp_entries"))
             esk_riscv_pmp_entries(cpu, (int)esk_json_get_int(core, "pmp_entries", 16));
+    } else if (esk_str_eq(esk_json_get_str(core, "backend", ""), "xtensa")) {
+        st = esk_lx6_create(m, esk_json_get_str(core, "model", ""),
+                            (int)esk_json_get_int(core, "cores", 1), &cpu);
     } else if (esk_str_eq(esk_json_get_str(core, "backend", ""), "mips")) {
         st = esk_mips_create(m, esk_json_get_str(core, "model", ""), &cpu);
     } else if (esk_str_eq(esk_json_get_str(core, "backend", ""), "pic24")) {

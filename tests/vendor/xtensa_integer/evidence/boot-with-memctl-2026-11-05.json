@@ -1,0 +1,92 @@
+{
+  "boot_verified": false,
+  "outcome": "blocked",
+  "core": "PRO only",
+  "rom_sha256": "9115bbcd03da9f54d3baca5ad94d588a43da54ed332347137ba3dc9010df258b",
+  "flash_sha256": "52fcca3c31ed835d45e22826d42dd7a7db0c867171fa330f9c56b0a81df7bee7",
+  "reset_vector": "0x40000400",
+  "memctl_profile": "bit 0 plus deterministic 256-byte loop-buffer fixture; not physical fetch/timing qualification",
+  "region_profile": "original ESP32 eight ITLB/DTLB identity regions, reset attribute 2, one ring, no Xtensa cache",
+  "prid_fixture": "0x0000cdcd",
+  "prid_reference": "ESP-IDF v4.4.7 xtensa_context.h documents PRO=0xcdcd, APP=0xabab; not a hardware readout",
+  "rom_tail_policy": "zero-fill absent DROM tail to match QEMU region setup, not silicon contents",
+  "flash_profile": "immutable SPI1 fixture, not a physical flash identity",
+  "efuse_fixture_sha256": "2d8192ea7bdf3510bc117b4ea4b833a94b2ff2ceff252ce1610c297ed633d5bb",
+  "efuse_completion_fixture": "one external completion opportunity every 64 instruction attempts; not physical timing",
+  "status": -1,
+  "event": 0,
+  "pc": "0x400081df",
+  "opcode": "0x828",
+  "address": "0x3ff48034",
+  "fault_kind": 5,
+  "attempts": 6693,
+  "region_readback": [
+    [
+      15,
+      1,
+      1,
+      2,
+      2,
+      2,
+      2,
+      2
+    ],
+    [
+      15,
+      1,
+      1,
+      2,
+      2,
+      2,
+      2,
+      2
+    ]
+  ],
+  "region_access_attributes": [
+    [
+      15,
+      1,
+      1,
+      2,
+      2,
+      2,
+      2,
+      2
+    ],
+    [
+      15,
+      1,
+      1,
+      2,
+      2,
+      2,
+      2,
+      2
+    ]
+  ],
+  "efuse_completions": 3,
+  "retired_before_stop": 6692,
+  "trace_tail": [
+    "0x400076ee",
+    "0x400076f1",
+    "0x400076f3",
+    "0x400076f5",
+    "0x400076f8",
+    "0x400076fb",
+    "0x400076fe",
+    "0x400081d4",
+    "0x400081d7",
+    "0x400081da",
+    "0x400081dc",
+    "0x400081df"
+  ],
+  "next_blocker": "RTC_CNTL_RESET_STATE_REG read at 0x3ff48034, PC 0x400081df; native SDK boot remains unverified",
+  "fixture_note": "Explicit synthetic fuse image, PRID, region/functional MEMCTL profiles and artificial completion schedule; no physical timing or owner fuse image claim",
+  "sources_sha256": {
+    "core/mcu/xtensa/windows.c": "0d642d048a310250f5954f9a4ae41b6a1e2cb0888ed1afdcf20a9165dc39a0e9",
+    "core/mcu/xtensa/windows.h": "159fdbcd13da216e15fe64bab2cd70c24950b6e173d06d5643a323782aecd067",
+    "core/mcu/xtensa/execute.c": "c69879eb07ab393416c396a6789c5f638d77810016a2932c58e51b71e2ba7fa7",
+    "core/mcu/xtensa/interrupts.c": "e5b4fbefa1b249847d5ec298893fd431f5f11673d150b0b7c92e162bc3d0055f",
+    "tests/vendor/xtensa_integer/probe_rom_boot.py": "e5a0a431d3fc90995ee9c260d35b6930b2bd77174df502eb8d2937cb4e049b1d"
+  }
+}

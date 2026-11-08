@@ -2,7 +2,8 @@
 # SPDX-License-Identifier: Apache-2.0
 # Copyright 2026 Junior Deogracias
 """Arduino sketches built with Espressif's Arduino-ESP32 core, unmodified, on
-EmbSIM's ESP32-C3-DevKitM-1 (the RTOS boards plan, part 2, step 7; 01 §8.2).
+EmbSIM's ESP32-C3-DevKitM-1 (the RTOS boards plan, part 2, step 7; 01 §8.2)
+and, for the examples named ESP32_*, its ESP32-DevKitC V4.
 
 The core is not vendored. --cli names arduino-cli and --config its
 configuration, in whose data directory the esp32 platform (3.2.0, on ESP-IDF
@@ -14,7 +15,8 @@ built-in examples; the core's own come from its libraries.
 Each example under examples/<name>/ is one of those sketches (EXAMPLES below
 names where), compiled as the IDE compiles it for "ESP32C3 Dev Module"
 (`arduino-cli compile --fqbn esp32:esp32:esp32c3`, the board's defaults:
-UART0 as Serial, 4 MB flash in QIO at 80 MHz). The build's merged image
+UART0 as Serial, 4 MB flash in QIO at 80 MHz), the ESP32_* ones for "ESP32
+Dev Module" (esp32:esp32:esp32, its defaults). The build's merged image
 (bootloader, partition table, boot_app0 and the sketch at their offsets, the
 rest erased) runs examples/<name>/project.json, or this directory's, under
 the example's scenario.json, whose assertions must all pass.
@@ -36,10 +38,19 @@ sys.path.insert(0, str(HERE.parent))
 from vendor_run import run_scenario, sh  # noqa: E402
 
 FQBN = "esp32:esp32:esp32c3"
+# the board an example is compiled for, when not "ESP32C3 Dev Module" (its
+# project.json names the EmbSIM board): "ESP32 Dev Module" for the
+# ESP32-DevKitC V4's ESP32_ examples
+FQBNS = {"ESP32_": "esp32:esp32:esp32"}
 PLATFORM = "3.2.0"
 # examples/<name>/ and its sketch: the IDE's built-in examples ("builtin",
 # arduino-examples' examples/) or the core's ("core", its libraries/)
 EXAMPLES = {
+    "ESP32_AnalogReadSerial": ("builtin", "01.Basics/AnalogReadSerial"),
+    "ESP32_ReadAnalogVoltage": ("builtin", "01.Basics/ReadAnalogVoltage"),
+    "ESP32_DigitalReadSerial": ("builtin", "01.Basics/DigitalReadSerial"),
+    "ESP32_GetChipID": ("core", "ESP32/examples/ChipID/GetChipID"),
+    "ESP32_RepeatTimer": ("core", "ESP32/examples/Timer/RepeatTimer"),
     "Blink": ("builtin", "01.Basics/Blink"),
     "DigitalReadSerial": ("builtin", "01.Basics/DigitalReadSerial"),
     "Fade": ("builtin", "01.Basics/Fade"),
@@ -63,12 +74,16 @@ def platform_dir(cli: str, config: str) -> Path:
     return d if (d / "platform.txt").exists() else None
 
 
-def build(cli: str, config: str, sketch: Path, out: Path) -> Path:
+def fqbn_of(name: str) -> str:
+    return next((f for prefix, f in FQBNS.items() if name.startswith(prefix)), FQBN)
+
+
+def build(cli: str, config: str, sketch: Path, out: Path, fqbn: str = FQBN) -> Path:
     """The sketch compiled as the IDE compiles it: its merged flash image"""
-    work = out / sketch.name
+    work = out / fqbn.rsplit(":", 1)[-1] / sketch.name
     shutil.rmtree(work, ignore_errors=True)
     shutil.copytree(sketch, work / sketch.name)
-    sh([cli, "--config-file", config, "compile", "--fqbn", FQBN, "--output-dir", work / "out", work / sketch.name])
+    sh([cli, "--config-file", config, "compile", "--fqbn", fqbn, "--output-dir", work / "out", work / sketch.name])
     return work / "out" / f"{sketch.name}.ino.merged.bin"
 
 
@@ -99,7 +114,7 @@ def main() -> int:
         for name in names:
             where, path = EXAMPLES[name]
             sketch = (Path(args.examples) / "examples" if where == "builtin" else core / "libraries") / path
-            flash = build(args.cli, args.config, sketch, work / "build")
+            flash = build(args.cli, args.config, sketch, work / "build", fqbn_of(name))
             mine = HERE / "examples" / name
             project = mine / "project.json" if (mine / "project.json").exists() else HERE / "project.json"
             bad += not run_scenario(Path(args.embsim), project, name, flash, mine / "scenario.json", work / "run",

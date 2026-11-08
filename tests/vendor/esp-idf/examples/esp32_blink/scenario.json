@@ -1,0 +1,58 @@
+{
+ "schema_version": 1,
+ "kind": "scenario",
+ "name": "esp32_blink",
+ "until": "3900ms",
+ "description": "blink on the ESP32, the GPIO LED on GPIO2 (sdkconfig.defaults): gpio_set_level through the GPIO matrix every second, the console saying each; the LED off first, then on, off, on.",
+ "inputs": [],
+ "assertions": [
+  {
+   "id": "gpio",
+   "at": "1s",
+   "probe": "console",
+   "expect": {
+    "contains": "Example configured to blink GPIO LED!"
+   }
+  },
+  {
+   "id": "on",
+   "at": "1800ms",
+   "probe": "io2",
+   "expect": {
+    "equals": 1
+   }
+  },
+  {
+   "id": "lit",
+   "at": "1800ms",
+   "probe": "led",
+   "expect": {
+    "min": 0.1
+   }
+  },
+  {
+   "id": "off",
+   "at": "2800ms",
+   "probe": "io2",
+   "expect": {
+    "equals": 0
+   }
+  },
+  {
+   "id": "on-again",
+   "at": "3800ms",
+   "probe": "io2",
+   "expect": {
+    "equals": 1
+   }
+  },
+  {
+   "id": "said",
+   "at": "3800ms",
+   "probe": "console",
+   "expect": {
+    "contains": "Turning the LED ON!"
+   }
+  }
+ ]
+}

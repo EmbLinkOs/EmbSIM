@@ -98,7 +98,9 @@ def build(elf: bytes, base: int, size: int, tables=(), words=(), aliases=()) -> 
         entries = [struct.unpack_from("<3I", img, o - base) for o in range(start, end, 16)]
         for addr, data in sections(elf):
             for dst, dst_end, src in entries:
-                if dst <= addr and addr + len(data) <= dst_end and dst < dst_end:
+                if dst <= addr < dst_end:
+                    # a section may outrun its entry by its alignment padding
+                    # (the ESP32's .data_xtos_pro, 0x420 bytes for 0x418)
                     o = src + (addr - dst) - base
                     if 0 <= o and o + len(data) <= size:
                         img[o:o + len(data)] = data
