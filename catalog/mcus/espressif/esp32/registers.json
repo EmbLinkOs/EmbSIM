@@ -4,7 +4,7 @@
  "id": "espressif/esp32/registers",
  "version": "1.0.0",
  "device": "ESP32",
- "source": "converted from esp32.svd by tools/importers/svd2regs.py; peripherals left out: RNG (the random number generator's one register (RNG_DATA, TRM 26), which the SVD puts at the AHB address 0x60035144; the chip's model answers at 0x3FF75144 and its AHB alias (misc.c))",
+ "source": "converted from esp32.svd by tools/importers/svd2regs.py; peripherals left out: RNG (the random number generator's one register (RNG_DATA, TRM 26), which the SVD puts at the AHB address 0x60035144; the chip's model answers at 0x3FF75144 and its AHB alias (misc.c)); fields corrected from the reference manual: DPORT.WIFI_CLK_EN.WIFI_CLK_EN:0:32; fields reserved by the reference manual taken out: GPIO.CPUSDIO_INT1.PIN_PAD_DRIVER, GPIO.CPUSDIO_INT1.PIN_INT_TYPE, GPIO.CPUSDIO_INT1.PIN_WAKEUP_ENABLE, GPIO.CPUSDIO_INT1.PIN_CONFIG, GPIO.CPUSDIO_INT1.PIN_INT_ENA, SENS.SAR_MEAS_WAIT2.FORCE_XPD_SAR_SW; overlapping fields taken out: DPORT.PRO_DCACHE_DBUG0 (PRO_CACHE_MMU_IA), DPORT.PRO_DCACHE_DBUG3 (PRO_CPU_DISABLED_CACHE_IA), DPORT.APP_DCACHE_DBUG0 (APP_CACHE_MMU_IA), DPORT.APP_DCACHE_DBUG3 (APP_CPU_DISABLED_CACHE_IA), DPORT.PRO_CPU_RECORD_PDEBUGINST (RECORD_PRO_PDEBUGINST), DPORT.PRO_CPU_RECORD_PDEBUGSTATUS (RECORD_PRO_PDEBUGSTATUS, RECORD_PDEBUGSTATUS_INSNTYPE), DPORT.PRO_CPU_RECORD_PDEBUGDATA (RECORD_PRO_PDEBUGDATA, RECORD_PDEBUGDATA_EXCVEC, RECORD_PDEBUGDATA_INSNTYPE_SR, RECORD_PDEBUGDATA_INSNTYPE_RER, RECORD_PDEBUGDATA_INSNTYPE_WER, RECORD_PDEBUGDATA_INSNTYPE_ER, RECORD_PDEBUGDATA_STALL_IPIF, RECORD_PDEBUGDATA_INSNTYPE_RSR, RECORD_PDEBUGDATA_INSNTYPE_WSR, RECORD_PDEBUGDATA_INSNTYPE_XSR, RECORD_PDEBUGDATA_STALL_BPIFETCH, RECORD_PDEBUGDATA_EXCCAUSE, RECORD_PDEBUGDATA_STALL_BANKCONFL), DPORT.PRO_CPU_RECORD_PDEBUGLS0STAT (RECORD_PRO_PDEBUGLS0STAT), DPORT.CACHE_IA_INT_EN (CACHE_IA_INT_EN), UART0.MEM_RX_STATUS (MEM_RX_STATUS), RTC_CNTL.LOW_POWER_ST (LOW_POWER_DIAG0), RTC_CNTL.BROWN_OUT (RTC_MEM_CRC_ADDR, RTC_MEM_CRC_LEN, RTC_MEM_CRC_FINISH), RMT.CH0STATUS (STATUS), RMT.CH1STATUS (STATUS), RMT.CH2STATUS (STATUS), RMT.CH3STATUS (STATUS), RMT.CH4STATUS (STATUS), RMT.CH5STATUS (STATUS), RMT.CH6STATUS (STATUS), RMT.CH7STATUS (STATUS), PCNT.U0_STATUS (CORE_STATUS_U0), PCNT.U1_STATUS (CORE_STATUS_U0), PCNT.U2_STATUS (CORE_STATUS_U0), PCNT.U3_STATUS (CORE_STATUS_U0), PCNT.U4_STATUS (CORE_STATUS_U0), PCNT.U5_STATUS (CORE_STATUS_U0), PCNT.U6_STATUS (CORE_STATUS_U0), PCNT.U7_STATUS (CORE_STATUS_U0)",
  "interrupts": {
   "WIFI_MAC": 0,
   "WIFI_NMI": 1,
@@ -1404,21 +1404,6 @@
        "WIFI_CLK_EN",
        0,
        32
-      ],
-      [
-       "WIFI_CLK_WIFI_EN",
-       0,
-       3
-      ],
-      [
-       "WIFI_CLK_WIFI_BT_COMMON",
-       0,
-       6
-      ],
-      [
-       "WIFI_CLK_BT_EN",
-       11,
-       3
       ]
      ]
     },
@@ -3888,12 +3873,6 @@
        1
       ],
       [
-       "PRO_CACHE_MMU_IA",
-       0,
-       1,
-       "r"
-      ],
-      [
        "PRO_CACHE_IA",
        1,
        6,
@@ -3969,12 +3948,6 @@
        "PRO_MMU_RDATA",
        0,
        9,
-       "r"
-      ],
-      [
-       "PRO_CPU_DISABLED_CACHE_IA",
-       9,
-       6,
        "r"
       ],
       [
@@ -4097,12 +4070,6 @@
        1
       ],
       [
-       "APP_CACHE_MMU_IA",
-       0,
-       1,
-       "r"
-      ],
-      [
        "APP_CACHE_IA",
        1,
        6,
@@ -4178,12 +4145,6 @@
        "APP_MMU_RDATA",
        0,
        9,
-       "r"
-      ],
-      [
-       "APP_CPU_DISABLED_CACHE_IA",
-       9,
-       6,
        "r"
       ],
       [
@@ -4347,12 +4308,6 @@
      "offset": "0x44C",
      "fields": [
       [
-       "RECORD_PRO_PDEBUGINST",
-       0,
-       32,
-       "r"
-      ],
-      [
        "RECORD_PDEBUGINST_SZ",
        0,
        8
@@ -4384,18 +4339,7 @@
      "offset": "0x450",
      "fields": [
       [
-       "RECORD_PRO_PDEBUGSTATUS",
-       0,
-       8,
-       "r"
-      ],
-      [
        "RECORD_PDEBUGSTATUS_BBCAUSE",
-       0,
-       6
-      ],
-      [
-       "RECORD_PDEBUGSTATUS_INSNTYPE",
        0,
        6
       ]
@@ -4406,28 +4350,7 @@
      "offset": "0x454",
      "fields": [
       [
-       "RECORD_PRO_PDEBUGDATA",
-       0,
-       32,
-       "r"
-      ],
-      [
        "RECORD_PDEBUGDATA_DEP_OTHER",
-       0,
-       1
-      ],
-      [
-       "RECORD_PDEBUGDATA_EXCVEC",
-       0,
-       5
-      ],
-      [
-       "RECORD_PDEBUGDATA_INSNTYPE_SR",
-       0,
-       8
-      ],
-      [
-       "RECORD_PDEBUGDATA_INSNTYPE_RER",
        0,
        1
       ],
@@ -4437,19 +4360,9 @@
        1
       ],
       [
-       "RECORD_PDEBUGDATA_INSNTYPE_WER",
-       1,
-       1
-      ],
-      [
        "RECORD_PDEBUGDATA_STALL_BUFFCONFL",
        2,
        1
-      ],
-      [
-       "RECORD_PDEBUGDATA_INSNTYPE_ER",
-       2,
-       12
       ],
       [
        "RECORD_PDEBUGDATA_STALL_DCM",
@@ -4477,32 +4390,12 @@
        1
       ],
       [
-       "RECORD_PDEBUGDATA_STALL_IPIF",
-       8,
-       1
-      ],
-      [
-       "RECORD_PDEBUGDATA_INSNTYPE_RSR",
-       8,
-       1
-      ],
-      [
        "RECORD_PDEBUGDATA_STALL_TIE",
        9,
        1
       ],
       [
-       "RECORD_PDEBUGDATA_INSNTYPE_WSR",
-       9,
-       1
-      ],
-      [
        "RECORD_PDEBUGDATA_STALL_RUN",
-       10,
-       1
-      ],
-      [
-       "RECORD_PDEBUGDATA_INSNTYPE_XSR",
        10,
        1
       ],
@@ -4513,11 +4406,6 @@
       ],
       [
        "RECORD_PDEBUGDATA_DEP",
-       12,
-       1
-      ],
-      [
-       "RECORD_PDEBUGDATA_STALL_BPIFETCH",
        12,
        1
       ],
@@ -4538,16 +4426,6 @@
       ],
       [
        "RECORD_PDEBUGDATA_DEP_MEMW",
-       16,
-       1
-      ],
-      [
-       "RECORD_PDEBUGDATA_EXCCAUSE",
-       16,
-       6
-      ],
-      [
-       "RECORD_PDEBUGDATA_STALL_BANKCONFL",
        16,
        1
       ],
@@ -4584,12 +4462,6 @@
      "name": "PRO_CPU_RECORD_PDEBUGLS0STAT",
      "offset": "0x45C",
      "fields": [
-      [
-       "RECORD_PRO_PDEBUGLS0STAT",
-       0,
-       32,
-       "r"
-      ],
       [
        "RECORD_PDEBUGLS0STAT_TYPE",
        0,
@@ -5626,11 +5498,6 @@
      "name": "CACHE_IA_INT_EN",
      "offset": "0x5A0",
      "fields": [
-      [
-       "CACHE_IA_INT_EN",
-       0,
-       28
-      ],
       [
        "CACHE_IA_INT_APP_DROM0",
        0,
@@ -8169,12 +8036,6 @@
      "offset": "0x60",
      "fields": [
       [
-       "MEM_RX_STATUS",
-       0,
-       24,
-       "r"
-      ],
-      [
        "MEM_RX_RD_ADDR",
        2,
        11,
@@ -10339,31 +10200,6 @@
        0,
        8,
        "r"
-      ],
-      [
-       "PIN_PAD_DRIVER",
-       2,
-       1
-      ],
-      [
-       "PIN_INT_TYPE",
-       7,
-       3
-      ],
-      [
-       "PIN_WAKEUP_ENABLE",
-       10,
-       1
-      ],
-      [
-       "PIN_CONFIG",
-       11,
-       2
-      ],
-      [
-       "PIN_INT_ENA",
-       13,
-       5
       ]
      ]
     },
@@ -20165,12 +20001,6 @@
      "offset": "0xC0",
      "fields": [
       [
-       "LOW_POWER_DIAG0",
-       0,
-       32,
-       "r"
-      ],
-      [
        "RDY_FOR_WAKEUP",
        19,
        1,
@@ -20331,11 +20161,6 @@
        1
       ],
       [
-       "RTC_MEM_CRC_ADDR",
-       9,
-       11
-      ],
-      [
        "CLOSE_FLASH_ENA",
        14,
        1
@@ -20349,11 +20174,6 @@
        "RST_WAIT",
        16,
        10
-      ],
-      [
-       "RTC_MEM_CRC_LEN",
-       20,
-       11
       ],
       [
        "RST_ENA",
@@ -20375,11 +20195,6 @@
        31,
        1,
        "r"
-      ],
-      [
-       "RTC_MEM_CRC_FINISH",
-       31,
-       1
       ]
      ]
     },
@@ -22311,11 +22126,6 @@
      "offset": "0x0C",
      "reset": "0x0020000A",
      "fields": [
-      [
-       "FORCE_XPD_SAR_SW",
-       0,
-       1
-      ],
       [
        "SAR_AMP_WAIT3",
        0,
@@ -33936,12 +33746,6 @@
      "offset": "0x60",
      "fields": [
       [
-       "STATUS",
-       0,
-       32,
-       "r"
-      ],
-      [
        "MEM_WADDR_EX",
        0,
        10,
@@ -33995,12 +33799,6 @@
      "name": "CH1STATUS",
      "offset": "0x64",
      "fields": [
-      [
-       "STATUS",
-       0,
-       32,
-       "r"
-      ],
       [
        "MEM_WADDR_EX",
        0,
@@ -34056,12 +33854,6 @@
      "offset": "0x68",
      "fields": [
       [
-       "STATUS",
-       0,
-       32,
-       "r"
-      ],
-      [
        "MEM_WADDR_EX",
        0,
        10,
@@ -34115,12 +33907,6 @@
      "name": "CH3STATUS",
      "offset": "0x6C",
      "fields": [
-      [
-       "STATUS",
-       0,
-       32,
-       "r"
-      ],
       [
        "MEM_WADDR_EX",
        0,
@@ -34176,12 +33962,6 @@
      "offset": "0x70",
      "fields": [
       [
-       "STATUS",
-       0,
-       32,
-       "r"
-      ],
-      [
        "MEM_WADDR_EX",
        0,
        10,
@@ -34235,12 +34015,6 @@
      "name": "CH5STATUS",
      "offset": "0x74",
      "fields": [
-      [
-       "STATUS",
-       0,
-       32,
-       "r"
-      ],
       [
        "MEM_WADDR_EX",
        0,
@@ -34296,12 +34070,6 @@
      "offset": "0x78",
      "fields": [
       [
-       "STATUS",
-       0,
-       32,
-       "r"
-      ],
-      [
        "MEM_WADDR_EX",
        0,
        10,
@@ -34355,12 +34123,6 @@
      "name": "CH7STATUS",
      "offset": "0x7C",
      "fields": [
-      [
-       "STATUS",
-       0,
-       32,
-       "r"
-      ],
       [
        "MEM_WADDR_EX",
        0,
@@ -36757,12 +36519,6 @@
      "offset": "0x90",
      "fields": [
       [
-       "CORE_STATUS_U0",
-       0,
-       32,
-       "r"
-      ],
-      [
        "ZERO_MODE",
        0,
        2
@@ -36798,12 +36554,6 @@
      "name": "U1_STATUS",
      "offset": "0x94",
      "fields": [
-      [
-       "CORE_STATUS_U0",
-       0,
-       32,
-       "r"
-      ],
       [
        "ZERO_MODE",
        0,
@@ -36841,12 +36591,6 @@
      "offset": "0x98",
      "fields": [
       [
-       "CORE_STATUS_U0",
-       0,
-       32,
-       "r"
-      ],
-      [
        "ZERO_MODE",
        0,
        2
@@ -36882,12 +36626,6 @@
      "name": "U3_STATUS",
      "offset": "0x9C",
      "fields": [
-      [
-       "CORE_STATUS_U0",
-       0,
-       32,
-       "r"
-      ],
       [
        "ZERO_MODE",
        0,
@@ -36925,12 +36663,6 @@
      "offset": "0xA0",
      "fields": [
       [
-       "CORE_STATUS_U0",
-       0,
-       32,
-       "r"
-      ],
-      [
        "ZERO_MODE",
        0,
        2
@@ -36966,12 +36698,6 @@
      "name": "U5_STATUS",
      "offset": "0xA4",
      "fields": [
-      [
-       "CORE_STATUS_U0",
-       0,
-       32,
-       "r"
-      ],
       [
        "ZERO_MODE",
        0,
@@ -37009,12 +36735,6 @@
      "offset": "0xA8",
      "fields": [
       [
-       "CORE_STATUS_U0",
-       0,
-       32,
-       "r"
-      ],
-      [
        "ZERO_MODE",
        0,
        2
@@ -37050,12 +36770,6 @@
      "name": "U7_STATUS",
      "offset": "0xAC",
      "fields": [
-      [
-       "CORE_STATUS_U0",
-       0,
-       32,
-       "r"
-      ],
       [
        "ZERO_MODE",
        0,

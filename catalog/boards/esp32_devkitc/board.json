@@ -538,5 +538,25 @@
   },
   "tests": [
     "tests/*.json"
-  ]
+  ],
+  "i18n": {
+    "fr": {
+      "source": "6536a91c8d63",
+      "description": "L'ESP32-DevKitC V4 d'Espressif avec un module ESP32-WROOM-32E (l'ESP32-D0WD-V3 avec son quartz de 40 MHz et 4 Mo de flash), le régulateur AMS1117-3.3 qui fait 3,3 V à partir des 5 V du micro-USB à travers une Schottky BAT760, la LED rouge d'alimentation, le bouton Boot sur GPIO0, le bouton EN sur CHIP_PU avec son RC, et deux connecteurs de 19 broches. Le pont USB-UART CP2102N sur UART0 (GPIO1/GPIO3) est la console série de la session, et un port série sur l'hôte (embsim serve --serial). Le firmware est une image de flash (bin), telle qu'idf.py et esptool l'écrivent.",
+      "fidelity": {
+        "functional": {
+          "claims": "Les nets, les ports, la LED d'alimentation et les deux boutons comme composants ; l'ESP32 exécute son firmware depuis l'image de flash (voir sa description) : la ROM d'Espressif, le bootloader de second niveau et l'application, comme sur la carte. EN tire CHIP_PU à l'état bas et la puce redémarre avec rst:0x1 (POWERON_RESET) ; Boot maintenu pendant ce temps fait attendre la ROM en mode téléchargement. Le port du CP2102N est la console de la session sur UART0 (GPIO1/GPIO3) et un port série sur l'hôte.",
+          "omissions": [
+            "le CP2102N lui-même : son énumération USB, ses lignes modem et donc le circuit de programmation automatique (Q1, Q2 et R21, R22 qui laissent les DTR et RTS d'esptool piloter EN et GPIO0) : appuyer sur Boot et EN fait ce qu'ils font",
+            "les diodes ESD des lignes USB (LESD5D5.0CT1G) et le connecteur USB",
+            "les broches de flash GPIO6-11 sur les connecteurs (D0-D3, CMD, CLK) : le module les garde pour sa flash et les ports les omettent",
+            "le dessin de la carte et le modèle du banc"
+          ]
+        },
+        "electrical": {
+          "claims": "Le chemin d'alimentation du schéma : VBUS à travers la Schottky vers 5 V, l'AMS1117-3.3 vers 3,3 V, la LED, le RC de EN."
+        }
+      }
+    }
+  }
 }
