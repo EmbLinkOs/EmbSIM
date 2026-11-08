@@ -26,7 +26,9 @@
  *     pages whose flash the program has written since they were mapped
  *     show it after a flush;
  *   - CPU_PER_CONF's CPUPERIOD_SEL, which with RTC_CNTL's SOC_CLK_SEL and
- *     APB_CTRL's divider sets the CPU's clock (apbctrl.c).
+ *     APB_CTRL's divider sets the CPU's clock (apbctrl.c);
+ *   - PERIP_RST_EN: setting the bit of I2C0 (7), LEDC (11) or I2C1 (18)
+ *     returns that peripheral to its reset state.
  * Inside, the caches hold the mapped pages whole rather than 32 KB of
  * lines, and both CPUs read through the PRO_CPU's table (ESP-IDF keeps
  * the two the same); a CPU's cache enable and the buses' mask bits
@@ -34,7 +36,9 @@
  * Not yet: the cache's lock regions, PSRAM (DRAM1, which the module does
  * not have), the boot remap (PRO_BOOT_REMAP_CTRL), the APB and AHB
  * access permissions (DPORT_APB_MASK, AHBLITE_MPU_TABLE), the MMU's
- * access-error interrupts, the trace memory and the CPU record. */
+ * access-error interrupts, the trace memory and the CPU record, the other
+ * peripherals' PERIP_RST_EN bits and every PERIP_CLK_EN gate (a gated
+ * peripheral still answers). */
 #include <string.h>
 
 #include "mcu/esp32/soc/esp32.h"
@@ -56,6 +60,14 @@
 #define APP_DCACHE_DBUG0 0x418u
 #define CACHE_FLUSH_ENA 0x10u
 #define CACHE_FLUSH_DONE 0x20u
+#define PERIP_RST_EN 0xC4u
+
+/* PERIP_RST_EN's bits of the modelled peripherals */
+static const struct {
+    const char *name;
+    int bit;
+} resets[] = { { "I2C0", 7 }, { "LEDC", 11 }, { "I2C1", 18 } };
+#define NRESETS (sizeof resets / sizeof resets[0])
 
 #define MMU_BASE 0x3FF10000u
 #define MMU_WORDS 2048 /* per CPU: 0x2000 bytes */
@@ -74,6 +86,7 @@ struct e32_dport {
     u32 mmu[2][MMU_WORDS];
     u8 stale[128];
     u8 *app_rom; /* the ROM as the APP_CPU sees it */
+    struct esk_rf_periph *rst[3]; /* resets[]'s peripherals */
 };
 
 static struct e32_dport *dport_of(struct esk_mach *m)
@@ -287,8 +300,15 @@ static u32 dp_read(void *ctx, u32 off, int n)
 static void dp_write(void *ctx, u32 off, int n, u32 v)
 {
     struct e32_dport *k = (struct e32_dport *)ctx;
+    u32 was = reg(k, PERIP_RST_EN);
+    size_t i;
     esk_rf_write(k->p, off, n, v);
-    if (off >= APPCPU_CTRL_A && off <= APPCPU_CTRL_C) {
+    if (off == PERIP_RST_EN) {
+        u32 now = reg(k, PERIP_RST_EN);
+        for (i = 0; i < NRESETS; i++)
+            if (k->rst[i] && (now & ~was & (1u << resets[i].bit)))
+                esk_rf_periph_reset(k->rst[i]);
+    } else if (off >= APPCPU_CTRL_A && off <= APPCPU_CTRL_C) {
         app_cpu(k);
     } else if (off == PRO_CACHE_CTRL || off == APP_CACHE_CTRL) {
         u32 c = reg(k, off);
@@ -328,10 +348,13 @@ const struct esk_dev_ops esk_esp32_dport_ops = {
 void *esk_esp32_dport_create(struct esk_mach *s, struct esk_rf_periph *p)
 {
     struct e32_dport *k = (struct e32_dport *)esk_mach_alloc(s, sizeof *k);
+    size_t i;
     if (!k)
         return 0;
     k->s = s;
     k->p = p;
+    for (i = 0; i < NRESETS; i++)
+        k->rst[i] = esk_rf_periph(s->rf, resets[i].name);
     if (esk_mach_add_dev(s, MMU_BASE, 2u * MMU_WORDS * 4u, &mmu_ops, k) != ES_OK ||
         esk_esp32_misc_add(s) || esk_esp32_regi2c_add(s))
         return 0;

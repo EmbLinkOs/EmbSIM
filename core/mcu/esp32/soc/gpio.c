@@ -27,7 +27,8 @@
  *   - A peripheral input (GPIO_FUNCy_IN_SEL_CFG) comes through the matrix
  *     from IN_SEL's pad (0x38: 1, 0x30: 0, IN_INV_SEL inverting) when SEL
  *     is set, else directly from the pad whose IO MUX function it is, else
- *     0.
+ *     0 (1 for the I2C controllers' SCL and SDA). A model may watch the
+ *     pads' input levels (esk_esp32_signal_watch).
  *   - Interrupts (GPIO_PINn's INT_TYPE: 1 rising, 2 falling, 3 any edge,
  *     4 low level, 5 high level; INT_ENA bit 0 the APP_CPU's, 1 its NMI's,
  *     2 the PRO_CPU's, 3 its NMI's) set GPIO_STATUS (STATUS1; W1TS and
@@ -44,8 +45,7 @@
  *     reset.
  * IO MUX's pads come out of reset as the datasheet's table has them (each
  * pad's IE and pull), not with the SVD's one reset value for all.
- * Not yet: the peripherals' signals but the UARTs' (a pad routed to one
- * is not driven), the RTC IO MUX (RTC_IO's pad functions, its pulls, the
+ * Not yet: the RTC IO MUX (RTC_IO's pad functions, its pulls, the
  * hold), the input filter, sleep mode (the MCU_ pad bits, SLP_SEL), the
  * drive strengths' effect, the pads' wake-up, the SDIO interrupt. */
 #include <stdio.h>
@@ -91,6 +91,11 @@ struct e32_gpio {
     esk_mach_pin cfg[NPIN];
     u8 sig_on[NSIG], sig_lv[NSIG], sig_oe[NSIG];
     int again;
+    struct {
+        void (*fn)(void *ctx);
+        void *ctx;
+    } watch[8];
+    int nwatch;
 };
 
 static u32 reg(const struct esk_rf_reg *r) { return r ? (u32)r->value : 0; }
@@ -281,6 +286,9 @@ again:
     esk_rf_hw(k->in, (u32)in);
     esk_rf_hw(k->in1, (u32)(in >> 32) & 0xffu);
     irqs(k, rise, fall);
+    if (rise | fall)
+        for (n = 0; n < k->nwatch; n++)
+            k->watch[n].fn(k->watch[n].ctx);
     if (k->again)
         goto again;
     k->busy = 0;
@@ -315,6 +323,18 @@ int esk_esp32_signal_in(struct esk_mach *m, int sig)
     }
     if (sig == 14 && mux_sel(k, 3) == 0) /* U0RXD */
         return (int)(k->input >> 3 & 1u);
+    /* the table's defaults: I2CEXT0/1's SCL and SDA idle high */
+    return sig == 29 || sig == 30 || sig == 95 || sig == 96;
+}
+
+int esk_esp32_signal_watch(struct esk_mach *m, void (*fn)(void *ctx), void *ctx)
+{
+    struct e32_gpio *k = gpio_of(m);
+    if (!k || k->nwatch >= (int)(sizeof k->watch / sizeof k->watch[0]))
+        return -1;
+    k->watch[k->nwatch].fn = fn;
+    k->watch[k->nwatch].ctx = ctx;
+    k->nwatch++;
     return 0;
 }
 

@@ -17,6 +17,7 @@
  *   apbctrl.c APB_CTRL: the CPU's and APB's clock dividers
  *   sha.c     the SHA accelerator
  *   ledc.c    the LED PWM controller
+ *   i2c.c     I2C0 and I2C1
  *   misc.c    the random number generator, the AHB view of the
  *             peripherals */
 #ifndef ESK_MCU_ESP32_SOC_H
@@ -52,6 +53,8 @@ extern const struct esk_dev_ops esk_esp32_apbctrl_ops;
 void *esk_esp32_apbctrl_create(struct esk_mach *s, struct esk_rf_periph *p);
 extern const struct esk_dev_ops esk_esp32_ledc_ops;
 void *esk_esp32_ledc_create(struct esk_mach *s, struct esk_rf_periph *p);
+extern const struct esk_dev_ops esk_esp32_i2c_ops;
+void *esk_esp32_i2c_create(struct esk_mach *s, struct esk_rf_periph *p);
 extern const struct esk_dev_ops esk_esp32_sha_ops;
 void *esk_esp32_sha_create(struct esk_mach *s, struct esk_rf_periph *p);
 /* the RNG and the AHB view of the peripherals (misc.c): 0, or -1 */
@@ -95,6 +98,8 @@ void esk_esp32_pins_changed(struct esk_mach *m);
 void esk_esp32_signal(struct esk_mach *m, int sig, int level, int oe);
 /* a peripheral input signal's level as the matrix or the IO MUX gives it */
 int esk_esp32_signal_in(struct esk_mach *m, int sig);
+/* `fn` is called when a pad's input level changed: -1 when full */
+int esk_esp32_signal_watch(struct esk_mach *m, void (*fn)(void *ctx), void *ctx);
 
 /* the flash chip (spi.c) */
 struct esk_esp32_nor;
