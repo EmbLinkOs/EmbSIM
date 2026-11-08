@@ -5,6 +5,29 @@ maintained by hand until evidence tooling exists. It is not a generated
 support matrix. Specifications define target contracts; their acceptance
 does not mean the described behaviour exists.
 
+## ESP32 on the machine framework (2026-11-08)
+
+The ESP32 now runs as a catalog MCU (`espressif/esp32`) on the
+`emblink/esp32_devkitc` board: two Xtensa LX6 cores in the framework
+(`core/mcu/xtensa/lx6.c`), the SoC models in `core/mcu/esp32/soc/`, and
+Espressif's ROM (ECO3), ESP-IDF v5.4's second-stage bootloader and its
+hello_world running unmodified on both cores at 160 MHz to `Hello world!`
+and through `esp_restart` (rst:0xc SW_CPU_RESET). Evidence: `test_lx6`
+(4,332 checks), the board's three fixtures, and the ESP-IDF vendor
+scenarios `esp32_hello_world` (9/9), `esp32_blink` (6/6),
+`esp32_ledc_basic` (2/2), `esp32_i2c_eeprom` (3/3, I2C0 writing and
+reading a 24LC256 at 400 kHz), `esp32_gptimer` (17/17), `esp32_uart_echo`
+(6/6), `esp32_real_time_stats` (10/10) , `esp32_blink_strip` (7/7, a
+WS2812B through the RMT) and `esp32_adc_oneshot_read` (6/6, ADC1 and ADC2
+with the eFuse Vref's calibration), `esp32_dac_oneshot` (4/4, the DACs
+read back by ADC2); Arduino-ESP32's AnalogReadSerial,
+ReadAnalogVoltage, DigitalReadSerial, GetChipID and RepeatTimer for "ESP32
+Dev Module" (`tests/vendor/arduino-esp32`, `ESP32_*`). Not yet: Wi-Fi and Bluetooth, the
+double-precision accelerator's instructions, the peripherals the
+description's fidelity lists (I2S, SPI2/3, touch, ...),
+sleep. The standalone harness below remains as its own qualification
+fixtures.
+
 ## Original ESP32 dual-core target investigation (2026-11-04)
 
 **Latest digital pad-hold update:** [Per-pin digital hold](engineering/esp32-digital-pad-hold.md)

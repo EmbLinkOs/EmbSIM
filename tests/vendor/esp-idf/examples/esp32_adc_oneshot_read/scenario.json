@@ -1,0 +1,58 @@
+{
+ "schema_version": 1,
+ "kind": "scenario",
+ "name": "esp32_adc_oneshot_read",
+ "until": "3500ms",
+ "description": "adc/oneshot_read on the ESP32: ADC1's channels 4 and 5 and ADC2's channel 0 at 12 dB, one read a second each, with the eFuse's Vref calibration (ESP-IDF's line fitting, Vref 1170 mV on this chip). The model's transfer is that fitted line, so the raw codes are its inverse and the calibrated voltages the sources' within a millivolt. ADC1 at 12 dB: a = 1170 x 196602 / 4096 = 56158, b = 142 mV, so 1.1 V is (1100 - 142) x 65536 / 56158 = 1118 and 2.2 V 2402; ADC2: a = 56320, b = 128 mV, so 0.5 V is 433.",
+ "inputs": [],
+ "assertions": [
+  {
+   "id": "adc1-ch4-raw",
+   "at": "3400ms",
+   "probe": "console",
+   "expect": {
+    "contains": "ADC1 Channel[4] Raw Data: 1118\r\n"
+   }
+  },
+  {
+   "id": "adc1-ch4-mv",
+   "at": "3400ms",
+   "probe": "console",
+   "expect": {
+    "contains": "ADC1 Channel[4] Cali Voltage: 1100 mV\r\n"
+   }
+  },
+  {
+   "id": "adc1-ch5-raw",
+   "at": "3400ms",
+   "probe": "console",
+   "expect": {
+    "contains": "ADC1 Channel[5] Raw Data: 2402\r\n"
+   }
+  },
+  {
+   "id": "adc1-ch5-mv",
+   "at": "3400ms",
+   "probe": "console",
+   "expect": {
+    "contains": "ADC1 Channel[5] Cali Voltage: 2200 mV\r\n"
+   }
+  },
+  {
+   "id": "adc2-ch0-raw",
+   "at": "3400ms",
+   "probe": "console",
+   "expect": {
+    "contains": "ADC2 Channel[0] Raw Data: 433\r\n"
+   }
+  },
+  {
+   "id": "adc2-ch0-mv",
+   "at": "3400ms",
+   "probe": "console",
+   "expect": {
+    "contains": "ADC2 Channel[0] Cali Voltage: 500 mV\r\n"
+   }
+  }
+ ]
+}

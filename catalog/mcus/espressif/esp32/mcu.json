@@ -1,0 +1,450 @@
+{
+  "schema_version": 1,
+  "kind": "mcu",
+  "id": "espressif/esp32",
+  "version": "0.1.0",
+  "name": "ESP32",
+  "description": "Espressif ESP32 (ESP32-D0WD-V3, chip revision v3.1): two Xtensa LX6 cores at up to 240 MHz, 520 KiB of SRAM, 448 KiB of ROM, 16 KiB of RTC memory, external SPI flash behind the cores' caches, Wi-Fi and Bluetooth; the ESP32-DevKitC's MCU. Espressif's ROM, ESP-IDF's second-stage bootloader and ESP-IDF applications run on both cores; the radios are not yet modelled.",
+  "keywords": [
+    "xtensa",
+    "lx6",
+    "espressif",
+    "esp32",
+    "esp32-d0wd-v3",
+    "dual-core"
+  ],
+  "vendor": "espressif",
+  "family": "esp32",
+  "core": {
+    "backend": "xtensa",
+    "model": "esp32-lx6",
+    "cores": 2,
+    "timing_tier": "estimated",
+    "fpu": true,
+    "mpu": false,
+    "endian": "little",
+    "reset_pc": "0x40000400"
+  },
+  "memory": [
+    {
+      "name": "rom",
+      "base": "0x40000000",
+      "size": "448K",
+      "kind": "rom",
+      "file": "rom.bin",
+      "doc": "Internal ROM0 (384 KiB) and ROM1 (64 KiB) on the instruction bus (TRM v5 table 3.3-1, ESP-IDF's SOC_IROM_MASK_HIGH 0x40070000): the boot ROM of chip revision v3, its image made by tools/importers/esprom.py (--base 0x40000000 --size 0x70000 --data-table 0x4000D4EC:0x4000D4F8, the Bluetooth controller's entry; --data-table 0x4000D4F8:0x4000D5C8, the ROM's copy table of its RAM variables' initial values) from Espressif's esp32_rev300_rom.elf (espressif/esp-rom-elfs 20241011, Apache-2.0: LICENSES/Apache-2.0.txt; the ROM's code is Copyright (c) 2015-2022 Espressif Systems (Shanghai) Co. Ltd.). It equals byte for byte the image Espressif's QEMU loads (esp32-v3-rom.bin, sha256 9115bbcd...258b) over its 455,722 bytes; the rest reads zeros",
+      "sha256": "ee235a76e8e5afd5bed9d674587e001d8cde459a659edef9072cbc867fd31313"
+    },
+    {
+      "name": "rom1_data",
+      "base": "0x3FF90000",
+      "size": "64K",
+      "kind": "alias",
+      "target": "0x40060000",
+      "doc": "Internal ROM1 on the data bus"
+    },
+    {
+      "name": "sram0",
+      "base": "0x40070000",
+      "size": "192K",
+      "kind": "ram",
+      "doc": "Internal SRAM0 on the instruction bus: its first 64 KiB the cores' flash caches once they are enabled, the rest IRAM"
+    },
+    {
+      "name": "sram2",
+      "base": "0x3FFAE000",
+      "size": "200K",
+      "kind": "ram",
+      "doc": "Internal SRAM2 on the data bus (DRAM)"
+    },
+    {
+      "name": "sram1",
+      "base": "0x3FFE0000",
+      "size": "128K",
+      "kind": "ram",
+      "main": true,
+      "doc": "Internal SRAM1 on the data bus (DRAM), where the ROM keeps its data and stacks"
+    },
+    {
+      "name": "rtc_fast",
+      "base": "0x3FF80000",
+      "size": "8K",
+      "kind": "ram",
+      "doc": "RTC FAST memory on the data bus, kept in deep sleep"
+    },
+    {
+      "name": "rtc_fast_ibus",
+      "base": "0x400C0000",
+      "size": "8K",
+      "kind": "alias",
+      "target": "0x3FF80000",
+      "doc": "RTC FAST memory on the instruction bus"
+    },
+    {
+      "name": "rtc_slow",
+      "base": "0x50000000",
+      "size": "8K",
+      "kind": "ram",
+      "doc": "RTC SLOW memory, kept in deep sleep, the ULP coprocessor's"
+    },
+    {
+      "name": "flash",
+      "base": "0x0",
+      "size": "4M",
+      "kind": "external",
+      "erased": "0xFFFFFFFF",
+      "doc": "The module's 4 MB SPI flash, reached through SPI0 and SPI1 and read in place through the caches"
+    },
+    {
+      "name": "flash_drom",
+      "base": "0x3F400000",
+      "size": "4M",
+      "kind": "window",
+      "doc": "The data bus's window on the flash (DROM0, TRM table 3.3-3): 64 pages of 64 KB that MMU entries 0-63 map"
+    },
+    {
+      "name": "flash_irom",
+      "base": "0x400D0000",
+      "size": "0x330000",
+      "kind": "window",
+      "doc": "The instruction bus's window on the flash (IROM0 from the first whole page after RTC FAST memory to 0x403FFFFF): MMU entries 77-127"
+    }
+  ],
+  "clocks": {
+    "sources": [
+      {
+        "name": "xtal",
+        "hz": 40000000,
+        "doc": "The module's 40 MHz crystal (XTL_CLK); the CPU runs from it out of reset"
+      },
+      {
+        "name": "rc_fast",
+        "hz": 8000000,
+        "doc": "The internal 8 MHz RC oscillator (RC_FAST_CLK, 8MD256 its /256)"
+      },
+      {
+        "name": "rc_slow",
+        "hz": 150000,
+        "doc": "The internal 150 kHz RC oscillator (RTC_SLOW_CLK's default)"
+      },
+      {
+        "name": "pll",
+        "hz": 320000000,
+        "doc": "PLL_CLK, 320 MHz (or 480 MHz) from the crystal"
+      }
+    ],
+    "reset_core_hz": 40000000,
+    "max_core_hz": 240000000
+  },
+  "register_file": {
+    "format": "embsim",
+    "file": "registers.json",
+    "vendored": true,
+    "license": "Apache-2.0 (converted from Espressif's esp32.svd, Copyright 2024 Espressif Systems (Shanghai) PTE LTD; LICENSES/Apache-2.0.txt)"
+  },
+  "peripherals": [
+    {
+      "match": "DPORT",
+      "model": "esp32-dport",
+      "order": 0
+    },
+    {
+      "match": "RTC_CNTL",
+      "model": "esp32-rtc",
+      "order": 1
+    },
+    {
+      "match": "APB_CTRL",
+      "model": "esp32-apbctrl",
+      "order": 1
+    },
+    {
+      "match": "EFUSE",
+      "model": "esp32-efuse"
+    },
+    {
+      "match": "UART?",
+      "model": "esp32-uart"
+    },
+    {
+      "match": "IO_MUX",
+      "model": "esp32-iomux",
+      "order": 0
+    },
+    {
+      "match": "GPIO",
+      "model": "esp32-gpio",
+      "order": 1
+    },
+    {
+      "match": "SPI0",
+      "model": "esp32-spi"
+    },
+    {
+      "match": "SPI1",
+      "model": "esp32-spi"
+    },
+    {
+      "match": "TIMG?",
+      "model": "esp32-timg"
+    },
+    {
+      "match": "SHA",
+      "model": "esp32-sha"
+    },
+    {
+      "match": "LEDC",
+      "model": "esp32-ledc"
+    },
+    {
+      "match": "I2C?",
+      "model": "esp32-i2c"
+    },
+    {
+      "match": "RMT",
+      "model": "esp32-rmt"
+    },
+    {
+      "match": "SENS",
+      "model": "esp32-sens"
+    },
+    {
+      "match": "RTC_IO",
+      "model": "esp32-rtcio"
+    }
+  ],
+  "io": {
+    "family": "cmos_3v3",
+    "ports": [
+      {
+        "name": "GPIO",
+        "pins": 40,
+        "mask": "0xFFFFFFFFFF"
+      }
+    ],
+    "electrical": {
+      "vdd": 3.3,
+      "voh": 2.64,
+      "vol": 0.33,
+      "rout": 20,
+      "vih": 2.475,
+      "vil": 0.825,
+      "hysteresis": 0.1,
+      "rpull": 45000,
+      "leak_a": 5e-08,
+      "ioh_max": 0.04,
+      "iol_max": 0.028
+    }
+  },
+  "supply": {
+    "doc": "ESP32 Series Datasheet v5.3, table 4-2 (power consumption by power modes): Modem-sleep of the dual-core chips, 20-31 mA at 80 MHz, 27-44 mA at 160 MHz, 30-68 mA at 240 MHz, taken as the low end with the CPUs waiting and the high end running (the datasheet gives the range by load, not the split); power off with CHIP_PU low 1 uA. The radios' currents of table 5-4 (802.11b 1 Mbps at +19.5 dBm 240 mA, 802.11g 54 Mbps at +16 dBm 190 mA, 802.11n MCS7 at +14 dBm 180 mA, receiving 95-100 mA) for when they are modelled.",
+    "run_a": [
+      [
+        80000000,
+        0.031
+      ],
+      [
+        160000000,
+        0.044
+      ],
+      [
+        240000000,
+        0.068
+      ]
+    ],
+    "idle_a": [
+      [
+        80000000,
+        0.02
+      ],
+      [
+        160000000,
+        0.027
+      ],
+      [
+        240000000,
+        0.03
+      ]
+    ],
+    "held_a": 1e-06,
+    "radio": {
+      "rx_a": 0.1,
+      "tx_dsss_a": 0.24,
+      "tx_ofdm_a": 0.19,
+      "tx_ht_a": 0.18
+    }
+  },
+  "console": {
+    "default": "UART0"
+  },
+  "fidelity": {
+    "functional": {
+      "claims": "The two Xtensa LX6 cores (mcu/xtensa/lx6.c, lx6fp.c) as Espressif's core-isa.h configures them: the core and density instructions, the windowed registers (64, the overflow check of every instruction, CALL4/8/12, ENTRY, RETW and its underflow, MOVSP, ROTW, L32E/S32E), zero-overhead loops, MUL16/MULL/MULUH/MULSH, QUOS/QUOU/REMS/REMU, NSA, MIN/MAX, SEXT, CLAMPS, booleans, S32C1I with SCOMPARE1, THREADPTR, MISC0-3, PRID (0xCDCD, 0xABAB), the MAC16 package, the single-precision FPU (IEEE rounding modes and flags; the division and square root sequences libgcc runs give correctly rounded results), XEA2 exceptions with relocatable vectors, 32 interrupts at core-isa.h's levels and types (level, edge, software, the CCOMPARE0-2 timers against CCOUNT, NMI), RSIL, WAITI, RFI, the debug option's BREAK, IBREAK, DBREAK and ICOUNT, region protection (eight 512 MB regions, 15 no access), unaligned loads and stores, and the instruction bus's 32-bit-only data accesses. Both cores share the machine, the APP_CPU held in reset until DPORT releases it and seeing the ROM with its pointers into the PRO_CPU's ROM data moved to its own, as Espressif's own APP_CPU ROM image has them. The boot: Espressif's ROM (esp32_rev300_rom.elf, chip revision v3) from the reset vector, its banner, the strapping pins (GPIO_STRAP: SPI_FAST_FLASH_BOOT, or the download mode with GPIO0 low), the reset causes (RTC_CNTL), the eFuse glitch check, the flash read through SPI1, ESP-IDF's second-stage bootloader and its image check on the SHA accelerator, the caches' flash MMU, and the application on both cores. The models: DPORT (the APP_CPU's reset, clock and stall, CPU_PER_CONF, the caches' flush and state, the flash MMU tables, the interrupt matrix's 69 sources, the cross-CPU interrupts), RTC_CNTL (reset causes, the RTC timer, the RTC watchdog with its flash-boot protection, the software resets and stalls, the store registers, SOC_CLK_SEL), APB_CTRL (the CPU and APB clocks from XTAL, PLL or RC_FAST), the eFuse controller with the chip's factory bits (ESP32-D0WD-V3 v3.1, a MAC with its CRC, or the board settings'), GPIO and IO_MUX (40 pads, the matrix, pulls, open drain, interrupts on each CPU, the strapping latch), UART0-2 (FIFOs, frames at the baud rate, interrupts, MEM_RX_STATUS's addresses that ESP-IDF counts the bytes waiting from), TIMG0/1 (T0, T1, the LAC timer, the MWDT with its flash-boot protection, the RTC_SLOW_CLK calibration), SPI0/SPI1 with the module's Giantec GT25Q32A flash (C4 60 16, the ID the owner's board reports), the SHA accelerator (SHA-1, -256, -384, -512), LEDC (eight high-speed and eight low-speed PWM channels on eight timers, fading, on the matrix's ledc_hs/ls_sig_out), I2C0 and I2C1 (master and slave on the open-drain lines through the matrix, the 16 commands with RSTART, WRITE, READ, STOP and END, the bus timing in APB_CLK cycles, ACK checks, arbitration, the SCL timeout, the 32-byte FIFOs through DATA and its AHB view, 7- and 10-bit slave addresses; ESP-IDF's i2c_eeprom runs on a 24LC256), the RMT (eight channels sending or receiving through the matrix, 64-word blocks of the 512-word RAM, end markers, continuous mode, wrap, TX_LIM's threshold, the carrier, the receiver's idle threshold and filter, the RAM through CHnDATA; ESP-IDF's led_strip lights a WS2812B), the SAR ADCs as SENS's RTC controller drives them (one conversion at a time on ADC1's eight and ADC2's ten pads, the attenuations, 9 to 12 bits, the converter's inverted output and DATA_INV, the conversion's time; the transfer the line ESP-IDF's Vref calibration fits for the chip, its eFuse Vref), the two DACs on GPIO25 and GPIO26 (RTC_IO's PAD_DAC1/2: powered and the RTC IO MUX's, VDD3P3_RTC x code / 255 on the pad, which ADC2 reads back), PERIP_RST_EN's resets of I2C0, I2C1 and LEDC, the internal analog I2C master, the random number generator and the peripherals' AHB view. The evidence: test_lx6.c's programs assembled by Espressif's assembler (integer, shifts, multiply and divide, loops, branches, memory with S32C1I, windowed recursion through the ROM's own window vectors, SYSCALL, the CCOMPARE timer interrupt, FPU, MAC16) and the APP_CPU's ROM data kept apart; ESP-IDF v5.4's hello_world, blink, ledc_basic, i2c_eeprom, gptimer, uart_echo, real_time_stats, blink with its LED strip, adc oneshot_read and dac_oneshot built unmodified for the esp32 target on the ESP32-DevKitC V4, from the ROM's banner to esp_restart; Arduino-ESP32 3.2.0's sketches for \"ESP32 Dev Module\" (AnalogReadSerial, ReadAnalogVoltage, DigitalReadSerial, GetChipID, RepeatTimer, with FreeRTOS's stack-end watchpoints on); the ROM image equals Espressif QEMU's esp32-v3-rom.bin byte for byte, and the APP_CPU's view of it QEMU's esp32-v3-rom-app.bin.",
+      "omissions": [
+        "Wi-Fi, Bluetooth and the RF front end (WIFI_MAC, BB, NRX, FE: their registers keep what is written)",
+        "the double-precision accelerator's instructions (F64ADDC, F64ITER and the others: their encodings are public, not what they do; a program that runs one stops with a diagnostic), though its registers are kept",
+        "PSRAM (DRAM1), the boot remap, the APB/AHB access permissions, the caches' lock regions and timing (the mapped pages are read whole), the MMU's access-error interrupts",
+        "RMT: the memory's power-down (MEM_PD), STATUS's STATE and the APB-side error bits, the carrier on an idle output",
+        "the SAR ADCs: the nonlinearity above about 2450 mV at 11 dB and a chip's spread from the fitted line, noise, the ULP's and the digital controller's (DMA, I2S) conversions, the Hall sensor, ADC2's arbitration with Wi-Fi, the RTC IO MUX's routing of a pad to the ADC (not checked)",
+        "the DACs: the cosine-wave generator and the DMA path (I2S0), the output's impedance (a stiff source: the datasheet gives none) and its offset and nonlinearity",
+        "I2C: the non-FIFO mode (NONFIFO_EN, RX_REC_FULL, TX_SEND_EMPTY), SAMPLE_SCL_LEVEL, the input filters (only their share of the SCL high time), 10-bit addressing's R/W check",
+        "the peripherals without a model yet: I2S0/1, SPI2/3 (HSPI, VSPI), MCPWM, PCNT, TWAI, SDMMC, EMAC, the touch sensor, the RTC IO MUX's other pads and the ULP coprocessor, the AES and RSA accelerators, flash encryption",
+        "sleep modes (light and deep sleep, the power domains), brown-out",
+        "the eFuse 3/4 coding scheme's check, BLOCK0's per-field write protection"
+      ],
+      "validation": [
+        "repo:tests/unit/test_lx6.c",
+        "repo:tests/vendor/esp-idf/run.py",
+        "repo:tests/vendor/esp-idf/examples/esp32_hello_world/scenario.json",
+        "repo:tests/vendor/esp-idf/examples/esp32_blink/scenario.json",
+        "repo:tests/vendor/esp-idf/examples/esp32_ledc_basic/scenario.json",
+        "repo:tests/vendor/esp-idf/examples/esp32_i2c_eeprom/scenario.json",
+        "repo:tests/vendor/esp-idf/examples/esp32_gptimer/scenario.json",
+        "repo:tests/vendor/esp-idf/examples/esp32_uart_echo/scenario.json",
+        "repo:tests/vendor/esp-idf/examples/esp32_real_time_stats/scenario.json",
+        "repo:tests/vendor/esp-idf/examples/esp32_blink_strip/scenario.json",
+        "repo:tests/vendor/esp-idf/examples/esp32_adc_oneshot_read/scenario.json",
+        "repo:tests/vendor/esp-idf/examples/esp32_dac_oneshot/scenario.json",
+        "repo:tests/vendor/arduino-esp32/run.py"
+      ]
+    },
+    "timed": {
+      "claims": "Instruction timing estimated: one cycle, a taken branch, jump, call or return three, MULL two, a division twelve, an exception's entry three; CCOUNT counts those cycles. The clocks follow the registers: CPU_CLK from XTAL (40 MHz out of reset), the PLL's 80, 160 or 240 MHz, or RC_FAST; APB_CLK; RTC_SLOW_CLK at the RC oscillator's nominal 150 kHz.",
+      "omissions": [
+        "the LX6 pipeline's interlocks and the loop buffer's timing",
+        "cache misses and flash latency (the SPI transfers' bus time is counted on SPI1, the flash's own program and erase times too)",
+        "the RC oscillators' error and drift"
+      ],
+      "validation": []
+    },
+    "electrical": {
+      "claims": "GPIO pin-model defaults at 3.3 V from the datasheet's DC characteristics: VIH 0.75 VDD, VIL 0.25 VDD, VOH 0.8 VDD, VOL 0.1 VDD, 45 kOhm pulls; GPIO34-39 inputs only. The supply current (ADR-036, datasheet v5.3's power modes): the cores running and waiting at their clock, and held off.",
+      "omissions": [
+        "the pads' drive strengths' effect",
+        "each peripheral's own current (the datasheet gives the modes, not the parts)"
+      ],
+      "validation": []
+    }
+  },
+  "provenance": {
+    "author": "EmbSIM",
+    "license": "Apache-2.0",
+    "sources": [
+      {
+        "title": "ESP32 Technical Reference Manual",
+        "rev": "v5"
+      },
+      {
+        "title": "ESP32 Series Datasheet",
+        "rev": "v4"
+      },
+      {
+        "title": "Espressif esp32.svd (espressif/svd)",
+        "rev": "be20aa1"
+      },
+      {
+        "title": "Espressif esp-rom-elfs, esp32_rev300_rom.elf (sha256 920b70635440517866aab2230964a570d2cf2b676658d93c52fbac108c1cca31)",
+        "rev": "20241011"
+      },
+      {
+        "title": "Espressif ESP-IDF, components/xtensa/esp32/include/xtensa/config/core-isa.h and esp32.rom.ld",
+        "rev": "v5.4"
+      },
+      {
+        "title": "Cadence Xtensa Instruction Set Architecture Reference Manual"
+      },
+      {
+        "title": "Giantec GT25Q32A-U datasheet (the module's flash)",
+        "rev": "V2.5"
+      }
+    ],
+    "notes": "The register description is converted from Espressif's Apache-2.0 SVD; the boot ROM's image from Espressif's Apache-2.0 ROM ELF; the instruction encodings checked against Espressif's assembler."
+  },
+  "signals": [
+    "GPIO0",
+    "GPIO1",
+    "GPIO2",
+    "GPIO3",
+    "GPIO4",
+    "GPIO5",
+    "GPIO6",
+    "GPIO7",
+    "GPIO8",
+    "GPIO9",
+    "GPIO10",
+    "GPIO11",
+    "GPIO12",
+    "GPIO13",
+    "GPIO14",
+    "GPIO15",
+    "GPIO16",
+    "GPIO17",
+    "GPIO18",
+    "GPIO19",
+    "GPIO21",
+    "GPIO22",
+    "GPIO23",
+    "GPIO25",
+    "GPIO26",
+    "GPIO27",
+    "GPIO32",
+    "GPIO33",
+    "GPIO34",
+    "GPIO35",
+    "GPIO36",
+    "GPIO37",
+    "GPIO38",
+    "GPIO39",
+    "CHIP_EN",
+    "GND",
+    "LNA_IN",
+    "VDD3P3",
+    "VDD3P3_CPU",
+    "VDD3P3_RTC",
+    "VDDA",
+    "VDD_SDIO",
+    "XTAL_N",
+    "XTAL_P"
+  ],
+  "packages": {
+    "wroom32e": "wroom32e.json"
+  },
+  "i18n": {
+    "fr": {
+      "source": "97aa22899d11",
+      "description": "Espressif ESP32 (ESP32-D0WD-V3, révision de puce v3.1) : deux cœurs Xtensa LX6 jusqu'à 240 MHz, 520 Kio de SRAM, 448 Kio de ROM, 16 Kio de mémoire RTC, une flash SPI externe derrière les caches des cœurs, Wi-Fi et Bluetooth ; le MCU de l'ESP32-DevKitC. La ROM d'Espressif, le bootloader de second niveau d'ESP-IDF et les applications ESP-IDF tournent sur les deux cœurs ; les radios ne sont pas encore modélisées.",
+      "fidelity": {
+        "functional": {
+          "claims": "Les deux cœurs Xtensa LX6 (mcu/xtensa/lx6.c, lx6fp.c) tels que les configure le core-isa.h d'Espressif : les instructions de base et de densité, les registres fenêtrés (64, le contrôle de débordement de chaque instruction, CALL4/8/12, ENTRY, RETW et son sous-débordement, MOVSP, ROTW, L32E/S32E), les boucles sans surcoût, MUL16/MULL/MULUH/MULSH, QUOS/QUOU/REMS/REMU, NSA, MIN/MAX, SEXT, CLAMPS, les booléens, S32C1I avec SCOMPARE1, THREADPTR, MISC0-3, PRID (0xCDCD, 0xABAB), le paquet MAC16, la FPU simple précision (modes d'arrondi et drapeaux IEEE ; les séquences de division et de racine carrée qu'exécute libgcc donnent des résultats correctement arrondis), les exceptions XEA2 avec vecteurs relocalisables, 32 interruptions aux niveaux et types de core-isa.h (niveau, front, logicielles, les temporisateurs CCOMPARE0-2 contre CCOUNT, NMI), RSIL, WAITI, RFI, BREAK, IBREAK, DBREAK et ICOUNT de l'option de débogage, la protection par régions (huit régions de 512 Mo, 15 sans accès), les chargements et écritures non alignés, et les accès de données en 32 bits seulement du bus d'instructions. Les deux cœurs partagent la machine, l'APP_CPU maintenu en reset jusqu'à ce que DPORT le libère et voyant la ROM avec ses pointeurs vers les données ROM du PRO_CPU déplacés vers les siennes, comme dans l'image ROM APP_CPU d'Espressif. Le démarrage : la ROM d'Espressif (esp32_rev300_rom.elf, révision v3) depuis le vecteur de reset, sa bannière, les broches de configuration (GPIO_STRAP : SPI_FAST_FLASH_BOOT, ou le mode téléchargement avec GPIO0 bas), les causes de reset (RTC_CNTL), le contrôle anti-glitch de l'eFuse, la lecture de la flash par SPI1, le bootloader de second niveau d'ESP-IDF et sa vérification d'image sur l'accélérateur SHA, la MMU flash des caches, et l'application sur les deux cœurs. Les modèles : DPORT (reset, horloge et blocage de l'APP_CPU, CPU_PER_CONF, vidage et état des caches, tables de la MMU flash, les 69 sources de la matrice d'interruptions, les interruptions inter-CPU), RTC_CNTL (causes de reset, le temporisateur RTC, le chien de garde RTC avec sa protection au démarrage sur flash, les resets et blocages logiciels, les registres de stockage, SOC_CLK_SEL), APB_CTRL (les horloges CPU et APB depuis XTAL, PLL ou RC_FAST), le contrôleur eFuse avec les bits d'usine de la puce (ESP32-D0WD-V3 v3.1, une MAC avec son CRC, ou celle des réglages de la carte), GPIO et IO_MUX (40 plots, la matrice, tirages, drain ouvert, interruptions sur chaque CPU, le verrou de configuration), UART0-2 (FIFO, trames au débit, interruptions, les adresses de MEM_RX_STATUS d'après lesquelles ESP-IDF compte les octets en attente), TIMG0/1 (T0, T1, le temporisateur LAC, le MWDT avec sa protection au démarrage sur flash, la calibration de RTC_SLOW_CLK), SPI0/SPI1 avec la flash Giantec GT25Q32A du module (C4 60 16, l'identifiant que rapporte la carte du propriétaire), l'accélérateur SHA (SHA-1, -256, -384, -512), LEDC (huit canaux MLI rapides et huit lents sur huit temporisateurs, le fondu, sur ledc_hs/ls_sig_out de la matrice), I2C0 et I2C1 (maître et esclave sur les lignes à drain ouvert à travers la matrice, les 16 commandes avec RSTART, WRITE, READ, STOP et END, le timing du bus en cycles d'APB_CLK, les contrôles d'ACK, l'arbitrage, le délai d'attente sur SCL, les FIFO de 32 octets par DATA et sa vue AHB, les adresses esclaves sur 7 et 10 bits ; l'exemple i2c_eeprom d'ESP-IDF fonctionne avec une 24LC256), le RMT (huit canaux qui émettent ou reçoivent à travers la matrice, des blocs de 64 mots de la RAM de 512 mots, les marqueurs de fin, le mode continu, le rebouclage, le seuil de TX_LIM, la porteuse, le seuil d'inactivité et le filtre du récepteur, la RAM par CHnDATA ; le led_strip d'ESP-IDF allume une WS2812B), les ADC SAR tels que les pilote le contrôleur RTC de SENS (une conversion à la fois sur les huit plots de l'ADC1 et les dix de l'ADC2, les atténuations, 9 à 12 bits, la sortie inversée du convertisseur et DATA_INV, la durée de la conversion ; la caractéristique est la droite que la calibration Vref d'ESP-IDF ajuste pour la puce, avec son Vref d'eFuse), les deux DAC sur GPIO25 et GPIO26 (PAD_DAC1/2 de RTC_IO : alimentés et confiés à l'IO MUX RTC, VDD3P3_RTC x code / 255 sur le plot, que l'ADC2 relit), les resets de PERIP_RST_EN pour I2C0, I2C1 et LEDC, le maître I2C analogique interne, le générateur de nombres aléatoires et la vue AHB des périphériques. Les preuves : les programmes de test_lx6.c assemblés par l'assembleur d'Espressif (entiers, décalages, multiplication et division, boucles, branchements, mémoire avec S32C1I, récursion fenêtrée à travers les vecteurs de fenêtre de la ROM, SYSCALL, l'interruption du temporisateur CCOMPARE, FPU, MAC16) et les données ROM de l'APP_CPU tenues à part ; hello_world, blink, ledc_basic, i2c_eeprom, gptimer, uart_echo, real_time_stats, blink avec son ruban de LED, adc oneshot_read et dac_oneshot d'ESP-IDF v5.4 compilés sans modification pour la cible esp32 sur l'ESP32-DevKitC V4, de la bannière de la ROM jusqu'à esp_restart ; les croquis d'Arduino-ESP32 3.2.0 pour « ESP32 Dev Module » (AnalogReadSerial, ReadAnalogVoltage, DigitalReadSerial, GetChipID, RepeatTimer, avec les points d'arrêt de fin de pile de FreeRTOS actifs) ; l'image ROM est identique octet pour octet à l'esp32-v3-rom.bin du QEMU d'Espressif, et la vue qu'en a l'APP_CPU à son esp32-v3-rom-app.bin.",
+          "omissions": [
+            "le Wi-Fi, le Bluetooth et l'étage RF (WIFI_MAC, BB, NRX, FE : leurs registres gardent ce qui y est écrit)",
+            "les instructions de l'accélérateur double précision (F64ADDC, F64ITER et les autres : leurs encodages sont publics, pas ce qu'elles font ; un programme qui en exécute une s'arrête avec un diagnostic), bien que ses registres soient conservés",
+            "la PSRAM (DRAM1), le remappage de démarrage, les permissions d'accès APB/AHB, les régions verrouillées et le timing des caches (les pages mappées sont lues entières), les interruptions d'erreur d'accès de la MMU",
+            "RMT : la mise hors tension de la mémoire (MEM_PD), le champ STATE de STATUS et les bits d'erreur côté APB, la porteuse sur une sortie inactive",
+            "les ADC SAR : la non-linéarité au-delà d'environ 2450 mV à 11 dB et l'écart d'une puce à la droite ajustée, le bruit, les conversions de l'ULP et du contrôleur numérique (DMA, I2S), le capteur à effet Hall, l'arbitrage de l'ADC2 avec le Wi-Fi, le routage d'un plot vers l'ADC par l'IO MUX RTC (non vérifié)",
+            "les DAC : le générateur d'onde cosinus et la voie DMA (I2S0), l'impédance de sortie (une source idéale : la fiche technique n'en donne pas), leur décalage et leur non-linéarité",
+            "I2C : le mode hors FIFO (NONFIFO_EN, RX_REC_FULL, TX_SEND_EMPTY), SAMPLE_SCL_LEVEL, les filtres d'entrée (seulement leur part du temps haut de SCL), le contrôle R/W de l'adressage sur 10 bits",
+            "les périphériques sans modèle pour l'instant : I2S0/1, SPI2/3 (HSPI, VSPI), MCPWM, PCNT, TWAI, SDMMC, EMAC, le capteur tactile, les autres plots de l'IO MUX RTC et le coprocesseur ULP, les accélérateurs AES et RSA, le chiffrement de la flash",
+            "les modes de veille (veille légère et profonde, les domaines d'alimentation), la détection de baisse de tension",
+            "le contrôle du schéma de codage 3/4 de l'eFuse, la protection en écriture par champ du BLOCK0"
+          ]
+        },
+        "timed": {
+          "claims": "Timing des instructions estimé : un cycle, trois pour un branchement pris, un saut, un appel ou un retour, deux pour MULL, douze pour une division, trois pour l'entrée d'une exception ; CCOUNT compte ces cycles. Les horloges suivent les registres : CPU_CLK depuis XTAL (40 MHz en sortie de reset), les 80, 160 ou 240 MHz de la PLL, ou RC_FAST ; APB_CLK ; RTC_SLOW_CLK aux 150 kHz nominaux de l'oscillateur RC.",
+          "omissions": [
+            "les verrouillages du pipeline LX6 et le timing du tampon de boucle",
+            "les défauts de cache et la latence de la flash (le temps de bus des transferts SPI est compté sur SPI1, ainsi que les temps de programmation et d'effacement de la flash)",
+            "l'erreur et la dérive des oscillateurs RC"
+          ]
+        },
+        "electrical": {
+          "claims": "Valeurs par défaut du modèle de broche GPIO à 3,3 V d'après les caractéristiques DC de la fiche technique : VIH 0,75 VDD, VIL 0,25 VDD, VOH 0,8 VDD, VOL 0,1 VDD, tirages de 45 kOhm ; GPIO34-39 en entrée seulement. Le courant d'alimentation (ADR-036, modes d'alimentation de la fiche technique v5.3) : les cœurs actifs et en attente à leur horloge, et maintenus éteints.",
+          "omissions": [
+            "l'effet de la force de sortie des plots",
+            "le courant propre de chaque périphérique (la fiche technique donne les modes, pas les parties)"
+          ]
+        }
+      }
+    }
+  }
+}
