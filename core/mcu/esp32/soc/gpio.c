@@ -406,7 +406,7 @@ static void set_clr(struct esk_rf_reg *r, int set, u32 v, u32 mask)
 static void gp_write(void *ctx, u32 off, int n, u32 v)
 {
     struct e32_gpio *k = (struct e32_gpio *)ctx;
-    const u32 lo = (u32)PADS, hi = (u32)(PADS >> 32) & 0xffu;
+    const u32 lo = (u32)(PADS & 0xffffffffull), hi = (u32)(PADS >> 32) & 0xffu;
     switch (off) {
     case 0x38: case 0x3C: case 0x40: case 0x60: case 0x64: case 0x68: case 0x6C:
         return; /* read-only */
