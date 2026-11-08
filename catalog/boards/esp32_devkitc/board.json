@@ -2,24 +2,541 @@
   "schema_version": 1,
   "kind": "board",
   "id": "emblink/esp32_devkitc",
-  "version": "0.1.0",
+  "version": "1.0.0",
   "name": "ESP32-DevKitC V4",
-  "description": "Espressif's ESP32-DevKitC V4 with an ESP32-WROOM-32E module.",
-  "keywords": ["esp32", "devkitc", "esp32-wroom-32e", "xtensa", "espressif"],
+  "description": "Espressif's ESP32-DevKitC V4 with an ESP32-WROOM-32E module (the ESP32-D0WD-V3 with its 40 MHz crystal and 4 MB of flash), the AMS1117-3.3 regulator making 3.3 V from the micro-USB's 5 V through a BAT760 Schottky, the red power LED, the Boot button on GPIO0, the EN button on CHIP_PU with its RC, and two 19-pin headers. The CP2102N's USB-to-UART bridge on UART0 (GPIO1/GPIO3) is the session's serial console, and a serial port on the host (embsim serve --serial). The firmware is a flash image (bin), as idf.py and esptool write it.",
+  "keywords": [
+    "esp32",
+    "devkitc",
+    "esp32-devkitc-v4",
+    "esp32-wroom-32e",
+    "xtensa",
+    "espressif",
+    "cp2102n"
+  ],
   "revision": "V4",
-  "mcu": {"ref": "espressif/esp32", "package": "wroom32e", "instance": "U1"},
-  "oscillators": {"hse": {"hz": 40000000, "source": "external_crystal"}},
-  "components": [],
-  "nets": {
-    "3V3": ["U1.VDD3P3"],
-    "GND": ["U1.GND"],
-    "EN": ["U1.CHIP_EN"],
-    "GPIO0": ["U1.GPIO0"],
-    "GPIO1": ["U1.GPIO1"],
-    "GPIO3": ["U1.GPIO3"]
+  "mcu": {
+    "ref": "espressif/esp32",
+    "package": "wroom32e",
+    "instance": "U1"
   },
-  "ports": {},
-  "console": {"peripheral": "UART0", "tx": "GPIO1", "rx": "GPIO3", "baud": 115200},
-  "fidelity": {"functional": {"claims": "Work in progress.", "omissions": [], "validation": []}},
-  "provenance": {"author": "EmbSIM", "license": "Apache-2.0", "sources": []}
+  "oscillators": {
+    "hse": {
+      "hz": 40000000,
+      "source": "external_crystal"
+    }
+  },
+  "components": [
+    {
+      "id": "D2",
+      "component": "emblink/diode_schottky",
+      "params": {
+        "part": "generic"
+      },
+      "doc": "BAT760-7: the USB's VBUS to the board's 5 V (EXT_5V), so 5 V fed at the header does not reach the host (the generic Schottky's model)"
+    },
+    {
+      "id": "U2",
+      "component": "emblink/regulator",
+      "params": {
+        "part": "AMS1117-3.3"
+      },
+      "doc": "AMS1117-3.3: 3.3 V from 5 V for the module and the bridge"
+    },
+    {
+      "id": "C21",
+      "component": "emblink/capacitor",
+      "params": {
+        "capacitance": "22u"
+      },
+      "doc": "U2's input capacitor, 22 uF/10 V"
+    },
+    {
+      "id": "C22",
+      "component": "emblink/capacitor",
+      "params": {
+        "capacitance": "100n"
+      },
+      "doc": "U2's input decoupling, 0.1 uF/50 V"
+    },
+    {
+      "id": "C1",
+      "component": "emblink/capacitor",
+      "params": {
+        "capacitance": "22u"
+      },
+      "doc": "U2's output capacitor, 22 uF/10 V"
+    },
+    {
+      "id": "C3",
+      "component": "emblink/capacitor",
+      "params": {
+        "capacitance": "22u"
+      },
+      "doc": "The 3.3 V rail's bulk capacitor at the module, 22 uF/10 V"
+    },
+    {
+      "id": "R2",
+      "component": "emblink/resistor",
+      "params": {
+        "resistance": "2k"
+      },
+      "doc": "D1's resistor"
+    },
+    {
+      "id": "D1",
+      "component": "emblink/led",
+      "params": {
+        "color": "red"
+      },
+      "doc": "The power-on LED"
+    },
+    {
+      "id": "R11",
+      "component": "emblink/resistor",
+      "params": {
+        "resistance": "10k"
+      },
+      "doc": "EN's pull-up to 3.3 V"
+    },
+    {
+      "id": "C9",
+      "component": "emblink/capacitor",
+      "params": {
+        "capacitance": "100n"
+      },
+      "doc": "EN's 0.1 uF: with R11 it delays the chip's start after power-up (the RC the datasheet asks for)"
+    },
+    {
+      "id": "SW2",
+      "component": "emblink/push_button",
+      "doc": "EN: joins EN to ground (reset)"
+    },
+    {
+      "id": "SW1",
+      "component": "emblink/push_button",
+      "doc": "Boot: joins GPIO0 to ground; held through a reset, the ROM waits for a download"
+    },
+    {
+      "id": "J2",
+      "component": "emblink/header",
+      "params": {
+        "pins": 19
+      },
+      "doc": "The left header (CON19X1_2P54)"
+    },
+    {
+      "id": "J3",
+      "component": "emblink/header",
+      "params": {
+        "pins": 19
+      },
+      "doc": "The right header (CON19X1_2P54)"
+    }
+  ],
+  "nets": {
+    "VBUS": [
+      "D2.A"
+    ],
+    "5V": [
+      "D2.K",
+      "U2.IN",
+      "C21.1",
+      "C22.1",
+      "J2.19"
+    ],
+    "3V3": [
+      "U2.OUT",
+      "C1.1",
+      "C3.1",
+      "U1.VDD3P3",
+      "R2.1",
+      "R11.1",
+      "J2.1"
+    ],
+    "GND": [
+      "U2.GND",
+      "C21.2",
+      "C22.2",
+      "C1.2",
+      "C3.2",
+      "D1.K",
+      "C9.2",
+      "SW2.2",
+      "SW1.2",
+      "U1.GND",
+      "J2.14",
+      "J3.1",
+      "J3.7"
+    ],
+    "D1_A": [
+      "R2.2",
+      "D1.A"
+    ],
+    "EN": [
+      "U1.CHIP_EN",
+      "R11.2",
+      "C9.1",
+      "SW2.1",
+      "J2.2"
+    ],
+    "GPIO36": [
+      "U1.GPIO36",
+      "J2.3"
+    ],
+    "GPIO39": [
+      "U1.GPIO39",
+      "J2.4"
+    ],
+    "GPIO34": [
+      "U1.GPIO34",
+      "J2.5"
+    ],
+    "GPIO35": [
+      "U1.GPIO35",
+      "J2.6"
+    ],
+    "GPIO32": [
+      "U1.GPIO32",
+      "J2.7"
+    ],
+    "GPIO33": [
+      "U1.GPIO33",
+      "J2.8"
+    ],
+    "GPIO25": [
+      "U1.GPIO25",
+      "J2.9"
+    ],
+    "GPIO26": [
+      "U1.GPIO26",
+      "J2.10"
+    ],
+    "GPIO27": [
+      "U1.GPIO27",
+      "J2.11"
+    ],
+    "GPIO14": [
+      "U1.GPIO14",
+      "J2.12"
+    ],
+    "GPIO12": [
+      "U1.GPIO12",
+      "J2.13"
+    ],
+    "GPIO13": [
+      "U1.GPIO13",
+      "J2.15"
+    ],
+    "GPIO23": [
+      "U1.GPIO23",
+      "J3.2"
+    ],
+    "GPIO22": [
+      "U1.GPIO22",
+      "J3.3"
+    ],
+    "GPIO1": [
+      "U1.GPIO1",
+      "J3.4"
+    ],
+    "GPIO3": [
+      "U1.GPIO3",
+      "J3.5"
+    ],
+    "GPIO21": [
+      "U1.GPIO21",
+      "J3.6"
+    ],
+    "GPIO19": [
+      "U1.GPIO19",
+      "J3.8"
+    ],
+    "GPIO18": [
+      "U1.GPIO18",
+      "J3.9"
+    ],
+    "GPIO5": [
+      "U1.GPIO5",
+      "J3.10"
+    ],
+    "GPIO17": [
+      "U1.GPIO17",
+      "J3.11"
+    ],
+    "GPIO16": [
+      "U1.GPIO16",
+      "J3.12"
+    ],
+    "GPIO4": [
+      "U1.GPIO4",
+      "J3.13"
+    ],
+    "GPIO0": [
+      "U1.GPIO0",
+      "J3.14",
+      "SW1.1"
+    ],
+    "GPIO2": [
+      "U1.GPIO2",
+      "J3.15"
+    ],
+    "GPIO15": [
+      "U1.GPIO15",
+      "J3.16"
+    ]
+  },
+  "ports": {
+    "VBUS": {
+      "net": "VBUS",
+      "doc": "The micro-USB connector's VBUS: where a USB host's 5 V comes in"
+    },
+    "3V3": {
+      "net": "3V3",
+      "connector": "J2",
+      "pin": 1
+    },
+    "EN": {
+      "net": "EN",
+      "connector": "J2",
+      "pin": 2,
+      "doc": "CHIP_PU: low holds the chip off and in reset"
+    },
+    "VP": {
+      "net": "GPIO36",
+      "connector": "J2",
+      "pin": 3
+    },
+    "VN": {
+      "net": "GPIO39",
+      "connector": "J2",
+      "pin": 4
+    },
+    "IO34": {
+      "net": "GPIO34",
+      "connector": "J2",
+      "pin": 5
+    },
+    "IO35": {
+      "net": "GPIO35",
+      "connector": "J2",
+      "pin": 6
+    },
+    "IO32": {
+      "net": "GPIO32",
+      "connector": "J2",
+      "pin": 7
+    },
+    "IO33": {
+      "net": "GPIO33",
+      "connector": "J2",
+      "pin": 8
+    },
+    "IO25": {
+      "net": "GPIO25",
+      "connector": "J2",
+      "pin": 9
+    },
+    "IO26": {
+      "net": "GPIO26",
+      "connector": "J2",
+      "pin": 10
+    },
+    "IO27": {
+      "net": "GPIO27",
+      "connector": "J2",
+      "pin": 11
+    },
+    "IO14": {
+      "net": "GPIO14",
+      "connector": "J2",
+      "pin": 12
+    },
+    "IO12": {
+      "net": "GPIO12",
+      "connector": "J2",
+      "pin": 13
+    },
+    "GND": {
+      "net": "GND",
+      "connector": "J2",
+      "pin": 14
+    },
+    "IO13": {
+      "net": "GPIO13",
+      "connector": "J2",
+      "pin": 15
+    },
+    "5V": {
+      "net": "5V",
+      "connector": "J2",
+      "pin": 19
+    },
+    "GND1": {
+      "net": "GND",
+      "connector": "J3",
+      "pin": 1
+    },
+    "IO23": {
+      "net": "GPIO23",
+      "connector": "J3",
+      "pin": 2
+    },
+    "IO22": {
+      "net": "GPIO22",
+      "connector": "J3",
+      "pin": 3
+    },
+    "TX": {
+      "net": "GPIO1",
+      "connector": "J3",
+      "pin": 4,
+      "doc": "GPIO1, U0TXD: also the bridge's RXD"
+    },
+    "RX": {
+      "net": "GPIO3",
+      "connector": "J3",
+      "pin": 5,
+      "doc": "GPIO3, U0RXD: also the bridge's TXD"
+    },
+    "IO21": {
+      "net": "GPIO21",
+      "connector": "J3",
+      "pin": 6
+    },
+    "GND2": {
+      "net": "GND",
+      "connector": "J3",
+      "pin": 7
+    },
+    "IO19": {
+      "net": "GPIO19",
+      "connector": "J3",
+      "pin": 8
+    },
+    "IO18": {
+      "net": "GPIO18",
+      "connector": "J3",
+      "pin": 9
+    },
+    "IO5": {
+      "net": "GPIO5",
+      "connector": "J3",
+      "pin": 10
+    },
+    "IO17": {
+      "net": "GPIO17",
+      "connector": "J3",
+      "pin": 11
+    },
+    "IO16": {
+      "net": "GPIO16",
+      "connector": "J3",
+      "pin": 12
+    },
+    "IO4": {
+      "net": "GPIO4",
+      "connector": "J3",
+      "pin": 13
+    },
+    "IO0": {
+      "net": "GPIO0",
+      "connector": "J3",
+      "pin": 14,
+      "doc": "GPIO0, a strapping pin: the Boot button"
+    },
+    "IO2": {
+      "net": "GPIO2",
+      "connector": "J3",
+      "pin": 15
+    },
+    "IO15": {
+      "net": "GPIO15",
+      "connector": "J3",
+      "pin": 16
+    }
+  },
+  "leds": [
+    {
+      "name": "power",
+      "component": "D1",
+      "color": "red"
+    }
+  ],
+  "buttons": [
+    {
+      "name": "boot",
+      "component": "SW1",
+      "gpio": "GPIO0",
+      "active": "low"
+    },
+    {
+      "name": "reset",
+      "component": "SW2",
+      "signal": "CHIP_EN",
+      "active": "low"
+    }
+  ],
+  "console": {
+    "peripheral": "UART0",
+    "tx": "GPIO1",
+    "rx": "GPIO3",
+    "baud": 115200,
+    "bridge": {
+      "part": "CP2102N-A02-GQFN28",
+      "usb": {
+        "vid": "0x10C4",
+        "pid": "0xEA60",
+        "product": "CP2102N USB to UART Bridge Controller"
+      }
+    }
+  },
+  "toolchains": {
+    "gcc-xtensa": {
+      "cpu": "esp32",
+      "flags": [
+        "-mlongcalls"
+      ]
+    }
+  },
+  "fidelity": {
+    "functional": {
+      "claims": "Nets, ports, the power LED and the two buttons as parts; the ESP32 runs its firmware from the flash image (see its description): Espressif's own ROM, the second-stage bootloader and the app, as on the board. EN pulls CHIP_PU low and the chip starts again with rst:0x1 (POWERON_RESET); Boot held through it makes the ROM wait for a download. The CP2102N's port is the session's console on UART0 (GPIO1/GPIO3) and a serial port on the host.",
+      "omissions": [
+        "the CP2102N itself: its USB enumeration, its modem lines and so the auto-program circuit (Q1, Q2 and R21, R22 that let esptool's DTR and RTS drive EN and GPIO0): pressing Boot and EN does what they do",
+        "the ESD diodes on the USB lines (LESD5D5.0CT1G) and the USB connector",
+        "the flash pins GPIO6-11 on the headers (D0-D3, CMD, CLK): the module keeps them for its flash and the ports leave them out",
+        "the artwork and the bench model"
+      ],
+      "validation": []
+    },
+    "electrical": {
+      "claims": "The power path from the schematic: VBUS through the Schottky to 5 V, the AMS1117-3.3 to 3.3 V, the LED, the EN RC.",
+      "omissions": [],
+      "validation": []
+    }
+  },
+  "provenance": {
+    "author": "EmbSIM",
+    "license": "Apache-2.0",
+    "sources": [
+      {
+        "title": "ESP32-DevKitC V4 schematic (Espressif)",
+        "rev": "V4, 2020-02-25",
+        "url": "https://dl.espressif.com/dl/schematics/esp32_devkitc_v4_sch.pdf"
+      },
+      {
+        "title": "ESP32-DevKitC V4 user guide (Espressif esp-dev-kits)",
+        "url": "https://docs.espressif.com/projects/esp-dev-kits/en/latest/esp32/esp32-devkitc/user_guide.html"
+      },
+      {
+        "title": "ESP32-WROOM-32E & ESP32-WROOM-32UE datasheet (Espressif)",
+        "rev": "v1.7"
+      }
+    ],
+    "notes": "Nets and parts read from the schematic's text and the user guide's header table."
+  },
+  "tests": [
+    "tests/*.json"
+  ]
 }

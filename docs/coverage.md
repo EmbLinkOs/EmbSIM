@@ -8,6 +8,7 @@ evidence for each model is in [STATUS.md](STATUS.md).
 
 | MCU | Modelled | Registers only | Missing | Peripherals |
 |---|---|---|---|---|
+| ESP32 | 14 | 0 | 31 | 45 |
 | ESP32-C3 | 35 | 0 | 0 | 35 |
 | ATmega328P | 15 | 0 | 0 | 15 |
 | PIC24FJ1024GB610 | 11 | 4 | 17 | 32 |
@@ -18,6 +19,61 @@ evidence for each model is in [STATUS.md](STATUS.md).
 | STM32F103C8 | 26 | 0 | 1 | 27 |
 | STM32F446RE | 53 | 0 | 15 | 68 |
 | STM32F446ZE | 53 | 0 | 15 | 68 |
+
+## ESP32 (`espressif/esp32`)
+
+Boards: ESP32-DevKitC V4.  
+14 of 45 peripherals modelled, 0 registers only, 31 missing.
+
+| Peripheral | Model | State |
+|---|---|---|
+| DPORT | `esp32-dport` | modelled |
+| AES | — | **missing** |
+| RSA | — | **missing** |
+| SHA | `esp32-sha` | modelled |
+| UART0 | `esp32-uart` | modelled |
+| SPI1 | `esp32-spi` | modelled |
+| SPI0 | `esp32-spi` | modelled |
+| GPIO | `esp32-gpio` | modelled |
+| GPIO_SD | — | **missing** |
+| FLASH_ENCRYPTION | — | **missing** |
+| FRC_TIMER | — | **missing** |
+| RTC_CNTL | `esp32-rtc` | modelled |
+| RTC_IO | — | **missing** |
+| SENS | — | **missing** |
+| RTC_I2C | — | **missing** |
+| IO_MUX | `esp32-iomux` | modelled |
+| HINF | — | **missing** |
+| UHCI1 | — | **missing** |
+| I2S0 | — | **missing** |
+| UART1 | `esp32-uart` | modelled |
+| I2C0 | — | **missing** |
+| UHCI0 | — | **missing** |
+| SLCHOST | — | **missing** |
+| RMT | — | **missing** |
+| PCNT | — | **missing** |
+| SLC | — | **missing** |
+| LEDC | — | **missing** |
+| EFUSE | `esp32-efuse` | modelled |
+| NRX | — | **missing** |
+| BB | — | **missing** |
+| MCPWM0 | — | **missing** |
+| TIMG0 | `esp32-timg` | modelled |
+| TIMG1 | `esp32-timg` | modelled |
+| SPI2 | — | **missing** |
+| SPI3 | — | **missing** |
+| APB_CTRL | `esp32-apbctrl` | modelled |
+| I2C1 | — | **missing** |
+| SDHOST | — | **missing** |
+| EMAC_DMA | — | **missing** |
+| EMAC_EXT | — | **missing** |
+| EMAC_MAC | — | **missing** |
+| TWAI0 | — | **missing** |
+| MCPWM1 | — | **missing** |
+| I2S1 | — | **missing** |
+| UART2 | `esp32-uart` | modelled |
+
+Declared omissions: Wi-Fi, Bluetooth and the RF front end (WIFI_MAC, BB, NRX, FE: their registers keep what is written); the double-precision accelerator's instructions (F64ADDC, F64ITER and the others: their encodings are public, not what they do; a program that runs one stops with a diagnostic), though its registers are kept; PSRAM (DRAM1), the boot remap, the APB/AHB access permissions, the caches' lock regions and timing (the mapped pages are read whole), the MMU's access-error interrupts; the peripherals without a model yet: I2C0/1, I2S0/1, SPI2/3 (HSPI, VSPI), RMT, LEDC, MCPWM, PCNT, TWAI, SDMMC, EMAC, the SAR ADCs, the DACs, the touch sensor, the RTC IO MUX and the ULP coprocessor, the AES and RSA accelerators, flash encryption; sleep modes (light and deep sleep, the power domains), brown-out; the eFuse 3/4 coding scheme's check, BLOCK0's per-field write protection.
 
 ## ESP32-C3 (`espressif/esp32c3`)
 

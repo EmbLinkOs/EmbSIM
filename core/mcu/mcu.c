@@ -1167,8 +1167,8 @@ static int irq_entry(const mcu_state *st, int n)
         return -1;
     if (!strcmp(arch, "cortex-m") || !strcmp(arch, "mips"))
         want = n - 16; /* 16 + the vector */
-    else if (!strcmp(arch, "riscv"))
-        return -1;
+    else if (!strcmp(arch, "riscv") || !strcmp(arch, "xtensa"))
+        return -1; /* causes and CPU interrupt numbers, not the matrix's sources */
     else
         want = n; /* the vector itself (an AVR's, a PIC24's) */
     for (i = 0; want >= 0 && i < rf->nirq; i++)

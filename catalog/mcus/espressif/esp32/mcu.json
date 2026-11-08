@@ -4,7 +4,7 @@
   "id": "espressif/esp32",
   "version": "0.1.0",
   "name": "ESP32",
-  "description": "Espressif ESP32 (ESP32-D0WD-V3, chip revision v3.1): two Xtensa LX6 cores at up to 240 MHz, 520 KiB of SRAM, 448 KiB of ROM, 16 KiB of RTC memory, external SPI flash behind the cores' caches, Wi-Fi and Bluetooth.",
+  "description": "Espressif ESP32 (ESP32-D0WD-V3, chip revision v3.1): two Xtensa LX6 cores at up to 240 MHz, 520 KiB of SRAM, 448 KiB of ROM, 16 KiB of RTC memory, external SPI flash behind the cores' caches, Wi-Fi and Bluetooth; the ESP32-DevKitC's MCU. Espressif's ROM, ESP-IDF's second-stage bootloader and ESP-IDF applications run on both cores; the radios are not yet modelled.",
   "keywords": [
     "xtensa",
     "lx6",
@@ -32,7 +32,8 @@
       "size": "448K",
       "kind": "rom",
       "file": "rom.bin",
-      "doc": "Internal ROM0 (384 KiB) and ROM1 (64 KiB) on the instruction bus (TRM v5 table 3.3-1, ESP-IDF's SOC_IROM_MASK_HIGH 0x40070000): the boot ROM of chip revision v3, its image made by tools/importers/esprom.py (--base 0x40000000 --size 0x70000 --data-table 0x4000D4EC:0x4000D4F8, the Bluetooth controller's entry; --data-table 0x4000D4F8:0x4000D5C8, the ROM's copy table of its RAM variables' initial values) from Espressif's esp32_rev300_rom.elf (espressif/esp-rom-elfs 20241011, Apache-2.0: LICENSES/Apache-2.0.txt; the ROM's code is Copyright (c) 2015-2022 Espressif Systems (Shanghai) Co. Ltd.). It equals byte for byte the image Espressif's QEMU loads (esp32-v3-rom.bin, sha256 9115bbcd...258b) over its 455,722 bytes; the rest reads zeros"
+      "doc": "Internal ROM0 (384 KiB) and ROM1 (64 KiB) on the instruction bus (TRM v5 table 3.3-1, ESP-IDF's SOC_IROM_MASK_HIGH 0x40070000): the boot ROM of chip revision v3, its image made by tools/importers/esprom.py (--base 0x40000000 --size 0x70000 --data-table 0x4000D4EC:0x4000D4F8, the Bluetooth controller's entry; --data-table 0x4000D4F8:0x4000D5C8, the ROM's copy table of its RAM variables' initial values) from Espressif's esp32_rev300_rom.elf (espressif/esp-rom-elfs 20241011, Apache-2.0: LICENSES/Apache-2.0.txt; the ROM's code is Copyright (c) 2015-2022 Espressif Systems (Shanghai) Co. Ltd.). It equals byte for byte the image Espressif's QEMU loads (esp32-v3-rom.bin, sha256 9115bbcd...258b) over its 455,722 bytes; the rest reads zeros",
+      "sha256": "ee235a76e8e5afd5bed9d674587e001d8cde459a659edef9072cbc867fd31313"
     },
     {
       "name": "rom1_data",
@@ -220,18 +221,36 @@
   },
   "fidelity": {
     "functional": {
-      "claims": "Work in progress.",
-      "omissions": [],
-      "validation": []
+      "claims": "The two Xtensa LX6 cores (mcu/xtensa/lx6.c, lx6fp.c) as Espressif's core-isa.h configures them: the core and density instructions, the windowed registers (64, the overflow check of every instruction, CALL4/8/12, ENTRY, RETW and its underflow, MOVSP, ROTW, L32E/S32E), zero-overhead loops, MUL16/MULL/MULUH/MULSH, QUOS/QUOU/REMS/REMU, NSA, MIN/MAX, SEXT, CLAMPS, booleans, S32C1I with SCOMPARE1, THREADPTR, MISC0-3, PRID (0xCDCD, 0xABAB), the MAC16 package, the single-precision FPU (IEEE rounding modes and flags; the division and square root sequences libgcc runs give correctly rounded results), XEA2 exceptions with relocatable vectors, 32 interrupts at core-isa.h's levels and types (level, edge, software, the CCOMPARE0-2 timers against CCOUNT, NMI), RSIL, WAITI, RFI, the debug option's BREAK, IBREAK, DBREAK and ICOUNT, region protection (eight 512 MB regions, 15 no access), unaligned loads and stores, and the instruction bus's 32-bit-only data accesses. Both cores share the machine, the APP_CPU held in reset until DPORT releases it and seeing the ROM with its pointers into the PRO_CPU's ROM data moved to its own, as Espressif's own APP_CPU ROM image has them. The boot: Espressif's ROM (esp32_rev300_rom.elf, chip revision v3) from the reset vector, its banner, the strapping pins (GPIO_STRAP: SPI_FAST_FLASH_BOOT, or the download mode with GPIO0 low), the reset causes (RTC_CNTL), the eFuse glitch check, the flash read through SPI1, ESP-IDF's second-stage bootloader and its image check on the SHA accelerator, the caches' flash MMU, and the application on both cores. The models: DPORT (the APP_CPU's reset, clock and stall, CPU_PER_CONF, the caches' flush and state, the flash MMU tables, the interrupt matrix's 69 sources, the cross-CPU interrupts), RTC_CNTL (reset causes, the RTC timer, the RTC watchdog with its flash-boot protection, the software resets and stalls, the store registers, SOC_CLK_SEL), APB_CTRL (the CPU and APB clocks from XTAL, PLL or RC_FAST), the eFuse controller with the chip's factory bits (ESP32-D0WD-V3 v3.1, a MAC with its CRC, or the board settings'), GPIO and IO_MUX (40 pads, the matrix, pulls, open drain, interrupts on each CPU, the strapping latch), UART0-2 (FIFOs, frames at the baud rate, interrupts), TIMG0/1 (T0, T1, the LAC timer, the MWDT with its flash-boot protection, the RTC_SLOW_CLK calibration), SPI0/SPI1 with the module's Giantec GT25Q32A flash (C4 60 16, the ID the owner's board reports), the SHA accelerator (SHA-1, -256, -384, -512), the internal analog I2C master, the random number generator and the peripherals' AHB view.",
+      "omissions": [
+        "Wi-Fi, Bluetooth and the RF front end (WIFI_MAC, BB, NRX, FE: their registers keep what is written)",
+        "the double-precision accelerator's instructions (F64ADDC, F64ITER and the others: their encodings are public, not what they do; a program that runs one stops with a diagnostic), though its registers are kept",
+        "PSRAM (DRAM1), the boot remap, the APB/AHB access permissions, the caches' lock regions and timing (the mapped pages are read whole), the MMU's access-error interrupts",
+        "the peripherals without a model yet: I2C0/1, I2S0/1, SPI2/3 (HSPI, VSPI), RMT, LEDC, MCPWM, PCNT, TWAI, SDMMC, EMAC, the SAR ADCs, the DACs, the touch sensor, the RTC IO MUX and the ULP coprocessor, the AES and RSA accelerators, flash encryption",
+        "sleep modes (light and deep sleep, the power domains), brown-out",
+        "the eFuse 3/4 coding scheme's check, BLOCK0's per-field write protection"
+      ],
+      "validation": [
+        "tests/unit/test_lx6.c: programs assembled by Espressif's assembler (integer, shifts, multiply and divide, loops, branches, memory with S32C1I, windowed recursion through the ROM's own window vectors, SYSCALL, the CCOMPARE timer interrupt, FPU, MAC16), and the APP_CPU's ROM data kept apart",
+        "tests/vendor/esp-idf: ESP-IDF v5.4's hello_world built unmodified for the esp32 target on the ESP32-DevKitC V4, from the ROM's banner to esp_restart",
+        "the ROM image equals Espressif QEMU's esp32-v3-rom.bin byte for byte, and the APP_CPU's view of it QEMU's esp32-v3-rom-app.bin"
+      ]
     },
     "timed": {
-      "claims": "Instruction timing estimated.",
-      "omissions": [],
+      "claims": "Instruction timing estimated: one cycle, a taken branch, jump, call or return three, MULL two, a division twelve, an exception's entry three; CCOUNT counts those cycles. The clocks follow the registers: CPU_CLK from XTAL (40 MHz out of reset), the PLL's 80, 160 or 240 MHz, or RC_FAST; APB_CLK; RTC_SLOW_CLK at the RC oscillator's nominal 150 kHz.",
+      "omissions": [
+        "the LX6 pipeline's interlocks and the loop buffer's timing",
+        "cache misses and flash latency (the SPI transfers' bus time is counted on SPI1, the flash's own program and erase times too)",
+        "the RC oscillators' error and drift"
+      ],
       "validation": []
     },
     "electrical": {
-      "claims": "GPIO pin-model defaults at 3.3 V.",
-      "omissions": [],
+      "claims": "GPIO pin-model defaults at 3.3 V from the datasheet's DC characteristics: VIH 0.75 VDD, VIL 0.25 VDD, VOH 0.8 VDD, VOL 0.1 VDD, 45 kOhm pulls; GPIO34-39 inputs only.",
+      "omissions": [
+        "the supply current (the datasheet's power modes are not yet in the description)",
+        "the pads' drive strengths' effect"
+      ],
       "validation": []
     }
   },
@@ -241,22 +260,33 @@
     "sources": [
       {
         "title": "ESP32 Technical Reference Manual",
-        "rev": "v5.2"
+        "rev": "v5"
       },
       {
         "title": "ESP32 Series Datasheet",
-        "rev": "v4.8"
+        "rev": "v4"
       },
       {
         "title": "Espressif esp32.svd (espressif/svd)",
         "rev": "be20aa1"
       },
       {
-        "title": "Espressif esp-rom-elfs, esp32_rev300_rom.elf",
+        "title": "Espressif esp-rom-elfs, esp32_rev300_rom.elf (sha256 920b70635440517866aab2230964a570d2cf2b676658d93c52fbac108c1cca31)",
         "rev": "20241011"
+      },
+      {
+        "title": "Espressif ESP-IDF, components/xtensa/esp32/include/xtensa/config/core-isa.h and esp32.rom.ld",
+        "rev": "v5.4"
+      },
+      {
+        "title": "Cadence Xtensa Instruction Set Architecture Reference Manual"
+      },
+      {
+        "title": "Giantec GT25Q32A-U datasheet (the module's flash)",
+        "rev": "V2.5"
       }
     ],
-    "notes": "The register description is converted from Espressif's Apache-2.0 SVD; the boot ROM's image from Espressif's Apache-2.0 ROM ELF."
+    "notes": "The register description is converted from Espressif's Apache-2.0 SVD; the boot ROM's image from Espressif's Apache-2.0 ROM ELF; the instruction encodings checked against Espressif's assembler."
   },
   "signals": [
     "GPIO0",

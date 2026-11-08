@@ -57,7 +57,6 @@
  * notes on the ESP32's interrupt levels and types it agrees with. */
 #include <stdarg.h>
 #include <stdio.h>
-#include <stdlib.h>
 #include <string.h>
 
 #include "mcu/xtensa/lx6.h"
@@ -155,7 +154,6 @@ struct lx6 {
     int jumped; /* it branched, jumped, called or returned: no loop-back */
     int waiti; /* waiting in WAITI */
     u32 cost;
-    char xml[1]; /* no target description */
 };
 
 enum { CORE_RUN, CORE_SLEEP, CORE_HELD, CORE_STALLED };
@@ -379,10 +377,6 @@ int esk_lx6_store(struct lx6 *c, u32 a, int n, u32 v)
     struct esk_bus *b = &c->m->bus;
     struct esk_region *r;
     int i;
-#ifdef LX6_DEBUG_TRACE
-    if (getenv("LX6_WATCH") && a == (u32)strtoul(getenv("LX6_WATCH"), 0, 16))
-        fprintf(stderr, "WATCH core %d pc %08x writes %08x a0=%08x\n", c->id, (unsigned)c->pc, (unsigned)v, (unsigned)AR(c, 0));
-#endif
     if (prohibited(c->dtlb[a >> 29])) {
         mem_exception(c, EXC_STORE_PROHIBITED, a);
         return -1;
@@ -1505,76 +1499,6 @@ static void exec(struct lx6 *c, u32 w, u32 len)
     esk_lx6_illegal(c);
 }
 
-#ifdef LX6_DEBUG_TRACE
-#define RING 65536
-static char ring[RING][96];
-static unsigned ring_n;
-static FILE *ring_f;
-static void ring_dump(void)
-{
-    unsigned i, n = ring_n < RING ? ring_n : RING;
-    for (i = 0; i < n; i++)
-        fputs(ring[(ring_n - n + i) % RING], ring_f);
-    fclose(ring_f);
-}
-static void lx6_debug_trace(struct lx6 *c, u32 w)
-{
-    static int opened;
-    if (!opened) {
-        const char *e = getenv("LX6_TRACE");
-        opened = 1;
-        ring_f = e ? fopen(e, "w") : 0;
-        if (ring_f)
-            atexit(ring_dump);
-    }
-    {
-        static u32 stop_pc;
-        static int got;
-        if (!got) {
-            const char *e = getenv("LX6_STOP_PC");
-            got = 1;
-            stop_pc = e ? (u32)strtoul(e, 0, 16) : 0;
-        }
-        {
-            static u32 logs[32];
-            static int nlogs = -1;
-            int q;
-            if (nlogs < 0) {
-                const char *e = getenv("LX6_LOG_PCS");
-                nlogs = 0;
-                while (e && *e && nlogs < 32) {
-                    char *end;
-                    logs[nlogs++] = (u32)strtoul(e, &end, 16);
-                    e = *end ? end + 1 : end;
-                }
-            }
-            for (q = 0; q < nlogs; q++)
-                if (c->pc == logs[q]) {
-                    char str[40];
-                    int z;
-                    for (z = 0; z < 39; z++) {
-                        u32 ch = 0;
-                        if (esk_bus_debug_read(&c->m->bus, AR(c, 3) + (u32)z, 1, &ch) || ch < 32 || ch > 126)
-                            break;
-                        str[z] = (char)ch;
-                    }
-                    str[z] = 0;
-                    fprintf(stderr, "PCLOG core %d at %08x cycles %llu a0=%08x a2=%08x a3=%08x a4=%08x s3=%s\n", c->id,
-                            (unsigned)c->pc, (unsigned long long)c->m->cycles, (unsigned)AR(c, 0), (unsigned)AR(c, 2),
-                            (unsigned)AR(c, 3), (unsigned)AR(c, 4), str);
-                }
-        }
-        if (stop_pc && c->pc == stop_pc) {
-            fprintf(stderr, "LX6_STOP_PC hit on core %d\n", c->id);
-            exit(0);
-        }
-    }
-    if (ring_f)
-        snprintf(ring[ring_n++ % RING], 96, "%d %08x %06x a0=%08x a1=%08x a2=%08x a3=%08x\n", c->id,
-                 (unsigned)c->pc, (unsigned)w, (unsigned)AR(c, 0), (unsigned)AR(c, 1), (unsigned)AR(c, 2),
-                 (unsigned)AR(c, 3));
-}
-#endif
 
 /* ---- interrupts and a step -------------------------------------------- */
 
@@ -1653,9 +1577,6 @@ static void core_step(struct lx6 *c)
     c->npc = c->pc + len;
     c->jumped = 0;
     m->insns++;
-#ifdef LX6_DEBUG_TRACE
-    lx6_debug_trace(c, w);
-#endif
     if ((w & 15u) >= 14u)
         esk_lx6_illegal(c);
     else
@@ -1902,7 +1823,6 @@ static u32 get(const u8 *b)
 
 static u32 *reg_ptr(struct lx6 *c, int n)
 {
-    static u32 zero;
     if (n == GR_PC)
         return &c->pc;
     if (n >= GR_AR && n < GR_AR + 64)
@@ -1928,8 +1848,13 @@ static u32 *reg_ptr(struct lx6 *c, int n)
     case GR_FCR: return &c->fcr;
     case GR_FSR: return &c->fsr;
     }
-    zero = 0;
-    return n == 71 || n == 72 || (n >= 83 && n <= 86) ? &zero : 0;
+    switch (n) {
+    case 83: return &c->expstate;
+    case 84: return &c->f64r_lo;
+    case 85: return &c->f64r_hi;
+    case 86: return &c->f64s;
+    }
+    return 0;
 }
 
 static int core_reg_read(struct lx6 *c, int n, u8 *buf)

@@ -3,11 +3,12 @@
 # Copyright 2026 Junior Deogracias
 """ESP-IDF's own examples for the ESP32-C3, built unmodified by ESP-IDF's
 build system and run on EmbSIM's ESP32-C3-DevKitM-1 (the RTOS boards plan,
-part 2, step 7; 01 §8.2).
+part 2, step 7; 01 §8.2), and for the ESP32 on the ESP32-DevKitC V4 (the
+examples TARGETS names, built for that target).
 
 ESP-IDF is not vendored. --idf names an ESP-IDF checkout (v5.4) whose tools
 are installed, or IDF_PATH does; the riscv32-esp-elf toolchain must be on
-PATH and ESP-IDF's Python environment the one running `idf.py` (its
+PATH (xtensa-esp32-elf for the ESP32's) and ESP-IDF's Python environment the one running `idf.py` (its
 export.sh sets both up). An example's managed components (blink's
 led_strip) come from Espressif's component registry, as `idf.py` fetches
 them.
@@ -70,7 +71,14 @@ EXAMPLES = {
     "wifi_softap": "examples/wifi/getting_started/softAP",
     "wifi_station": "examples/wifi/getting_started/station",
     "wifi_station_open": "examples/wifi/getting_started/station",
+    "esp32_hello_world": "examples/get-started/hello_world",
 }
+# the target an example is built for, when not the ESP32-C3 (its board in
+# examples/<name>/project.json), and the toolchain that target needs
+TARGETS = {
+    "esp32_hello_world": "esp32",
+}
+TOOLCHAINS = {"esp32c3": "riscv32-esp-elf-gcc", "esp32": "xtensa-esp32-elf-gcc"}
 # examples built only for another's project (with examples/<name>/'s
 # sdkconfig.defaults), not run on their own
 VARIANTS = {
@@ -100,7 +108,7 @@ def build(idf: Path, name: str, out: Path) -> Path:
     cmd = [sys.executable, idf / "tools" / "idf.py", "-C", proj, "-B", proj / "build"]
     if defaults:
         cmd += ["-D", "SDKCONFIG_DEFAULTS=" + ";".join(str(d) for d in defaults)]
-    sh(cmd + ["set-target", "esp32c3"], env=env)
+    sh(cmd + ["set-target", TARGETS.get(name, "esp32c3")], env=env)
     sh(cmd + ["build"], env=env)
     args = json.loads((proj / "build" / "flasher_args.json").read_text(encoding="utf-8"))
     image = bytearray(b"\xff" * FLASH_SIZE)
@@ -120,11 +128,16 @@ def main() -> int:
     ap.add_argument("--keep", help="build here, and keep it, instead of a temporary directory")
     ap.add_argument("examples", nargs="*")
     args = ap.parse_args()
-    if not args.idf or not shutil.which("riscv32-esp-elf-gcc"):
-        print("skip: ESP-IDF (--idf or IDF_PATH) and its riscv32-esp-elf toolchain are needed")
+    if not args.idf:
+        print("skip: ESP-IDF (--idf or IDF_PATH) and its toolchains are needed")
         return 0
     idf = Path(args.idf).resolve()
     names = args.examples or sorted(EXAMPLES)
+    missing = sorted({TOOLCHAINS[TARGETS.get(n, "esp32c3")] for n in names} - {t for t in TOOLCHAINS.values()
+                                                                                  if shutil.which(t)})
+    if missing:
+        print(f"skip: the toolchain(s) {', '.join(missing)} are needed")
+        return 0
     unknown = [n for n in names if n not in EXAMPLES]
     if unknown:
         raise SystemExit(f"unknown example(s): {', '.join(unknown)}")

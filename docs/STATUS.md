@@ -5,6 +5,21 @@ maintained by hand until evidence tooling exists. It is not a generated
 support matrix. Specifications define target contracts; their acceptance
 does not mean the described behaviour exists.
 
+## ESP32 on the machine framework (2026-11-08)
+
+The ESP32 now runs as a catalog MCU (`espressif/esp32`) on the
+`emblink/esp32_devkitc` board: two Xtensa LX6 cores in the framework
+(`core/mcu/xtensa/lx6.c`), the SoC models in `core/mcu/esp32/soc/`, and
+Espressif's ROM (ECO3), ESP-IDF v5.4's second-stage bootloader and its
+hello_world running unmodified on both cores at 160 MHz to `Hello world!`
+and through `esp_restart` (rst:0xc SW_CPU_RESET). Evidence: `test_lx6`
+(4,332 checks), the board's three fixtures, and the ESP-IDF vendor
+scenario `esp32_hello_world` (9/9). Not yet: Wi-Fi and Bluetooth, the
+double-precision accelerator's instructions, the peripherals the
+description's fidelity lists (I2C, I2S, SPI2/3, RMT, LEDC, ADC, ...),
+sleep. The standalone harness below remains as its own qualification
+fixtures.
+
 ## Original ESP32 dual-core target investigation (2026-11-04)
 
 **Latest digital pad-hold update:** [Per-pin digital hold](engineering/esp32-digital-pad-hold.md)
