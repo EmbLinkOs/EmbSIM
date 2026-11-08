@@ -408,7 +408,7 @@ int esk_lx6_fp(struct lx6 *c, u32 w)
             return 0;
         }
         if (op2 == 12 || op2 == 13) { /* MOVF.S MOVT.S */
-            if (((esk_lx6_br(c) >> t) & 1u) == (op2 == 13))
+            if (((esk_lx6_br(c) >> t) & 1u) == (u32)(op2 == 13))
                 f[r] = f[s];
             return 0;
         }

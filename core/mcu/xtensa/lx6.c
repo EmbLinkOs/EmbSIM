@@ -1211,7 +1211,7 @@ static void exec(struct lx6 *c, u32 w, u32 len)
             case 12: case 13: /* MOVF MOVT */
                 if (win(c, r > s ? r : s))
                     return;
-                if (((c->br >> t) & 1u) == (op2 == 13))
+                if (((c->br >> t) & 1u) == (u32)(op2 == 13))
                     AR(c, r) = AR(c, s);
                 return;
             case 14: { /* RUR */
