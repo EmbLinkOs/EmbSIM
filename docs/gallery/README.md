@@ -5,6 +5,15 @@ evolves. Newer milestones come first. The milestone sets from M1 on are captured
 `ui/apps/workbench/scripts/screenshots.mjs` (the same views each time:
 `pnpm build`, then `node scripts/screenshots.mjs --out ../../../docs/gallery/<milestone>`).
 
+## The ESP32-DevKitC running ESP-IDF's i2c_eeprom (2026-11-08)
+
+The original ESP32 on the machine framework: ESP-IDF v5.4's i2c_eeprom,
+built unmodified, writing a 24LC256 through I2C0 at 400 kHz and reading it
+back (the part's write cycles counted under the meters).
+
+| ![Design](esp32-devkitc/design.png) | ![Run](esp32-devkitc/run.png) |
+|---|---|
+
 ## The library by category and sub-category (2026-11-03)
 
 The real catalog's 205 parts filed as an EDA's device picker files them;

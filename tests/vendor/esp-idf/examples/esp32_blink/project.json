@@ -1,0 +1,102 @@
+{
+ "schema_version": 1,
+ "kind": "project",
+ "name": "esp-idf-esp32_blink",
+ "description": "ESP-IDF's blink on the ESP32-DevKitC V4 with an LED on IO2 through 330 ohm (the DevKitC has no LED of its own; sdkconfig.defaults chooses the GPIO LED on GPIO2).",
+ "policy": "electrical",
+ "boards": [
+  {
+   "id": "B1",
+   "board": "emblink/esp32_devkitc",
+   "layout": {
+    "x": 360,
+    "y": 120
+   },
+   "firmware": {
+    "image": "flash.bin",
+    "format": "bin"
+   }
+  }
+ ],
+ "components": [
+  {
+   "id": "USB",
+   "component": "emblink/vsource",
+   "params": {
+    "kind": "dc",
+    "dc": 5
+   },
+   "layout": {
+    "x": 120,
+    "y": 160
+   }
+  },
+  {
+   "id": "GND1",
+   "component": "emblink/gnd",
+   "layout": {
+    "x": 120,
+    "y": 320
+   }
+  },
+  {
+   "id": "R1",
+   "component": "emblink/resistor",
+   "params": {
+    "resistance": "330"
+   },
+   "layout": {
+    "x": 600,
+    "y": 160
+   }
+  },
+  {
+   "id": "LED1",
+   "component": "emblink/led",
+   "params": {
+    "color": "red"
+   },
+   "layout": {
+    "x": 680,
+    "y": 160
+   }
+  }
+ ],
+ "nets": {
+  "GND": [
+   "USB.-",
+   "GND1.GND",
+   "B1.GND1",
+   "LED1.K"
+  ],
+  "USB5V": [
+   "USB.+",
+   "B1.VBUS"
+  ],
+  "IO2": [
+   "B1.IO2",
+   "R1.1"
+  ],
+  "LA": [
+   "R1.2",
+   "LED1.A"
+  ]
+ },
+ "probes": [
+  {
+   "id": "console",
+   "target": "serial:B1",
+   "kind": "serial"
+  },
+  {
+   "id": "io2",
+   "target": "net:IO2",
+   "kind": "digital"
+  },
+  {
+   "id": "led",
+   "target": "output:LED1.luminance",
+   "kind": "value"
+  }
+ ]
+}

@@ -1,0 +1,95 @@
+{
+  "boot_verified": false,
+  "outcome": "blocked",
+  "core": "PRO only",
+  "rom_sha256": "9115bbcd03da9f54d3baca5ad94d588a43da54ed332347137ba3dc9010df258b",
+  "flash_sha256": "52fcca3c31ed835d45e22826d42dd7a7db0c867171fa330f9c56b0a81df7bee7",
+  "reset_vector": "0x40000400",
+  "memctl_profile": "bit 0 plus deterministic 256-byte loop-buffer fixture; not physical fetch/timing qualification",
+  "region_profile": "original ESP32 eight ITLB/DTLB identity regions, reset attribute 2, one ring, no Xtensa cache",
+  "prid_fixture": "0x0000cdcd",
+  "prid_reference": "ESP-IDF v4.4.7 xtensa_context.h documents PRO=0xcdcd, APP=0xabab; not a hardware readout",
+  "rom_tail_policy": "zero-fill absent DROM tail to match QEMU region setup, not silicon contents",
+  "flash_profile": "immutable SPI1 fixture, not a physical flash identity",
+  "uart_bank_fixture": "normal UART0/1/2, default disjoint shared FIFO allocations, empty FIFOs, explicit RXD=1 CTS=0 DSR=0 per port, no serial-clock advancement or board pinmux",
+  "gpio_fixture": "no routed pads; defined active-domain DIG_ISO defaults and hold controls only, no isolation/power emulation",
+  "rtc_fixture": "power-on cause 1 per core, vector selects 1, eight explicit zero retention words; not physical-owner RTC state",
+  "efuse_fixture_sha256": "2d8192ea7bdf3510bc117b4ea4b833a94b2ff2ceff252ce1610c297ed633d5bb",
+  "mask_rom_profile": "explicit PRO 448KiB SDK/QEMU IROM; final 64KiB also aliases DROM; external image tail zero-padded like reference, not measured silicon bytes",
+  "efuse_completion_fixture": "one external completion opportunity every 64 instruction attempts; not physical timing",
+  "status": -1,
+  "event": 0,
+  "pc": "0x40008591",
+  "opcode": "0x2222",
+  "address": "0x3ff5f06c",
+  "fault_kind": 5,
+  "attempts": 6797,
+  "region_readback": [
+    [
+      15,
+      1,
+      1,
+      2,
+      2,
+      2,
+      2,
+      2
+    ],
+    [
+      15,
+      1,
+      1,
+      2,
+      2,
+      2,
+      2,
+      2
+    ]
+  ],
+  "region_access_attributes": [
+    [
+      15,
+      1,
+      1,
+      2,
+      2,
+      2,
+      2,
+      2
+    ],
+    [
+      15,
+      1,
+      1,
+      2,
+      2,
+      2,
+      2,
+      2
+    ]
+  ],
+  "efuse_completions": 3,
+  "retired_before_stop": 6796,
+  "trace_tail": [
+    "0x4000bf6c",
+    "0x4000bf6f",
+    "0x400067f8",
+    "0x40009026",
+    "0x40007729",
+    "0x40065c18",
+    "0x40065c1b",
+    "0x40065c1e",
+    "0x40008588",
+    "0x4000858b",
+    "0x4000858e",
+    "0x40008591"
+  ],
+  "next_blocker": "TIMG0 TIMG_RTCCALICFG1_REG read at 0x3ff5f06c, PC 0x40008591, opcode 0x2222; calibration and native SDK boot remain unverified",
+  "fixture_note": "Explicit per-core SDK/QEMU mask-ROM profile on PRO only; external image tail zero-padded to match reference allocation, not measured silicon bytes. No APP reset or physical clock calibration claim.",
+  "sources_sha256": {
+    "core/mcu/esp32/fabric.c": "7b29edaed88e6a94cbe1c1c50f58f5bbf3f86a17cf4de571223912a129a48e46",
+    "core/mcu/esp32/fabric.h": "f5813f6dcd780a2189e7bee5008204d74d001507d92cefa8c3658933c211b4f8",
+    "tests/vendor/xtensa_integer/probe_rom_boot.py": "7dcf0b960ba8ddfa7925dbe4151f83795a5e7e562a00d299bd874d0e45cffccc",
+    "tests/vendor/xtensa_integer/run_mask_rom.py": "8526feae577b97f1c8160814381a594516ce08533ee94ebc74aba72388c3d1e1"
+  }
+}

@@ -160,8 +160,9 @@ jobs:
           python3 tests/vendor/freedom-metal/run.py --sdk "$RUNNER_TEMP/freedom-e-sdk" --metal "$RUNNER_TEMP/freedom-metal" --embsim build/${{ matrix.preset }}/bin/embsim
 
   esp-idf:
-    # its own job: ESP-IDF and its RISC-V toolchain take a while to fetch,
-    # and each example is built with idf.py as a user builds it
+    # its own job: ESP-IDF and its RISC-V and Xtensa toolchains take a while
+    # to fetch, and each example is built with idf.py as a user builds it
+    # (the ESP32-C3-DevKitM-1's, and the ESP32-DevKitC's esp32_* ones)
     name: ESP-IDF's examples on the ESP32-C3-DevKitM-1
     runs-on: ubuntu-24.04
     steps:
@@ -174,7 +175,7 @@ jobs:
         run: |
           cmake --preset ci-gcc
           cmake --build --preset ci-gcc
-      - name: ESP-IDF v5.4 and its tools for the ESP32-C3
+      - name: ESP-IDF v5.4 and its tools for the ESP32-C3 and the ESP32
         run: |
           # an origin remote: ESP-IDF's submodules are relative to it (../../espressif/...)
           git init -q "$RUNNER_TEMP/esp-idf"
@@ -182,7 +183,7 @@ jobs:
           git -C "$RUNNER_TEMP/esp-idf" fetch -q --depth 1 origin 67c1de1eebe095d554d281952fde63c16ee2dca0 # v5.4
           git -C "$RUNNER_TEMP/esp-idf" checkout -q FETCH_HEAD
           git -C "$RUNNER_TEMP/esp-idf" submodule update -q --init --depth 1 --recursive
-          "$RUNNER_TEMP/esp-idf/install.sh" esp32c3
+          "$RUNNER_TEMP/esp-idf/install.sh" esp32c3,esp32
       - name: Run the examples
         run: |
           . "$RUNNER_TEMP/esp-idf/export.sh" >/dev/null

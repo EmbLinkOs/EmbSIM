@@ -1,0 +1,47 @@
+{
+ "schema_version": 1,
+ "kind": "scenario",
+ "name": "ESP32_RepeatTimer",
+ "until": "6s",
+ "description": "RepeatTimer: a timer at 1 MHz with a 1 s auto-reload alarm, its ISR giving a semaphore the loop prints from, with millis() as the ISR saw it; the board's Boot button (IO0) pressed at 3.5 s ends the timer, so there is no fourth. The alarms come at 1006, 2006 and 3006 ms of millis(): setup starts the timer 6 ms after the clock millis() reads began, later than on the C3.",
+ "inputs": [
+  {
+   "at": "3500ms",
+   "target": "B1.SW1",
+   "input": "pressed",
+   "value": true
+  },
+  {
+   "at": "3700ms",
+   "target": "B1.SW1",
+   "input": "pressed",
+   "value": false
+  }
+ ],
+ "assertions": [
+  {
+   "id": "first",
+   "at": "1200ms",
+   "probe": "console",
+   "expect": {
+    "contains": "onTimer no. 1 at 1006 ms\r\n"
+   }
+  },
+  {
+   "id": "third",
+   "at": "3400ms",
+   "probe": "console",
+   "expect": {
+    "contains": "onTimer no. 2 at 2006 ms\r\nonTimer no. 3 at 3006 ms\r\n"
+   }
+  },
+  {
+   "id": "stopped",
+   "at": "6s",
+   "probe": "console",
+   "expect": {
+    "not_contains": "onTimer no. 4"
+   }
+  }
+ ]
+}

@@ -1,0 +1,57 @@
+{
+  "date": "2026-11-05",
+  "source": "Owner-provided read-only esptool flash-id output from the physical board, not cloud hardware access",
+  "tool": "esptool v5.6.0",
+  "host_platform": "macOS",
+  "chip": {
+    "reported_type": "ESP32-D0WD-V3",
+    "reported_revision": "3.1",
+    "reported_crystal_mhz": 40,
+    "reported_features": [
+      "Wi-Fi",
+      "BT",
+      "Dual Core + LP Core",
+      "240MHz",
+      "Vref calibration in eFuse",
+      "Coding Scheme None"
+    ],
+    "clock_note": "240MHz is a reported capability, not a measured current execution frequency"
+  },
+  "flash": {
+    "jedec_manufacturer": "0xc4",
+    "jedec_device": "0x6016",
+    "jedec_bytes": [
+      "0xc4",
+      "0x60",
+      "0x16"
+    ],
+    "reported_size_bytes": 4194304,
+    "reported_voltage_setting_v": 3.3,
+    "voltage_source": "strapping pin setting reported by esptool; not a voltage measurement"
+  },
+  "identity": {
+    "jedec_and_capacity_hardware_reported": true,
+    "manufacturer_match": "Giantec",
+    "matching_datasheet_family": "GT25Q32A-U",
+    "exact_ordering_suffix_verified": false,
+    "package_and_flash_die_revision_verified": false,
+    "confidence_note": "Published manufacturer ID table matches the readout; JEDEC alone does not prove package, suffix or all revision-specific behavior"
+  },
+  "primary_reference": {
+    "title": "Giantec GT25Q32A-U datasheet V2.5, June 2026, section 9.2, page 36/88",
+    "url": "https://en.giantec-semi.com/uploads/pdf/260605/GT25Q32A%20U%20DS_V2.5.pdf",
+    "sha256": "df021758e55bde131f39af59c42acac20f2e0b32e251f4ade673687d22b7cd55"
+  },
+  "observed_workflow": {
+    "serial_connection": true,
+    "ram_stub_running": true,
+    "flash_id_read": true,
+    "reset_via_rts_reported": true,
+    "physical_rom_spi_sdk_boot_proven": false,
+    "native_sdk_boot_proven": false
+  },
+  "model_consequence": "W25Q32JV-IQ EF4016 is a separate test fixture and does not match this board readout; no runtime profile changed by this evidence update",
+  "redactions": [
+    "MAC omitted because unique device identity is unnecessary for target qualification"
+  ]
+}

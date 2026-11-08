@@ -1,0 +1,18 @@
+{
+ "schema_version": 1,
+ "kind": "scenario",
+ "name": "ESP32_AnalogReadSerial",
+ "until": "1200ms",
+ "description": "AnalogReadSerial on the ESP32: analogRead(A0) on GPIO36 at Arduino-ESP32's defaults (12 bits, 11 dB), 1.1 V reading 1118 as on ESP-IDF's oneshot_read (the line ESP-IDF's Vref calibration fits for this chip, Vref 1170 mV), printed every millisecond.",
+ "inputs": [],
+ "assertions": [
+  {
+   "id": "reads",
+   "at": "1s",
+   "probe": "console",
+   "expect": {
+    "contains": "\r\n1118\r\n1118\r\n1118\r\n"
+   }
+  }
+ ]
+}

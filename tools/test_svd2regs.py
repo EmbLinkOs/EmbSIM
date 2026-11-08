@@ -111,6 +111,21 @@ class Svd2Regs(unittest.TestCase):
         with self.assertRaises(SystemExit):
             svd2regs.apply_reserved(doc, ["TIM3.CNT.CNT_H"])
 
+    def test_resolve_overlaps(self):
+        def doc_of(fields):
+            return {"source": "s", "interrupts": {}, "peripherals": [{"name": "PCNT", "base": "0x0", "registers": [
+                {"name": "U0_STATUS", "offset": "0x90", "fields": fields}]}]}
+        # a whole-register view beside its parts, and two names for one bit
+        doc = doc_of([["CORE_STATUS_U0", 0, 32, "r"], ["ZERO_MODE", 0, 2, "r"], ["THRES1", 2, 1, "r"],
+                      ["DET", 31, 1, "r"], ["FINISH", 31, 1, "r"]])
+        svd2regs.resolve_overlaps(doc)
+        self.assertEqual([f[0] for f in doc["peripherals"][0]["registers"][0]["fields"]],
+                         ["ZERO_MODE", "THRES1", "DET"])
+        self.assertIn("PCNT.U0_STATUS (CORE_STATUS_U0, FINISH)", doc["source"])
+        # a partial overlap is left to --reserve
+        with self.assertRaises(SystemExit):
+            svd2regs.resolve_overlaps(doc_of([["A", 0, 4], ["B", 2, 4]]))
+
     def test_added_register(self):
         doc = {"source": "s", "interrupts": {}, "peripherals": [{"name": "SYSCFG", "base": "0x0", "registers": [
             {"name": "CMPCR", "offset": "0x20", "fields": []}]}]}

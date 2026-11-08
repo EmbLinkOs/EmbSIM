@@ -1,0 +1,82 @@
+{
+ "schema_version": 1,
+ "kind": "scenario",
+ "name": "esp32_hello_world",
+ "until": "11600ms",
+ "description": "hello_world on the ESP32: Espressif's ROM (ECO3, its banner and boot mode), ESP-IDF's second-stage bootloader (chip revision v3.1 from the eFuses, the image's SHA-256 on the SHA accelerator), the application on both cores at 160 MHz, its chip report, a countdown of eleven one-second FreeRTOS delays, and esp_restart back to the ROM with a software CPU reset of the PRO_CPU.",
+ "inputs": [],
+ "assertions": [
+  {
+   "id": "rom",
+   "at": "100ms",
+   "probe": "console",
+   "expect": {
+    "contains": "rst:0x1 (POWERON_RESET),boot:0x13 (SPI_FAST_FLASH_BOOT)"
+   }
+  },
+  {
+   "id": "banner",
+   "at": "100ms",
+   "probe": "console",
+   "expect": {
+    "contains": "ets Jul 29 2019 12:21:46"
+   }
+  },
+  {
+   "id": "revision",
+   "at": "300ms",
+   "probe": "console",
+   "expect": {
+    "contains": "boot: chip revision: v3.1"
+   }
+  },
+  {
+   "id": "app",
+   "at": "500ms",
+   "probe": "console",
+   "expect": {
+    "contains": "cpu_start: Multicore app"
+   }
+  },
+  {
+   "id": "freq",
+   "at": "500ms",
+   "probe": "console",
+   "expect": {
+    "contains": "cpu freq: 160000000 Hz"
+   }
+  },
+  {
+   "id": "hello",
+   "at": "1s",
+   "probe": "console",
+   "expect": {
+    "contains": "Hello world!"
+   }
+  },
+  {
+   "id": "chip",
+   "at": "1s",
+   "probe": "console",
+   "expect": {
+    "contains": "This is esp32 chip with 2 CPU core(s), WiFi/BTBLE, silicon revision v3.1"
+   }
+  },
+  {
+   "id": "not-yet",
+   "at": "11200ms",
+   "probe": "console",
+   "expect": {
+    "not_contains": "Restarting now."
+   }
+  },
+  {
+   "id": "restart",
+   "at": "11600ms",
+   "probe": "console",
+   "expect": {
+    "contains": "rst:0xc (SW_CPU_RESET),boot:0x13 (SPI_FAST_FLASH_BOOT)"
+   }
+  }
+ ]
+}

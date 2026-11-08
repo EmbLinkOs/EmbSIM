@@ -34,6 +34,450 @@ versions follow semantic versioning. There is no release yet.
   and nFAULT, sleep and awake supply currents).
 - An analog primitive takes up to 16 terminals (8 before), and a
   composite's pin declared `nc` needs no port.
+### ESP32 in the machine framework: ESP-IDF boots on the ESP32-DevKitC V4
+
+- Added the ESP32's two Xtensa LX6 cores as a framework core
+  (`core/mcu/xtensa/lx6.c`, `lx6fp.c`, backend `xtensa`): the configuration
+  Espressif's core-isa.h gives, windowed registers with their overflow and
+  underflow, loops, XEA2 exceptions, 32 interrupts at their levels, the
+  CCOMPARE timers, MAC16, booleans, the FPU, region protection and the debug
+  option; the APP_CPU held until DPORT releases it, with its own view of the
+  ROM's data pointers.
+- Added `espressif/esp32`: the memory map, the ROM image made from
+  Espressif's ROM ELF (`esprom.py` now places sections that outrun their
+  copy-table entry; the image equals QEMU's esp32-v3-rom.bin), the register
+  file from esp32.svd, and models for DPORT (APP_CPU, caches and flash MMU,
+  interrupt matrix), RTC_CNTL, eFuse, APB_CTRL clocks, GPIO/IO_MUX with
+  strapping, UART0-2, TIMG0/1, SPI0/1 with the GT25Q32A flash, SHA, LEDC,
+  I2C0/1 (master and slave, 16 commands, APB_CLK timing; DPORT's
+  PERIP_RST_EN resets them), the RMT's eight channels, the SAR ADCs
+  through SENS, the two DACs through RTC_IO, the internal analog I2C, RNG and the AHB view.
+- Added the `emblink/esp32_devkitc` board (ESP32-DevKitC V4, WROOM-32E) with
+  its power path, LED, Boot and EN buttons, headers and fixtures.
+- Espressif's ROM, ESP-IDF v5.4's bootloader and hello_world run unmodified
+  through `esp_restart` (`tests/vendor/esp-idf`: `esp32_hello_world` 9/9,
+  `esp32_blink` 6/6, `esp32_ledc_basic` 2/2, `esp32_i2c_eeprom` 3/3 on a
+  24LC256, `esp32_gptimer` 17/17, `esp32_uart_echo` 6/6 on UART2,
+  `esp32_real_time_stats` 10/10 across both cores,
+  `esp32_blink_strip` 7/7 on a WS2812B through the RMT,
+  `esp32_adc_oneshot_read` 6/6 with the eFuse Vref's calibration,
+  `esp32_dac_oneshot` 4/4 (the DACs read back by ADC2); an ADC reads a
+  pin's own DAC on a net with no analog part (the runtime's pin_volts);
+  Arduino-ESP32's AnalogReadSerial, ReadAnalogVoltage, DigitalReadSerial,
+  GetChipID and RepeatTimer for "ESP32 Dev Module" in
+  `tests/vendor/arduino-esp32` (`ESP32_*`); DBREAKC's MASK now marks the
+  address bits compared, as ESP-IDF's stack-end watchpoint has it; the UARTs keep
+  MEM_RX_STATUS's addresses, from which ESP-IDF counts the bytes waiting); `test_lx6` checks the core with programs from Espressif's assembler.
+
+### Original ESP32 digital per-pin hold
+
+- Added the SDK-mapped digital hold register and per-pad capture masks.
+  Local/global/auto-hold causes combine without recapturing an already held
+  pad; FORCE_UNHOLD overrides them. Unrelated outputs remain live.
+- Preserved captured output enable/level/open-drain and modeled input/pull
+  controls, live resolved input samples, raw register changes and CPU-reset
+  retention. Unsupported/package-specific bits fail without partial capture.
+- 3,455 new native assertions, 4,096 independent transition turns and 256 compiled
+  C calls with eight unchanged SDK helpers pass. Native ROM now reaches 6,902
+  retirements, then IO_MUX U0TXD read; full pin routing/SDK boot remain unfinished.
+
+### Original ESP32 TIMG0 RTC calibration counter
+
+- Added explicit calibration snapshots, selected-period XTAL-tick counting,
+  one-shot READY/completed results, single-period cycling, stalls and rearm.
+  CPU execution/MMIO reads do not manufacture clock progress.
+- Added RO protection, unsupported-mode/overflow rollback, shared CPU buses and
+  CPU-reset retention. Full clock-tree/gating/oscillator behavior, larger cycling
+  windows, TIMG1 and physical timing remain unqualified.
+- 919,967 native assertions, 19,208 independent comparisons and 486 compiled
+  C harness calls using ten unchanged SDK access macros pass. This does not
+  claim the full SDK calibration function runs unchanged.
+- Native ROM reaches 6,872 retirements, then per-pin pad-hold read, with explicit
+  unclocked/synthetic-period fixtures. Both preserve boot-unverified status.
+
+### Original ESP32 per-core SDK mask-ROM mapping
+
+- Added explicit 448 KiB PRO/APP ROM profiles with coherent IROM/DROM views,
+  protected accesses, independent ownership, low-ROM remap precedence and
+  atomic replacement/fallback. Existing TRM-only ROM fixtures remain unchanged.
+- Resolved the SDK/QEMU mapping discrepancy explicitly: the TRM lists the last
+  64 KiB instruction range reserved, while SDK ROM symbols and Espressif's
+  reference use it. No vendor image or missing byte is invented by the API.
+- 1,170 native assertions, 18,840 independent mapping comparisons and 1,024
+  compiled C calls to two unchanged ROM getters pass. The additional explicit
+  profile advances native ROM to 6,796 retirements and TIMG0 RTCCALICFG1 read;
+  physical contents, calibration and full SDK boot remain unverified.
+
+### Original ESP32 UART bank and shared FIFO RAM
+
+- Extended normal asynchronous execution to UART1/2, with per-port sources
+  34/35/36, host inputs/clocks and shared state on both CPU buses.
+- Added one physical-layout FIFO byte array, bounded block allocations,
+  overlapping queued-data overwrites, extended counts and high thresholds.
+- Added idle-only UART1→UART2 TX reset coupling, held-reset protection and
+  unchanged failure for active/invalid resets. RX reset remains unsupported;
+  the unchanged SDK drain helper is tested on every port instead.
+- 271,883 new native assertions, 4,096 shared-RAM oracle turns and 384 compiled
+  C calls with twelve unchanged SDK helpers pass. The prior UART0 suite remains
+  passing. Native ROM now reaches 6,790 retirements, then instruction fetch at
+  0x40065c18 outside the current ROM mapping. Full SDK boot remains unverified.
+
+### Original ESP32 normal asynchronous UART0
+
+- Added an opt-in fixed-FIFO UART0 profile with APB/AHB firmware access,
+  source-clock fractional-divider accounting, 5..8 data bits, parity and 1/1.5
+  stop bits, projected TX state/bit and framed completion output.
+- Added CTS gating, external decoded RX/error inputs, FIFO ordering/overflow,
+  interrupt enable/W1C/reassertion and shared source-34 routing after commit.
+- Kept SDK-documented unreliable RX reset and the two-stop-bit workaround
+  unsupported, alongside UART1/2, advanced modes and physical pin/clock/USB
+  integration. This does not qualify CPU timing or complete UART/board behavior.
+- 915,199 native assertions, 316,077 independent bit/frame comparisons and
+  128 compiled ESP32 C calls with eleven unchanged SDK helpers pass.
+  Native ROM with an additional explicit UART0 fixture reaches 6,737
+  retirements and blocks at UART1 INT_CLR; full SDK boot remains unverified.
+
+### Original ESP32 software GPIO and global pad hold
+
+- Added explicit software-route GPIO fixtures, shared two-bank latches and
+  set/clear aliases, input-only protection, open-drain/HiZ outputs and externally
+  resolved inputs. Unresolved enabled inputs fail instead of becoming zero.
+- Added global pad hold/auto-hold/clear with captured output controls and live
+  inputs. Non-pad isolation/power changes remain unsupported, as do complete
+  IO_MUX/matrix/IRQ/electrical behavior and physical board bindings.
+- Corrected the former ANA_CONF label: 0x3ff48088 is DIG_ISO in the pinned SDK.
+  Earlier observed fault addresses/counts remain unchanged and annotated.
+- 3,313 native assertions, 2,048 independent latch/pad comparisons and 216
+  interactive compiled ESP32 C calls with nine unchanged SDK helpers pass.
+  With the additional explicit active GPIO fixture, native ROM reaches 6,734
+  instructions and UART0 INT_CLR write at 0x3ff40010; full SDK boot is unverified.
+
+
+### Original ESP32 RTC reset state and retention
+
+- Added an explicit RTC reset-state/eight-word retention snapshot profile.
+  Cause fields are read-only; vector selects and retention are writable.
+  DPORT APP reset records reason 14, samples its RTC vector and preserves
+  RTC/retention and peer state, applying reset after instruction commit.
+- 53,787 native assertions and 1,281 pinned field/retention/reset comparisons
+  pass; the unchanged external PRO-ROM reset-reason helper passes 256 calls.
+- With an additional explicit synthetic power-on RTC snapshot, native ROM
+  reaches 6,698 instructions and blocks on digital isolation control read 0x3ff48088.
+  Unknown RTC controls, global/power/watchdog/wakeup behavior, native SDK boot
+  and physical instruction timing remain unqualified.
+
+
+### Original ESP32 MEMCTL and timing qualification tools
+
+- Added opt-in MEMCTL bit 0 with reset, privileged read/write/exchange and a
+  256-byte functional loop-buffer policy, including disable/ISYNC/bounds/reset/
+  exception invalidation, protected hits and failed-fetch/decode rollback.
+  Exact silicon fill/replacement, fetch geometry and instruction timing remain
+  unqualified. Legacy fixtures retain explicit opt-in.
+- 268,232 native assertions, 96 GNU register comparisons and 20 compiled C
+  hardware-loop calls pass. Native ROM reaches 6,692 instructions, then blocks
+  on RTC reset-state read at 0x3ff48034, PC 0x400081df. SDK boot remains unverified.
+- Added buildable ESP-IDF cycle-capture firmware and strict log analysis for
+  both cores, loop-buffer modes, nine IRAM kernels and 3,672 observations.
+  Actual ESP32 GCC build and a complete QEMU protocol run pass. No physical
+  board was programmed/measured, and no instruction latency model is inferred
+  from emulator values. Invalid/incomplete captures cannot claim qualification.
+
+
+### Original ESP32 region protection
+
+- Added an explicit eight-region instruction/data protection profile, all ten
+  TLB maintenance operations, reset/readback and ISYNC/DSYNC access-table commit.
+  No page-table translation or SoC-cache completeness is claimed.
+- Enforced fetch/load/store rights before bus access, with causes 20/28/29,
+  kernel/user/double dispatch, and atomic store-protection priority. Shared pure
+  load/store address decoding preserves the flat-memory execution contract.
+- Qualified the one-ring configuration and local-only isolate access boundary.
+  17,068 native assertions, 266,240 GNU comparisons and 32 actual ESP32 C calls
+  pass. Native ROM now reaches 545 instructions and unsupported RSR.MEMCTL at
+  PC 0x400004f2; full SDK boot remains unverified.
+
+
+### Original ESP32 CPU atomic control
+
+- Added opt-in privileged RSR/WSR/XSR.ATOMCTL, six-bit state/reset and explicit
+  memory-type classification for conditional stores. Local DataRAM ignores its
+  fields; RCW uses the indivisible bus callback; mode 0 dispatches cause 3.
+  Internal cache/reserved operations and unknown attributes fail unchanged.
+- The native fabric supplies qualified SRAM data attributes to both CPU views.
+  CPU reset enables/resets ATOMCTL; legacy ABI fixtures retain explicit opt-in.
+- 23,665 native atomic assertions, 3,072 GNU-assembled register comparisons and
+  128 actual ESP32 C calls/2,816 instructions pass. Native real-ROM probing now
+  reaches 451 instructions and stops at WITLB, PC 0x400004c9. Complete memory
+  attributes, caches and ROM-to-SDK boot remain unverified.
+
+
+### Original ESP32 eFuse reads and Giantec storage
+
+- Added an explicit None-coded 31-word eFuse image/read/reload profile, software
+  read protection, completion status and source-44 routing. OTP programming,
+  other coding schemes and hardware fuse consumers remain unqualified.
+- A supplied synthetic unprogrammed image advances the real ROM probe from seven
+  to 440 retired instructions with explicit read-completion events; boot now blocks
+  on WSR.ATOMCTL at PC 0x40000488. Immediate completion previously selected the
+  ROM failure/reset path; reads now stay active until an external completion event.
+  This does not establish native SDK boot or reproduce the owner's fuse contents.
+- Added a separate Giantec GT25Q32A-U subset matching reported C4 60 16, with
+  independently qualified maximum-duration and WEL policies. Shared array code
+  preserves the separate Winbond fixture. Full chip behavior remains unfinished.
+- Native/referee/actual compiler checks pass, including 432 firmware-observed
+  BUSY reads during Giantec programming and 128 C eFuse helper calls.
+
+### Owner ESP32 hardware identification
+
+- Recorded the owner's physical esptool readout: ESP32-D0WD-V3 v3.1, 40 MHz
+  crystal, JEDEC C4 60 16 and 4 MB detected flash; 3.3 V is a reported strapping
+  setting. Unique MAC is omitted from repository artifacts.
+- Matched the flash ID to Giantec's GT25Q32A-U manufacturer datasheet. Exact
+  ordering/package/revision remains unresolved; the separate Winbond test
+  fixture does not match this board. Runtime models are unchanged.
+
+### Original ESP32 boot verification evidence
+
+- Built unmodified ESP-IDF v4.4.7 hello_world and observed its bootloader,
+  both CPU schedulers and application in Espressif QEMU.
+- Added an external-ROM native diagnostic: the same image fails after seven
+  retired instructions at the unimplemented eFuse read, PC 0x4000fdd8/address
+  0x3ff5a000. This is a confirmed native boot blocker, not SDK/board support.
+- Rechecked the advertised module's nominal capacity against Espressif's
+  datasheet; the subsequent owner readout above establishes the reported
+  JEDEC/vendor class, with exact ordering details still unresolved.
+
+### Experimental explicit W25Q32JV flash programming
+
+- Added an explicitly selected, unprotected W25Q32JV-IQ 4 MiB profile with
+  write-enable/BUSY status, page programming/wrap and sector/block/chip erase.
+  External microseconds drive conservative datasheet-maximum durations.
+- Added SPI1 USER transmit/receive integration and post-completion cache flush
+  enforcement. Default immutable behavior remains available; the requested
+  board's actual chip is still unverified. Protection, suspend, electrical
+  timing, full chip behavior and ROM/SDK boot remain unimplemented.
+- Native tests and a datasheet-pinned independent oracle pass. Actual ESP32 C
+  programs code, polls BUSY and loads/runs it: 32 programmed workers, 32 exact
+  replays and 125,856 retired instructions.
+
+### Experimental ESP32 SPI1 flash reads
+
+- Added an opt-in USER 03h single-line read path to the installed immutable
+  flash backing, with real register addresses, 24-bit address alignment and
+  high/low data buffers. Both caches must be disabled for transfers.
+- Added completion/counter state and SPI1 matrix-source ownership, synchronized
+  after instruction commit. Unsupported commands/modes and out-of-extent reads
+  fail unchanged. This default read-only attachment omits programming/erase;
+  DMA, timing and real ROM/SDK boot remain unimplemented.
+- Added 37,466 native assertions, 27 parsed vendor register defaults/384 reference
+  comparisons and actual ESP32 C with seven unchanged SDK helper bodies:
+  128 reads, 32 SPI-loaded RAM workers, 32 replays and 91,568 retired instructions.
+
+### Experimental Xtensa dynamic stack allocation
+
+- Added MOVSP with wrapped caller-window checks and AllocaCause 5 before SP
+  changes, including ordinary exception entry, retry and loop commit behavior.
+  Firmware owns base-save-area restoration; no host stack-repair shortcut.
+- Added 13,475 native assertions, 32,768 independent assembler comparisons and
+  1,536 actual compiled TLS calls with dynamic buffers (16 exact replays,
+  253,812 retired instructions). Full vendor alloca-handler/RTOS boot remains
+  unqualified.
+
+### Experimental ESP32 thread-local storage execution
+
+- Added unprivileged RUR/WUR.THREADPTR and privileged RSR/WSR/XSR.MISC0..3,
+  with full-width, per-core storage and correct operand/window checks.
+- Added read-only PRID with an explicit fixture input; unconfigured reads remain
+  unsupported. No guessed silicon identity, scheduler or real SDK boot is added.
+- Added 9,723 native context assertions, 7,680 independent assembler comparisons and actual
+  ESP32-compiled C TLS acceptance: 1,536 calls across six persistent banks,
+  16 exact replays and 52,224 retired instructions through native RAM.
+
+### Experimental ESP32 read-only mapped flash
+
+- Added copied whole-page flash backing, per-core PID0/1 normal-mode MMU tables,
+  real cache-control/mask addresses and a functional flush/enable sequence.
+  On-chip memory keeps priority; invalid/masked/out-of-extent reads fail without
+  fabricated bytes. Allocation/replacement failures preserve old state.
+- Table edits require the destination cache disabled and a fresh flush. No live
+  remap coherence, cache tags/timing, SPI programming, high-PID/PSRAM/lock/page
+  modes, actual ROM or complete SDK/board boot support is claimed.
+- Added 7,289 native assertions, 488 parsed-vendor translations and 256 compiled
+  per-core mapped workers (64 exact replays, 11,264 retired instructions). The
+  original test-ROM reset path also passes 128 cycles into a mapped C worker
+  (16 replays, 15,360 retired instructions).
+
+### Experimental ESP32 CPU reset and vector relocation
+
+- Added the supported CPU reset subset with explicit static vector selection,
+  defined PS/LCOUNT/VECBASE fields and declared undefined-state fixture choices.
+  Aligned RSR/WSR/XSR.VECBASE now relocates window, general and CPU interrupt
+  entries using original-ESP32 offsets. Low-bit/lock behavior remains unqualified.
+- Added opt-in APP reset hold/release at DPORT 0x3ff0002c, commit-safe self-reset,
+  suspended clocks/deadlines and live-source preservation. Release uses the static
+  entry; BOOT_ADDR remains firmware-consumed storage. No actual vendor ROM,
+  complete reset domains, flash/cache or SDK/board boot claim is added.
+- Added 2,281 CPU/104 machine assertions, 3,072 assembled register cases,
+  960 vendor-offset dispatches, 128 reset-vector and 512 control-field comparisons.
+  A compiled supervisor/worker plus original test-ROM fixture passes 128 reset
+  cycles, 16 exact replays and 11,904 retired instructions.
+
+### Experimental Xtensa status-register correctness
+
+- Fixed PS writes/reads to mask reserved fields and added legal XSR.PS exchange.
+  RFI restores only implemented PS bits while preserving EPS storage.
+- Added 1,304 native checks and 3,456 independent GNU-assembled PS/RFI comparisons,
+  covering all operand registers, privilege/window priority and atomic interrupt
+  masking. No full reset, MMU or physical synchronization timing claim is added.
+
+### Experimental ESP32 APP execution controls
+
+- Added DPORT APP clock-enable/run-stall and ROM-consumed boot-address fields.
+  APP starts clock-disabled; debug fixtures explicitly enable it. Gate/stall
+  suspends fetch, interrupt entry and retirement while preserving CPU/memory
+  state, including after a firmware store suspends its own execution.
+- Added gate-aware supplied-clock/deadline APIs. No automatic clock ticks,
+  physical synchronization/pulse timing or power behavior is claimed. Reset
+  control requires the separate opt-in reset profile; writing the boot address does not set PC or
+  replace the missing ROM boot sequence.
+- Added 163 native assertions, 384 pinned-header field comparisons and compiled
+  control/mailbox acceptance: 256 runs, 4,224 interrupts, 128 exact replays and
+  551,232 retired instructions with PRO suspending/resuming APP during traffic.
+
+### Experimental ESP32 interrupt matrix and cross-core signaling
+
+- Added per-core DPORT source maps/status, shared software-generated interrupts,
+  OR routing, internal-input disconnection, core-local GPIO inputs and explicit
+  NMI masking. Reserved sources/holes remain unsupported; peripheral generators
+  and PID hardware are not supplied by this controller.
+- Unified machine data access now routes MMIO and delivers inputs after CPU
+  instruction commit. A peer can wake from WAITI, acknowledge a source and RFI;
+  paused-peer edges and same-core MMIO IRQ updates survive correctly. No physical
+  APB timing, DPORT reset/stall, cache/flash, full SMP or boot claim is added.
+- Added 64,374 matrix/103 integration assertions and pinned-header referees for
+  4,288 routes/512 combined-source cases. Actual ESP32 C sender/C handler with
+  an assembled entry/return wrapper passes 256 mailbox runs, 4,224 interrupts and 128 exact replays (512,128 retired
+  instructions), preserving integer registers and stack guards.
+
+### Experimental Xtensa acquire/release and shared spinlocks
+
+- Added L32AI/S32RI with scaled offsets, alias-safe access, alignment/failure
+  retention and window-overflow priority. Synchronous completed bus callbacks
+  supply functional ordering; asynchronous transactions/caches remain unsupported.
+- Added 30,732 native assertions and expanded assembled execution checks to
+  4,800 cases/1,152 refused accesses. Native shared-bus compiled acceptance now
+  includes spinlocks protecting ordinary writes: 512 task executions, 128 exact
+  schedule replays and 229,322 instructions across both workloads.
+
+### Experimental ESP32 internal memory and two-context harness
+
+- Added native SRAM0/1/2 and RTC memory views, including SRAM1's reversed
+  instruction-word ordering, CPU0-only RTC fast access and per-core boot-remap
+  views. Optional ROM is externally supplied; cache, flash, peripheral and
+  unmapped accesses remain unsupported. Host image loads preflight all writes.
+- Separated instruction fetch from data access, retaining existing flat-bus
+  fallback. Serialized SRAM1/2 compare-exchange now backs two independent CPU
+  contexts with shared RAM, explicit pause/resume, fault isolation and private
+  interrupt/clock state. No guessed clock ticks or silicon reset defaults.
+- Added exhaustive SRAM1 alias/boundary/failure fixtures and native-bus acceptance
+  with actual ESP32 compiled tasks: 512 executions, 128 deterministic schedule
+  replays and 229,322 instructions. This is not a runnable board target, ROM boot,
+  DPORT/cache/coherence implementation, host-thread safety or complete SMP.
+
+### Experimental Xtensa integer and conditional-store extension
+
+- Added conditional moves, signed/unsigned min/max, high products, division and
+  remainder, SEXT/normalization and little-endian bit branches. Divide faults
+  preserve registers and dispatch cause 6 only with a configured exception
+  profile; unknown valid opcodes remain unsupported.
+- Added SCOMPARE1 and S32C1I via one required indivisible bus callback, with
+  no read/write fallback. Full SMP, shared SoC RAM/coherence, memory-type policy
+  and implementation-dependent spurious failures remain unqualified.
+- Added 128 arithmetic and 67 atomic assertions; expanded assembler cases to
+  9,728 integer and 4,800 flow/bit branches. Actual ESP32 compiled atomics/division
+  pass 832 executions, including 64 interleaved pairs forcing CAS retry.
+
+### Experimental ESP32 CPU interrupts and compare clock
+
+- Added an opt-in 32-input ESP32 CPU interrupt profile: fixed levels/types,
+  INTENABLE/EXCM masking, edge/software pending state, NMI, saved high-level
+  contexts, RFI, WAITI and special registers. The SoC interrupt matrix and
+  peripheral routing remain unimplemented; no board target is registered.
+- Added CCOUNT/CCOMPARE0..2, sticky timer requests, wrap-safe explicit clock
+  advances and deadline reporting. No instruction-cycle count is guessed.
+  WAITI can wake from supplied compare ticks; pipeline/service timing is not
+  qualified, and a scheduler must split advances at deadlines when needed.
+- Added 11,571 interrupt and 81 timer assertions, a fetched acknowledging ISR,
+  2,048 vendor-configuration comparisons and 8,192 tick-oracle comparisons.
+
+### Experimental Xtensa SAR and selected system behavior
+
+- Added SAR setup and variable shifts/funnel operations, XSR.SAR, selected system
+  registers, RSIL mask-state changes and serialized MEMW/ISYNC/ESYNC behavior.
+  This does not qualify interrupt delivery, cache/pipeline or async bus behavior.
+- Added explicit opt-in kernel/user/double exception vectors for syscall, known
+  illegal instructions and implemented privilege faults, with EPC1/DEPC retention,
+  RFE/RFDE and explicit cause/address injection. Unimplemented valid opcodes and
+  ambiguous bus failures remain diagnostics rather than fabricated causes.
+- Added 785 native assertions and 7,040 actual ESP32 compiled bit-manipulation
+  runs, alongside regression checks of window spill/fill. Full system/interrupt,
+  SMP, SoC boot and board support remain incomplete.
+
+### Experimental Xtensa windows and hardware loops
+
+- Implemented 64 physical address registers, overlapping windows, CALL4/8/12
+  and indirect calls, ENTRY, RETW, lazy overflow/underflow vector transitions,
+  RFWO/RFWU retries, exception-mode spill/fill loads/stores and selected special
+  registers. Unsupported privilege/general exception handling remains explicit.
+- Added hardware loops with sequential-versus-taken flow tracking and EXCM
+  suppression. Initial state/vectors are configured test inputs, not ESP32 reset
+  defaults or a qualified SoC memory map.
+- Added 1,337 native assertions and real ESP32 windowed-ABI acceptance: 224
+  executions (160 compiled C, 64 assembly) run the actual ESP-IDF spill/fill
+  instruction bodies, exercising all six window exception paths through memory.
+  This does not implement general interrupts, SMP, SoC boot or the board yet.
+- Fixed an MSVC signed/unsigned mismatch in a branch-PC test expectation.
+
+### Experimental Xtensa fetch, flow and memory execution
+
+- Execute mixed-width instructions through a callback bus, compact arithmetic,
+  non-windowed jumps/calls/returns, signed/unsigned conditional branches,
+  byte/halfword/word loads/stores and default PC-relative literal loads.
+- Preserve PC/registers on unsupported or failed accesses and report failing
+  PC/address/opcode; reject unaligned data accesses before touching the bus.
+- Added assembled loop/subroutine acceptance, native boundary/fault checks and
+  3,840 externally assembled execution cases plus 1,152 failed-access cases.
+- Immediate shifts, EXTUI and signed/unsigned immediate comparisons allow
+  compiler-generated sum/sort/copy routines to run: 96 executions verify complete
+  buffers, guards, CALL0 callee-save behavior and returns.
+  This remains an experimental execution engine, not a registered CPU/board:
+  full ISA, register windows, exceptions/interrupts, SMP, SoC boot, peripherals
+  and timing are still absent.
+
+### Experimental Xtensa integer execution
+
+- Added the wide integer arithmetic/logic/immediate/low-multiply execution
+  kernel, with unsigned wraparound semantics, operand-alias handling and
+  unchanged register state on unsupported instructions. This is not a CPU
+  backend: fetch, control flow, memory, register windows, exceptions, interrupts,
+  density, FPU, SMP and timing are still absent; no runnable target is added.
+- Added native boundary/sequence checks and an external-assembler referee for
+  4,352 instruction cases; no assembler code or tables are embedded.
+
+### Original ESP32 firmware inspection
+
+- `embsim image-info esp32 FILE` validates standalone original-ESP32 plaintext
+  firmware headers, bounded segments, footer padding, XOR and optional SHA-256.
+  Reports segment offsets/addresses and raw revision fields without loading code.
+  Signed/encrypted images, merged flash dumps and board compatibility are outside
+  this inspector's scope. The original ESP32 remains unavailable for execution.
+
+### Original ESP32 dual-core target investigation
+
+- Added board-identification requirements and staged acceptance gates for a
+  distinct Xtensa LX6 ESP32 target. No runtime support or verified board pinout
+  is claimed; the exact marketplace board/module still needs identification.
 
 ### A library sorted the way an EDA sorts it
 
