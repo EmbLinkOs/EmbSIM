@@ -135,10 +135,9 @@ def main() -> int:
         return 0
     idf = Path(args.idf).resolve()
     names = args.examples or sorted(EXAMPLES)
-    missing = sorted({TOOLCHAINS[TARGETS.get(n, "esp32c3")] for n in names} - {t for t in TOOLCHAINS.values()
-                                                                                  if shutil.which(t)})
-    if missing:
-        print(f"skip: the toolchain(s) {', '.join(missing)} are needed")
+    names = [n for n in names if n not in EXAMPLES or shutil.which(TOOLCHAINS[TARGETS.get(n, "esp32c3")])
+             or print(f"skip: {n} needs {TOOLCHAINS[TARGETS.get(n, 'esp32c3')]}")]
+    if not names:
         return 0
     unknown = [n for n in names if n not in EXAMPLES]
     if unknown:
