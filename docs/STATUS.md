@@ -15,8 +15,9 @@ hello_world running unmodified on both cores at 160 MHz to `Hello world!`
 and through `esp_restart` (rst:0xc SW_CPU_RESET). Evidence: `test_lx6`
 (4,332 checks), the board's three fixtures, and the ESP-IDF vendor
 scenarios `esp32_hello_world` (9/9), `esp32_blink` (6/6),
-`esp32_ledc_basic` (2/2) and `esp32_i2c_eeprom` (3/3, I2C0 writing and
-reading a 24LC256 at 400 kHz). Not yet: Wi-Fi and Bluetooth, the
+`esp32_ledc_basic` (2/2), `esp32_i2c_eeprom` (3/3, I2C0 writing and
+reading a 24LC256 at 400 kHz), `esp32_gptimer` (17/17), `esp32_uart_echo`
+(6/6) and `esp32_real_time_stats` (10/10). Not yet: Wi-Fi and Bluetooth, the
 double-precision accelerator's instructions, the peripherals the
 description's fidelity lists (I2S, SPI2/3, RMT, ADC, ...),
 sleep. The standalone harness below remains as its own qualification

@@ -29,7 +29,11 @@
  *     is INT_RAW and INT_ENA, and raises the matrix source (UART0 34,
  *     UART1 35, UART2 36) while nonzero;
  *   - STATUS reads the FIFOs' counts (with MEM_CNT_STATUS's high bits)
- *     and the lines; RXFIFO_RST and TXFIFO_RST empty the FIFOs while set.
+ *     and the lines; MEM_RX_STATUS the RX RAM's read and write addresses
+ *     (RD_ADDR, WR_ADDR), from which ESP-IDF's uart_ll counts the bytes
+ *     waiting on the ESP32, each moving on a byte and wrapping at the RX
+ *     FIFO's size (counted from the FIFO's start: the RAM's absolute
+ *     addresses are not modelled); RXFIFO_RST and TXFIFO_RST empty the FIFOs while set.
  * Not modelled: autobaud, IrDA, RS485, the AT_CMD character, software
  * flow control (XON/XOFF), the RX glitch filter, light-sleep wake-up,
  * UHCI, the FIFO RAM's sharing between the UARTs beyond its sizes. */
@@ -63,10 +67,11 @@ struct e32_uart {
     struct esk_mach *s;
     struct esk_rf_periph *p;
     struct esk_rf_reg *fifo, *raw, *st, *ena, *clr, *clkdiv, *status, *conf0, *conf1, *idle, *mem,
-        *memcnt;
+        *memcnt, *memrx;
     int unit, source, level;
     u8 tx[4 * BLOCK], rx[2 * BLOCK];
     int ntx, nrx;
+    u32 rx_rd, rx_wr; /* the RX RAM's read and write addresses (MEM_RX_STATUS) */
     int busy;      /* a frame, a break or the idle gap is on the TX line */
     int clocked;   /* the device's clock runs (esk_rf_clock) */
     int phase;     /* 0 a frame, 1 the idle after it, 2 a break */
@@ -162,6 +167,8 @@ static void update(struct e32_uart *u)
                              ((u32)u->ntx & 0xffu) << 16);
     if (u->memcnt)
         esk_rf_hw(u->memcnt, (u32)(u->nrx >> 8) | (u32)(u->ntx >> 8) << 3);
+    if (u->memrx)
+        esk_rf_hw(u->memrx, (u->rx_rd & 0x7ffu) << 2 | (u->rx_wr & 0x7ffu) << 13);
     if ((reg(u->st) != 0) != u->level) {
         u->level = reg(u->st) != 0;
         esk_esp32_source(u->s, u->source, u->level);
@@ -245,6 +252,7 @@ static void receive(struct e32_uart *u, u32 bits, int framing_error, int brk)
             set_raw(u, RAW_FRM_ERR);
         if (u->nrx < rx_cap(u)) {
             u->rx[u->nrx++] = (u8)(bits & ((1u << n) - 1u));
+            u->rx_wr = (u->rx_wr + 1u) % (u32)rx_cap(u);
             u->rx_any = 1;
         } else {
             set_raw(u, RAW_RXFIFO_OVF);
@@ -300,6 +308,7 @@ static u32 ur_read(void *ctx, u32 off, int n)
         if (!u->s->bus.debug) {
             memmove(u->rx, u->rx + 1, (size_t)(u->nrx - 1));
             u->nrx--;
+            u->rx_rd = (u->rx_rd + 1u) % (u32)rx_cap(u);
             if (!u->nrx)
                 u->rx_any = 0;
             update(u);
@@ -327,6 +336,7 @@ static void ur_write(void *ctx, u32 off, int n, u32 v)
                 u->ntx = 0;
             if (reg(u->conf0) & CONF0_RXFIFO_RST) {
                 u->nrx = 0;
+                u->rx_rd = u->rx_wr = 0;
                 u->rx_any = 0;
             }
             if ((reg(u->conf0) & CONF0_TXD_BRK) && !(was0 & CONF0_TXD_BRK))
@@ -403,6 +413,7 @@ static void ur_reset(void *ctx)
 {
     struct e32_uart *u = (struct e32_uart *)ctx;
     u->ntx = u->nrx = 0;
+    u->rx_rd = u->rx_wr = 0;
     u->busy = 0;
     u->clocked = 0;
     u->left = 0;
@@ -443,6 +454,7 @@ void *esk_esp32_uart_create(struct esk_mach *s, struct esk_rf_periph *p)
     c->idle = esk_rf_reg(p, "IDLE_CONF");
     c->mem = esk_rf_reg(p, "MEM_CONF");
     c->memcnt = esk_rf_reg(p, "MEM_CNT_STATUS");
+    c->memrx = esk_rf_reg(p, "MEM_RX_STATUS");
     if (!c->fifo || !c->raw || !c->st || !c->ena || !c->clr || !c->clkdiv || !c->status || !c->conf0 ||
         !c->conf1 || !c->idle || !c->mem)
         return 0;

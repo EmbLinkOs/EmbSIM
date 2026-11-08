@@ -75,6 +75,9 @@ EXAMPLES = {
     "esp32_blink": "examples/get-started/blink",
     "esp32_ledc_basic": "examples/peripherals/ledc/ledc_basic",
     "esp32_i2c_eeprom": "examples/peripherals/i2c/i2c_eeprom",
+    "esp32_gptimer": "examples/peripherals/timer_group/gptimer",
+    "esp32_uart_echo": "examples/peripherals/uart/uart_echo",
+    "esp32_real_time_stats": "examples/system/freertos/real_time_stats",
 }
 # the target an example is built for, when not the ESP32-C3 (its board in
 # examples/<name>/project.json), and the toolchain that target needs
@@ -83,6 +86,9 @@ TARGETS = {
     "esp32_blink": "esp32",
     "esp32_ledc_basic": "esp32",
     "esp32_i2c_eeprom": "esp32",
+    "esp32_gptimer": "esp32",
+    "esp32_uart_echo": "esp32",
+    "esp32_real_time_stats": "esp32",
 }
 TOOLCHAINS = {"esp32c3": "riscv32-esp-elf-gcc", "esp32": "xtensa-esp32-elf-gcc"}
 # examples built only for another's project (with examples/<name>/'s
