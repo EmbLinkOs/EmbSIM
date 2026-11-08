@@ -16,6 +16,7 @@
  *   spi.c     SPI0 and SPI1 in front of the flash, and the flash itself
  *   apbctrl.c APB_CTRL: the CPU's and APB's clock dividers
  *   sha.c     the SHA accelerator
+ *   ledc.c    the LED PWM controller
  *   misc.c    the random number generator, the AHB view of the
  *             peripherals */
 #ifndef ESK_MCU_ESP32_SOC_H
@@ -49,6 +50,8 @@ extern const struct esk_dev_ops esk_esp32_spi_ops;
 void *esk_esp32_spi_create(struct esk_mach *s, struct esk_rf_periph *p);
 extern const struct esk_dev_ops esk_esp32_apbctrl_ops;
 void *esk_esp32_apbctrl_create(struct esk_mach *s, struct esk_rf_periph *p);
+extern const struct esk_dev_ops esk_esp32_ledc_ops;
+void *esk_esp32_ledc_create(struct esk_mach *s, struct esk_rf_periph *p);
 extern const struct esk_dev_ops esk_esp32_sha_ops;
 void *esk_esp32_sha_create(struct esk_mach *s, struct esk_rf_periph *p);
 /* the RNG and the AHB view of the peripherals (misc.c): 0, or -1 */

@@ -71,6 +71,7 @@ static const struct esk_rf_model_type model_types[] = {
     { "esp32-spi", &esk_esp32_spi_ops, esk_esp32_spi_create },
     { "esp32-timg", &esk_esp32_timg_ops, esk_esp32_timg_create },
     { "esp32-sha", &esk_esp32_sha_ops, esk_esp32_sha_create },
+    { "esp32-ledc", &esk_esp32_ledc_ops, esk_esp32_ledc_create },
     { "esp32-iomux", &esk_esp32_iomux_ops, esk_esp32_iomux_create },
     { "esp32c3-intmtx", &esk_esp32c3_intmtx_ops, esk_esp32c3_intmtx_create },
     { "esp32c3-uart", &esk_esp32c3_uart_ops, esk_esp32c3_uart_create },

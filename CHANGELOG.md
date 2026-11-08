@@ -19,13 +19,13 @@ versions follow semantic versioning. There is no release yet.
   copy-table entry; the image equals QEMU's esp32-v3-rom.bin), the register
   file from esp32.svd, and models for DPORT (APP_CPU, caches and flash MMU,
   interrupt matrix), RTC_CNTL, eFuse, APB_CTRL clocks, GPIO/IO_MUX with
-  strapping, UART0-2, TIMG0/1, SPI0/1 with the GT25Q32A flash, SHA, the
+  strapping, UART0-2, TIMG0/1, SPI0/1 with the GT25Q32A flash, SHA, LEDC, the
   internal analog I2C, RNG and the AHB view.
 - Added the `emblink/esp32_devkitc` board (ESP32-DevKitC V4, WROOM-32E) with
   its power path, LED, Boot and EN buttons, headers and fixtures.
 - Espressif's ROM, ESP-IDF v5.4's bootloader and hello_world run unmodified
-  through `esp_restart` (`tests/vendor/esp-idf`, example `esp32_hello_world`,
-  9/9); `test_lx6` checks the core with programs from Espressif's assembler.
+  through `esp_restart` (`tests/vendor/esp-idf`: `esp32_hello_world` 9/9,
+  `esp32_blink` 6/6, `esp32_ledc_basic` 2/2); `test_lx6` checks the core with programs from Espressif's assembler.
 
 ### Original ESP32 digital per-pin hold
 
