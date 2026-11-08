@@ -21,14 +21,15 @@ versions follow semantic versioning. There is no release yet.
   interrupt matrix), RTC_CNTL, eFuse, APB_CTRL clocks, GPIO/IO_MUX with
   strapping, UART0-2, TIMG0/1, SPI0/1 with the GT25Q32A flash, SHA, LEDC,
   I2C0/1 (master and slave, 16 commands, APB_CLK timing; DPORT's
-  PERIP_RST_EN resets them), the internal analog I2C, RNG and the AHB view.
+  PERIP_RST_EN resets them), the RMT's eight channels, the internal analog I2C, RNG and the AHB view.
 - Added the `emblink/esp32_devkitc` board (ESP32-DevKitC V4, WROOM-32E) with
   its power path, LED, Boot and EN buttons, headers and fixtures.
 - Espressif's ROM, ESP-IDF v5.4's bootloader and hello_world run unmodified
   through `esp_restart` (`tests/vendor/esp-idf`: `esp32_hello_world` 9/9,
   `esp32_blink` 6/6, `esp32_ledc_basic` 2/2, `esp32_i2c_eeprom` 3/3 on a
   24LC256, `esp32_gptimer` 17/17, `esp32_uart_echo` 6/6 on UART2,
-  `esp32_real_time_stats` 10/10 across both cores; the UARTs keep
+  `esp32_real_time_stats` 10/10 across both cores,
+  `esp32_blink_strip` 7/7 on a WS2812B through the RMT; the UARTs keep
   MEM_RX_STATUS's addresses, from which ESP-IDF counts the bytes waiting); `test_lx6` checks the core with programs from Espressif's assembler.
 
 ### Original ESP32 digital per-pin hold

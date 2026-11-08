@@ -8,7 +8,7 @@ evidence for each model is in [STATUS.md](STATUS.md).
 
 | MCU | Modelled | Registers only | Missing | Peripherals |
 |---|---|---|---|---|
-| ESP32 | 17 | 0 | 28 | 45 |
+| ESP32 | 18 | 0 | 27 | 45 |
 | ESP32-C3 | 35 | 0 | 0 | 35 |
 | ATmega328P | 15 | 0 | 0 | 15 |
 | PIC24FJ1024GB610 | 11 | 4 | 17 | 32 |
@@ -23,7 +23,7 @@ evidence for each model is in [STATUS.md](STATUS.md).
 ## ESP32 (`espressif/esp32`)
 
 Boards: ESP32-DevKitC V4.  
-17 of 45 peripherals modelled, 0 registers only, 28 missing.
+18 of 45 peripherals modelled, 0 registers only, 27 missing.
 
 | Peripheral | Model | State |
 |---|---|---|
@@ -50,7 +50,7 @@ Boards: ESP32-DevKitC V4.
 | I2C0 | `esp32-i2c` | modelled |
 | UHCI0 | — | **missing** |
 | SLCHOST | — | **missing** |
-| RMT | — | **missing** |
+| RMT | `esp32-rmt` | modelled |
 | PCNT | — | **missing** |
 | SLC | — | **missing** |
 | LEDC | `esp32-ledc` | modelled |
@@ -73,7 +73,7 @@ Boards: ESP32-DevKitC V4.
 | I2S1 | — | **missing** |
 | UART2 | `esp32-uart` | modelled |
 
-Declared omissions: Wi-Fi, Bluetooth and the RF front end (WIFI_MAC, BB, NRX, FE: their registers keep what is written); the double-precision accelerator's instructions (F64ADDC, F64ITER and the others: their encodings are public, not what they do; a program that runs one stops with a diagnostic), though its registers are kept; PSRAM (DRAM1), the boot remap, the APB/AHB access permissions, the caches' lock regions and timing (the mapped pages are read whole), the MMU's access-error interrupts; I2C: the non-FIFO mode (NONFIFO_EN, RX_REC_FULL, TX_SEND_EMPTY), SAMPLE_SCL_LEVEL, the input filters (only their share of the SCL high time), 10-bit addressing's R/W check; the peripherals without a model yet: I2S0/1, SPI2/3 (HSPI, VSPI), RMT, MCPWM, PCNT, TWAI, SDMMC, EMAC, the SAR ADCs, the DACs, the touch sensor, the RTC IO MUX and the ULP coprocessor, the AES and RSA accelerators, flash encryption; sleep modes (light and deep sleep, the power domains), brown-out; the eFuse 3/4 coding scheme's check, BLOCK0's per-field write protection.
+Declared omissions: Wi-Fi, Bluetooth and the RF front end (WIFI_MAC, BB, NRX, FE: their registers keep what is written); the double-precision accelerator's instructions (F64ADDC, F64ITER and the others: their encodings are public, not what they do; a program that runs one stops with a diagnostic), though its registers are kept; PSRAM (DRAM1), the boot remap, the APB/AHB access permissions, the caches' lock regions and timing (the mapped pages are read whole), the MMU's access-error interrupts; RMT: the memory's power-down (MEM_PD), STATUS's STATE and the APB-side error bits, the carrier on an idle output; I2C: the non-FIFO mode (NONFIFO_EN, RX_REC_FULL, TX_SEND_EMPTY), SAMPLE_SCL_LEVEL, the input filters (only their share of the SCL high time), 10-bit addressing's R/W check; the peripherals without a model yet: I2S0/1, SPI2/3 (HSPI, VSPI), MCPWM, PCNT, TWAI, SDMMC, EMAC, the SAR ADCs, the DACs, the touch sensor, the RTC IO MUX and the ULP coprocessor, the AES and RSA accelerators, flash encryption; sleep modes (light and deep sleep, the power domains), brown-out; the eFuse 3/4 coding scheme's check, BLOCK0's per-field write protection.
 
 ## ESP32-C3 (`espressif/esp32c3`)
 

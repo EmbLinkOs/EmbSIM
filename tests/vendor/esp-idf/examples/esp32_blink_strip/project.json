@@ -1,0 +1,100 @@
+{
+ "schema_version": 1,
+ "kind": "project",
+ "name": "esp-idf-esp32_blink_strip",
+ "description": "ESP-IDF's get-started/blink with its LED-strip option on the ESP32-DevKitC V4 (sdkconfig.defaults: CONFIG_BLINK_LED_STRIP, the RMT backend, GPIO18): a WS2812B on IO18, powered from the board's 5 V through a 1N4007, a common way to drive one from 3.3 V logic: the diode's drop at the LED's supply current lowers VDD to about 4.2 V, and with it the input's high threshold (0.7 VDD) below the ESP32's 3.3 V. The part's model draws no supply current (its fidelity says so), so here the diode carries none and LED_VDD reads the board's 5 V net.",
+ "policy": "electrical",
+ "boards": [
+  {
+   "id": "B1",
+   "board": "emblink/esp32_devkitc",
+   "layout": {
+    "x": 360,
+    "y": 120
+   },
+   "firmware": {
+    "image": "flash.bin",
+    "format": "bin"
+   }
+  }
+ ],
+ "components": [
+  {
+   "id": "USB",
+   "component": "emblink/vsource",
+   "params": {
+    "kind": "dc",
+    "dc": 5
+   },
+   "layout": {
+    "x": 120,
+    "y": 160
+   }
+  },
+  {
+   "id": "GND1",
+   "component": "emblink/gnd",
+   "layout": {
+    "x": 120,
+    "y": 320
+   }
+  },
+  {
+   "id": "D1",
+   "component": "emblink/diode_1n4007",
+   "layout": {
+    "x": 120,
+    "y": 460
+   }
+  },
+  {
+   "id": "LED1",
+   "component": "emblink/ws2812b",
+   "layout": {
+    "x": 120,
+    "y": 560
+   }
+  }
+ ],
+ "nets": {
+  "GND": [
+   "USB.-",
+   "GND1.GND",
+   "B1.GND1",
+   "LED1.GND"
+  ],
+  "USB5V": [
+   "USB.+",
+   "B1.VBUS"
+  ],
+  "5V": [
+   "B1.5V",
+   "D1.A"
+  ],
+  "LED_VDD": [
+   "D1.K",
+   "LED1.VDD"
+  ],
+  "DATA": [
+   "B1.IO18",
+   "LED1.DIN"
+  ]
+ },
+ "probes": [
+  {
+   "id": "console",
+   "target": "serial:B1",
+   "kind": "serial"
+  },
+  {
+   "id": "led",
+   "target": "output:LED1.color",
+   "kind": "value"
+  },
+  {
+   "id": "frames",
+   "target": "output:LED1.frames",
+   "kind": "value"
+  }
+ ]
+}
