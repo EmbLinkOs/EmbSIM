@@ -56,7 +56,7 @@ const char *const *esk_adev_pin_names(const esk_adev_ops *ops, int *n)
         { "nmos", mos, 3 }, { "pmos", mos, 3 }, { "opamp", amp, 5 }, { "regulator", reg, 3 }, { "pull", one, 1 },
         { "usb_meter", reg, 3 }, { "instrument_input", src, 2 }, { "power_profiler", ppk, 3 }, { "oscilloscope", scope, 5 },
         { "multimeter", dmm, 4 }, { "transformer", xfmr, 4 }, { "transformer_ct", xfmr_ct, 5 },
-        { "triac", triac, 3 }, { "diac", diac, 2 },
+        { "triac", triac, 3 }, { "diac", diac, 2 }, { "dc_motor", src, 2 },
     };
     size_t i;
     for (i = 0; ops && i < sizeof table / sizeof table[0]; i++)
@@ -3053,7 +3053,7 @@ static const esk_adev_ops *const device_table[] = {
     &esk_comparator_ops, &esk_temperature_ops, &esk_timer555_ops,
     &esk_environmental_ops, &esk_photodiode_ops, &esk_optocoupler_ops, &esk_relay_contacts_ops, &esk_spdt_ops, &esk_button4_ops,
     &esk_ptc_fuse_ops, &esk_usb_meter_ops, &instrument_ops, &esk_power_profiler_ops, &esk_oscilloscope_ops,
-    &esk_multimeter_ops,
+    &esk_multimeter_ops, &esk_dc_motor_ops,
 };
 
 void esk_adev_on_time(esk_adev *d, es_time_t now)
@@ -3086,6 +3086,10 @@ void esk_adev_on_input(esk_adev *d, const char *input, es_time_t now)
     }
     if (d && input && d->ops == &led_ops) {
         esk_led_on_input(d, input, now);
+        return;
+    }
+    if (d && input && d->ops == &esk_dc_motor_ops) {
+        esk_motor_on_input(d, now);
         return;
     }
     if (!d || !input || strcmp(input, "run"))

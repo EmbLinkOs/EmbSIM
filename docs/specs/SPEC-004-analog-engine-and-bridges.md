@@ -190,6 +190,24 @@ has `A`, `K`, `C`, `E`, an LED knee and nominal CTR capped by collector saturati
 resistance; no galvanic input-output stamp is introduced. These are low-frequency
 approximations with per-entry limits, not full device or optical models.
 
+`dc_motor` (pins `+`, `-`) is a permanent-magnet brushed DC motor, with an
+optional gearbox:
+- **Electrical.** The winding's resistance `r` and inductance `l` in series
+  with the back EMF `ke` w: v = r i + l di/dt + ke w, the current flowing
+  from `+` to `-` inside.
+- **Mechanical.** The rotor's inertia `j` driven by `kt` i against viscous
+  damping `b`, Coulomb friction `tf` (smoothed by tanh(w / `w_s`)) and the
+  input `load`, the output shaft's torque reflected through `ratio` at
+  efficiency `eta`.
+- **Unknowns.** The current and the rotor's speed are two extra unknowns,
+  integrated by the island's method through the integrator's companion, their
+  truncation errors in the step control; the speed's row is divided by `kt`
+  so its residual is in amperes. At the operating point the rotor holds `w0`
+  (0: a motor powered at t = 0 starts from rest).
+- **Outputs.** The current, the rotor's and output shaft's speeds, the output
+  shaft's angle (integrated at accepted steps and on to now while the island
+  sleeps), its torque and the electrical and mechanical power.
+
 `ptc_fuse` (pins `1`, `2`) is a polymeric PTC resettable fuse, a resistance that
 heats itself:
 - **Thermal model.** Two thermal nodes: the polymer core (`c_core`, `r_core`

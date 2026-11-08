@@ -5,6 +5,20 @@ versions follow semantic versioning. There is no release yet.
 
 ## Unreleased
 
+### DC motors: the first of the robot's parts (M7)
+
+- Added the analog primitive `dc_motor` (`core/analog/motor.c`, SPEC-004): a
+  brushed DC motor whose winding (resistance, inductance, back EMF) and
+  rotor (inertia, friction, a gearbox's ratio and efficiency, a load torque
+  on the shaft) are solved with the circuit as two extra unknowns, so a
+  motor draws its stall current at start, spins up, slows under load and
+  generates when turned.
+- Added `emblink/pololu_3073_gearmotor`, Pololu's 50:1 Micro Metal
+  Gearmotor HPCB 6V with extended shaft, its constants from Pololu's
+  specifications (650 rpm and 0.15 A unloaded, 1.5 A and 0.74 kg cm
+  stalled at 6 V; best efficiency within 6 % of Pololu's), with four
+  fixtures (no load, start, stall, reverse).
+
 ### A library sorted the way an EDA sorts it
 
 - Parts are filed by category and sub-category as Proteus's device picker

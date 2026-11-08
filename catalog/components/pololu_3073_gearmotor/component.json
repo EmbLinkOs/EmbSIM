@@ -1,0 +1,261 @@
+{
+ "schema_version": 1,
+ "kind": "component",
+ "id": "emblink/pololu_3073_gearmotor",
+ "version": "1.0.0",
+ "name": "Pololu 50:1 Micro Metal Gearmotor HPCB 6V (3073)",
+ "category": "electromechanical",
+ "subcategory": "motors_dc",
+ "description": "Pololu's 50:1 Micro Metal Gearmotor HPCB 6V with extended motor shaft (item 3073): a brushed DC motor with carbon brushes behind a 51.45:1 metal spur gearbox, 650 rpm and 0.15 A unloaded at 6 V, 1.5 A and 0.74 kg cm stalled. Its winding (4.0 ohm in series with the back EMF) and its rotor (inertia, friction, the gearbox's efficiency) are solved with the circuit, so it draws its stall current at start, spins up, slows and draws more under the shaft's load, and generates when turned. The extended shaft takes Pololu's magnetic encoder.",
+ "keywords": [
+  "motor",
+  "DC motor",
+  "gearmotor",
+  "micro metal gearmotor",
+  "Pololu",
+  "3073",
+  "robot",
+  "N20",
+  "brushed"
+ ],
+ "pins": [
+  {
+   "name": "+",
+   "number": 1,
+   "model": {
+    "kind": "passive"
+   },
+   "doc": "Motor terminal; current in at + turns the output shaft positive"
+  },
+  {
+   "name": "-",
+   "number": 2,
+   "model": {
+    "kind": "passive"
+   },
+   "doc": "Motor terminal"
+  }
+ ],
+ "params": {
+  "r": {
+   "type": "number",
+   "unit": "ohm",
+   "default": 4.0,
+   "min": 0.1,
+   "max": 1000,
+   "doc": "Terminal resistance: 6 V over the 1.5 A stall current",
+   "advanced": true
+  },
+  "ke": {
+   "type": "number",
+   "unit": "V s/rad",
+   "default": 0.001542,
+   "min": 1e-06,
+   "max": 1,
+   "doc": "Back-EMF constant at the rotor: (6 V - 4.0 ohm x 0.15 A) over 650 rpm x 51.45",
+   "advanced": true
+  },
+  "kt": {
+   "type": "number",
+   "unit": "N m/A",
+   "default": 0.001542,
+   "min": 1e-06,
+   "max": 1,
+   "doc": "Torque constant at the rotor (equal to ke in SI units)",
+   "advanced": true
+  },
+  "tf": {
+   "type": "number",
+   "unit": "N m",
+   "default": 0.0002313,
+   "min": 0,
+   "max": 1,
+   "doc": "Brush and bearing friction at the rotor: kt x the 0.15 A no-load current",
+   "advanced": true
+  },
+  "eta": {
+   "type": "number",
+   "default": 0.678,
+   "min": 0.05,
+   "max": 1,
+   "doc": "The gearbox's efficiency: the 0.74 kg cm stall torque over the rotor's stall torque x 51.45",
+   "advanced": true
+  },
+  "ratio": {
+   "type": "number",
+   "default": 51.45,
+   "min": 1,
+   "max": 10000,
+   "doc": "Gear ratio (the product's 50:1 is 51.45:1)",
+   "advanced": true
+  },
+  "l": {
+   "type": "number",
+   "unit": "H",
+   "default": "1m",
+   "min": "1u",
+   "max": 1,
+   "doc": "Winding inductance: not published; an estimate for a motor of this size (L/R 0.25 ms)",
+   "advanced": true
+  },
+  "j": {
+   "type": "number",
+   "unit": "kg m^2",
+   "default": 8e-09,
+   "min": 1e-12,
+   "max": 1,
+   "doc": "Rotor inertia: not published; an estimate from the armature's size (an 8 mm, 1 g rotor), giving a 13 ms mechanical time constant",
+   "advanced": true
+  }
+ },
+ "inputs": [
+  {
+   "name": "load",
+   "type": "number",
+   "unit": "N m",
+   "min": -1,
+   "max": 1,
+   "default": 0,
+   "doc": "Torque on the output shaft against its positive direction (a wheel's rolling resistance, a stalled hand; 0.0726 N m stalls it at 6 V)"
+  }
+ ],
+ "outputs": [
+  {
+   "name": "current",
+   "type": "number",
+   "unit": "A"
+  },
+  {
+   "name": "voltage",
+   "type": "number",
+   "unit": "V"
+  },
+  {
+   "name": "rpm",
+   "type": "number",
+   "unit": "rpm",
+   "doc": "The output shaft's speed"
+  },
+  {
+   "name": "speed",
+   "type": "number",
+   "unit": "rad/s",
+   "doc": "The output shaft's speed"
+  },
+  {
+   "name": "rotor_speed",
+   "type": "number",
+   "unit": "rad/s"
+  },
+  {
+   "name": "angle",
+   "type": "number",
+   "unit": "deg",
+   "doc": "The output shaft's angle since reset"
+  },
+  {
+   "name": "torque",
+   "type": "number",
+   "unit": "N m",
+   "doc": "The torque the motor makes at the output shaft beyond its friction: turning the load, or accelerating the rotor while it spins up"
+  },
+  {
+   "name": "power",
+   "type": "number",
+   "unit": "W",
+   "doc": "Electrical power in"
+  },
+  {
+   "name": "mechanical_power",
+   "type": "number",
+   "unit": "W",
+   "doc": "Power at the output shaft"
+  }
+ ],
+ "model": {
+  "primitive": "dc_motor",
+  "bind": {
+   "r": "r",
+   "ke": "ke",
+   "kt": "kt",
+   "tf": "tf",
+   "eta": "eta",
+   "ratio": "ratio",
+   "l": "l",
+   "j": "j"
+  }
+ },
+ "symbol": {
+  "svg": "symbol.svg",
+  "width": 60,
+  "height": 40,
+  "pins": {
+   "+": {
+    "x": 0,
+    "y": 20,
+    "side": "left"
+   },
+   "-": {
+    "x": 60,
+    "y": 20,
+    "side": "right"
+   }
+  }
+ },
+ "fidelity": {
+  "functional": null,
+  "timed": {
+   "claims": "As electrical.",
+   "omissions": []
+  },
+  "electrical": {
+   "claims": "A brushed DC motor solved with the circuit (the primitive dc_motor): 4.0 ohm and the winding's inductance in series with the back EMF ke w; the rotor's inertia driven by kt i against the brushes' friction and the load through the 51.45:1 gearbox at 67.8 % efficiency. The constants come from Pololu's specifications at 6 V: unloaded 650 rpm and 0.15 A, stalled 1.5 A and 0.74 kg cm; at the 0.42 A of best efficiency it gives 520 rpm, 0.148 kg cm and 31 % (Pololu: 490 rpm, 0.16 kg cm, 32 %). A motor powered at t = 0 starts from rest at its stall current; reversed it turns backwards; turned by its load it generates.",
+   "omissions": [
+    "the winding's inductance and the rotor's inertia, which Pololu does not publish (estimates: 1 mH, 8e-9 kg m^2)",
+    "the commutator's current ripple and the cogging torque",
+    "the split of the no-load drag between Coulomb and viscous friction (all Coulomb: the no-load current does not rise with speed)",
+    "the gearbox's backlash and its different efficiency when back-driven",
+    "heating and the winding's resistance rising with it; damage from a long stall (the specifications warn that stalls could damage it)",
+    "the ±20 % speed and ±50 % no-load current spread between parts"
+   ],
+   "validation": [
+    "tests/*.json"
+   ]
+  }
+ },
+ "provenance": {
+  "author": "EmbSIM",
+  "license": "Apache-2.0",
+  "sources": [
+   {
+    "title": "Pololu 50:1 Micro Metal Gearmotor HPCB 6V with Extended Motor Shaft, specifications",
+    "url": "https://www.pololu.com/product/3073/specs"
+   }
+  ]
+ },
+ "tests": [
+  "tests/*.json"
+ ],
+  "i18n": {
+    "fr": {
+      "source": "3d66bab36e38",
+      "description": "Le motoréducteur Micro Metal 50:1 HPCB 6V de Pololu à arbre moteur prolongé (référence 3073) : un moteur à courant continu à balais en carbone derrière un réducteur métallique à engrenages droits de 51,45:1, 650 tr/min et 0,15 A à vide sous 6 V, 1,5 A et 0,74 kg cm bloqué. Son bobinage (4,0 ohm en série avec la force contre-électromotrice) et son rotor (inertie, frottement, rendement du réducteur) sont résolus avec le circuit : il tire son courant de blocage au démarrage, prend de la vitesse, ralentit et tire davantage sous la charge de l'arbre, et génère quand on l'entraîne. L'arbre prolongé reçoit le codeur magnétique de Pololu.",
+      "fidelity": {
+        "timed": {
+          "claims": "Comme en électrique."
+        },
+        "electrical": {
+          "claims": "Un moteur à courant continu à balais résolu avec le circuit (la primitive dc_motor) : 4,0 ohm et l'inductance du bobinage en série avec la force contre-électromotrice ke w ; l'inertie du rotor entraînée par kt i contre le frottement des balais et la charge, à travers le réducteur de 51,45:1 au rendement de 67,8 %. Les constantes viennent des spécifications de Pololu sous 6 V : à vide 650 tr/min et 0,15 A, bloqué 1,5 A et 0,74 kg cm ; aux 0,42 A du meilleur rendement il donne 520 tr/min, 0,148 kg cm et 31 % (Pololu : 490 tr/min, 0,16 kg cm, 32 %). Un moteur alimenté à t = 0 part du repos à son courant de blocage ; inversé il tourne en sens contraire ; entraîné par sa charge il génère.",
+          "omissions": [
+            "l'inductance du bobinage et l'inertie du rotor, que Pololu ne publie pas (estimations : 1 mH, 8e-9 kg m^2)",
+            "l'ondulation du courant due au collecteur et le couple de détente",
+            "la répartition de la traînée à vide entre frottement sec et visqueux (tout en frottement sec : le courant à vide ne croît pas avec la vitesse)",
+            "le jeu du réducteur et son rendement différent quand il est entraîné par la charge",
+            "l'échauffement et la résistance du bobinage qui augmente avec lui ; les dégâts d'un blocage prolongé (les spécifications préviennent qu'un blocage peut endommager le moteur ou le réducteur)",
+            "la dispersion de ±20 % de la vitesse et de ±50 % du courant à vide d'une pièce à l'autre"
+          ]
+        }
+      }
+    }
+  }
+}

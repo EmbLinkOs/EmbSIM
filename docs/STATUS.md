@@ -5,6 +5,26 @@ maintained by hand until evidence tooling exists. It is not a generated
 support matrix. Specifications define target contracts; their acceptance
 does not mean the described behaviour exists.
 
+## DC motors, the robot's first parts (2026-11-08)
+
+M7's robot on the floor begins with its motors. `dc_motor`
+(`core/analog/motor.c`, SPEC-004) is a brushed DC motor in the analog
+engine: the winding's resistance and inductance in series with the back
+EMF, the rotor's inertia, friction and gearbox, the current and the speed
+two extra unknowns of the island, a load torque on the output shaft as an
+input. `emblink/pololu_3073_gearmotor` is Pololu's 50:1 Micro Metal
+Gearmotor HPCB 6V (item 3073, the extended shaft that takes Pololu's
+encoder) with the constants its specifications give at 6 V: 4.0 ohm,
+ke = kt = 1.542 mN m/A at the rotor, the no-load current's friction, a
+67.8 % efficient 51.45:1 gearbox. Evidence: its fixtures (`no-load`: 650
+rpm and 0.15 A; `start`: 1.43 A at power-on, 407 rpm, 63 % of full speed,
+at its 13 ms mechanical time constant; `stall`: 1.5 A under 0.74 kg cm;
+`reverse`), and the best-efficiency point the constants give, 520 rpm,
+0.148 kg cm, 0.79 W, 31 % at 0.42 A, against Pololu's 490 rpm, 0.16 kg
+cm, 0.80 W, 32 %. Not yet: the winding's inductance and rotor's inertia
+measured (Pololu publishes neither: estimates), the commutator's ripple,
+heating, a motor driver, the encoder, the robot itself.
+
 ## The library's categories (2026-11-03)
 
 Parts are filed by category and sub-category as Proteus's device picker and

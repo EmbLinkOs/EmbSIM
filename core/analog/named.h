@@ -44,6 +44,9 @@ void esk_power_profiler_on_input(esk_adev *d, es_time_t now);
 void esk_oscilloscope_free(esk_adev *d);
 /* a PTC fuse's look at its temperatures (its component's wake) */
 void esk_ptc_on_time(esk_adev *d, es_time_t now);
+/* a brushed DC motor (motor.c): its load torque changed */
+extern const esk_adev_ops esk_dc_motor_ops;
+void esk_motor_on_input(esk_adev *d, es_time_t now);
 void esk_environmental_on_time(esk_adev *d, es_time_t now);
 void esk_environmental_on_input(esk_adev *d, es_time_t now);
 #endif
