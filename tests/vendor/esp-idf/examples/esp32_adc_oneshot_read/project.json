@@ -1,0 +1,112 @@
+{
+ "schema_version": 1,
+ "kind": "project",
+ "name": "esp-idf-esp32_adc_oneshot_read",
+ "description": "ESP-IDF's adc/oneshot_read on the ESP32-DevKitC V4: 1.1 V on IO32 (ADC1 channel 4), 2.2 V on IO33 (ADC1 channel 5) and 0.5 V on IO4 (ADC2 channel 0) from three sources.",
+ "policy": "electrical",
+ "boards": [
+  {
+   "id": "B1",
+   "board": "emblink/esp32_devkitc",
+   "layout": {
+    "x": 360,
+    "y": 120
+   },
+   "firmware": {
+    "image": "flash.bin",
+    "format": "bin"
+   }
+  }
+ ],
+ "components": [
+  {
+   "id": "USB",
+   "component": "emblink/vsource",
+   "params": {
+    "kind": "dc",
+    "dc": 5
+   },
+   "layout": {
+    "x": 120,
+    "y": 160
+   }
+  },
+  {
+   "id": "GND1",
+   "component": "emblink/gnd",
+   "layout": {
+    "x": 120,
+    "y": 320
+   }
+  },
+  {
+   "id": "V2",
+   "component": "emblink/vsource",
+   "params": {
+    "kind": "dc",
+    "dc": 1.1
+   },
+   "layout": {
+    "x": 120,
+    "y": 440
+   }
+  },
+  {
+   "id": "V3",
+   "component": "emblink/vsource",
+   "params": {
+    "kind": "dc",
+    "dc": 2.2
+   },
+   "layout": {
+    "x": 120,
+    "y": 560
+   }
+  },
+  {
+   "id": "V4",
+   "component": "emblink/vsource",
+   "params": {
+    "kind": "dc",
+    "dc": 0.5
+   },
+   "layout": {
+    "x": 120,
+    "y": 700
+   }
+  }
+ ],
+ "nets": {
+  "USB5V": [
+   "USB.+",
+   "B1.VBUS"
+  ],
+  "GND": [
+   "USB.-",
+   "GND1.GND",
+   "B1.GND1",
+   "V2.-",
+   "V3.-",
+   "V4.-"
+  ],
+  "IO32": [
+   "V2.+",
+   "B1.IO32"
+  ],
+  "IO33": [
+   "V3.+",
+   "B1.IO33"
+  ],
+  "IO4": [
+   "V4.+",
+   "B1.IO4"
+  ]
+ },
+ "probes": [
+  {
+   "id": "console",
+   "target": "serial:B1",
+   "kind": "serial"
+  }
+ ]
+}

@@ -1,0 +1,99 @@
+{
+  "boot_verified": false,
+  "outcome": "blocked",
+  "core": "PRO only",
+  "rom_sha256": "9115bbcd03da9f54d3baca5ad94d588a43da54ed332347137ba3dc9010df258b",
+  "flash_sha256": "52fcca3c31ed835d45e22826d42dd7a7db0c867171fa330f9c56b0a81df7bee7",
+  "reset_vector": "0x40000400",
+  "memctl_profile": "bit 0 plus deterministic 256-byte loop-buffer fixture; not physical fetch/timing qualification",
+  "region_profile": "original ESP32 eight ITLB/DTLB identity regions, reset attribute 2, one ring, no Xtensa cache",
+  "prid_fixture": "0x0000cdcd",
+  "prid_reference": "ESP-IDF v4.4.7 xtensa_context.h documents PRO=0xcdcd, APP=0xabab; not a hardware readout",
+  "rom_tail_policy": "zero-fill absent DROM tail to match QEMU region setup, not silicon contents",
+  "flash_profile": "immutable SPI1 fixture, not a physical flash identity",
+  "rtc_cal_fixture": "explicit TIMG0 cycling control 0x13000, initial value 0; not measured oscillator or POR calibration history",
+  "rtc_cal_period_note": "no clock periods supplied; unclocked fixture exercises ROM fallback, not detection of owner 40MHz crystal",
+  "uart_bank_fixture": "normal UART0/1/2, default disjoint shared FIFO allocations, empty FIFOs, explicit RXD=1 CTS=0 DSR=0 per port, no serial-clock advancement or board pinmux",
+  "gpio_fixture": "no routed pads; defined active-domain DIG_ISO defaults and hold controls only, no isolation/power emulation",
+  "rtc_fixture": "power-on cause 1 per core, vector selects 1, eight explicit zero retention words; not physical-owner RTC state",
+  "efuse_fixture_sha256": "2d8192ea7bdf3510bc117b4ea4b833a94b2ff2ceff252ce1610c297ed633d5bb",
+  "mask_rom_profile": "explicit PRO 448KiB SDK/QEMU IROM; final 64KiB also aliases DROM; external image tail zero-padded like reference, not measured silicon bytes",
+  "efuse_completion_fixture": "one external completion opportunity every 64 instruction attempts; not physical timing",
+  "status": -1,
+  "event": 0,
+  "pc": "0x4000a67d",
+  "opcode": "0x298",
+  "address": "0x3ff48474",
+  "fault_kind": 5,
+  "attempts": 6873,
+  "rtc_cal_value_after_stop": "0x0",
+  "region_readback": [
+    [
+      15,
+      1,
+      1,
+      2,
+      2,
+      2,
+      2,
+      2
+    ],
+    [
+      15,
+      1,
+      1,
+      2,
+      2,
+      2,
+      2,
+      2
+    ]
+  ],
+  "region_access_attributes": [
+    [
+      15,
+      1,
+      1,
+      2,
+      2,
+      2,
+      2,
+      2
+    ],
+    [
+      15,
+      1,
+      1,
+      2,
+      2,
+      2,
+      2,
+      2
+    ]
+  ],
+  "efuse_completions": 3,
+  "retired_before_stop": 6872,
+  "trace_tail": [
+    "0x4000a484",
+    "0x4000a487",
+    "0x4000a48a",
+    "0x4000a48c",
+    "0x4000a492",
+    "0x4000a495",
+    "0x4000a498",
+    "0x4000a49a",
+    "0x4000a4e5",
+    "0x4000a4e8",
+    "0x4000a67a",
+    "0x4000a67d"
+  ],
+  "next_blocker": "RTC_IO_DIG_PAD_HOLD_REG read at 0x3ff48474, PC 0x4000a67d, opcode 0x298; per-pad hold and native SDK boot remain unverified",
+  "fixture_note": "Explicit counter/controller with no automatic clock progress. No periods supplied; ROM fallback is not physical crystal-frequency verification.",
+  "sources_sha256": {
+    "core/mcu/esp32/rtc_cal.c": "6bb9d750d77d7085327db0f699b978fe75192ca9014a7df4c0c9d38c59bc31d1",
+    "core/mcu/esp32/rtc_cal.h": "4c2fea4d5f938794a6701d4fbb9a2c6f12d14fa2e9678a8b7e6a456d06d2c980",
+    "core/mcu/esp32/machine.c": "3513534a3d883f793ebf21c7a365bf70a37f51e4c38b95a310bc832468406adf",
+    "core/mcu/esp32/machine.h": "0b4e05bf12758144140eb6854663dbe7574f26bf4bfba4908b7cef392b902f7e",
+    "tests/vendor/xtensa_integer/probe_rom_boot.py": "cbdb1b740c388b90e224853ba873b977876cfc47bcef6ee15186cfde10f871d8"
+  }
+}

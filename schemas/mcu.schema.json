@@ -27,7 +27,7 @@
       "required": ["backend", "model"],
       "additionalProperties": false,
       "properties": {
-        "backend": {"type": "string", "enum": ["cortex-m", "riscv", "avr", "mips", "pic32", "pic24", "pic16"]},
+        "backend": {"type": "string", "enum": ["cortex-m", "riscv", "avr", "mips", "pic32", "pic24", "pic16", "xtensa"]},
         "model": {"type": "string", "minLength": 1},
         "priority_bits": {"type": "integer", "minimum": 0, "maximum": 8},
         "pmp_entries": {"type": "integer", "minimum": 0, "maximum": 64, "description": "A RISC-V core's physical memory protection entries (16 when absent); pmpcfg and pmpaddr past them read 0"},
@@ -209,7 +209,7 @@
             "additionalProperties": false,
             "properties": {
               "name": {"type": "string", "pattern": "^[A-Z][A-Z0-9]*$"},
-              "pins": {"type": "integer", "minimum": 1, "maximum": 32},
+              "pins": {"type": "integer", "minimum": 1, "maximum": 64, "description": "Pins in the port: up to 32 for most parts, more where one bank is wider (the ESP32's 40 GPIOs, GPIO_OUT and OUT1)."},
               "mask": {"$ref": "common.schema.json#/$defs/hex_or_size", "description": "Bit mask of implemented pins when not contiguous from 0."}
             }
           }

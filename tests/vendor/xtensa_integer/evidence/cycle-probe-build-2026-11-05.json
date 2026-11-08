@@ -1,0 +1,41 @@
+{
+  "hardware_measured": false,
+  "hardware_programmed_by_session": false,
+  "instruction_timing_model_qualified": false,
+  "sdk_commit": "38eeba213aa695aabfd6d89aa9f5078dbe5a94c3",
+  "toolchain": "ESP32 GCC 8.4.0 esp-2021r2-patch5",
+  "configuration": {
+    "cpu_mhz": 240,
+    "power_management_enabled": false,
+    "dual_core": true,
+    "flash_mib": 4
+  },
+  "measure_symbol": "0x40082b6c (IRAM)",
+  "compiled_kernel_loops": 9,
+  "compiled_ccount_reads": 18,
+  "source_sha256": {
+    "tests/vendor/xtensa_integer/cycle_probe/CMakeLists.txt": "85a42eef7cefda373e6ef89c90a63c40a629558550a450a44ef2f94f6a779001",
+    "tests/vendor/xtensa_integer/cycle_probe/main/CMakeLists.txt": "febce2337f93dff7e06efa7f313049ad6a2ca881a3b5de03e5605569c546013c",
+    "tests/vendor/xtensa_integer/cycle_probe/main/cycle_probe.c": "7786648ea841ff60eedd3770b30acaf37f6343a8677dd472ed31d0f313e3167e",
+    "tests/vendor/xtensa_integer/cycle_probe/sdkconfig.defaults": "22fb434bec3320f83441c0e206b757b270e12edf6cad2bf81a3ef0722f0179b0"
+  },
+  "build_outputs_sha256": {
+    "embsim_esp32_cycle_probe.elf": "49a75c3e7e5c384d565799d57da3e99aece2ec65961777e65b5995fdf1536c27",
+    "embsim_esp32_cycle_probe.bin": "ca2cef702d59c8b862984bff3142fb92079c00f8cc3a624f5d1488396010e61b",
+    "bootloader/bootloader.bin": "d500a7d369030d4e2a0454d78998be307fdcc1800db3657c8f078666139fd26b",
+    "partition_table/partition-table.bin": "7f00b6c042a89b15b0cac534f82ed988caf29278ff5700b0c511eb1b5bb7c820"
+  },
+  "reference": {
+    "provider": "Espressif QEMU esp-develop-9.2.2-20260417, not physical hardware or native EmbSIM",
+    "flash_sha256": "1ea25185cc947594f8c6e575617504b4b96538c2c44a3e634e9db5dbf90d2f7a",
+    "log_sha256": "d5d91b50b108df43acfffc0267b92e1f368ccb2cc38bf894bb27a54d13900522",
+    "complete_samples": 3672,
+    "analyzer_accepts_complete_protocol": true,
+    "timeout_seconds": 25,
+    "timeout_after_completion": true,
+    "scope": "Firmware/control-flow and capture protocol only. QEMU counter values cannot calibrate silicon instruction timing."
+  },
+  "reproduction_note": "Build timestamps and reference-emulator counter values can change; hashes identify this run, not bit-reproducible rebuilt measurements.",
+  "body_encoding_policy": "Assembler no-transform preserves requested 24-bit body instructions; measured framing/layout still included",
+  "disassembly_sha256": "7d8d272c0b21c5dc60b0234ff449454b03e64b826bbb0b72860d0a6b016b5a96"
+}

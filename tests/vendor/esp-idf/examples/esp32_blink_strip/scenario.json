@@ -1,0 +1,66 @@
+{
+ "schema_version": 1,
+ "kind": "scenario",
+ "name": "esp32_blink_strip",
+ "until": "3900ms",
+ "description": "blink with the LED strip on the ESP32: the RMT (channel 0, 10 MHz from APB_CLK, through the matrix's rmt_sig_out0) sends the WS2812B white at 16/255 for one second, then black, and again; the console says each. Five frames by 3.8 s: the clear when the strip is configured, then OFF, ON, OFF, ON.",
+ "inputs": [],
+ "assertions": [
+  {
+   "id": "strip",
+   "at": "1s",
+   "probe": "console",
+   "expect": {
+    "contains": "Example configured to blink addressable LED!"
+   }
+  },
+  {
+   "id": "off-first",
+   "at": "1s",
+   "probe": "led",
+   "expect": {
+    "equals": "#000000"
+   }
+  },
+  {
+   "id": "on",
+   "at": "1800ms",
+   "probe": "led",
+   "expect": {
+    "equals": "#101010"
+   }
+  },
+  {
+   "id": "off",
+   "at": "2800ms",
+   "probe": "led",
+   "expect": {
+    "equals": "#000000"
+   }
+  },
+  {
+   "id": "on-again",
+   "at": "3800ms",
+   "probe": "led",
+   "expect": {
+    "equals": "#101010"
+   }
+  },
+  {
+   "id": "frames",
+   "at": "3800ms",
+   "probe": "frames",
+   "expect": {
+    "equals": 5
+   }
+  },
+  {
+   "id": "said",
+   "at": "3800ms",
+   "probe": "console",
+   "expect": {
+    "contains": "Turning the LED ON!"
+   }
+  }
+ ]
+}

@@ -1,0 +1,78 @@
+{
+ "schema_version": 1,
+ "kind": "project",
+ "name": "arduino-esp32-ESP32_AnalogReadSerial",
+ "description": "AnalogReadSerial on the ESP32-DevKitC V4: A0 is GPIO36 (the header's VP), fed 1.1 V from a source.",
+ "policy": "electrical",
+ "boards": [
+  {
+   "id": "B1",
+   "board": "emblink/esp32_devkitc",
+   "layout": {
+    "x": 360,
+    "y": 120
+   },
+   "firmware": {
+    "image": "flash.bin",
+    "format": "bin"
+   }
+  }
+ ],
+ "components": [
+  {
+   "id": "USB",
+   "component": "emblink/vsource",
+   "params": {
+    "kind": "dc",
+    "dc": 5
+   },
+   "layout": {
+    "x": 120,
+    "y": 160
+   }
+  },
+  {
+   "id": "GND1",
+   "component": "emblink/gnd",
+   "layout": {
+    "x": 120,
+    "y": 320
+   }
+  },
+  {
+   "id": "V1",
+   "component": "emblink/vsource",
+   "params": {
+    "kind": "dc",
+    "dc": 1.1
+   },
+   "layout": {
+    "x": 120,
+    "y": 460
+   }
+  }
+ ],
+ "nets": {
+  "GND": [
+   "USB.-",
+   "GND1.GND",
+   "B1.GND1",
+   "V1.-"
+  ],
+  "USB5V": [
+   "USB.+",
+   "B1.VBUS"
+  ],
+  "A0": [
+   "V1.+",
+   "B1.VP"
+  ]
+ },
+ "probes": [
+  {
+   "id": "console",
+   "target": "serial:B1",
+   "kind": "serial"
+  }
+ ]
+}

@@ -1,0 +1,61 @@
+{
+ "schema_version": 1,
+ "kind": "project",
+ "name": "esp-idf-esp32_dac_oneshot",
+ "description": "ESP-IDF's dac/dac_oneshot on the ESP32-DevKitC V4: DAC1 on IO25 and DAC2 on IO26, read back by ADC2's channels 8 and 9 on the same pads, plugged into USB.",
+ "policy": "electrical",
+ "boards": [
+  {
+   "id": "B1",
+   "board": "emblink/esp32_devkitc",
+   "layout": {
+    "x": 360,
+    "y": 120
+   },
+   "firmware": {
+    "image": "flash.bin",
+    "format": "bin"
+   }
+  }
+ ],
+ "components": [
+  {
+   "id": "USB",
+   "component": "emblink/vsource",
+   "params": {
+    "kind": "dc",
+    "dc": 5
+   },
+   "layout": {
+    "x": 120,
+    "y": 160
+   }
+  },
+  {
+   "id": "GND1",
+   "component": "emblink/gnd",
+   "layout": {
+    "x": 120,
+    "y": 320
+   }
+  }
+ ],
+ "nets": {
+  "GND": [
+   "USB.-",
+   "GND1.GND",
+   "B1.GND1"
+  ],
+  "USB5V": [
+   "USB.+",
+   "B1.VBUS"
+  ]
+ },
+ "probes": [
+  {
+   "id": "console",
+   "target": "serial:B1",
+   "kind": "serial"
+  }
+ ]
+}

@@ -221,6 +221,8 @@ struct esk_rf_periph *esk_rf_periph_at(struct esk_rf *rf, int i);
  * answer is kept, as a model's context does not move once created */
 void *esk_rf_ctx_of(struct esk_rf *rf, const void *ops);
 struct esk_rf_reg *esk_rf_reg(struct esk_rf_periph *p, const char *name);
+/* the register at offset `off` from the peripheral's base, or 0 */
+struct esk_rf_reg *esk_rf_reg_at(struct esk_rf_periph *p, u32 off);
 /* the bits of the register's field of that name, or 0 */
 u64 esk_rf_mask(const struct esk_rf_reg *r, const char *field);
 /* the program's read and write, as the description says the fields behave */
