@@ -1,0 +1,707 @@
+{
+ "schema_version": 1,
+ "kind": "component",
+ "id": "emblink/h_bridge",
+ "version": "1.0.0",
+ "name": "H-bridge (motor driver bridge)",
+ "category": "analog_ics",
+ "subcategory": "drivers",
+ "description": "One H-bridge of an integrated motor driver: two half-bridges of FETs with their body diodes between VM and the low-side return, driven by logic inputs read as voltages through Schmitt thresholds and pulldowns, with the datasheet's truth table (DRV8833 IN/IN, TB6612FNG IN/IN/PWM, or L293D half-H with enable), deglitch, propagation delay, dead time, sleep and wake, undervoltage lockout, current chopping on a sense resistor and overcurrent shutdown with an open-drain fault output. The outputs drive from VM through the FETs' on-resistance, so a motor slows as its supply sags. Defaults are the DRV8833's.",
+ "keywords": [
+  "h-bridge",
+  "motor driver",
+  "half-bridge",
+  "dc motor",
+  "DRV8833",
+  "TB6612FNG"
+ ],
+ "pins": [
+  {
+   "name": "IN1",
+   "number": 1,
+   "model": {
+    "kind": "passive"
+   },
+   "doc": "Logic input 1",
+   "required": false
+  },
+  {
+   "name": "IN2",
+   "number": 2,
+   "model": {
+    "kind": "passive"
+   },
+   "doc": "Logic input 2",
+   "required": false
+  },
+  {
+   "name": "PWM",
+   "number": 3,
+   "model": {
+    "kind": "passive"
+   },
+   "doc": "PWM input (mode in_in_pwm)",
+   "required": false
+  },
+  {
+   "name": "EN",
+   "number": 4,
+   "model": {
+    "kind": "passive"
+   },
+   "doc": "nSLEEP (sleep true) or enable/standby",
+   "required": false
+  },
+  {
+   "name": "OUT1",
+   "number": 5,
+   "model": {
+    "kind": "passive"
+   },
+   "doc": "Output 1",
+   "required": false
+  },
+  {
+   "name": "OUT2",
+   "number": 6,
+   "model": {
+    "kind": "passive"
+   },
+   "doc": "Output 2",
+   "required": false
+  },
+  {
+   "name": "VM",
+   "number": 7,
+   "model": {
+    "kind": "passive"
+   },
+   "doc": "Motor supply"
+  },
+  {
+   "name": "GND",
+   "number": 8,
+   "model": {
+    "kind": "passive"
+   },
+   "doc": "Logic ground"
+  },
+  {
+   "name": "SEN",
+   "number": 9,
+   "model": {
+    "kind": "passive"
+   },
+   "doc": "Low-side return: the sense resistor, or GND",
+   "required": false
+  },
+  {
+   "name": "FAULT",
+   "number": 10,
+   "model": {
+    "kind": "passive"
+   },
+   "doc": "Fault output, open drain, low while a fault is asserted",
+   "required": false
+  },
+  {
+   "name": "VCC",
+   "number": 11,
+   "model": {
+    "kind": "passive"
+   },
+   "doc": "Logic supply (vcc_ref true); otherwise unused",
+   "required": false
+  }
+ ],
+ "params": {
+  "mode": {
+   "type": "enum",
+   "enum": [
+    "in_in",
+    "in_in_pwm",
+    "half"
+   ],
+   "default": "in_in",
+   "doc": "The truth table: in_in (DRV8833: 00 coast, 10 forward, 01 reverse, 11 brake), in_in_pwm (TB6612FNG: PWM low or 11 short brake, 00 off), half (L293D: each output follows its input while EN is high)"
+  },
+  "sleep": {
+   "type": "boolean",
+   "default": true,
+   "doc": "EN is nSLEEP: low sleeps the bridge and resets its logic, t_wake passes after it rises; otherwise EN is a logic input of the table"
+  },
+  "ron_hs": {
+   "type": "number",
+   "unit": "ohm",
+   "default": 0.2,
+   "min": 0.001,
+   "max": 100,
+   "doc": "High-side FET on-resistance at vm_hi",
+   "advanced": true
+  },
+  "ron_ls": {
+   "type": "number",
+   "unit": "ohm",
+   "default": 0.16,
+   "min": 0.001,
+   "max": 100,
+   "doc": "Low-side FET on-resistance at vm_hi",
+   "advanced": true
+  },
+  "ron_hs_low": {
+   "type": "number",
+   "unit": "ohm",
+   "default": 0.25,
+   "min": 0.001,
+   "max": 100,
+   "doc": "High-side FET on-resistance at vm_lo",
+   "advanced": true
+  },
+  "ron_ls_low": {
+   "type": "number",
+   "unit": "ohm",
+   "default": 0.2,
+   "min": 0.001,
+   "max": 100,
+   "doc": "Low-side FET on-resistance at vm_lo",
+   "advanced": true
+  },
+  "vm_hi": {
+   "type": "number",
+   "unit": "V",
+   "default": 5.0,
+   "min": 0.1,
+   "max": 100,
+   "doc": "VM of the on-resistances ron_hs and ron_ls",
+   "advanced": true
+  },
+  "vm_lo": {
+   "type": "number",
+   "unit": "V",
+   "default": 2.7,
+   "min": 0,
+   "max": 100,
+   "doc": "VM of the on-resistances ron_hs_low and ron_ls_low (between the two points they follow VM)",
+   "advanced": true
+  },
+  "roff": {
+   "type": "number",
+   "unit": "ohm",
+   "default": 100000000.0,
+   "min": 1000.0,
+   "max": 1000000000000.0,
+   "doc": "Off-state leakage resistance of each FET (the datasheet's IOFF is at most 1 uA)",
+   "advanced": true
+  },
+  "bd_vf": {
+   "type": "number",
+   "unit": "V",
+   "default": 0.8,
+   "min": 0.1,
+   "max": 3,
+   "doc": "Body diode forward voltage at bd_if",
+   "advanced": true
+  },
+  "bd_if": {
+   "type": "number",
+   "unit": "A",
+   "default": 1.0,
+   "min": 1e-06,
+   "max": 100,
+   "doc": "Current of bd_vf",
+   "advanced": true
+  },
+  "bd_n": {
+   "type": "number",
+   "default": 1.2,
+   "min": 0.5,
+   "max": 5,
+   "doc": "Body diode emission coefficient",
+   "advanced": true
+  },
+  "vil": {
+   "type": "number",
+   "unit": "V",
+   "default": 0.7,
+   "min": 0,
+   "max": 50,
+   "doc": "Logic input low threshold (VIL max)",
+   "advanced": true
+  },
+  "vih": {
+   "type": "number",
+   "unit": "V",
+   "default": 2.0,
+   "min": 0,
+   "max": 50,
+   "doc": "Logic input high threshold (VIH min)",
+   "advanced": true
+  },
+  "vhys": {
+   "type": "number",
+   "unit": "V",
+   "default": 0.4,
+   "min": 0,
+   "max": 10,
+   "doc": "Logic input hysteresis about the thresholds' mean",
+   "advanced": true
+  },
+  "en_vil": {
+   "type": "number",
+   "unit": "V",
+   "default": 0.5,
+   "min": 0,
+   "max": 50,
+   "doc": "EN input low threshold",
+   "advanced": true
+  },
+  "en_vih": {
+   "type": "number",
+   "unit": "V",
+   "default": 2.5,
+   "min": 0,
+   "max": 50,
+   "doc": "EN input high threshold",
+   "advanced": true
+  },
+  "en_vhys": {
+   "type": "number",
+   "unit": "V",
+   "default": 0.4,
+   "min": 0,
+   "max": 10,
+   "doc": "EN input hysteresis",
+   "advanced": true
+  },
+  "rpd": {
+   "type": "number",
+   "unit": "ohm",
+   "default": 150000.0,
+   "min": 0,
+   "max": 1000000000000.0,
+   "doc": "Pulldown of IN1, IN2 and PWM (0: none)",
+   "advanced": true
+  },
+  "rpd_en": {
+   "type": "number",
+   "unit": "ohm",
+   "default": 500000.0,
+   "min": 0,
+   "max": 1000000000000.0,
+   "doc": "Pulldown of EN (0: none)",
+   "advanced": true
+  },
+  "en_clamp": {
+   "type": "number",
+   "unit": "V",
+   "default": 0,
+   "min": 0,
+   "max": 100,
+   "doc": "EN's clamping Zener voltage (0: none)",
+   "advanced": true
+  },
+  "iq": {
+   "type": "number",
+   "unit": "A",
+   "default": 0.0017,
+   "min": 0,
+   "max": 1,
+   "doc": "VM supply current while awake",
+   "advanced": true
+  },
+  "iq_sleep": {
+   "type": "number",
+   "unit": "A",
+   "default": 1.6e-06,
+   "min": 0,
+   "max": 1,
+   "doc": "VM supply current asleep",
+   "advanced": true
+  },
+  "uvlo": {
+   "type": "number",
+   "unit": "V",
+   "default": 2.6,
+   "min": 0,
+   "max": 100,
+   "doc": "VM undervoltage lockout, falling",
+   "advanced": true
+  },
+  "uvlo_hys": {
+   "type": "number",
+   "unit": "V",
+   "default": 0.09,
+   "min": 0,
+   "max": 10,
+   "doc": "VM undervoltage lockout hysteresis",
+   "advanced": true
+  },
+  "vtrip": {
+   "type": "number",
+   "unit": "V",
+   "default": 0,
+   "min": 0,
+   "max": 10,
+   "doc": "SEN trip voltage of the current chopping (0: none)",
+   "advanced": true
+  },
+  "f_chop": {
+   "type": "number",
+   "unit": "Hz",
+   "default": 50000.0,
+   "min": 1,
+   "max": 100000000.0,
+   "doc": "Current chopping clock",
+   "advanced": true
+  },
+  "t_blank": {
+   "type": "number",
+   "unit": "s",
+   "default": 3.75e-06,
+   "min": 0,
+   "max": 1,
+   "doc": "Current sense blanking time",
+   "advanced": true
+  },
+  "iocp": {
+   "type": "number",
+   "unit": "A",
+   "default": 0,
+   "min": 0,
+   "max": 1000,
+   "doc": "Overcurrent trip level of each FET (0: none)",
+   "advanced": true
+  },
+  "t_ocp_deg": {
+   "type": "number",
+   "unit": "s",
+   "default": 4e-06,
+   "min": 0,
+   "max": 1,
+   "doc": "Overcurrent deglitch time",
+   "advanced": true
+  },
+  "t_ocp": {
+   "type": "number",
+   "unit": "s",
+   "default": 0.00135,
+   "min": 0,
+   "max": 10,
+   "doc": "Overcurrent retry period",
+   "advanced": true
+  },
+  "fault_r": {
+   "type": "number",
+   "unit": "ohm",
+   "default": 100,
+   "min": 1,
+   "max": 1000000.0,
+   "doc": "FAULT pull-down resistance while asserted",
+   "advanced": true
+  },
+  "t_deg": {
+   "type": "number",
+   "unit": "s",
+   "default": 4.5e-07,
+   "min": 0,
+   "max": 1,
+   "doc": "Input deglitch time: shorter pulses are lost",
+   "advanced": true
+  },
+  "t_prop": {
+   "type": "number",
+   "unit": "s",
+   "default": 1.1e-06,
+   "min": 0,
+   "max": 1,
+   "doc": "Propagation delay from an input to the outputs (at least t_deg)",
+   "advanced": true
+  },
+  "t_dead": {
+   "type": "number",
+   "unit": "s",
+   "default": 4.5e-07,
+   "min": 0,
+   "max": 1,
+   "doc": "Dead time of an output passing between high and low",
+   "advanced": true
+  },
+  "t_wake": {
+   "type": "number",
+   "unit": "s",
+   "default": 0.001,
+   "min": 0,
+   "max": 10,
+   "doc": "Start-up time from nSLEEP high (sleep true)",
+   "advanced": true
+  },
+  "vcc_ref": {
+   "type": "boolean",
+   "default": false,
+   "doc": "The logic has its own supply VCC (TB6612FNG): thresholds are fractions of VCC, the lockout watches VCC, and the quiescent current is drawn from it",
+   "advanced": true
+  },
+  "vil_frac": {
+   "type": "number",
+   "default": 0.3,
+   "min": 0,
+   "max": 1,
+   "doc": "Input low threshold as a fraction of VCC (vcc_ref)",
+   "advanced": true
+  },
+  "vih_frac": {
+   "type": "number",
+   "default": 0.7,
+   "min": 0,
+   "max": 1,
+   "doc": "Input high threshold as a fraction of VCC (vcc_ref)",
+   "advanced": true
+  },
+  "t_dead_lh": {
+   "type": "number",
+   "unit": "s",
+   "default": 4.5e-07,
+   "min": 0,
+   "max": 1,
+   "doc": "Dead time of an output passing from low to high (t_dead is high to low)",
+   "advanced": true
+  }
+ },
+ "outputs": [
+  {
+   "name": "state",
+   "type": "enum",
+   "enum": [
+    "forward",
+    "reverse",
+    "brake",
+    "coast",
+    "half"
+   ],
+   "doc": "forward OUT1 high OUT2 low, reverse the other way, brake both low, coast both off; half for any other pair"
+  },
+  {
+   "name": "out1",
+   "type": "enum",
+   "enum": [
+    "high",
+    "low",
+    "off"
+   ]
+  },
+  {
+   "name": "out2",
+   "type": "enum",
+   "enum": [
+    "high",
+    "low",
+    "off"
+   ]
+  },
+  {
+   "name": "current",
+   "type": "number",
+   "unit": "A",
+   "doc": "Out of OUT1 into the load"
+  },
+  {
+   "name": "vout",
+   "type": "number",
+   "unit": "V",
+   "doc": "OUT1 - OUT2"
+  },
+  {
+   "name": "supply_current",
+   "type": "number",
+   "unit": "A",
+   "doc": "Into VM"
+  },
+  {
+   "name": "logic_current",
+   "type": "number",
+   "unit": "A",
+   "doc": "Into VCC (vcc_ref)"
+  },
+  {
+   "name": "power",
+   "type": "number",
+   "unit": "W",
+   "doc": "Dissipated in the bridge"
+  },
+  {
+   "name": "fault",
+   "type": "boolean"
+  },
+  {
+   "name": "asleep",
+   "type": "boolean"
+  },
+  {
+   "name": "chopping",
+   "type": "boolean"
+  },
+  {
+   "name": "undervoltage",
+   "type": "boolean"
+  }
+ ],
+ "model": {
+  "primitive": "h_bridge",
+  "bind": {
+   "mode": "mode",
+   "sleep": "sleep",
+   "ron_hs": "ron_hs",
+   "ron_ls": "ron_ls",
+   "ron_hs_low": "ron_hs_low",
+   "ron_ls_low": "ron_ls_low",
+   "vm_hi": "vm_hi",
+   "vm_lo": "vm_lo",
+   "roff": "roff",
+   "bd_vf": "bd_vf",
+   "bd_if": "bd_if",
+   "bd_n": "bd_n",
+   "vil": "vil",
+   "vih": "vih",
+   "vhys": "vhys",
+   "en_vil": "en_vil",
+   "en_vih": "en_vih",
+   "en_vhys": "en_vhys",
+   "rpd": "rpd",
+   "rpd_en": "rpd_en",
+   "en_clamp": "en_clamp",
+   "iq": "iq",
+   "iq_sleep": "iq_sleep",
+   "uvlo": "uvlo",
+   "uvlo_hys": "uvlo_hys",
+   "vtrip": "vtrip",
+   "f_chop": "f_chop",
+   "t_blank": "t_blank",
+   "iocp": "iocp",
+   "t_ocp_deg": "t_ocp_deg",
+   "t_ocp": "t_ocp",
+   "fault_r": "fault_r",
+   "t_deg": "t_deg",
+   "t_prop": "t_prop",
+   "t_dead": "t_dead",
+   "t_wake": "t_wake",
+   "vcc_ref": "vcc_ref",
+   "vil_frac": "vil_frac",
+   "vih_frac": "vih_frac",
+   "t_dead_lh": "t_dead_lh"
+  }
+ },
+ "symbol": {
+  "svg": "symbol.svg",
+  "width": 80,
+  "height": 100,
+  "pins": {
+   "IN1": {
+    "x": 0,
+    "y": 20,
+    "side": "left"
+   },
+   "IN2": {
+    "x": 0,
+    "y": 30,
+    "side": "left"
+   },
+   "PWM": {
+    "x": 0,
+    "y": 40,
+    "side": "left"
+   },
+   "EN": {
+    "x": 0,
+    "y": 50,
+    "side": "left"
+   },
+   "FAULT": {
+    "x": 0,
+    "y": 70,
+    "side": "left"
+   },
+   "OUT1": {
+    "x": 80,
+    "y": 30,
+    "side": "right"
+   },
+   "OUT2": {
+    "x": 80,
+    "y": 60,
+    "side": "right"
+   },
+   "VM": {
+    "x": 40,
+    "y": 0,
+    "side": "top"
+   },
+   "GND": {
+    "x": 30,
+    "y": 100,
+    "side": "bottom"
+   },
+   "SEN": {
+    "x": 50,
+    "y": 100,
+    "side": "bottom"
+   },
+   "VCC": {
+    "x": 60,
+    "y": 0,
+    "side": "top"
+   }
+  }
+ },
+ "fidelity": {
+  "functional": null,
+  "timed": {
+   "claims": "As electrical.",
+   "omissions": []
+  },
+  "electrical": {
+   "claims": "Solved with the circuit (the primitive h_bridge): each output's high-side FET from VM and low-side FET to SEN as on-resistances set from VM between two datasheet points, their body diodes, the inputs' thresholds, hysteresis and pulldowns, the truth table of its mode, the deglitch filter, propagation delay and dead time, nSLEEP's wake time, the undervoltage lockout, slow-decay current chopping on the f_chop clock with blanking, and the overcurrent shutdown with its retry and the open-drain FAULT.",
+   "omissions": [
+    "the FETs' rise and fall times (instant switching)",
+    "the FETs' analog current limiting during the overcurrent deglitch",
+    "the die's temperature and thermal shutdown",
+    "an input's crossing between two of the island's steps is taken at the second"
+   ],
+   "validation": [
+    "tests/*.json"
+   ]
+  }
+ },
+ "provenance": {
+  "author": "EmbSIM",
+  "license": "Apache-2.0",
+  "sources": [
+   {
+    "title": "Texas Instruments DRV8833 Dual H-Bridge Motor Driver datasheet (SLVSAR1E)",
+    "url": "https://www.ti.com/lit/ds/symlink/drv8833.pdf"
+   }
+  ]
+ },
+ "tests": [
+  "tests/*.json"
+ ],
+ "i18n": {
+  "fr": {
+   "source": "b3764521b87b",
+   "description": "Un pont en H d'un pilote de moteur intégré : deux demi-ponts de MOSFET avec leurs diodes de structure entre VM et le retour bas, commandés par des entrées logiques lues en tensions à travers des seuils à hystérésis et des résistances de rappel, avec la table de vérité de la fiche technique (DRV8833 IN/IN, TB6612FNG IN/IN/PWM ou L293D demi-pont avec validation), le filtre anti-parasites, le délai de propagation, le temps mort, la veille et le réveil, le verrouillage en sous-tension, le découpage du courant sur une résistance de mesure et la coupure en surintensité avec une sortie de défaut à drain ouvert. Les sorties sont alimentées depuis VM à travers la résistance à l'état passant des MOSFET : un moteur ralentit quand son alimentation faiblit. Valeurs par défaut : celles du DRV8833.",
+   "fidelity": {
+    "timed": {
+     "claims": "Comme en électrique."
+    },
+    "electrical": {
+     "claims": "Résolu avec le circuit (la primitive h_bridge) : le MOSFET haut de chaque sortie depuis VM et le MOSFET bas vers SEN, en résistances à l'état passant fixées selon VM entre deux points de la fiche technique, leurs diodes de structure, les seuils, l'hystérésis et les résistances de rappel des entrées, la table de vérité de son mode, le filtre anti-parasites, le délai de propagation et le temps mort, le temps de réveil de nSLEEP, le verrouillage en sous-tension, le découpage du courant en décroissance lente sur l'horloge f_chop avec masquage, et la coupure en surintensité avec sa reprise et la sortie FAULT à drain ouvert.",
+     "omissions": [
+      "les temps de montée et de descente des MOSFET (commutation instantanée)",
+      "la limitation analogique du courant des MOSFET pendant le filtrage de la surintensité",
+      "la température de la puce et la coupure thermique",
+      "le passage d'un seuil par une entrée entre deux pas de l'îlot est pris au second"
+     ]
+    }
+   }
+  }
+ }
+}

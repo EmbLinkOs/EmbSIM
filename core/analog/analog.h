@@ -40,17 +40,20 @@ struct esk_adev_ops {
     void (*set_logic)(esk_adev *d, esk_logic v, es_time_t at);
 };
 
+/* the most terminals one analog device has (a dual H-bridge's sixteen) */
+#define ESK_ADEV_MAX_PINS 16
+
 struct esk_adev {
     esk_island *isl;
     esk_comp *comp;           /* owning component (NULL for bridges owned by a pin) */
     esk_pin *pin;             /* for bridges: the digital pin */
     const esk_adev_ops *ops;
     void *state;
-    int node[8];              /* nodes of the device's analog pins in pin order (0 = ground) */
+    int node[ESK_ADEV_MAX_PINS]; /* nodes of the device's analog pins in pin order (0 = ground) */
     int nnodes;
     int branch[4];            /* branch unknown indices allocated in setup */
     int nbranch;
-    double i_last[8];         /* current into each pin at the last accepted step (observe) */
+    double i_last[ESK_ADEV_MAX_PINS]; /* current into each pin at the last accepted step (observe) */
 };
 
 typedef struct esk_island_params {

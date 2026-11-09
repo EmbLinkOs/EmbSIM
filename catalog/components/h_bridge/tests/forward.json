@@ -1,0 +1,94 @@
+{
+ "schema_version": 1,
+ "kind": "component_test",
+ "name": "forward",
+ "description": "IN1 high, IN2 low, nSLEEP high: after the 1 ms wake the bridge drives a 10 ohm load forward from VM through both on-resistances (0.2 + 0.16 ohm at 5 V): 4.83 V across it, 483 mA.",
+ "policy": "electrical",
+ "until": "3ms",
+ "circuit": {
+  "components": [
+   {
+    "id": "VM",
+    "component": "emblink/vsource",
+    "params": {
+     "kind": "dc",
+     "dc": 5.0
+    }
+   },
+   {
+    "id": "VL",
+    "component": "emblink/vsource",
+    "params": {
+     "kind": "dc",
+     "dc": 3.3
+    }
+   },
+   {
+    "id": "DUT",
+    "component": "emblink/h_bridge"
+   },
+   {
+    "id": "RL",
+    "component": "emblink/resistor",
+    "params": {
+     "resistance": 10
+    }
+   },
+   {
+    "id": "G",
+    "component": "emblink/gnd"
+   }
+  ],
+  "nets": {
+   "VM": [
+    "VM.+",
+    "DUT.VM"
+   ],
+   "LOGIC": [
+    "VL.+",
+    "DUT.IN1",
+    "DUT.EN"
+   ],
+   "A": [
+    "DUT.OUT1",
+    "RL.1"
+   ],
+   "B": [
+    "DUT.OUT2",
+    "RL.2"
+   ],
+   "GND": [
+    "VM.-",
+    "VL.-",
+    "DUT.GND",
+    "DUT.SEN",
+    "DUT.IN2",
+    "G.GND"
+   ]
+  }
+ },
+ "expect": {
+  "output:DUT.out1": {
+   "at": "0.5ms",
+   "equals": "off"
+  },
+  "output:DUT.asleep": {
+   "at": "0.5ms",
+   "equals": true
+  },
+  "output:DUT.state": {
+   "at": "2ms",
+   "equals": "forward"
+  },
+  "output:DUT.current": {
+   "at": "2ms",
+   "min": 0.478,
+   "max": 0.488
+  },
+  "output:DUT.vout": {
+   "at": "2ms",
+   "min": 4.78,
+   "max": 4.88
+  }
+ }
+}

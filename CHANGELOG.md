@@ -5,6 +5,40 @@ versions follow semantic versioning. There is no release yet.
 
 ## Unreleased
 
+### DC motors and their driver: the first of the robot's parts (M7)
+
+- Added the analog primitive `dc_motor` (`core/analog/motor.c`, SPEC-004): a
+  brushed DC motor whose winding (resistance, inductance, back EMF) and
+  rotor (inertia, friction, a gearbox's ratio and efficiency, a load torque
+  on the shaft) are solved with the circuit as two extra unknowns, so a
+  motor draws its stall current at start, spins up, slows under load and
+  generates when turned.
+- Added `emblink/pololu_3073_gearmotor`, Pololu's 50:1 Micro Metal
+  Gearmotor HPCB 6V with extended shaft, its constants from Pololu's
+  specifications (650 rpm and 0.15 A unloaded, 1.5 A and 0.74 kg cm
+  stalled at 6 V; best efficiency within 6 % of Pololu's), with four
+  fixtures (no load, start, stall, reverse).
+- Added the analog primitive `h_bridge` (`core/analog/hbridge.c`, SPEC-004):
+  one bridge of a motor driver. Its FETs drive from VM through their
+  on-resistance, with body diodes, so a motor slows as its supply sags.
+  - logic inputs read as voltages through Schmitt thresholds and pulldowns
+  - the DRV8833, TB6612FNG and L293D truth tables
+  - deglitch, propagation delay and dead time
+  - nSLEEP and its wake time, undervoltage lockout
+  - current chopping on a sense resistor
+  - overcurrent shutdown with retry and an open-drain fault output
+- Added `emblink/h_bridge` (the primitive as a part, the DRV8833's values)
+  and `emblink/drv8833`, Texas Instruments' DRV8833 dual H-bridge driver,
+  as two bridges with the datasheet's values, and eight fixtures (forward,
+  timing, UVLO; a gearmotor driven, current chopping at 0.4 A, overcurrent
+  and nFAULT, sleep and awake supply currents).
+- Added `emblink/tb6612fng`, Toshiba's TB6612FNG dual motor driver: the
+  primitive's VCC terminal gives it thresholds at 0.3/0.7 VCC and a VCC
+  lockout (1.9/2.2 V), with 0.5 ohm outputs, 50/230 ns dead times and
+  standby at 1 uA, and four fixtures (a gearmotor driven, PWM-low brake,
+  standby, VCC-relative thresholds and lockout).
+- An analog primitive takes up to 16 terminals (8 before), and a
+  composite's pin declared `nc` needs no port.
 ### ESP32 in the machine framework: ESP-IDF boots on the ESP32-DevKitC V4
 
 - Added the ESP32's two Xtensa LX6 cores as a framework core

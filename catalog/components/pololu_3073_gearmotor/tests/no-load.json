@@ -1,0 +1,51 @@
+{
+ "schema_version": 1,
+ "kind": "component_test",
+ "name": "no-load",
+ "description": "6 V and no load: the datasheet's 650 rpm and 0.15 A once spun up.",
+ "policy": "electrical",
+ "until": "400ms",
+ "circuit": {
+  "components": [
+   {
+    "id": "V1",
+    "component": "emblink/vsource",
+    "params": {
+     "kind": "dc",
+     "dc": 6.0
+    }
+   },
+   {
+    "id": "DUT",
+    "component": "emblink/pololu_3073_gearmotor"
+   },
+   {
+    "id": "G",
+    "component": "emblink/gnd"
+   }
+  ],
+  "nets": {
+   "VIN": [
+    "V1.+",
+    "DUT.+"
+   ],
+   "GND": [
+    "V1.-",
+    "DUT.-",
+    "G.GND"
+   ]
+  }
+ },
+ "expect": {
+  "output:DUT.rpm": {
+   "at": "300ms",
+   "min": 640,
+   "max": 660
+  },
+  "output:DUT.current": {
+   "at": "300ms",
+   "min": 0.145,
+   "max": 0.155
+  }
+ }
+}

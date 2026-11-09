@@ -1,0 +1,30 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 120" width="100" height="120" data-grid="10">
+  <style>.s{stroke:var(--symbol-stroke,#cdd6e4);fill:none;stroke-width:1.5;stroke-linecap:round;stroke-linejoin:round}.f{stroke:var(--symbol-stroke,#cdd6e4);fill:var(--symbol-fill,#1b2230);stroke-width:1.5;stroke-linejoin:round}.t{fill:var(--symbol-stroke,#cdd6e4);font-family:sans-serif;font-size:7px}.p{fill:var(--symbol-stroke,#cdd6e4);font-family:sans-serif;font-size:4.5px}</style>
+  <rect class="f" x="10" y="10" width="80" height="100" rx="2"/>
+  <line class="s" id="pin-stby" x1="0" y1="20" x2="10" y2="20"/><text class="p" x="13" y="22">STBY</text>
+  <line class="s" id="pin-ain1" x1="0" y1="30" x2="10" y2="30"/><text class="p" x="13" y="32">AIN1</text>
+  <line class="s" id="pin-ain2" x1="0" y1="40" x2="10" y2="40"/><text class="p" x="13" y="42">AIN2</text>
+  <line class="s" id="pin-pwma" x1="0" y1="50" x2="10" y2="50"/><text class="p" x="13" y="52">PWMA</text>
+  <line class="s" id="pin-bin1" x1="0" y1="70" x2="10" y2="70"/><text class="p" x="13" y="72">BIN1</text>
+  <line class="s" id="pin-bin2" x1="0" y1="80" x2="10" y2="80"/><text class="p" x="13" y="82">BIN2</text>
+  <line class="s" id="pin-pwmb" x1="0" y1="90" x2="10" y2="90"/><text class="p" x="13" y="92">PWMB</text>
+  <line class="s" id="pin-ao1" x1="100" y1="20" x2="90" y2="20"/><text class="p" x="87" y="22" text-anchor="end">AO1</text>
+  <line class="s" id="pin-ao1_2" x1="100" y1="30" x2="90" y2="30"/><text class="p" x="87" y="32" text-anchor="end">AO1</text>
+  <line class="s" id="pin-ao2" x1="100" y1="40" x2="90" y2="40"/><text class="p" x="87" y="42" text-anchor="end">AO2</text>
+  <line class="s" id="pin-ao2_2" x1="100" y1="50" x2="90" y2="50"/><text class="p" x="87" y="52" text-anchor="end">AO2</text>
+  <line class="s" id="pin-bo1" x1="100" y1="70" x2="90" y2="70"/><text class="p" x="87" y="72" text-anchor="end">BO1</text>
+  <line class="s" id="pin-bo1_2" x1="100" y1="80" x2="90" y2="80"/><text class="p" x="87" y="82" text-anchor="end">BO1</text>
+  <line class="s" id="pin-bo2" x1="100" y1="90" x2="90" y2="90"/><text class="p" x="87" y="92" text-anchor="end">BO2</text>
+  <line class="s" id="pin-bo2_2" x1="100" y1="100" x2="90" y2="100"/><text class="p" x="87" y="102" text-anchor="end">BO2</text>
+  <line class="s" id="pin-vcc" x1="20" y1="0" x2="20" y2="10"/><text class="p" x="20" y="17" text-anchor="middle">VCC</text>
+  <line class="s" id="pin-vm1" x1="40" y1="0" x2="40" y2="10"/><text class="p" x="40" y="17" text-anchor="middle">VM1</text>
+  <line class="s" id="pin-vm2" x1="60" y1="0" x2="60" y2="10"/><text class="p" x="60" y="17" text-anchor="middle">VM2</text>
+  <line class="s" id="pin-vm3" x1="80" y1="0" x2="80" y2="10"/><text class="p" x="80" y="17" text-anchor="middle">VM3</text>
+  <line class="s" id="pin-gnd" x1="20" y1="120" x2="20" y2="110"/>
+  <line class="s" id="pin-pgnd1" x1="40" y1="120" x2="40" y2="110"/>
+  <line class="s" id="pin-pgnd1_2" x1="50" y1="120" x2="50" y2="110"/>
+  <line class="s" id="pin-pgnd2" x1="70" y1="120" x2="70" y2="110"/>
+  <line class="s" id="pin-pgnd2_2" x1="80" y1="120" x2="80" y2="110"/>
+  <text class="p" x="20" y="106" text-anchor="middle">GND</text><text class="p" x="45" y="106" text-anchor="middle">PGND1</text><text class="p" x="75" y="106" text-anchor="middle">PGND2</text>
+  <text class="t" x="50" y="62" text-anchor="middle">TB6612FNG</text>
+</svg>

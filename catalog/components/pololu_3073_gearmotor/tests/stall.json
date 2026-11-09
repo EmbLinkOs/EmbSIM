@@ -1,0 +1,59 @@
+{
+ "schema_version": 1,
+ "kind": "component_test",
+ "name": "stall",
+ "description": "At 6 V with 0.0726 N m (0.74 kg cm) on the shaft: stalled, drawing 1.5 A.",
+ "policy": "electrical",
+ "until": "600ms",
+ "circuit": {
+  "components": [
+   {
+    "id": "V1",
+    "component": "emblink/vsource",
+    "params": {
+     "kind": "dc",
+     "dc": 6.0
+    }
+   },
+   {
+    "id": "DUT",
+    "component": "emblink/pololu_3073_gearmotor"
+   },
+   {
+    "id": "G",
+    "component": "emblink/gnd"
+   }
+  ],
+  "nets": {
+   "VIN": [
+    "V1.+",
+    "DUT.+"
+   ],
+   "GND": [
+    "V1.-",
+    "DUT.-",
+    "G.GND"
+   ]
+  }
+ },
+ "expect": {
+  "output:DUT.rpm": {
+   "at": "500ms",
+   "min": -15,
+   "max": 15
+  },
+  "output:DUT.current": {
+   "at": "500ms",
+   "min": 1.4,
+   "max": 1.5
+  }
+ },
+ "inputs": [
+  {
+   "at": "0s",
+   "target": "DUT",
+   "input": "load",
+   "value": 0.0726
+  }
+ ]
+}

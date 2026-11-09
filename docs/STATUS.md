@@ -5,6 +5,53 @@ maintained by hand until evidence tooling exists. It is not a generated
 support matrix. Specifications define target contracts; their acceptance
 does not mean the described behaviour exists.
 
+## DC motors and their driver, the robot's first parts (2026-11-08)
+
+M7's robot on the floor begins with its motors. `dc_motor`
+(`core/analog/motor.c`, SPEC-004) is a brushed DC motor in the analog
+engine: the winding's resistance and inductance in series with the back
+EMF, the rotor's inertia, friction and gearbox, the current and the speed
+two extra unknowns of the island, a load torque on the output shaft as an
+input. `emblink/pololu_3073_gearmotor` is Pololu's 50:1 Micro Metal
+Gearmotor HPCB 6V (item 3073, the extended shaft that takes Pololu's
+encoder) with the constants its specifications give at 6 V: 4.0 ohm,
+ke = kt = 1.542 mN m/A at the rotor, the no-load current's friction, a
+67.8 % efficient 51.45:1 gearbox. Evidence: its fixtures (`no-load`: 650
+rpm and 0.15 A; `start`: 1.43 A at power-on, 407 rpm, 63 % of full speed,
+at its 13 ms mechanical time constant; `stall`: 1.5 A under 0.74 kg cm;
+`reverse`), and the best-efficiency point the constants give, 520 rpm,
+0.148 kg cm, 0.79 W, 31 % at 0.42 A, against Pololu's 490 rpm, 0.16 kg
+cm, 0.80 W, 32 %. Not yet: the winding's inductance and rotor's inertia
+measured (Pololu publishes neither: estimates), the commutator's ripple,
+heating, the encoder, the robot itself.
+
+The motors' driver: `h_bridge` (`core/analog/hbridge.c`) is one bridge of
+an integrated driver. Its FETs drive from VM through their on-resistance,
+so a motor slows as the battery sags, and coast through their body diodes.
+Its logic inputs are read as voltages through the datasheet's thresholds,
+with deglitch, propagation delay, dead time, sleep and wake, undervoltage
+lockout, current chopping and overcurrent shutdown. `emblink/drv8833` is
+Texas Instruments' DRV8833, two such bridges with its datasheet's values.
+
+Evidence, its eight fixtures:
+- 4.83 V across 10 ohm from 5 V (200 + 160 mohm);
+- OUT1 following IN1 1.1 us later, a 300 ns pulse lost to the deglitch,
+  and the 450 ns dead time on reversal;
+- the 2.6 V lockout, and the wake after recovery;
+- the gearmotor at 6 V spinning up to 640 rpm;
+- 0.5 ohm on AISEN holding it at 0.38 to 0.40 A;
+- a short tripping the overcurrent protection, with nFAULT low and the
+  1.35 ms retry;
+- 1.6 uA asleep and 1.7 mA awake.
+
+`emblink/tb6612fng` is Toshiba's TB6612FNG on the same primitive, its logic
+referred to its own VCC supply. Its fixtures cover the gearmotor at 6 V
+(640 rpm), PWM low braking, standby under 1 uA, and inputs and lockout
+following VCC.
+
+Not yet: the thermal shutdown, switching edges, the L293D on the
+primitive.
+
 ## ESP32 on the machine framework (2026-11-08)
 
 The ESP32 now runs as a catalog MCU (`espressif/esp32`) on the

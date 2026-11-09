@@ -1,0 +1,395 @@
+{
+ "schema_version": 1,
+ "kind": "component",
+ "id": "emblink/drv8833",
+ "version": "1.0.0",
+ "name": "DRV8833 dual H-bridge motor driver",
+ "category": "analog_ics",
+ "subcategory": "drivers",
+ "description": "Texas Instruments DRV8833 dual H-bridge motor driver (HTSSOP-16) for two brushed DC motors or one bipolar stepper, 2.7 to 10.8 V. Each bridge follows its xIN1/xIN2 pair (00 coast, 10 forward, 01 reverse, 11 brake) 1.1 us later, its outputs driving from VM through 200 + 160 mohm of FETs with their body diodes, so a motor slows as the supply sags and recirculates through the diodes while coasting. nSLEEP sleeps the device (1.6 uA) and wakes it in 1 ms; a sense resistor on xISEN limits the current to 200 mV / R by slow-decay chopping at 50 kHz; overcurrent shuts a bridge down for 1.35 ms with nFAULT low; VM below 2.6 V locks it out.",
+ "keywords": [
+  "DRV8833",
+  "motor driver",
+  "h-bridge",
+  "dual h-bridge",
+  "dc motor",
+  "stepper",
+  "Texas Instruments",
+  "robot"
+ ],
+ "part": {
+  "manufacturer": "Texas Instruments",
+  "mpn": "DRV8833PWPR",
+  "package": "HTSSOP-16",
+  "datasheet": "https://www.ti.com/lit/ds/symlink/drv8833.pdf"
+ },
+ "pins": [
+  {
+   "name": "nSLEEP",
+   "number": 1,
+   "model": {
+    "kind": "passive"
+   },
+   "doc": "Sleep mode input: high enables the device, low sleeps it and resets its logic; 500 kohm pulldown, clamped at 6.5 V"
+  },
+  {
+   "name": "AOUT1",
+   "number": 2,
+   "model": {
+    "kind": "passive"
+   },
+   "doc": "Bridge A output 1",
+   "required": false
+  },
+  {
+   "name": "AISEN",
+   "number": 3,
+   "model": {
+    "kind": "passive"
+   },
+   "doc": "Bridge A ground / current sense: to a sense resistor, or GND",
+   "required": false
+  },
+  {
+   "name": "AOUT2",
+   "number": 4,
+   "model": {
+    "kind": "passive"
+   },
+   "doc": "Bridge A output 2",
+   "required": false
+  },
+  {
+   "name": "BOUT2",
+   "number": 5,
+   "model": {
+    "kind": "passive"
+   },
+   "doc": "Bridge B output 2",
+   "required": false
+  },
+  {
+   "name": "BISEN",
+   "number": 6,
+   "model": {
+    "kind": "passive"
+   },
+   "doc": "Bridge B ground / current sense: to a sense resistor, or GND",
+   "required": false
+  },
+  {
+   "name": "BOUT1",
+   "number": 7,
+   "model": {
+    "kind": "passive"
+   },
+   "doc": "Bridge B output 1",
+   "required": false
+  },
+  {
+   "name": "nFAULT",
+   "number": 8,
+   "model": {
+    "kind": "passive"
+   },
+   "doc": "Fault output, open drain: low while a bridge is shut down by overcurrent",
+   "required": false
+  },
+  {
+   "name": "BIN1",
+   "number": 9,
+   "model": {
+    "kind": "passive"
+   },
+   "doc": "Bridge B input 1; 150 kohm pulldown",
+   "required": false
+  },
+  {
+   "name": "BIN2",
+   "number": 10,
+   "model": {
+    "kind": "passive"
+   },
+   "doc": "Bridge B input 2; 150 kohm pulldown",
+   "required": false
+  },
+  {
+   "name": "VCP",
+   "number": 11,
+   "model": {
+    "kind": "nc"
+   },
+   "doc": "High-side gate drive voltage: a 0.01 uF capacitor to VM (not modelled)",
+   "required": false
+  },
+  {
+   "name": "VM",
+   "number": 12,
+   "model": {
+    "kind": "passive"
+   },
+   "doc": "Device power supply, 2.7 to 10.8 V: a 10 uF bypass capacitor to GND"
+  },
+  {
+   "name": "GND",
+   "number": 13,
+   "model": {
+    "kind": "passive"
+   },
+   "doc": "Device ground (and the PowerPAD)"
+  },
+  {
+   "name": "VINT",
+   "number": 14,
+   "model": {
+    "kind": "nc"
+   },
+   "doc": "Internal supply bypass: a 2.2 uF capacitor to GND (not modelled)",
+   "required": false
+  },
+  {
+   "name": "AIN2",
+   "number": 15,
+   "model": {
+    "kind": "passive"
+   },
+   "doc": "Bridge A input 2; 150 kohm pulldown",
+   "required": false
+  },
+  {
+   "name": "AIN1",
+   "number": 16,
+   "model": {
+    "kind": "passive"
+   },
+   "doc": "Bridge A input 1; 150 kohm pulldown",
+   "required": false
+  }
+ ],
+ "params": {},
+ "model": {
+  "composite": {
+   "components": [
+    {
+     "id": "A",
+     "component": "emblink/h_bridge",
+     "params": {
+      "mode": "in_in",
+      "sleep": true,
+      "vtrip": 0.2,
+      "iocp": 3.3,
+      "rpd": 150000.0,
+      "vil": 0.7,
+      "vih": 2.0,
+      "vhys": 0.4,
+      "en_vil": 0.5,
+      "en_vih": 2.5,
+      "en_vhys": 0.4,
+      "rpd_en": 500000.0,
+      "en_clamp": 6.5,
+      "iq": 0.0017,
+      "iq_sleep": 1.6e-06
+     }
+    },
+    {
+     "id": "B",
+     "component": "emblink/h_bridge",
+     "params": {
+      "mode": "in_in",
+      "sleep": true,
+      "vtrip": 0.2,
+      "iocp": 3.3,
+      "rpd": 150000.0,
+      "vil": 0.7,
+      "vih": 2.0,
+      "vhys": 0.4,
+      "en_vil": 0.5,
+      "en_vih": 2.5,
+      "en_vhys": 0.4,
+      "rpd_en": 0,
+      "en_clamp": 0,
+      "iq": 0,
+      "iq_sleep": 0
+     }
+    }
+   ],
+   "nets": {
+    "SLEEP": [
+     "A.EN",
+     "B.EN"
+    ],
+    "VM": [
+     "A.VM",
+     "B.VM"
+    ],
+    "GND": [
+     "A.GND",
+     "B.GND",
+     "A.PWM",
+     "B.PWM"
+    ],
+    "FAULT": [
+     "A.FAULT",
+     "B.FAULT"
+    ]
+   },
+   "ports": {
+    "nSLEEP": "A.EN",
+    "AOUT1": "A.OUT1",
+    "AISEN": "A.SEN",
+    "AOUT2": "A.OUT2",
+    "BOUT2": "B.OUT2",
+    "BISEN": "B.SEN",
+    "BOUT1": "B.OUT1",
+    "nFAULT": "A.FAULT",
+    "BIN1": "B.IN1",
+    "BIN2": "B.IN2",
+    "VM": "A.VM",
+    "GND": "A.GND",
+    "AIN2": "A.IN2",
+    "AIN1": "A.IN1"
+   }
+  }
+ },
+ "symbol": {
+  "svg": "symbol.svg",
+  "width": 100,
+  "height": 110,
+  "pins": {
+   "nSLEEP": {
+    "x": 0,
+    "y": 20,
+    "side": "left"
+   },
+   "AIN1": {
+    "x": 0,
+    "y": 30,
+    "side": "left"
+   },
+   "AIN2": {
+    "x": 0,
+    "y": 40,
+    "side": "left"
+   },
+   "BIN1": {
+    "x": 0,
+    "y": 50,
+    "side": "left"
+   },
+   "BIN2": {
+    "x": 0,
+    "y": 60,
+    "side": "left"
+   },
+   "nFAULT": {
+    "x": 0,
+    "y": 80,
+    "side": "left"
+   },
+   "AOUT1": {
+    "x": 100,
+    "y": 20,
+    "side": "right"
+   },
+   "AOUT2": {
+    "x": 100,
+    "y": 30,
+    "side": "right"
+   },
+   "BOUT1": {
+    "x": 100,
+    "y": 50,
+    "side": "right"
+   },
+   "BOUT2": {
+    "x": 100,
+    "y": 60,
+    "side": "right"
+   },
+   "VM": {
+    "x": 40,
+    "y": 0,
+    "side": "top"
+   },
+   "VCP": {
+    "x": 60,
+    "y": 0,
+    "side": "top"
+   },
+   "VINT": {
+    "x": 80,
+    "y": 0,
+    "side": "top"
+   },
+   "GND": {
+    "x": 30,
+    "y": 110,
+    "side": "bottom"
+   },
+   "AISEN": {
+    "x": 50,
+    "y": 110,
+    "side": "bottom"
+   },
+   "BISEN": {
+    "x": 70,
+    "y": 110,
+    "side": "bottom"
+   }
+  }
+ },
+ "fidelity": {
+  "functional": null,
+  "timed": {
+   "claims": "As electrical.",
+   "omissions": []
+  },
+  "electrical": {
+   "claims": "Two bridges solved with the circuit (the primitive h_bridge, by way of emblink/h_bridge): the datasheet's H-bridge logic, RDS(on) of 200 mohm high side and 160 mohm low side at 5 V (250 and 200 at 2.7 V), the body diodes, input thresholds (VIL 0.7, VIH 2 V; nSLEEP 0.5 and 2.5 V), 0.4 V hysteresis and pulldowns (150 kohm; nSLEEP 500 kohm and its 6.5 V clamp), the 450 ns deglitch, 1.1 us propagation delay and 450 ns dead time, sleep at 1.6 uA and the 1 ms wake, 1.7 mA awake, UVLO at 2.6 V with 90 mV hysteresis, 200 mV current chopping in slow decay on a 50 kHz clock with 3.75 us blanking, and per-bridge overcurrent shutdown at 3.3 A after 4 us with a 1.35 ms retry and nFAULT low.",
+   "omissions": [
+    "VINT and VCP (the internal regulator and the charge pump: their capacitors are not needed, nor checked)",
+    "the die's temperature and thermal shutdown (TSD)",
+    "the FETs' rise and fall times (instant switching)",
+    "the FETs' analog current limiting during the overcurrent deglitch",
+    "an input's or the sense comparator's crossing between two of the circuit's steps is taken at the second"
+   ],
+   "validation": [
+    "tests/*.json"
+   ]
+  }
+ },
+ "provenance": {
+  "author": "EmbSIM",
+  "license": "Apache-2.0",
+  "sources": [
+   {
+    "title": "Texas Instruments DRV8833 Dual H-Bridge Motor Driver datasheet (SLVSAR1E, July 2015)",
+    "url": "https://www.ti.com/lit/ds/symlink/drv8833.pdf"
+   }
+  ]
+ },
+ "tests": [
+  "tests/*.json"
+ ],
+  "i18n": {
+    "fr": {
+      "source": "c51b55f9cfbf",
+      "description": "Pilote de moteur double pont en H DRV8833 de Texas Instruments (HTSSOP-16) pour deux moteurs à courant continu à balais ou un moteur pas à pas bipolaire, de 2,7 à 10,8 V. Chaque pont suit sa paire xIN1/xIN2 (00 roue libre, 10 avant, 01 arrière, 11 frein) 1,1 µs plus tard, ses sorties alimentées depuis VM à travers 200 + 160 mΩ de MOSFET avec leurs diodes de structure : un moteur ralentit quand l'alimentation faiblit et son courant recircule par les diodes en roue libre. nSLEEP met le circuit en veille (1,6 µA) et le réveille en 1 ms ; une résistance de mesure sur xISEN limite le courant à 200 mV / R par découpage en décroissance lente à 50 kHz ; une surintensité coupe un pont pendant 1,35 ms avec nFAULT bas ; VM sous 2,6 V le verrouille.",
+      "fidelity": {
+        "timed": {
+          "claims": "Comme en électrique."
+        },
+        "electrical": {
+          "claims": "Deux ponts résolus avec le circuit (la primitive h_bridge, par emblink/h_bridge) : la logique de pont en H de la fiche technique, RDS(on) de 200 mΩ côté haut et 160 mΩ côté bas à 5 V (250 et 200 à 2,7 V), les diodes de structure, les seuils d'entrée (VIL 0,7, VIH 2 V ; nSLEEP 0,5 et 2,5 V), 0,4 V d'hystérésis et les résistances de rappel (150 kΩ ; nSLEEP 500 kΩ et sa limitation à 6,5 V), le filtre anti-parasites de 450 ns, le délai de propagation de 1,1 µs et le temps mort de 450 ns, la veille à 1,6 µA et le réveil en 1 ms, 1,7 mA éveillé, le verrouillage en sous-tension à 2,6 V avec 90 mV d'hystérésis, le découpage du courant à 200 mV en décroissance lente sur une horloge de 50 kHz avec 3,75 µs de masquage, et la coupure en surintensité par pont à 3,3 A après 4 µs avec une reprise après 1,35 ms et nFAULT bas.",
+          "omissions": [
+            "VINT et VCP (le régulateur interne et la pompe de charge : leurs condensateurs ne sont ni nécessaires ni vérifiés)",
+            "la température de la puce et la coupure thermique (TSD)",
+            "les temps de montée et de descente des MOSFET (commutation instantanée)",
+            "la limitation analogique du courant des MOSFET pendant le filtrage de la surintensité",
+            "le passage d'un seuil par une entrée ou par le comparateur de mesure entre deux pas du circuit est pris au second"
+          ]
+        }
+      }
+    }
+  }
+}

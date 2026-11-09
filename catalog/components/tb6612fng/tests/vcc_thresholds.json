@@ -1,0 +1,130 @@
+{
+ "schema_version": 1,
+ "kind": "component_test",
+ "name": "vcc_thresholds",
+ "description": "The inputs' thresholds follow VCC: at VCC = 5 V an input at 2.0 V is low (channel A stops) while 3.3 V is high (channel B drives a 10 ohm load); VCC falling to 1.8 V from 3 ms passes the 1.9 V lockout and turns both off.",
+ "policy": "electrical",
+ "until": "5ms",
+ "circuit": {
+  "components": [
+   {
+    "id": "VM",
+    "component": "emblink/vsource",
+    "params": {
+     "kind": "dc",
+     "dc": 6.0
+    }
+   },
+   {
+    "id": "VC",
+    "component": "emblink/vsource",
+    "params": {
+     "kind": "pwl",
+     "points": [
+      [
+       0,
+       5
+      ],
+      [
+       0.003,
+       5
+      ],
+      [
+       0.0031,
+       1.8
+      ]
+     ]
+    }
+   },
+   {
+    "id": "V2",
+    "component": "emblink/vsource",
+    "params": {
+     "kind": "dc",
+     "dc": 2.0
+    }
+   },
+   {
+    "id": "V3",
+    "component": "emblink/vsource",
+    "params": {
+     "kind": "dc",
+     "dc": 3.3
+    }
+   },
+   {
+    "id": "DUT",
+    "component": "emblink/tb6612fng"
+   },
+   {
+    "id": "RL",
+    "component": "emblink/resistor",
+    "params": {
+     "resistance": 10
+    }
+   },
+   {
+    "id": "G",
+    "component": "emblink/gnd"
+   }
+  ],
+  "nets": {
+   "VM": [
+    "VM.+",
+    "DUT.VM1"
+   ],
+   "VCC": [
+    "VC.+",
+    "DUT.VCC",
+    "DUT.STBY",
+    "DUT.PWMA",
+    "DUT.PWMB"
+   ],
+   "TWO": [
+    "V2.+",
+    "DUT.AIN1"
+   ],
+   "THREE": [
+    "V3.+",
+    "DUT.BIN1"
+   ],
+   "B1": [
+    "DUT.BO1",
+    "RL.1"
+   ],
+   "B2": [
+    "DUT.BO2",
+    "RL.2"
+   ],
+   "GND": [
+    "VM.-",
+    "VC.-",
+    "DUT.GND",
+    "DUT.PGND1",
+    "DUT.PGND2",
+    "G.GND",
+    "V2.-",
+    "V3.-"
+   ]
+  }
+ },
+ "expect": {
+  "output:DUT.A.state": {
+   "at": "2ms",
+   "equals": "coast"
+  },
+  "output:DUT.B.state": {
+   "at": "2ms",
+   "equals": "forward"
+  },
+  "output:DUT.B.vout": {
+   "at": "2ms",
+   "min": 5.65,
+   "max": 5.75
+  },
+  "output:DUT.B.undervoltage": {
+   "at": "4ms",
+   "equals": true
+  }
+ }
+}

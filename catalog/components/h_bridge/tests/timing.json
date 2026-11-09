@@ -1,0 +1,168 @@
+{
+ "schema_version": 1,
+ "kind": "component_test",
+ "name": "timing",
+ "description": "Input timing at VM = 5 V into 10 ohm: IN1 rising at 2 ms reaches OUT1 1.1 us later (still off at 1.05 us, forward at 1.2 us); a 300 ns pulse on IN2 at 2.5 ms is shorter than the 450 ns deglitch and is lost; reversing at 3 ms turns both outputs off for the 450 ns dead time before they cross, then 483 mA flows backwards.",
+ "policy": "electrical",
+ "until": "4ms",
+ "circuit": {
+  "components": [
+   {
+    "id": "VM",
+    "component": "emblink/vsource",
+    "params": {
+     "kind": "dc",
+     "dc": 5.0
+    }
+   },
+   {
+    "id": "VL",
+    "component": "emblink/vsource",
+    "params": {
+     "kind": "dc",
+     "dc": 3.3
+    }
+   },
+   {
+    "id": "V1",
+    "component": "emblink/vsource",
+    "params": {
+     "kind": "pwl",
+     "points": [
+      [
+       0,
+       0
+      ],
+      [
+       0.002,
+       0
+      ],
+      [
+       0.00200001,
+       3.3
+      ],
+      [
+       0.003,
+       3.3
+      ],
+      [
+       0.00300001,
+       0
+      ]
+     ]
+    }
+   },
+   {
+    "id": "V2",
+    "component": "emblink/vsource",
+    "params": {
+     "kind": "pwl",
+     "points": [
+      [
+       0,
+       0
+      ],
+      [
+       0.0025,
+       0
+      ],
+      [
+       0.00250001,
+       3.3
+      ],
+      [
+       0.00250031,
+       3.3
+      ],
+      [
+       0.00250032,
+       0
+      ],
+      [
+       0.003,
+       0
+      ],
+      [
+       0.00300001,
+       3.3
+      ]
+     ]
+    }
+   },
+   {
+    "id": "DUT",
+    "component": "emblink/h_bridge"
+   },
+   {
+    "id": "RL",
+    "component": "emblink/resistor",
+    "params": {
+     "resistance": 10
+    }
+   },
+   {
+    "id": "G",
+    "component": "emblink/gnd"
+   }
+  ],
+  "nets": {
+   "VM": [
+    "VM.+",
+    "DUT.VM"
+   ],
+   "LOGIC": [
+    "VL.+",
+    "DUT.EN"
+   ],
+   "I1": [
+    "V1.+",
+    "DUT.IN1"
+   ],
+   "I2": [
+    "V2.+",
+    "DUT.IN2"
+   ],
+   "A": [
+    "DUT.OUT1",
+    "RL.1"
+   ],
+   "B": [
+    "DUT.OUT2",
+    "RL.2"
+   ],
+   "GND": [
+    "VM.-",
+    "VL.-",
+    "V1.-",
+    "V2.-",
+    "DUT.GND",
+    "DUT.SEN",
+    "G.GND"
+   ]
+  }
+ },
+ "expect": {
+  "output:DUT.out1": {
+   "at": "2.00105ms",
+   "equals": "off"
+  },
+  "output:DUT.state": {
+   "at": "2.0012ms",
+   "equals": "forward"
+  },
+  "output:DUT.out2": {
+   "at": "2.5015ms",
+   "equals": "low"
+  },
+  "output:DUT.vout": {
+   "at": "3.0013ms",
+   "min": -0.05,
+   "max": 0.05
+  },
+  "output:DUT.current": {
+   "at": "3.002ms",
+   "min": -0.488,
+   "max": -0.478
+  }
+ }
+}

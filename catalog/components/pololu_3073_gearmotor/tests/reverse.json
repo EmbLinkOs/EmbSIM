@@ -1,0 +1,46 @@
+{
+ "schema_version": 1,
+ "kind": "component_test",
+ "name": "reverse",
+ "description": "-6 V: the same 650 rpm the other way.",
+ "policy": "electrical",
+ "until": "400ms",
+ "circuit": {
+  "components": [
+   {
+    "id": "V1",
+    "component": "emblink/vsource",
+    "params": {
+     "kind": "dc",
+     "dc": -6.0
+    }
+   },
+   {
+    "id": "DUT",
+    "component": "emblink/pololu_3073_gearmotor"
+   },
+   {
+    "id": "G",
+    "component": "emblink/gnd"
+   }
+  ],
+  "nets": {
+   "VIN": [
+    "V1.+",
+    "DUT.+"
+   ],
+   "GND": [
+    "V1.-",
+    "DUT.-",
+    "G.GND"
+   ]
+  }
+ },
+ "expect": {
+  "output:DUT.rpm": {
+   "at": "300ms",
+   "min": -660,
+   "max": -640
+  }
+ }
+}

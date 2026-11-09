@@ -190,6 +190,55 @@ has `A`, `K`, `C`, `E`, an LED knee and nominal CTR capped by collector saturati
 resistance; no galvanic input-output stamp is introduced. These are low-frequency
 approximations with per-entry limits, not full device or optical models.
 
+`dc_motor` (pins `+`, `-`) is a permanent-magnet brushed DC motor, with an
+optional gearbox:
+- **Electrical.** The winding's resistance `r` and inductance `l` in series
+  with the back EMF `ke` w: v = r i + l di/dt + ke w, the current flowing
+  from `+` to `-` inside.
+- **Mechanical.** The rotor's inertia `j` driven by `kt` i against viscous
+  damping `b`, Coulomb friction `tf` (smoothed by tanh(w / `w_s`)) and the
+  input `load`, the output shaft's torque reflected through `ratio` at
+  efficiency `eta`.
+- **Unknowns.** The current and the rotor's speed are two extra unknowns,
+  integrated by the island's method through the integrator's companion, their
+  truncation errors in the step control; the speed's row is divided by `kt`
+  so its residual is in amperes. At the operating point the rotor holds `w0`
+  (0: a motor powered at t = 0 starts from rest).
+- **Outputs.** The current, the rotor's and output shaft's speeds, the output
+  shaft's angle (integrated at accepted steps and on to now while the island
+  sleeps), its torque and the electrical and mechanical power.
+
+`h_bridge` (pins `IN1`, `IN2`, `PWM`, `EN`, `OUT1`, `OUT2`, `VM`, `GND`,
+`SEN`, `FAULT`, `VCC`) is one H-bridge of an integrated motor driver:
+- **Power stage.** Each output is a half-bridge: a high-side FET from `VM`
+  and a low-side FET to `SEN` (the sense resistor's top, or ground), each a
+  resistance set from VM between two datasheet points, each with its body
+  diode. An output driven high therefore sits at VM less its FET's drop, and
+  a motor coasting recirculates its current through the diodes.
+- **Logic.** The inputs are node voltages to `GND` through Schmitt
+  thresholds, with their pulldowns (and `EN`'s clamp). `mode` picks the
+  truth table: `in_in` (DRV8833), `in_in_pwm` (TB6612FNG), `half` (L293D).
+  With `sleep`, `EN` is nSLEEP: low resets the logic, and `t_wake` passes
+  after it rises. With `vcc_ref`, the logic has its own supply on `VCC`:
+  the thresholds are fractions of it, the lockout watches it and the
+  quiescent current is drawn from it (TB6612FNG).
+- **Timing.** The logic state changes only on accepted steps, as the
+  thyristors' does. An input is taken `t_deg` after it changes (the
+  deglitch; a shorter pulse is lost) and reaches the outputs `t_prop` after
+  it began. An output crossing between high and low is off for `t_dead`.
+  Each of these times, the wake, the chopping clock and the overcurrent
+  timers is a breakpoint of the device, and a change of the FETs' state
+  touches the island.
+- **Protection.** Undervoltage lockout on VM resets the logic. With `vtrip`,
+  current chopping goes to slow decay (both low sides on) when `SEN` passes
+  `vtrip`, until the next edge of the `f_chop` clock, then blanks the
+  comparator for `t_blank`. With `iocp`, a FET carrying more than `iocp` for
+  `t_ocp_deg` shuts the bridge down for `t_ocp`, its open-drain `FAULT`
+  pulled low meanwhile.
+- **Inside.** An input's or the comparator's crossing between two accepted
+  steps is taken at the second. The FETs switch instantly; the die's
+  temperature is not modelled.
+
 `ptc_fuse` (pins `1`, `2`) is a polymeric PTC resettable fuse, a resistance that
 heats itself:
 - **Thermal model.** Two thermal nodes: the polymer core (`c_core`, `r_core`
