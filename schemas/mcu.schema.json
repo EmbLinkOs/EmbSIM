@@ -83,14 +83,14 @@
     },
     "dma_requests": {
       "type": "object",
-      "description": "A DMA controller's request mapping (an STM32's DMA1 and DMA2, RM0390 tables 28 and 29): controller -> stream -> the channel CHSEL selects -> the peripheral requests on it (USART2_RX, TIM1_UP, ADC1)",
+      "description": "A DMA controller's request mapping (an STM32's DMA1 and DMA2, RM0390 tables 28 and 29): controller -> stream -> the channel CHSEL selects -> the peripheral requests on it (USART2_RX, TIM1_UP, ADC1); an STM32G4's request multiplexer as controller DMAMUX, stream 0, its request inputs by number (RM0440 table 91)",
       "propertyNames": {"pattern": "^[A-Z][A-Z0-9_]*$"},
       "additionalProperties": {
         "type": "object",
         "propertyNames": {"pattern": "^[0-9]{1,2}$"},
         "additionalProperties": {
           "type": "object",
-          "propertyNames": {"pattern": "^[0-9]{1,2}$"},
+          "propertyNames": {"pattern": "^[0-9]{1,3}$"},
           "additionalProperties": {"type": "array", "minItems": 1, "items": {"type": "string", "pattern": "^[A-Z][A-Z0-9_]*$"}}
         }
       }

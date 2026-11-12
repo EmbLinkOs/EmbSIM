@@ -13,7 +13,8 @@ Each pin keeps its position; a port pin's signal is its port and number
 (PA0, from "PA0-WKUP"), the rest of its name becoming the pin's doc; power,
 reset and boot pins keep their names (VCAP_1, NRST, BOOT0). The analog map
 names each port pin's ADC inputs as the reference manual does, the ADCs
-sharing a channel joined (ADC123_IN0). The alternate-function map, from
+sharing a channel joined (ADC123_IN0), and the groups listed when its ADCs
+number it differently ("ADC1_IN15, ADC3_IN12"). The alternate-function map, from
 the family's GPIO modes file (GPIO-<family>_Modes.xml), gives each of the
 package's port pins the signals of each AF number (RM0390 7.3.2's table),
 AF15 being EVENTOUT on every pin; the debug port's signals lose their SYS_
@@ -78,8 +79,11 @@ def analog_of(pins: list) -> dict:
             if a:
                 chans.setdefault(int(a.group(2)), []).append(a.group(1))
         if chans:
-            ch = min(chans)
-            out[m.group(1)] = f"ADC{''.join(sorted(chans[ch]))}_IN{ch}"
+            # the ADCs sharing a channel number joined (ADC123_IN0); a pin
+            # whose ADCs number it differently lists each (an STM32G4's
+            # PB0: "ADC1_IN15, ADC3_IN12")
+            out[m.group(1)] = ", ".join(f"ADC{''.join(sorted(chans[ch]))}_IN{ch}"
+                                       for ch in sorted(chans, key=lambda c: (min(chans[c]), c)))
     return dict(sorted(out.items(), key=lambda kv: (kv[0][:2], int(kv[0][2:]))))
 
 

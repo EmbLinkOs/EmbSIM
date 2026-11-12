@@ -31,7 +31,11 @@ for the user's own use unless that licence allows distributing it.
                                  (RCC PLLCFGR's PLLM0..PLLM5)
     --drop PERIPH=WHY            (repeatable) a peripheral the SVD lists that
                                  is another's registers at the same address
-                                 (Espressif's RNG, APB_CTRL's RND_DATA)
+                                 (Espressif's RNG, APB_CTRL's RND_DATA), or
+                                 at an address where no registers are (ST's
+                                 STM32G4 FDCAN, its message RAM's address):
+                                 the peripherals derived from it keep its
+                                 registers
     --fill PERIPH=FROM:WHY       (repeatable) the registers of FROM at offsets
                                  PERIPH lacks, where the two share one layout
                                  and the SVD lists only part of PERIPH's
@@ -41,6 +45,14 @@ for the user's own use unless that licence allows distributing it.
                                  the SVD leaves out, as WORDS 32-bit
                                  registers NAME0, NAME1, ... (the ESP32-C3's
                                  RMT RAM); recorded likewise
+    --strip-prefixes             register names that repeat their
+                                 peripheral's (TIM2_CR1 in TIM2, RCC_CR in
+                                 RCC, DAC_CR in DAC1, as ST's STM32G4 file
+                                 names them) lose that prefix, the name the
+                                 reference manual gives them; recorded
+    --rename PERIPH.REG=NEW      (repeatable) a register renamed as the
+                                 reference manual names it (TIM15's
+                                 CCMR1_Output: CCMR1); recorded
     --resolve-overlaps           fields that share bits, which some SVDs
                                  list as alternative views of one register
                                  (Espressif's: a whole-register STATUS
@@ -171,6 +183,8 @@ def convert(svd: Path, ident: str) -> dict:
     periphs, irqs = [], {}
     for p in root.iter("peripheral"):
         entry = {"name": p.findtext("name"), "base": "0x%08X" % num(p.findtext("baseAddress"))}
+        if p.findtext("groupName"):
+            entry["_group"] = p.findtext("groupName")
         names = []
         for i in p.findall("interrupt"):
             irqs[i.findtext("name")] = num(i.findtext("value"))
@@ -375,12 +389,75 @@ def apply_drops(doc: dict, specs: list[str]) -> None:
     done = []
     for spec in specs:
         name, _, why = spec.partition("=")
-        if not any(p["name"] == name for p in doc["peripherals"]):
+        gone = next((p for p in doc["peripherals"] if p["name"] == name), None)
+        if gone is None:
             sys.exit(f"svd2regs: --drop {spec}: no peripheral {name}")
+        heir = None
+        for p in doc["peripherals"]:
+            if p.get("derived_from") != name:
+                continue
+            if heir is None and "registers" in gone:
+                # the first derived from it takes its registers, the others
+                # derive from that one
+                p.pop("derived_from")
+                p["registers"] = [dict(r) for r in gone["registers"]]
+                heir = p["name"]
+            elif heir is not None:
+                p["derived_from"] = heir
         doc["peripherals"] = [p for p in doc["peripherals"] if p["name"] != name]
         done.append(f"{name} ({why})" if why else name)
     if done:
         doc["source"] += "; peripherals left out: " + "; ".join(done)
+
+
+def strip_prefixes(doc: dict) -> None:
+    """register names PREFIX_NAME in a peripheral whose name, name without
+    its number, or group is PREFIX become NAME (unless NAME is taken); a
+    field named after the whole register is renamed with it"""
+    done = []
+    for p in doc["peripherals"]:
+        regs = p.get("registers")
+        if not regs:
+            continue
+        prefixes = {p["name"], re.sub(r"\d+$", "", p["name"])}
+        if p.get("_group"):
+            prefixes.add(p["_group"])
+        taken = {r["name"] for r in regs}
+        n = 0
+        for r in regs:
+            for pre in sorted(prefixes, key=len, reverse=True):
+                if r["name"].startswith(pre + "_") and len(r["name"]) > len(pre) + 1:
+                    new = r["name"][len(pre) + 1:]
+                    if new in taken:
+                        break
+                    for f in r.get("fields", []):
+                        if f[0] == r["name"]:
+                            f[0] = new
+                    taken.discard(r["name"])
+                    taken.add(new)
+                    r["name"] = new
+                    n += 1
+                    break
+        if n:
+            done.append(f"{p['name']} ({n})")
+    if done:
+        doc["source"] += "; register names' peripheral prefixes taken off: " + ", ".join(done)
+
+
+def apply_renames(doc: dict, specs: list[str]) -> None:
+    """registers PERIPH.REG=NEW renamed, recorded in source"""
+    done = []
+    for spec in specs:
+        target, _, new = spec.partition("=")
+        reg = find_reg(doc, target, "--rename")
+        pname = target.partition(".")[0]
+        p = next(q for q in doc["peripherals"] if q["name"] == pname)
+        if not new or any(r["name"] == new for r in p["registers"]):
+            raise SystemExit(f"--rename {spec}: no new name, or {pname} already has {new}")
+        reg["name"] = new
+        done.append(spec)
+    if done:
+        doc["source"] += "; registers renamed as the reference manual names them: " + ", ".join(done)
 
 
 def apply_fills(doc: dict, specs: list[str]) -> None:
@@ -450,11 +527,18 @@ def main(argv: Optional[list[str]] = None) -> int:
                     help="one-bit fields NAME0..NAMEn joined into NAME")
     ap.add_argument("--reserve", action="append", default=[], metavar="PERIPH.REG.NAME",
                     help="a field whose bits the reference manual reserves, taken out")
+    ap.add_argument("--strip-prefixes", action="store_true",
+                    help="register names that repeat their peripheral's lose that prefix")
+    ap.add_argument("--rename", action="append", default=[], metavar="PERIPH.REG=NEW",
+                    help="a register renamed as the reference manual names it")
     ap.add_argument("--resolve-overlaps", action="store_true",
                     help="fields containing another, or repeating its bits, taken out")
     args = ap.parse_args(argv)
     doc = convert(args.svd, args.id or (args.svd.stem.lower() + "/registers"))
     apply_drops(doc, args.drop)
+    if args.strip_prefixes:
+        strip_prefixes(doc)
+    apply_renames(doc, args.rename)
     apply_fills(doc, args.fill)
     apply_memories(doc, args.memory)
     apply_merges(doc, args.merge)
@@ -465,6 +549,8 @@ def main(argv: Optional[list[str]] = None) -> int:
         resolve_overlaps(doc)
     apply_resets(doc, args.reset)
     apply_interrupts(doc, args.interrupts)
+    for p in doc["peripherals"]:
+        p.pop("_group", None)
     args.output.write_text(json.dumps(doc, indent=1) + "\n", encoding="utf-8")
     nregs = sum(len(p.get("registers", [])) for p in doc["peripherals"])
     print(f"{args.output}: {len(doc['peripherals'])} peripherals, {nregs} registers, {len(doc['interrupts'])} interrupts")

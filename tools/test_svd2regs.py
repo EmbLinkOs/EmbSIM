@@ -182,5 +182,60 @@ class Svd2Regs(unittest.TestCase):
             svd2regs.apply_memories(doc, ["UART0.RAM=0x404:2:again"])
 
 
+PREFIXED = """<?xml version="1.0"?>
+<device>
+  <name>TOYG4</name>
+  <size>32</size>
+  <peripherals>
+    <peripheral>
+      <name>TIM2</name><groupName>TIM</groupName><baseAddress>0x40000000</baseAddress>
+      <registers>
+        <register><name>TIM2_CR1</name><addressOffset>0x0</addressOffset></register>
+        <register><name>TIM2_SR</name><addressOffset>0x10</addressOffset>
+          <fields><field><name>UIF</name><bitOffset>0</bitOffset><bitWidth>1</bitWidth></field></fields></register>
+      </registers>
+    </peripheral>
+    <peripheral>
+      <name>DAC1</name><groupName>DAC</groupName><baseAddress>0x50000800</baseAddress>
+      <registers>
+        <register><name>DAC_CR</name><addressOffset>0x0</addressOffset></register>
+        <register><name>OPAMP1_CSR</name><addressOffset>0x4</addressOffset></register>
+      </registers>
+    </peripheral>
+    <peripheral>
+      <name>FDCAN</name><baseAddress>0x4000A400</baseAddress>
+      <registers><register><name>FDCAN_CREL</name><addressOffset>0x0</addressOffset><resetValue>0x32141218</resetValue></register></registers>
+    </peripheral>
+    <peripheral derivedFrom="FDCAN"><name>FDCAN1</name><baseAddress>0x40006400</baseAddress></peripheral>
+    <peripheral derivedFrom="FDCAN"><name>FDCAN2</name><baseAddress>0x40006800</baseAddress></peripheral>
+  </peripherals>
+</device>
+"""
+
+
+class Svd2RegsPrefixed(unittest.TestCase):
+    """ST's STM32G4 file: register names prefixed with their peripheral's,
+    and the FDCAN registers listed at the message RAM's address"""
+
+    def test_strip_and_drop(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            p = Path(tmp) / "toy.svd"
+            o = Path(tmp) / "out.json"
+            p.write_text(PREFIXED)
+            svd2regs.main([str(p), "-o", str(o), "--strip-prefixes", "--drop", "FDCAN=the message RAM's address"])
+            doc = json.loads(o.read_text(encoding="utf-8"))
+        by = {q["name"]: q for q in doc["peripherals"]}
+        self.assertEqual([r["name"] for r in by["TIM2"]["registers"]], ["CR1", "SR"])
+        # the group's prefix too; another peripheral's name is kept
+        self.assertEqual([r["name"] for r in by["DAC1"]["registers"]], ["CR", "OPAMP1_CSR"])
+        # the first derived from the dropped one takes its registers
+        self.assertNotIn("FDCAN", by)
+        self.assertEqual(by["FDCAN1"]["registers"][0]["name"], "CREL")
+        self.assertEqual(by["FDCAN1"]["registers"][0]["reset"], "0x32141218")
+        self.assertEqual(by["FDCAN2"]["derived_from"], "FDCAN1")
+        self.assertIn("prefixes taken off", doc["source"])
+        self.assertNotIn("_group", json.dumps(doc))
+
+
 if __name__ == "__main__":
     unittest.main()
