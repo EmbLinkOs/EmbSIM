@@ -505,7 +505,8 @@ static void quantum_cb(void *ctx, void *arg, es_time_t now)
         }
         if (st->m.strap_pin && st->m.strap_low && !level_of(esk_comp_pin(st->c, st->m.strap_pin), 1))
             st->m.strap_low(&st->m);
-        if (level_of(st->boot0, 0)) {
+        if (st->m.boot_system ? st->m.boot_system(&st->m, st->m.boot_pin ? level_of(esk_comp_pin(st->c, st->m.boot_pin), 0) : 0)
+                              : level_of(st->boot0, 0)) {
             st->boot_fail = 1;
             raise(st, ES_SEV_WARNING, "mcu.boot_mode",
                   "BOOT0 is high: the part boots its system memory (the vendor's bootloader), which is "

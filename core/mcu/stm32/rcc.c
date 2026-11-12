@@ -568,12 +568,16 @@ static u32 f4_core_hz(struct esk_mach *s)
 u32 esk_stm32_hclk(struct esk_mach *s)
 {
     struct rcc *c = any_rcc(s);
+    if (esk_stm32g4_rcc(s))
+        return esk_stm32g4_hclk(s);
     return c && (c->f1 || c->f4) ? c->hclk : 0;
 }
 
 u32 esk_stm32_pclk(struct esk_mach *s, int apb)
 {
     struct rcc *c = any_rcc(s);
+    if (esk_stm32g4_rcc(s))
+        return esk_stm32g4_pclk(s, apb);
     if (c && c->f4)
         return c->hclk / f4_ppre_div(c, apb);
     return esk_stm32f1_pclk(s, apb);
@@ -583,6 +587,8 @@ u32 esk_stm32_timclk(struct esk_mach *s, int apb)
 {
     struct rcc *c = any_rcc(s);
     u32 d;
+    if (esk_stm32g4_rcc(s))
+        return esk_stm32g4_timclk(s, apb);
     if (!c || !c->f4) {
         u32 p = esk_stm32f1_pclk(s, apb), h = esk_stm32f1_hclk(s);
         return p == h ? p : 2 * p;
@@ -753,6 +759,10 @@ static void rcc_write(void *ctx, u32 off, int n, u32 v)
 void esk_stm32_rcc_lsi(struct esk_mach *s)
 {
     struct esk_rf_periph *p = s->rf ? esk_rf_periph(s->rf, "RCC") : 0;
+    if (esk_stm32g4_rcc(s)) {
+        esk_stm32g4_rcc_lsi(s);
+        return;
+    }
     if (p && p->ops == &esk_stm32_rcc_ops)
         lsi_forced((struct rcc *)p->ctx);
 }

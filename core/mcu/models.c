@@ -17,10 +17,12 @@
 
 static const struct esk_rf_model_type model_types[] = {
     { "stm32-rcc", &esk_stm32_rcc_ops, esk_stm32_rcc_create },
+    { "stm32g4-rcc", &esk_stm32g4_rcc_ops, esk_stm32g4_rcc_create },
     { "stm32f1-gpio", &esk_stm32f1_gpio_ops, esk_stm32f1_gpio_create },
     { "stm32f1-afio", &esk_stm32f1_afio_ops, esk_stm32f1_afio_create },
     { "stm32-exti", &esk_stm32_exti_ops, esk_stm32_exti_create },
     { "stm32-usart", &esk_stm32_usart_ops, esk_stm32_usart_create },
+    { "stm32-usart-v2", &esk_stm32_usartv2_ops, esk_stm32_usartv2_create },
     { "stm32-tim", &esk_stm32_tim_ops, esk_stm32_tim_create },
     { "stm32f1-adc", &esk_stm32f1_adc_ops, esk_stm32f1_adc_create },
     { "stm32-spi", &esk_stm32_spi_ops, esk_stm32_spi_create },
@@ -28,7 +30,9 @@ static const struct esk_rf_model_type model_types[] = {
     { "stm32f1-flash", &esk_stm32f1_flash_ops, esk_stm32f1_flash_create },
     { "stm32-pwr", &esk_stm32_storage_ops, esk_stm32_storage_create },
     { "stm32f4-pwr", &esk_stm32f4_pwr_ops, esk_stm32f4_pwr_create },
+    { "stm32g4-pwr", &esk_stm32g4_pwr_ops, esk_stm32g4_pwr_create },
     { "stm32f4-flash", &esk_stm32f4_flash_ops, esk_stm32f4_flash_create },
+    { "stm32g4-flash", &esk_stm32g4_flash_ops, esk_stm32g4_flash_create },
     { "stm32f4-gpio", &esk_stm32f4_gpio_ops, esk_stm32f4_gpio_create },
     { "stm32f4-syscfg", &esk_stm32f4_syscfg_ops, esk_stm32f4_syscfg_create },
     { "stm32f4-dbgmcu", &esk_stm32f4_dbgmcu_ops, esk_stm32f4_dbgmcu_create },

@@ -12,12 +12,19 @@
  *     is lost). At 0 it resets the part (IWDGRSTF): it runs until a reset
  *     stops it;
  *   - with the option bytes' hardware watchdog (WDG_SW 0 in their user
- *     byte, which the part loads into FLASH's option register at reset) it
- *     starts by itself at every reset.
+ *     byte, which the part loads into FLASH's option register at reset; a
+ *     G4's IWDG_SW in OPTR) it starts by itself at every reset;
+ *   - the window (a G4's WINR, RM0440 41): a refresh while the counter is
+ *     above WINR resets the part; writing WINR reloads the counter, the
+ *     value reaching the counter's domain five LSI clocks later (WVU);
+ *     WINR's reset value 0xFFF leaves the window open;
+ *   - a G4's option bytes' IWDG_STOP and IWDG_STDBY cleared freeze the
+ *     counter in Stop and in Standby.
  *
  * The WWDG:
  *   - its 7-bit counter (CR.T) counts down every 4096 x 2^WDGTB PCLK1
- *     clocks while its clock is on; CFR holds the window W and EWI;
+ *     clocks while its clock is on (WDGTB 2 bits at CFR[8:7], a G4's 3 at
+ *     CFR[13:11]); CFR holds the window W and EWI;
  *   - once WDGA is set (it clears only with a reset) the part resets
  *     (WWDGRSTF) when T6 clears (0x40 to 0x3F), when CR is written with T6
  *     clear, or when CR is written while the counter is above W;
@@ -38,20 +45,21 @@
 #define KR_ACCESS 0x5555u
 #define SR_PVU (1u << 0)
 #define SR_RVU (1u << 1)
+#define SR_WVU (1u << 2)
 
 /* ---- IWDG ------------------------------------------------------------------------ */
 
 struct iwdg {
     struct esk_mach *s;
     struct esk_rf_periph *p;
-    struct esk_rf_reg *kr, *pr, *rlr, *sr;
+    struct esk_rf_reg *kr, *pr, *rlr, *sr, *winr;
     int running, on, access;
-    u32 count, pr_now, rlr_now;
+    u32 count, pr_now, rlr_now, winr_now;
     u64 acc;            /* core cycles x LSI_HZ toward the next count */
     u64 since;
-    u32 upd;            /* PVU/RVU: bits waiting */
+    u32 upd;            /* PVU/RVU/WVU: bits waiting */
     u64 upd_left;       /* core cycles until they land */
-    u32 pr_new, rlr_new;
+    u32 pr_new, rlr_new, winr_new;
 };
 
 static u32 reg(const struct esk_rf_reg *r) { return r ? (u32)r->value : 0; }
@@ -88,12 +96,27 @@ static void iw_start(struct iwdg *w)
  * watchdog stops while a debugger holds the core halted */
 static int frozen(const struct esk_mach *s, int bit) { return s->dbg.halted && (s->dbg.fz[0] >> bit & 1u); }
 
+/* a G4's option bytes' IWDG_STOP (OPTR bit 17) or IWDG_STDBY (18) clear:
+ * the counter frozen in Stop or Standby */
+static int option_frozen(const struct esk_mach *s)
+{
+    struct esk_rf_periph *f;
+    struct esk_rf_reg *optr;
+    if (!s->clocks_stopped || !s->rf)
+        return 0;
+    f = esk_rf_periph(s->rf, "FLASH");
+    optr = f ? esk_rf_reg(f, "OPTR") : 0;
+    if (!optr || !esk_rf_mask(optr, "IWDG_SW"))
+        return 0;
+    return !(optr->value >> (esk_stm32f4_pwr_standby((struct esk_mach *)s) ? 18 : 17) & 1u);
+}
+
 static void iw_tick(void *ctx, u32 cycles)
 {
     struct iwdg *w = (struct iwdg *)ctx;
     if (!w->running)
         return;
-    if (frozen(w->s, 12)) {
+    if (frozen(w->s, 12) || option_frozen(w->s)) {
         w->since = 0;
         return;
     }
@@ -107,6 +130,11 @@ static void iw_tick(void *ctx, u32 cycles)
                 w->pr_now = w->pr_new;
             if (w->upd & SR_RVU)
                 w->rlr_now = w->rlr_new;
+            if (w->upd & SR_WVU) {
+                w->winr_now = w->winr_new;
+                w->count = w->rlr_now & 0xfffu; /* writing WINR reloads the counter */
+                w->acc = 0;
+            }
             w->upd = 0;
             esk_rf_hw(w->sr, 0);
         }
@@ -134,7 +162,7 @@ static int iw_next(void *ctx, u32 *cycles)
 {
     struct iwdg *w = (struct iwdg *)ctx;
     u64 best = ~(u64)0;
-    if (!w->running || frozen(w->s, 12))
+    if (!w->running || frozen(w->s, 12) || option_frozen(w->s))
         return 0;
     if (w->on) {
         u64 need = ((u64)w->count + 1) * iw_unit(w);
@@ -165,6 +193,15 @@ static void iw_write(void *ctx, u32 off, int n, u32 v)
         if (key == KR_START)
             iw_start(w);
         else if (key == KR_RELOAD && w->on) {
+            if (w->winr && w->count > (w->winr_now & 0xfffu) && !w->s->reset_req) {
+                /* refreshed before the window opened */
+                esk_rf_diag(w->s, ES_SEV_INFO, "mcu.watchdog_reset", "%s",
+                            "the independent watchdog was refreshed outside its window: it resets the part");
+                w->s->reset_cause = ESK_RESET_WATCHDOG;
+                w->s->reset_req = 1;
+                w->s->yield = 1;
+                return;
+            }
             w->count = w->rlr_now & 0xfffu;
             w->acc = 0;
         }
@@ -180,6 +217,10 @@ static void iw_write(void *ctx, u32 off, int n, u32 v)
         w->rlr_new = v & 0xfffu;
         esk_rf_hw(w->rlr, w->rlr_new);
         w->upd |= SR_RVU;
+    } else if (w->winr && off == esk_rf_off(w->winr) && !(w->upd & SR_WVU)) {
+        w->winr_new = v & 0xfffu;
+        esk_rf_hw(w->winr, w->winr_new);
+        w->upd |= SR_WVU;
     } else {
         return;
     }
@@ -197,7 +238,10 @@ static int hardware_watchdog(struct esk_mach *s)
 {
     struct esk_rf_periph *f = s->rf ? esk_rf_periph(s->rf, "FLASH") : 0;
     struct esk_rf_reg *optcr = f ? esk_rf_reg(f, "OPTCR") : 0, *obr = f ? esk_rf_reg(f, "OBR") : 0;
+    struct esk_rf_reg *optr = f ? esk_rf_reg(f, "OPTR") : 0;
     u32 v = 0;
+    if (optr && esk_rf_mask(optr, "IWDG_SW"))
+        return !(optr->value & esk_rf_mask(optr, "IWDG_SW")); /* a G4's, loaded by flash_g4.c */
     if (optcr && esk_rf_mask(optcr, "WDG_SW") && !esk_bus_debug_read(&s->bus, 0x1FFFC000u, 2, &v)) {
         esk_rf_hw(optcr, (optcr->value & ~(u64)0xffecu) | (v & 0xffecu)); /* RDP, USER, BOR_LEV */
         return !(v & 0x20u);
@@ -217,6 +261,7 @@ static void iw_reset(void *ctx)
     w->upd = 0;
     w->pr_now = 0;
     w->rlr_now = 0xfffu;
+    w->winr_now = 0xfffu;
     w->count = 0xfffu;
     w->acc = 0;
     w->since = 0;
@@ -244,9 +289,11 @@ void *esk_stm32_iwdg_create(struct esk_mach *s, struct esk_rf_periph *p)
     w.pr = esk_rf_reg(p, "PR");
     w.rlr = esk_rf_reg(p, "RLR");
     w.sr = esk_rf_reg(p, "SR");
+    w.winr = esk_rf_reg(p, "WINR");
     if (!w.kr || !w.pr || !w.rlr || !w.sr)
         return 0;
     w.rlr_now = 0xfffu;
+    w.winr_now = 0xfffu;
     w.count = 0xfffu;
     p->always_on = 1; /* on LSI: it counts through Stop and Standby */
     c = (struct iwdg *)esk_mach_alloc(s, sizeof *c);
@@ -276,7 +323,11 @@ static u64 ww_unit(const struct wwdg *w)
 {
     u32 core = esk_mach_core_hz(w->s), pclk = esk_stm32_pclk(w->s, 1);
     u64 ratio = core && pclk && core >= pclk ? core / pclk : 1;
-    return ratio * ((u64)4096u << (reg(w->cfr) >> 7 & 3u));
+    u64 tb = esk_rf_mask(w->cfr, "WDGTB");
+    u32 sh = 0;
+    while (tb && !(tb >> sh & 1))
+        sh++;
+    return ratio * ((u64)4096u << (tb ? (u32)((reg(w->cfr) & tb) >> sh) : (reg(w->cfr) >> 7 & 3u)));
 }
 
 /* the counter now (T[6:0]); its clock off: as it was */
@@ -384,7 +435,7 @@ static void ww_write(void *ctx, u32 off, int n, u32 v)
     } else if (off == esk_rf_off(w->cfr)) {
         u32 keep = reg(w->cfr) & CFR_EWI; /* EWI only sets */
         u32 t = ww_count(w);
-        esk_rf_hw(w->cfr, (v & 0x3ffu) | keep);
+        esk_rf_hw(w->cfr, (v & (u32)esk_rf_fields(w->cfr)) | keep);
         ww_rebase(w, t);
     } else if (off == esk_rf_off(w->sr)) {
         if (!(v & SR_EWIF))

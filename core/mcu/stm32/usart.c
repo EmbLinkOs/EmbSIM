@@ -602,7 +602,9 @@ int esk_stm32_usart_signal(struct esk_mach *s, const char *sig)
 {
     const char *fn;
     struct usart *u = signal_of(s, sig, &fn);
-    if (!u || !(v32(u->cr1) & UE))
+    if (!u)
+        return esk_stm32_usartv2_signal(s, sig); /* a G4's (usart_v2.c) */
+    if (!(v32(u->cr1) & UE))
         return -1;
     if (!strcmp(fn, "TX"))
         return (v32(u->cr1) & TE) || (v32(u->cr3) & HDSEL) ? 1 : -1; /* idle high; the waveform is the runtime's */
@@ -617,7 +619,11 @@ void esk_stm32_usart_signal_input(struct esk_mach *s, const char *sig, int level
 {
     const char *fn;
     struct usart *u = signal_of(s, sig, &fn);
-    if (!u || strcmp(fn, "CTS"))
+    if (!u) {
+        esk_stm32_usartv2_signal_input(s, sig, level);
+        return;
+    }
+    if (strcmp(fn, "CTS"))
         return;
     level = level != 0;
     if (level == u->cts)
