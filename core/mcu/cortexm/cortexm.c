@@ -353,6 +353,7 @@ static void exc_taken(struct esk_cm_state *cs, int n, u32 lr)
 {
     cs->R[14] = lr;
     esk_cm_use_psp(cs, 0);
+    cs->control &= ~2u; /* ExceptionTaken: CONTROL.SPSEL = 0, the handler on the main stack */
     cs->ipsr = (u32)n;
     cs->active[n] = 1;
     esk_cm_clr_pend(cs, n);
