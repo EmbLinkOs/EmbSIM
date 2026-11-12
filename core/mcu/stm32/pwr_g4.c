@@ -221,7 +221,7 @@ void esk_stm32g4_pwr_pin_edge(struct esk_mach *m, int port, int pin, int level)
     if (!(w->cr3->value >> k & 1))
         return;
     if (level == !((w->cr4->value >> k) & 1)) { /* WPx 0: rising; 1: falling */
-        sr1_set(w, w->sr1->value | (1u << k));
+        sr1_set(w, w->sr1->value | (u64)1u << k);
         if (w->mode == STANDBY || w->mode == SHUTDOWN)
             standby_ends(m);
     }
