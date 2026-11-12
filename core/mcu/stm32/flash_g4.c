@@ -30,7 +30,7 @@
  *     running from the other bank, or from SRAM, goes on and polls BSY; a
  *     store to the flash while BSY is set waits for it;
  *   - timing: BSY for DS12288's typical times: a double word 81.7 us, a
- *     fast-programmed row 2.61 ms, a page's erase 22.02 ms, a bank's 22.13
+ *     fast-programmed row 1.91 ms, a page's erase 22.02 ms, a bank's 22.13
  *     ms; EOP at their end;
  *   - the option bytes: OPTKEYR's keys (0x08192A3B, 0x4C5D6E7F) clear CR's
  *     OPTLOCK; OPTSTRT writes OPTR, PCROP1SR/ER, WRP1AR/BR, SEC1R to bank
@@ -117,10 +117,10 @@
 #define DLINES 8
 #define NO_LINE 0xFFFFFFFFu
 
-/* DS12288's typical programming times (its flash memory characteristics) */
+/* DS12288 Rev 6's typical programming times (table 47) */
 #define PS_US 1000000ull
 #define PROGRAM_PS (81700000ull)
-#define ROW_PS (2610ull * PS_US)
+#define ROW_PS (1910ull * PS_US)
 #define PAGE_ERASE_PS (22020ull * PS_US)
 #define BANK_ERASE_PS (22130ull * PS_US)
 

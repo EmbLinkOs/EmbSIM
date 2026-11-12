@@ -55,7 +55,7 @@
    "params": {
     "initially_closed": true
    },
-   "doc": "JP5 (5V_SEL) on pins 1-2, STLK: the board runs from the STLINK-V3E's USB (the factory position)"
+   "doc": "JP5 (5V_SEL) on pins 1-2, STLK: the board runs from the STLINK-V3E's USB through U4 (the factory position)"
   },
   {
    "id": "JP5_VIN",
@@ -70,7 +70,7 @@
   {
    "id": "JP5_CHGR",
    "component": "emblink/toggle_switch",
-   "doc": "JP5 on pins 7-8, CHGR: +5V straight from the STLINK-V3E's USB connector, for a USB charger (no enumeration, no current limit)"
+   "doc": "JP5 on pins 7-8, CHGR: +5V straight from the STLINK-V3E's USB connector (5V_USB_CHGR, also on CN10 pin 8), for a USB charger: no enumeration, no current limit"
   },
   {
    "id": "U12",
@@ -105,12 +105,123 @@
    "doc": "LD3's series resistor (its value assumed: MB1367's schematic not at hand)"
   },
   {
-   "id": "L1",
+   "id": "U4",
+   "component": "emblink/stmps2151str",
+   "doc": "U4 STMPS2151STR: the STLINK-V3E's 5 V (5V_USB_STLK) once its T_PWR_EN goes high after the USB enumeration (UM2505 7.4.1); its current limit protects the PC's port"
+  },
+  {
+   "id": "R_TPWREN",
    "component": "emblink/resistor",
    "params": {
-    "resistance": 0.001
+    "resistance": 40
    },
-   "doc": "VDDA and VREF+ fed from VDD (the ferrite bead between them taken as a short)"
+   "doc": "The STLINK-V3E's T_PWR_EN driving U4's EN high, as after the host granted 500 mA (its pin's resistance assumed)"
+  },
+  {
+   "id": "LD4",
+   "component": "emblink/led",
+   "params": {
+    "color": "red"
+   },
+   "doc": "LD4 (red): U4's fault, more than 500 mA drawn from the STLINK-V3E's USB"
+  },
+  {
+   "id": "R_LD4",
+   "component": "emblink/resistor",
+   "params": {
+    "resistance": "1k"
+   },
+   "doc": "LD4's series resistor (its value assumed)"
+  },
+  {
+   "id": "L1",
+   "component": "emblink/ferrite_bead",
+   "doc": "L1, the ferrite bead from VDD to VDDA (SB8 off: not shunted; its part's values the catalog's default)"
+  },
+  {
+   "id": "L2",
+   "component": "emblink/ferrite_bead",
+   "doc": "L2, the ferrite bead on VREF+'s supply (SB10 off: not shunted)"
+  },
+  {
+   "id": "JP8_VDD",
+   "component": "emblink/toggle_switch",
+   "params": {
+    "initially_closed": true
+   },
+   "doc": "JP8 (VREF+ selection) on pins 2-3: VREF+ from VDD. The board leaves the factory with JP8 on pins 1-2, VREF+ from a TL1431CL5T shunt reference at 3.25 V (R33 10 kOhm, R34 33 kOhm, SB14 off): not modelled yet (no shunt reference in the catalog), so VDD stands for it"
+  },
+  {
+   "id": "C_VDD1",
+   "component": "emblink/capacitor",
+   "params": {
+    "capacitance": "100n"
+   },
+   "doc": "VDD's decoupling at one of its four pins (DS12288 figure 16)"
+  },
+  {
+   "id": "C_VDD2",
+   "component": "emblink/capacitor",
+   "params": {
+    "capacitance": "100n"
+   },
+   "doc": "VDD's decoupling at one of its four pins (DS12288 figure 16)"
+  },
+  {
+   "id": "C_VDD3",
+   "component": "emblink/capacitor",
+   "params": {
+    "capacitance": "100n"
+   },
+   "doc": "VDD's decoupling at one of its four pins (DS12288 figure 16)"
+  },
+  {
+   "id": "C_VDD4",
+   "component": "emblink/capacitor",
+   "params": {
+    "capacitance": "100n"
+   },
+   "doc": "VDD's decoupling at one of its four pins (DS12288 figure 16)"
+  },
+  {
+   "id": "C_VDD_BULK",
+   "component": "emblink/capacitor",
+   "params": {
+    "capacitance": "4.7u"
+   },
+   "doc": "VDD's bulk capacitor (DS12288 figure 16)"
+  },
+  {
+   "id": "C_VDDA1",
+   "component": "emblink/capacitor",
+   "params": {
+    "capacitance": "1u"
+   },
+   "doc": "VDDA's 1 uF (DS12288 figure 16)"
+  },
+  {
+   "id": "C_VDDA2",
+   "component": "emblink/capacitor",
+   "params": {
+    "capacitance": "10n"
+   },
+   "doc": "VDDA's 10 nF (DS12288 figure 16)"
+  },
+  {
+   "id": "C_VREF1",
+   "component": "emblink/capacitor",
+   "params": {
+    "capacitance": "1u"
+   },
+   "doc": "VREF+'s 1 uF (DS12288 figure 16)"
+  },
+  {
+   "id": "C_VREF2",
+   "component": "emblink/capacitor",
+   "params": {
+    "capacitance": "100n"
+   },
+   "doc": "VREF+'s 100 nF (DS12288 figure 16)"
   },
   {
    "id": "LD2",
@@ -118,7 +229,7 @@
    "params": {
     "color": "green"
    },
-   "doc": "LD2 (USER, green): PA5 (Arduino D13) high lights it"
+   "doc": "LD2 (USER, green): PA5 (Arduino D13, SB6 on) high lights it; on the board through a transistor, here driven by PA5 itself"
   },
   {
    "id": "R_LD2",
@@ -168,7 +279,7 @@
    "params": {
     "capacitance": "100n"
    },
-   "doc": "NRST's capacitor: with the STM32's internal pull-up, it holds the part in reset at power-on"
+   "doc": "The 100 nF on PG10-NRST (SB1 on): with the STM32's internal pull-up, it holds the part in reset at power-on"
   },
   {
    "id": "JP7",
@@ -193,7 +304,7 @@
     "lm": "7.8k",
     "rm": "50k"
    },
-   "doc": "X2, the 32.768 kHz LSE crystal on PC14/PC15 (its part's motional values assumed)"
+   "doc": "X2 NX3215SA-32.768kHz-EXS00A-MU00525 (6 pF load, 20 ppm) on PC14/PC15 (SB30, SB31 on); its motional values assumed"
   },
   {
    "id": "X3",
@@ -201,7 +312,7 @@
    "params": {
     "hz": "24meg"
    },
-   "doc": "X3, the 24 MHz HSE crystal on PF0/PF1 (OSC_IN/OSC_OUT)"
+   "doc": "X3 NX2016SA-24MHz-EXS00A-CS10820 (6 pF load, 20 ppm) on PF0/PF1 (SB25, SB26 on), with C56 and C59 6.8 pF"
   },
   {
    "id": "CN6",
@@ -272,9 +383,27 @@
   ],
   "U5V": [
    "CN1.1",
-   "JP5_STLK.1",
+   "U4.IN",
+   "R_TPWREN.1",
+   "R_LD4.1",
    "JP5_CHGR.1",
    "CN10.8"
+  ],
+  "T_PWR_EN": [
+   "U4.EN",
+   "R_TPWREN.2"
+  ],
+  "5V_USB_STLK": [
+   "U4.OUT",
+   "JP5_STLK.1"
+  ],
+  "LD4_A": [
+   "R_LD4.2",
+   "LD4.A"
+  ],
+  "USB_OC": [
+   "LD4.K",
+   "U4.FAULT"
   ],
   "E5V": [
    "JP5_E5V.1",
@@ -309,16 +438,43 @@
    "R_PC13.1",
    "CN7.5",
    "CN7.33",
-   "L1.1"
+   "L1.1",
+   "JP8_VDD.1",
+   "C_VDD1.1",
+   "C_VDD2.1",
+   "C_VDD3.1",
+   "C_VDD4.1",
+   "C_VDD_BULK.1"
   ],
   "AVDD": [
    "U1.VDDA",
+   "L1.2",
+   "C_VDDA1.1",
+   "C_VDDA2.1"
+  ],
+  "VREF_SEL": [
+   "JP8_VDD.2",
+   "L2.1"
+  ],
+  "VREFP": [
    "U1.VREFP",
+   "L2.2",
    "CN5.8",
    "CN10.7",
-   "L1.2"
+   "C_VREF1.1",
+   "C_VREF2.1"
   ],
   "GND": [
+   "C_VDD1.2",
+   "C_VDD2.2",
+   "C_VDD3.2",
+   "C_VDD4.2",
+   "C_VDD_BULK.2",
+   "C_VDDA1.2",
+   "C_VDDA2.2",
+   "C_VREF1.2",
+   "C_VREF2.2",
+   "U4.GND",
    "U11.GND",
    "U12.GND",
    "LD3.K",
@@ -386,12 +542,14 @@
   "PC5": [
    "U1.PC5",
    "CN9.1",
-   "CN10.6"
+   "CN10.6",
+   "CN10.37"
   ],
   "PC4": [
    "U1.PC4",
    "CN9.2",
-   "CN10.34"
+   "CN10.34",
+   "CN10.35"
   ],
   "PA10": [
    "U1.PA10",
@@ -591,19 +749,17 @@
    "U1.PB13",
    "CN10.30"
   ],
-  "PA2": [
-   "U1.PA2",
-   "CN10.35"
-  ],
-  "PA3": [
-   "U1.PA3",
-   "CN10.37"
-  ],
   "CN7_25_NC": [
    "CN7.25"
   ],
   "CN7_27_NC": [
    "CN7.27"
+  ],
+  "PA2": [
+   "U1.PA2"
+  ],
+  "PA3": [
+   "U1.PA3"
   ]
  },
  "ports": {
@@ -698,10 +854,10 @@
    "pin": 7
   },
   "AREF": {
-   "net": "AVDD",
+   "net": "VREFP",
    "connector": "CN5",
    "pin": 8,
-   "doc": "AVDD (VDDA and VREF+)"
+   "doc": "VREFP, the STM32's VREF+ (JP8 chooses its source)"
   },
   "IOREF": {
    "net": "3V3",
@@ -966,7 +1122,7 @@
    "pin": 6
   },
   "CN10_7": {
-   "net": "AVDD",
+   "net": "VREFP",
    "connector": "CN10",
    "pin": 7
   },
@@ -1101,16 +1257,16 @@
    "pin": 34
   },
   "CN10_35": {
-   "net": "PA2",
+   "net": "PC4",
    "connector": "CN10",
    "pin": 35,
-   "doc": "PA2, LPUART1_TX: the STLINK-V3E's virtual COM port"
+   "doc": "PC4, USART1_TX, as Arduino D1 (SB13 on); PA2 (LPUART1_TX) with SB18 on instead"
   },
   "CN10_37": {
-   "net": "PA3",
+   "net": "PC5",
    "connector": "CN10",
    "pin": 37,
-   "doc": "PA3, LPUART1_RX: the STLINK-V3E's virtual COM port"
+   "doc": "PC5, USART1_RX, as Arduino D0 (SB19 on); PA3 (LPUART1_RX) with SB22 on instead"
   },
   "U5V": {
    "net": "U5V",
@@ -1682,7 +1838,7 @@
    "omissions": [
     "the STLINK-V3E itself: its USB enumeration (0483:374E), the mass-storage drag-and-drop programming, SWD and its NRST drive, LD1 (COM); the session programs and debugs the board (ADR-031)",
     "the VCP's bytes reach LPUART1 directly, not as frames on PA3",
-    "the solder bridges are fixed in a default state: PC14/PC15 and PF0/PF1 on the crystals, not on the morpho headers; the rest as UM2505's tables give them, which were not at hand: CN7's and CN10's assignment follows Zephyr's board files",
+    "the 41 solder bridges are fixed in their factory state as UM2505's table 12 gives them (PA2/PA3 on the VCP, PC4/PC5 on D1/D0 and CN10 pins 35 and 37, PB8 on D15 and CN7 pin 7, B1 on PC13, the crystals on PF0/PF1 and PC14/PC15 and not on the morpho headers)",
     "a single JP5 shunt sits on one position only; the four switches here can all be closed",
     "ST's BSP (stm32g4xx_nucleo.c) configures B1 as a rising edge with a pull-down; on this board (an external pull-up, a press pulling PC13 low) that BSP sees a press when B1 is released, as it would on the bench"
    ],
@@ -1700,13 +1856,14 @@
    ]
   },
   "electrical": {
-   "claims": "The power paths of UM2505 6.4: the STLINK-V3E's USB 5 V (U5V) through JP5 pins 1-2 to +5V; VIN (7 to 12 V) through U11 (LD1117S50) and JP5 pins 3-4; E5V through pins 5-6; the USB charger position (pins 7-8) from CN1's VBUS; U12 (LD39050PU33R) makes +3.3V and JP6 (IDD) carries it to VDD, VBAT and VDDA/VREF+. LD3 shows +5V, LD2 is lit by PA5, a 4.7 kOhm pull-up holds PC13 high and B1 pulls it to ground through 100 ohm with a 100 nF capacitor on PC13, C_NRST holds NRST low at power-on against the STM32's pull-up; X3 and X2 are crystals' equivalent circuits.",
+   "claims": "The power paths of UM2505 7.4: the STLINK-V3E's USB 5 V (U5V) through U4 (STMPS2151STR, enabled by T_PWR_EN as after the enumeration; LD4 on its fault output) and JP5 pins 1-2 to +5V; VIN (7 to 12 V) through U11 (LD1117S50) and JP5 pins 3-4; E5V through pins 5-6; the USB charger position (pins 7-8) from CN1's VBUS directly; U12 (LD39050PU33R) makes +3.3V and JP6 (IDD) carries it to VDD and VBAT, VDDA through the ferrite bead L1 and VREF+ through JP8 and the ferrite bead L2. LD3 shows +5V, LD2 is lit by PA5, a pull-up holds PC13 high and B1 pulls it to ground with a capacitor on PC13, the 100 nF on NRST holds it low at power-on against the STM32's pull-up; X3 (NX2016SA 24 MHz) and X2 (NX3215SA 32.768 kHz) are crystals' equivalent circuits.",
    "omissions": [
-    "MB1367's schematic was not at hand: the LED resistors, B1's network, C_NRST and JP7's pull-down are the Nucleo-64 boards' usual values, assumed; designators other than UM2505's (U11, U12, JP5, JP6, JP7, LD1-LD3, B1, B2, X2, X3, CN1, CN5-CN10) are EmbSIM's",
-    "the STLINK-V3E's power switch and current negotiation between its USB VBUS and JP5's STLK position (taken as closed), its own supply and current",
-    "decoupling and bulk capacitors, ESD protection",
-    "the STM32's supply current: VDD carries only what the pins drive",
-    "the ferrite bead between VDD and VDDA is taken as a short"
+    "MB1367's schematic was not at hand: the LED resistors, B1's network, JP7's pull-down, T_PWR_EN's drive and the ferrite beads' values are assumed; designators other than UM2505's (U4, U11, U12, JP5-JP8, LD1-LD4, L1, L2, B1, B2, X2, X3, CN1, CN5-CN10) are EmbSIM's",
+    "JP8's factory position (1-2): VREF+ from a TL1431CL5T shunt reference at 3.25 V; the catalog has no shunt reference yet, so JP8 stands on 2-3 (VDD)",
+    "LD2's transistor driver: PA5 drives LD2 through its resistor itself, so LD2's current flows through VDD (and JP6's ammeter), which on the board it does not",
+    "U4's current negotiation with the host (100 mA before the enumeration, 500 mA after it), the STLINK-V3E's own supply and current",
+    "the decoupling is DS12288's recommended scheme (figure 16: 100 nF per VDD pin and 4.7 uF, 10 nF and 1 uF on VDDA, 100 nF and 1 uF on VREF+), not checked against MB1367's own capacitors; ESD protection",
+    "the STM32's supply current: VDD carries only what the pins drive"
    ],
    "validation": [
     "tests/*.json"
@@ -1718,17 +1875,18 @@
   "license": "Apache-2.0",
   "sources": [
    {
-    "title": "UM2505 STM32G4 Nucleo-64 boards (MB1367) user manual: JP5's positions, JP6, the regulators U11 and U12, LD1-LD3, as its search excerpts give them",
+    "title": "UM2505 STM32G4 Nucleo-64 boards (MB1367) user manual",
+    "rev": "7",
     "url": "https://www.st.com/resource/en/user_manual/um2505-stm32g4-nucleo64-boards-mb1367-stmicroelectronics.pdf"
-   },
-   {
-    "title": "Zephyr's nucleo_g474re board files (Apache-2.0): the LEDs, B1, the console, the Arduino and morpho connectors' pin assignment"
    },
    {
     "title": "STM32CubeG4's NUCLEO-G474RE projects (BSD-3-Clause): HSE_VALUE 24 MHz, LPUART1 on PA2/PA3 (AF12) as the VCP, B1's falling edge (GPIO_EXTI, EXTI_ToggleLedOnIT)"
    },
    {
     "title": "ST community, 'NUCLEO-G474RE: what is the intended use of JP7' (2019): the board ships with nSWBOOT0 0, PB8 an ordinary I/O; JP7 pulls BOOT0/PB8 down"
+   },
+   {
+    "title": "Zephyr's nucleo_g474re board files (Apache-2.0), against which the connectors' assignment was checked"
    }
   ],
   "notes": "Artwork is an original SVG drawn for EmbSIM to the Nucleo-64's 70 x 82.5 mm outline; no ST artwork or logo is used."
@@ -1738,7 +1896,7 @@
  ],
   "i18n": {
     "fr": {
-      "source": "a18d33293d3f",
+      "source": "5f7a554a8554",
       "description": "La NUCLEO-G474RE de ST (MB1367) : un STM32G474RET6 avec le quartz HSE X3 de 24 MHz et le quartz LSE X2 de 32,768 kHz, la LED utilisateur verte LD2 sur PA5, le bouton bleu USER sur PC13, le bouton noir RESET, la LED d'alimentation verte LD3, JP5 choisissant l'USB du STLINK-V3E, VIN, E5V ou un chargeur USB, JP6 (IDD) pour mesurer le courant du MCU, les connecteurs Arduino Uno V3 et les deux connecteurs morpho ST. Le port COM virtuel du STLINK-V3E est la console série de la session sur le LPUART1 (PA2/PA3), et un port série sur l'hôte (embsim serve --serial).",
       "fidelity": {
         "functional": {
@@ -1746,7 +1904,7 @@
           "omissions": [
             "le STLINK-V3E lui-même : son énumération USB (0483:374E), la programmation par glisser-déposer sur stockage de masse, le SWD et sa commande de NRST, LD1 (COM) ; la session programme et débogue la carte (ADR-031)",
             "les octets du VCP arrivent directement au LPUART1, pas comme des trames sur PA3",
-            "les ponts de soudure sont figés dans un état par défaut : PC14/PC15 et PF0/PF1 sur les quartz, pas sur les connecteurs morpho ; les autres tels que les tables de l'UM2505 les donnent, qui n'étaient pas sous la main : l'affectation de CN7 et CN10 suit les fichiers de carte de Zephyr",
+            "les 41 ponts de soudure sont figés dans leur état d'usine tel que le donne la table 12 de l'UM2505 (PA2/PA3 sur le VCP, PC4/PC5 sur D1/D0 et les broches 35 et 37 de CN10, PB8 sur D15 et la broche 7 de CN7, B1 sur PC13, les quartz sur PF0/PF1 et PC14/PC15 et pas sur les connecteurs morpho)",
             "un seul cavalier JP5 ne tient que sur une position ; les quatre interrupteurs ici peuvent tous être fermés",
             "la BSP de ST (stm32g4xx_nucleo.c) configure B1 sur un front montant avec un tirage vers le bas ; sur cette carte (un tirage externe vers le haut, un appui tirant PC13 au niveau bas) cette BSP voit l'appui au relâchement de B1, comme elle le ferait sur le banc"
           ]
@@ -1758,13 +1916,14 @@
           ]
         },
         "electrical": {
-          "claims": "Les chemins d'alimentation de l'UM2505 6.4 : le 5 V de l'USB du STLINK-V3E (U5V) par les broches 1-2 de JP5 vers +5V ; VIN (7 à 12 V) par U11 (LD1117S50) et les broches 3-4 de JP5 ; E5V par les broches 5-6 ; la position chargeur USB (broches 7-8) depuis le VBUS de CN1 ; U12 (LD39050PU33R) fait le +3,3V et JP6 (IDD) le porte vers VDD, VBAT et VDDA/VREF+. LD3 indique le +5V, LD2 est allumée par PA5, un tirage de 4,7 kOhm tient PC13 au niveau haut et B1 le tire à la masse à travers 100 ohms avec un condensateur de 100 nF sur PC13, C_NRST tient NRST bas à la mise sous tension face au tirage interne du STM32 ; X3 et X2 sont les circuits équivalents de quartz.",
+          "claims": "Les chemins d'alimentation de l'UM2505 7.4 : le 5 V de l'USB du STLINK-V3E (U5V) par U4 (STMPS2151STR, activé par T_PWR_EN comme après l'énumération ; LD4 sur sa sortie de défaut) et les broches 1-2 de JP5 vers +5V ; VIN (7 à 12 V) par U11 (LD1117S50) et les broches 3-4 de JP5 ; E5V par les broches 5-6 ; la position chargeur USB (broches 7-8) directement depuis le VBUS de CN1 ; U12 (LD39050PU33R) fait le +3,3V et JP6 (IDD) le porte vers VDD et VBAT, vers VDDA par la ferrite L1 et vers VREF+ par JP8 et la ferrite L2. LD3 indique le +5V, LD2 est allumée par PA5, un tirage vers le haut tient PC13 au niveau haut et B1 le tire à la masse avec un condensateur sur PC13, les 100 nF sur NRST le tiennent bas à la mise sous tension face au tirage interne du STM32 ; X3 (NX2016SA 24 MHz) et X2 (NX3215SA 32,768 kHz) sont les circuits équivalents de quartz.",
           "omissions": [
-            "le schéma de la MB1367 n'était pas sous la main : les résistances des LED, le réseau de B1, C_NRST et le tirage de JP7 sont les valeurs habituelles des cartes Nucleo-64, supposées ; les repères autres que ceux de l'UM2505 (U11, U12, JP5, JP6, JP7, LD1-LD3, B1, B2, X2, X3, CN1, CN5-CN10) sont ceux d'EmbSIM",
-            "l'interrupteur d'alimentation et la négociation de courant du STLINK-V3E entre le VBUS de son USB et la position STLK de JP5 (pris comme fermé), sa propre alimentation et son courant",
-            "les condensateurs de découplage et de réservoir, la protection ESD",
-            "le courant d'alimentation du STM32 : VDD ne porte que ce que pilotent les broches",
-            "la ferrite entre VDD et VDDA est prise comme un court-circuit"
+            "le schéma de la MB1367 n'était pas sous la main : les résistances des LED, le réseau de B1, le tirage de JP7, la commande de T_PWR_EN et les valeurs des ferrites sont supposés ; les repères autres que ceux de l'UM2505 (U4, U11, U12, JP5-JP8, LD1-LD4, L1, L2, B1, B2, X2, X3, CN1, CN5-CN10) sont ceux d'EmbSIM",
+            "la position d'usine de JP8 (1-2) : VREF+ fourni par une référence shunt TL1431CL5T à 3,25 V ; le catalogue n'a pas encore de référence shunt, JP8 est donc sur 2-3 (VDD)",
+            "le transistor qui pilote LD2 : PA5 pilote LD2 lui-même à travers sa résistance, si bien que le courant de LD2 passe par VDD (et l'ampèremètre de JP6), ce qui n'est pas le cas sur la carte",
+            "la négociation de courant d'U4 avec l'hôte (100 mA avant l'énumération, 500 mA après), la propre alimentation du STLINK-V3E et son courant",
+            "le découplage suit le schéma recommandé du DS12288 (figure 16 : 100 nF par broche VDD et 4,7 µF, 10 nF et 1 µF sur VDDA, 100 nF et 1 µF sur VREF+), non vérifié sur les condensateurs propres à la MB1367 ; la protection ESD",
+            "le courant d'alimentation du STM32 : VDD ne porte que ce que pilotent les broches"
           ]
         }
       }

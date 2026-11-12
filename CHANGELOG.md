@@ -43,12 +43,18 @@ versions follow semantic versioning. There is no release yet.
   NUCLEO-G474RE's option bytes), and an MCU model can choose the boot
   (`boot_pin`, `boot_system`: the G4's BOOT0 on PB8).
 - `tests/vendor/stm32cubeg4/run.py` builds STM32CubeG4's examples for the
-  NUCLEO-G474RE unmodified; 21 run under scenarios (GPIO, EXTI, the HAL's
+  NUCLEO-G474RE unmodified; 20 run under scenarios (GPIO, EXTI, the HAL's
   time base on TIM6, RCC's PLL moved between HSI16 and HSE, UART_Printf on
   LPUART1, four CRC examples, the Cortex-M4's privilege modes, process
   stack and SysTick, FLASH erase/program and fast program with their timing, the IWDG
   with and without a window, the WWDG, Stop 0, TIM1's PWM and output
   compare toggle), in CI's linux-gcc job too.
+- The NUCLEO-G474RE checked against UM2505 Rev 7 and DS12288 Rev 6: U4
+  (STMPS2151STR) and LD4 in the STLINK-V3E's 5 V path, CN10 pins 35 and 37
+  on USART1 (the factory solder bridges), VREF+ on its own net through JP8
+  and the ferrite bead L2 (VDDA through L1), the crystals' parts, the
+  datasheet's decoupling; the fast row's programming time is DS12288's
+  1.91 ms and the PVD's thresholds its falling and rising ones.
 - Fixed: exception entry left CONTROL.SPSEL set when the thread ran on the
   process stack, so a handler read CONTROL[1] as 1 (ARMv7-M's ExceptionTaken
   clears it); CubeG4's CORTEXM_ProcessStack found it.

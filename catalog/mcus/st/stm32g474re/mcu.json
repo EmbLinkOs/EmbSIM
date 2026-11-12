@@ -431,6 +431,11 @@
    "doc": "The engineering bytes (RM0440 48): the unique device ID, the flash size and the factory calibration values (DS12288 5.3.4, 5.3.25). Each real part has its own; these are one part's, with the datasheet's typical values: VREFINT 1.212 V and the temperature sensor's 0.76 V at 30 degC, 2.5 mV/degC, read at VREF+ 3.0 V",
    "contents": [
     {
+     "offset": "0x00",
+     "bytes": "e0ff",
+     "doc": "PKG[4:0] 00000: LQFP64 (RM0440 48.3); the reserved bits as erased"
+    },
+    {
      "offset": "0x90",
      "bytes": "35002100474d495331424d45",
      "doc": "UID: X 0x35, Y 0x21 on wafer 0x47 of lot EMBSIM1"
@@ -2177,14 +2182,14 @@
    "omissions": [
     "the peripherals coverage.md lists as missing keep their register values and raise mcu.unsupported_access: the ADCs, DACs, comparators, op-amps and VREFBUF, DMA1, DMA2 and DMAMUX, the I2Cs and SPIs, RTC and TAMP, LPTIM1, RNG, CORDIC, FMAC, CRS, the FDCANs, USB, UCPD, HRTIM, QUADSPI, SAI and FMC",
     "the timers' G4 additions: OCxM's fourth bit (retriggerable one-pulse, combined and asymmetric PWM), SMS's fourth bit (combined reset and trigger, the extended encoder modes), the internal trigger inputs ITR4 to ITR10 and TS's fifth bit, MMS's fourth bit, channels 5 and 6, dithering (DITHEN: ARR and CCRx read as their 16 integer bits), UIFREMAP, the encoder index (ECR), the asymmetric dead times (DTR2), break 2, the comparators on TISEL and AF1/AF2's break sources, the G4's ITR interconnection table (the F4's is used)",
-    "the start-up times, flash times and PVD thresholds are DS12288's typical values as transcribed without the datasheet at hand (HSI16 0.8 us, an HSE crystal 2 ms, LSI 80 us, LSE 2 s, HSI48 2.5 us, the PLL's lock 15 us; a double word 81.7 us, a fast row 2.61 ms, a page erase 22.02 ms, a bank erase 22.13 ms; the PVD at 2.0 to 2.9 V), and their spread and dependence on temperature are not modelled",
+    "the start-up times, flash times and PVD thresholds are DS12288 Rev 6's typical values (HSI16 0.8 us, an HSE crystal 2 ms, LSI 80 us, LSE 2 s, HSI48 2.5 us, the PLL's lock 15 us; a double word 81.7 us, a fast row 1.91 ms, a page erase 22.02 ms, a bank erase 22.13 ms; the PVD's thresholds), not their spread between parts or their dependence on temperature",
     "RCC: the clock security systems (CSSON, LSECSSON: the oscillators never fail), LSEDRV, HSITRIM and HSI48CAL's effect on the frequencies, the CRS's trimming, a peripheral held in reset while its *RSTR bit stays set, the brownout reset (BORRSTF only at power-on), the sleep-mode enables (*SMENR), MCO and LSCO on their pins",
     "PWR: the regulator's settling (VOSF never set) and the wake-up times, the supply currents, the PVMs (VDDA is VDD), UCPD's dead-battery bits, VBAT charging",
     "FLASH: the option bytes' programming time, the read protection's levels and their mass erase, PCROP and the securable area, ECC, the bank swap (BFB2, FB_MODE), the boot from SRAM, the power-down modes, the caches' real line length",
     "USART: noise detection (NE never sets, ONEBIT does nothing), auto baud rate detection, TXINV and RXINV, DE's assertion and deassertion times (DEAT, DEDT), the synchronous slave, smartcard and IrDA modes, TCBGT",
     "SYSCFG: SWPR's write protection of the CCM SRAM, its erase time, the parity errors CFGR2 reports; EXTI: the internal lines' sources but PVD's; GPIO: EVENTOUT, the I/O compensation, the 5 V tolerant pins' clamps",
-    "the electrical I/O values (io.electrical) are the F446's and DS12288's typical ones, not checked against the datasheet's tables; the package code at 0x1FFF7500 reads erased",
-    "DBGMCU's REV_ID 0x2001 (the silicon revision is assumed); a halted core draws its sleep current"
+    "the I/O thresholds are DS12288's typical characteristics (0.39 x VDD - 0.06 and 0.49 x VDD + 0.26, 200 mV of hysteresis, 40 kOhm pulls), not the guaranteed 0.3 and 0.7 x VDD; the output resistances and edge rates are the F446's",
+    "DBGMCU's REV_ID 0x2001 (revision Z: which revision a board carries varies, UM2505 10.1); a halted core draws its sleep current"
    ],
    "validation": [
     "repo:tests/unit/test_stm32g4.c",
@@ -2207,10 +2212,12 @@
   "license": "Apache-2.0",
   "sources": [
    {
-    "title": "RM0440 Reference manual: STM32G4 Series advanced Arm-based 32-bit MCUs"
+    "title": "RM0440 Reference manual: STM32G4 Series advanced Arm-based 32-bit MCUs",
+    "rev": "9"
    },
    {
-    "title": "STM32G474xB/xC/xE datasheet (DS12288)"
+    "title": "STM32G474xB/xC/xE datasheet (DS12288)",
+    "rev": "6"
    },
    {
     "title": "PM0214 Programming manual: STM32 Cortex-M4 MCUs and MPUs"
@@ -2228,7 +2235,7 @@
  },
   "i18n": {
     "fr": {
-      "source": "5aa1acd3852d",
+      "source": "02c6b848b5e0",
       "description": "STMicroelectronics STM32G474RE : un Arm Cortex-M4F jusqu'à 170 MHz avec MPU, 512 Kio de flash à double banc, 128 Kio de SRAM (80 Kio de SRAM1, 16 Kio de SRAM2, 32 Kio de CCM SRAM), ses accélérateurs mathématiques, son timer haute résolution et sa chaîne analogique, en LQFP64 ; le MCU de la NUCLEO-G474RE.",
       "fidelity": {
         "functional": {
@@ -2236,14 +2243,14 @@
           "omissions": [
             "les périphériques que coverage.md indique manquants gardent leurs valeurs de registre et lèvent mcu.unsupported_access : les ADC, DAC, comparateurs, amplis op et VREFBUF, DMA1, DMA2 et le DMAMUX, les I2C et SPI, RTC et TAMP, LPTIM1, RNG, CORDIC, FMAC, CRS, les FDCAN, l'USB, l'UCPD, le HRTIM, le QUADSPI, le SAI et le FMC",
             "les ajouts G4 des timers : le quatrième bit d'OCxM (one-pulse redéclenchable, PWM combinée et asymétrique), le quatrième bit de SMS (reset et déclenchement combinés, les modes codeur étendus), les entrées de déclenchement internes ITR4 à ITR10 et le cinquième bit de TS, le quatrième bit de MMS, les canaux 5 et 6, le dithering (DITHEN : ARR et CCRx lus comme leurs 16 bits entiers), UIFREMAP, l'index du codeur (ECR), les temps morts asymétriques (DTR2), le break 2, les comparateurs sur TISEL et les sources de break d'AF1/AF2, la table d'interconnexion ITR du G4 (celle du F4 est utilisée)",
-            "les temps de démarrage, les temps de la flash et les seuils du PVD sont les valeurs typiques du DS12288 transcrites sans la fiche technique sous la main (HSI16 0,8 µs, un quartz HSE 2 ms, LSI 80 µs, LSE 2 s, HSI48 2,5 µs, le verrouillage de la PLL 15 µs ; un double mot 81,7 µs, une rangée rapide 2,61 ms, l'effacement d'une page 22,02 ms, celui d'un banc 22,13 ms ; le PVD de 2,0 à 2,9 V), et leur dispersion et leur dépendance à la température ne sont pas modélisées",
+            "les temps de démarrage, les temps de la flash et les seuils du PVD sont les valeurs typiques du DS12288 Rev 6 (HSI16 0,8 µs, un quartz HSE 2 ms, LSI 80 µs, LSE 2 s, HSI48 2,5 µs, le verrouillage de la PLL 15 µs ; un double mot 81,7 µs, une rangée rapide 1,91 ms, l'effacement d'une page 22,02 ms, celui d'un banc 22,13 ms ; les seuils du PVD), pas leur dispersion d'une puce à l'autre ni leur dépendance à la température",
             "RCC : les systèmes de sécurité d'horloge (CSSON, LSECSSON : les oscillateurs ne tombent jamais en panne), LSEDRV, l'effet de HSITRIM et HSI48CAL sur les fréquences, l'ajustement par le CRS, un périphérique maintenu en reset tant que son bit *RSTR reste à 1, le reset de brownout (BORRSTF seulement à la mise sous tension), les activations du mode sommeil (*SMENR), MCO et LSCO sur leurs broches",
             "PWR : l'établissement du régulateur (VOSF jamais à 1) et les temps de réveil, les courants d'alimentation, les PVM (VDDA vaut VDD), les bits de batterie morte de l'UCPD, la charge de VBAT",
             "FLASH : le temps de programmation des octets d'option, les niveaux de protection en lecture et leur effacement total, le PCROP et la zone sécurisable, l'ECC, l'échange de bancs (BFB2, FB_MODE), le démarrage depuis la SRAM, les modes basse consommation, la vraie longueur de ligne des caches",
             "USART : la détection de bruit (NE jamais à 1, ONEBIT sans effet), la détection automatique du débit, TXINV et RXINV, les temps d'assertion et de désassertion de DE (DEAT, DEDT), l'esclave synchrone, les modes carte à puce et IrDA, TCBGT",
             "SYSCFG : la protection en écriture des pages de la CCM SRAM par SWPR, le temps de son effacement, les erreurs de parité que signale CFGR2 ; EXTI : les sources des lignes internes sauf celle du PVD ; GPIO : EVENTOUT, la cellule de compensation, les écrêtages des broches tolérantes au 5 V",
-            "les valeurs électriques des E/S (io.electrical) sont celles du F446 et les valeurs typiques du DS12288, non vérifiées sur les tables de la fiche technique ; le code de boîtier à 0x1FFF7500 se lit effacé",
-            "le REV_ID 0x2001 du DBGMCU (la révision du silicium est supposée) ; un cœur arrêté consomme son courant de sommeil"
+            "les seuils des E/S sont les caractéristiques typiques du DS12288 (0,39 x VDD - 0,06 et 0,49 x VDD + 0,26, 200 mV d'hystérésis, tirages de 40 kOhm), pas les 0,3 et 0,7 x VDD garantis ; les résistances de sortie et les vitesses de front sont celles du F446",
+            "le REV_ID 0x2001 du DBGMCU (révision Z : la révision que porte une carte varie, UM2505 10.1) ; un cœur arrêté consomme son courant de sommeil"
           ]
         },
         "timed": {

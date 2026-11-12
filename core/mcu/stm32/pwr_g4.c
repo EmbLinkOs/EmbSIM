@@ -10,8 +10,9 @@
  *   - low-power run: CR1.LPR puts the regulator in low-power mode, SR2's
  *     REGLPF follows it; REGLPS reads 1 (the low-power regulator ready);
  *   - the programmable voltage detector: with CR2.PVDE, SR2.PVDO is 1 while
- *     VDD is below the threshold PLS selects (2.0 to 2.9 V), or with PLS
- *     111 while PVD_IN (PB7) is below VREFINT (1.212 V); its changes are
+ *     VDD is below the threshold PLS selects (DS12288's: falling 2.05 to
+ *     2.90 V, rising about 100 mV higher), or with PLS 111 while PVD_IN
+ *     (PB7) is below VREFINT (1.212 V); its changes are
  *     EXTI line 16's input; the peripheral voltage monitors' outputs
  *     (PVMOx) read 0, VDDA being at VDD;
  *   - DBP (CR1) allows writes to the backup domain (RCC's BDCR, rcc_g4.c);
@@ -43,9 +44,8 @@
  * times (the core runs at the wake-up event), the low-power run and Stop
  * modes' supply currents, the PVD's hysteresis and the PVMs' thresholds
  * (VDDA is VDD here), the USB Type-C dead-battery bits (UCPD1_DBDIS,
- * UCPD1_STDBY), VBAT charging (CR4.VBE, VBRS), the PVD thresholds as
- * DS12288 gives them per part (their typical values here: 2.0, 2.2, 2.4,
- * 2.5, 2.6, 2.8, 2.9 V). */
+ * UCPD1_STDBY), VBAT charging (CR4.VBE, VBRS), the PVD thresholds' spread
+ * between parts (the typical values here). */
 #include "mcu/stm32/stm32.h"
 
 #define CR1_LPMS 7u
@@ -116,7 +116,10 @@ static int pin_volts(struct esk_mach *m, int port, int bit, double *v)
 
 static void pvd(struct g4pwr *w)
 {
-    static const double th[7] = { 2.0, 2.2, 2.4, 2.5, 2.6, 2.8, 2.9 };
+    /* DS12288 Rev 6 table 19's typical thresholds: PVDO rises as VDD falls
+     * below the falling one and clears once VDD rises above the rising one */
+    static const double fall[7] = { 2.05, 2.20, 2.36, 2.52, 2.64, 2.81, 2.90 };
+    static const double rise[7] = { 2.15, 2.31, 2.46, 2.61, 2.74, 2.91, 2.98 };
     struct esk_mach *m = w->s;
     u32 cr2 = (u32)w->cr2->value, pls = cr2 >> 1 & 7;
     int o = 0;
@@ -124,7 +127,7 @@ static void pvd(struct g4pwr *w)
     if (cr2 & CR2_PVDE) {
         double vdd = m->vdd > 0.0 ? m->vdd : 3.3, in;
         if (pls < 7)
-            o = vdd < th[pls];
+            o = vdd < (w->pvdo ? rise[pls] : fall[pls]);
         else
             o = pin_volts(m, 1, 7, &in) && in < 1.212;
     }
