@@ -1,0 +1,32 @@
+{
+  "schema_version": 1,
+  "kind": "scenario",
+  "name": "flash_fastprogram",
+  "until": "3.6s",
+  "description": "FLASH_FastProgram: bank 2 mass-erased (MER2, 22.13 ms), then programmed a 256-byte row at a time (FSTPG, 1024 x 2.61 ms) by a program running from bank 1, which goes on meanwhile and polls BSY: about 2.7 s before LD2 comes on once every word reads back.",
+  "inputs": [],
+  "assertions": [
+    {
+      "id": "working",
+      "between": [
+        "100ms",
+        "2.6s"
+      ],
+      "probe": "led",
+      "expect": {
+        "logic": "0"
+      }
+    },
+    {
+      "id": "pass",
+      "between": [
+        "2.8s",
+        "3.5s"
+      ],
+      "probe": "led",
+      "expect": {
+        "logic": "1"
+      }
+    }
+  ]
+}

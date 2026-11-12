@@ -1,0 +1,107 @@
+{
+  "schema_version": 1,
+  "kind": "component_test",
+  "name": "usb-powered",
+  "description": "Plugged into a computer's USB port through a 0.25 ohm cable, JP5 on STLK (the factory position): +5V from the STLINK-V3E's USB, LD3 lights, U12 makes +3.3V and JP6 carries it to VDD, VBAT and VDDA; PC13 (B1 released) is high and PB8 (D15) floats with JP7 not fitted.",
+  "policy": "electrical",
+  "until": "20ms",
+  "circuit": {
+    "boards": [
+      {
+        "id": "B1",
+        "board": "emblink/nucleo_g474re"
+      }
+    ],
+    "components": [
+      {
+        "id": "HOST",
+        "component": "emblink/vsource",
+        "params": {
+          "kind": "dc",
+          "dc": 5.0
+        }
+      },
+      {
+        "id": "CABLE",
+        "component": "emblink/resistor",
+        "params": {
+          "resistance": 0.25
+        }
+      },
+      {
+        "id": "G",
+        "component": "emblink/gnd"
+      }
+    ],
+    "nets": {
+      "HOSTV": [
+        "HOST.+",
+        "CABLE.1"
+      ],
+      "VBUS": [
+        "CABLE.2",
+        "B1.U5V"
+      ],
+      "GND": [
+        "HOST.-",
+        "G.GND",
+        "B1.GND"
+      ],
+      "R5": [
+        "B1.5V"
+      ],
+      "R33": [
+        "B1.3V3"
+      ],
+      "VDD": [
+        "B1.CN7_5"
+      ],
+      "AVDD": [
+        "B1.AREF"
+      ],
+      "VBAT": [
+        "B1.CN7_33"
+      ],
+      "BTN": [
+        "B1.CN7_23"
+      ]
+    }
+  },
+  "inputs": [],
+  "expect": {
+    "net:R5": {
+      "at": "10ms",
+      "min_v": 4.85,
+      "max_v": 5.0
+    },
+    "net:R33": {
+      "at": "10ms",
+      "min_v": 3.25,
+      "max_v": 3.35
+    },
+    "net:VDD": {
+      "at": "10ms",
+      "min_v": 3.25,
+      "max_v": 3.35
+    },
+    "net:AVDD": {
+      "at": "10ms",
+      "min_v": 3.25,
+      "max_v": 3.35
+    },
+    "net:VBAT": {
+      "at": "10ms",
+      "min_v": 3.25,
+      "max_v": 3.35
+    },
+    "output:B1.LD3.luminance": {
+      "at": "10ms",
+      "min": 0.05
+    },
+    "net:BTN": {
+      "at": "10ms",
+      "min_v": 3.25,
+      "max_v": 3.35
+    }
+  }
+}

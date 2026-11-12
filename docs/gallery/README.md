@@ -213,6 +213,20 @@ probes (`output:PC.HOST.*`), checked by the vendor scenario.
 |---|---|
 | ![The USB project in the Design workspace: the board, the ST-LINK supply and the PC's port, the OTG nets listed](nucleo-f446ze/design-usb-hid.png) | ![It running past enumeration: the USB host's probes, OTG_VBUS at 5 V among the meters](nucleo-f446ze/run-usb-hid.png) |
 
+## The NUCLEO-G474RE (2026-11-12)
+
+ST's Nucleo-64 board (MB1367) with its STM32G474RE, a second STM32 family,
+running `examples/nucleo-g474re-blink-serial`: 170 MHz from the 24 MHz
+crystal X3 in range 1 boost, LD2 blinking, the USER button on EXTI13's
+falling edge, the virtual COM port on LPUART1. Its jumpers are controls:
+JP5's four supply positions (STLK, VIN, E5V, CHGR), JP6 (IDD) and JP7. The
+artwork is drawn for EmbSIM to the 70 x 82.5 mm outline, its positions
+approximate until a dimensioned drawing gives `reference.json`.
+
+| Design | Run | Board |
+|---|---|---|
+| ![The NUCLEO-G474RE example in the Design workspace](nucleo-g474re/design-nucleo-g474re.png) | ![The example running: VDD on the oscilloscope, LD2 on the logic analyzer, JP5's positions and JP6 among the controls](nucleo-g474re/run-nucleo-g474re.png) | ![The board's 2D face on the bench: LD2 and LD3 lit, JP5 on STLK](nucleo-g474re/board-nucleo-g474re.png) |
+
 ## The NUCLEO-F446ZE (2026-10-31)
 
 ST's Nucleo-144 board (MB1137) with its STM32F446ZE in LQFP144, running

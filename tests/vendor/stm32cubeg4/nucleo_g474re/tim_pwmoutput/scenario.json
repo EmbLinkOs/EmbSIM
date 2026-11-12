@@ -1,0 +1,86 @@
+{
+  "schema_version": 1,
+  "kind": "scenario",
+  "name": "tim_pwmoutput",
+  "until": "100ms",
+  "description": "TIM_PWMOutput: TIM1 at 85 MHz (PSC from 170 MHz), ARR 999: four 85 kHz PWM channels, CH1 on PA8 at 50 %, CH2 on PA9 at 37.5 %, CH3 on PA10 at 25 %, CH4 on PA11 at 12.5 % (TIM1's MOE through BDTR).",
+  "inputs": [],
+  "assertions": [
+    {
+      "id": "pa8-f",
+      "between": [
+        "20ms",
+        "90ms"
+      ],
+      "probe": "pa8",
+      "expect": {
+        "frequency_hz": 85000
+      },
+      "tolerance": 0.01
+    },
+    {
+      "id": "pa11-f",
+      "between": [
+        "20ms",
+        "90ms"
+      ],
+      "probe": "pa11",
+      "expect": {
+        "frequency_hz": 85000
+      },
+      "tolerance": 0.01
+    },
+    {
+      "id": "pa8-duty",
+      "between": [
+        "20ms",
+        "90ms"
+      ],
+      "probe": "pa8",
+      "expect": {
+        "min": 0.495,
+        "max": 0.505
+      },
+      "measure": "duty_cycle"
+    },
+    {
+      "id": "pa9-duty",
+      "between": [
+        "20ms",
+        "90ms"
+      ],
+      "probe": "pa9",
+      "expect": {
+        "min": 0.37,
+        "max": 0.38
+      },
+      "measure": "duty_cycle"
+    },
+    {
+      "id": "pa10-duty",
+      "between": [
+        "20ms",
+        "90ms"
+      ],
+      "probe": "pa10",
+      "expect": {
+        "min": 0.245,
+        "max": 0.255
+      },
+      "measure": "duty_cycle"
+    },
+    {
+      "id": "pa11-duty",
+      "between": [
+        "20ms",
+        "90ms"
+      ],
+      "probe": "pa11",
+      "expect": {
+        "min": 0.12,
+        "max": 0.13
+      },
+      "measure": "duty_cycle"
+    }
+  ]
+}

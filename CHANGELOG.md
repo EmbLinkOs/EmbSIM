@@ -5,6 +5,57 @@ versions follow semantic versioning. There is no release yet.
 
 ## Unreleased
 
+### The STM32G474RE and the NUCLEO-G474RE: a second STM32 family
+
+- Added `st/stm32g474re`, the STM32G474RE (Cortex-M4F at 170 MHz, 512 KiB
+  of dual-bank flash, 128 KiB of SRAM with the CCM SRAM), its register
+  description converted from ST's Apache-2.0 STM32G474.svd v3.0 by
+  `tools/importers/stm32g474_regs.sh` with the corrections RM0440, the CMSIS
+  header and the HAL give (RCC_CR's and EXTI's reset values, PWR_SR2's PVMO
+  bits, the timers' OCxM[3] bits ST's file leaves out, TIM2's 32-bit CNT,
+  the interrupts it puts on the wrong peripheral), its LQFP64 pinout, analog
+  inputs and alternate functions from ST's open pin data, and the DMAMUX's
+  request numbers.
+- New models for the G4's own IP: `stm32g4-rcc` (HSI16, HSE, LSI, LSE,
+  HSI48 with their start-up times, the PLL's P, Q and R outputs, the kernel
+  clocks, the limits of the voltage ranges and flash wait states),
+  `stm32g4-pwr` (the voltage ranges and boost, the PVD, Stop 0 and 1,
+  Standby with SRAM2 and the pull configuration, Shutdown, the wake-up
+  pins), `stm32g4-flash` (double-word and fast programming, page and bank
+  erases with read-while-write between the banks, the option bytes with
+  their complements, OBL_LAUNCH, BOOT0 on PB8 or nBOOT0) and
+  `stm32-usart-v2` (the U(S)ARTs and LPUART of the ISR/ICR layout: FIFOs,
+  7/8/9-bit frames, MSBFIRST, DATAINV, SWAP, DE, character match, receiver
+  timeout, wake-up from Stop).
+- Shared models taught the G4's registers: GPIO's BRR, SYSCFG's G4 remaps
+  and CCM SRAM erase, EXTI's two banks of lines, the programmable CRC
+  (polynomial, size, input and output reversal), the IWDG's window and the
+  option bytes' hardware start and freeze, the WWDG's 3-bit prescaler,
+  DBGMCU's G4 names, the timers' TISEL clock inputs and freeze bits found
+  by name, a pin's analog entry listing several ADC groups.
+- Added `emblink/nucleo_g474re` (MB1367): the 24 MHz HSE crystal X3 and
+  the LSE crystal X2, LD2 on PA5, B1 on PC13, B2, LD3, JP5's four supply
+  positions, JP6 (IDD), JP7, U11 and U12, the Arduino and morpho
+  connectors, the VCP on LPUART1, its option bytes as ST ships the board
+  (nSWBOOT0 0), original artwork, and six fixtures (USB, VIN, E5V, VIN
+  without JP5, the IDD ammeter, B1).
+- A board can give its MCU's memory as it ships (`mcu.memory`: the
+  NUCLEO-G474RE's option bytes), and an MCU model can choose the boot
+  (`boot_pin`, `boot_system`: the G4's BOOT0 on PB8).
+- `tests/vendor/stm32cubeg4/run.py` builds STM32CubeG4's examples for the
+  NUCLEO-G474RE unmodified; 21 run under scenarios (GPIO, EXTI, the HAL's
+  time base on TIM6, RCC's PLL moved between HSI16 and HSE, UART_Printf on
+  LPUART1, four CRC examples, the Cortex-M4's privilege modes, process
+  stack and SysTick, FLASH erase/program and fast program with their timing, the IWDG
+  with and without a window, the WWDG, Stop 0, TIM1's PWM and output
+  compare toggle), in CI's linux-gcc job too.
+- Fixed: exception entry left CONTROL.SPSEL set when the thread ran on the
+  process stack, so a handler read CONTROL[1] as 1 (ARMv7-M's ExceptionTaken
+  clears it); CubeG4's CORTEXM_ProcessStack found it.
+- `svd2regs.py`: `--strip-prefixes` (TIM2_CR1 in TIM2 named CR1),
+  `--rename`, and `--drop` leaving the peripherals derived from the dropped
+  one its registers.
+
 ### DC motors and their driver: the first of the robot's parts (M7)
 
 - Added the analog primitive `dc_motor` (`core/analog/motor.c`, SPEC-004): a

@@ -1,0 +1,105 @@
+{
+ "schema_version": 1,
+ "kind": "project",
+ "name": "nucleo-g474re-blink-serial",
+ "description": "A NUCLEO-G474RE running firmware/main.c on its STM32G474RE (Cortex-M4F): the 24 MHz crystal X3 through the PLL to 170 MHz in range 1 boost, LD2 on PA5 blinking at 1 Hz from SysTick, the blue USER button B1 on PC13 (active low) counted through EXTI13's falling edge, and the STLINK-V3E's virtual COM port (LPUART1 on PA2/PA3 at 115200 baud) echoing what it receives in upper case. The board runs from its STLINK-V3E USB connector's 5 V.",
+ "policy": "electrical",
+ "boards": [
+  {
+   "id": "B1",
+   "board": "emblink/nucleo_g474re",
+   "layout": {
+    "x": 360,
+    "y": 120
+   },
+   "firmware": {
+    "image": "firmware/blink-serial.elf",
+    "format": "elf",
+    "toolchain": "clang",
+    "sources": [
+     "firmware/startup.c",
+     "firmware/main.c"
+    ],
+    "flags": [
+     "-ffreestanding",
+     "-fno-builtin"
+    ],
+    "linker_script": "firmware/stm32g474re.ld"
+   }
+  }
+ ],
+ "components": [
+  {
+   "id": "USB",
+   "component": "emblink/vsource",
+   "params": {
+    "kind": "dc",
+    "dc": 5
+   },
+   "layout": {
+    "x": 120,
+    "y": 160
+   }
+  },
+  {
+   "id": "GND1",
+   "component": "emblink/gnd",
+   "layout": {
+    "x": 120,
+    "y": 320
+   }
+  }
+ ],
+ "nets": {
+  "USB5V": [
+   "USB.+",
+   "B1.U5V"
+  ],
+  "GND": [
+   "USB.-",
+   "GND1.GND",
+   "B1.GND"
+  ]
+ },
+ "probes": [
+  {
+   "id": "console",
+   "target": "serial:B1",
+   "kind": "serial"
+  },
+  {
+   "id": "led",
+   "target": "net:B1.PA5",
+   "kind": "digital"
+  },
+  {
+   "id": "btn",
+   "target": "net:B1.PC13",
+   "kind": "digital"
+  },
+  {
+   "id": "vdd",
+   "target": "net:B1.VDD",
+   "kind": "analog",
+   "rate_hz": 1000
+  },
+  {
+   "id": "presses",
+   "target": "var:B1:presses",
+   "kind": "value"
+  },
+  {
+   "id": "cfgr",
+   "target": "reg:B1.RCC.CFGR",
+   "kind": "value"
+  },
+  {
+   "id": "flash_size",
+   "target": "mem:B1:0x1FFF75E0:2",
+   "kind": "value"
+  }
+ ],
+ "scenarios": [
+  "scenarios/blink.json"
+ ]
+}

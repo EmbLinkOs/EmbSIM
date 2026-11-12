@@ -1,0 +1,37 @@
+{
+  "schema_version": 1,
+  "kind": "scenario",
+  "name": "uart_printf",
+  "until": "100ms",
+  "description": "UART_Printf: printf retargeted to LPUART1 (PA2/PA3), the STLINK-V3E's virtual COM port, at 115200 baud with 8 bits, odd parity (7 data bits and the parity bit).",
+  "inputs": [],
+  "assertions": [
+    {
+      "id": "banner",
+      "at": "60ms",
+      "probe": "console",
+      "expect": {
+        "contains": "UART Printf Example: retarget the C library printf function to the UART"
+      }
+    },
+    {
+      "id": "done",
+      "at": "95ms",
+      "probe": "console",
+      "expect": {
+        "contains": "** Test finished successfully. **"
+      }
+    },
+    {
+      "id": "no-error",
+      "between": [
+        "20ms",
+        "95ms"
+      ],
+      "probe": "led",
+      "expect": {
+        "logic": "0"
+      }
+    }
+  ]
+}

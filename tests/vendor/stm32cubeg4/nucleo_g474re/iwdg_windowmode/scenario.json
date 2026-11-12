@@ -1,0 +1,47 @@
+{
+  "schema_version": 1,
+  "kind": "scenario",
+  "name": "iwdg_windowmode",
+  "until": "6.5s",
+  "description": "IWDG_WindowMode: the IWDG at LSI / 16 with a reload of 1561 (780 ms) and a window of 800, refreshed every 450 ms, after the window opens, while LD2 toggles; B1's callback shortens the wait to 200 ms, so the next refresh comes while the counter is still above the window and the IWDG resets the part (IWDG_WINR), which then holds LD2 on for 4 s (RCC_CSR's IWDGRSTF).",
+  "inputs": [
+    {
+      "at": "2000ms",
+      "target": "B1.B1",
+      "input": "pressed",
+      "value": true
+    },
+    {
+      "at": "2100ms",
+      "target": "B1.B1",
+      "input": "pressed",
+      "value": false
+    }
+  ],
+  "assertions": [
+    {
+      "id": "running",
+      "between": [
+        "300ms",
+        "1.95s"
+      ],
+      "probe": "led",
+      "expect": {
+        "min": 0.3,
+        "max": 0.7
+      },
+      "measure": "duty_cycle"
+    },
+    {
+      "id": "reset",
+      "between": [
+        "3.2s",
+        "6s"
+      ],
+      "probe": "led",
+      "expect": {
+        "logic": "1"
+      }
+    }
+  ]
+}
