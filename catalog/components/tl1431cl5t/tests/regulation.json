@@ -1,0 +1,59 @@
+{
+  "schema_version": 1,
+  "kind": "component_test",
+  "name": "regulation",
+  "description": "REF tied to the cathode, fed through 30 ohm from 5 V (about 83 mA, near the 100 mA maximum): the cathode still within 15 mV of VREF (|zKA| 0.2 ohm typical).",
+  "policy": "electrical",
+  "until": "2ms",
+  "circuit": {
+    "components": [
+      {
+        "id": "VS",
+        "component": "emblink/vsource",
+        "params": {
+          "kind": "dc",
+          "dc": 5.0
+        }
+      },
+      {
+        "id": "G0",
+        "component": "emblink/gnd"
+      },
+      {
+        "id": "DUT",
+        "component": "emblink/tl1431cl5t"
+      },
+      {
+        "id": "RS",
+        "component": "emblink/resistor",
+        "params": {
+          "resistance": 30
+        }
+      }
+    ],
+    "nets": {
+      "IN": [
+        "VS.+",
+        "RS.1"
+      ],
+      "K": [
+        "RS.2",
+        "DUT.CATHODE",
+        "DUT.REF"
+      ],
+      "GND": [
+        "VS.-",
+        "DUT.ANODE",
+        "G0.GND"
+      ]
+    }
+  },
+  "inputs": [],
+  "expect": {
+    "net:K": {
+      "at": "1ms",
+      "min_v": 2.485,
+      "max_v": 2.53
+    }
+  }
+}

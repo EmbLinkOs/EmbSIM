@@ -1,0 +1,69 @@
+{
+  "schema_version": 1,
+  "kind": "component_test",
+  "name": "off",
+  "description": "No base drive (the base held at ground through 100 kOhm): the transistor is off and the collector sits at 5 V through 330 ohm.",
+  "policy": "electrical",
+  "until": "2ms",
+  "circuit": {
+    "components": [
+      {
+        "id": "G0",
+        "component": "emblink/gnd"
+      },
+      {
+        "id": "DUT",
+        "component": "emblink/bsr14"
+      },
+      {
+        "id": "VC",
+        "component": "emblink/vsource",
+        "params": {
+          "kind": "dc",
+          "dc": 5.0
+        }
+      },
+      {
+        "id": "RC",
+        "component": "emblink/resistor",
+        "params": {
+          "resistance": 330
+        }
+      },
+      {
+        "id": "RBE",
+        "component": "emblink/resistor",
+        "params": {
+          "resistance": 100000
+        }
+      }
+    ],
+    "nets": {
+      "VCN": [
+        "VC.+",
+        "RC.1"
+      ],
+      "C": [
+        "RC.2",
+        "DUT.C"
+      ],
+      "GND": [
+        "VC.-",
+        "DUT.E",
+        "RBE.2",
+        "G0.GND"
+      ],
+      "B": [
+        "RBE.1",
+        "DUT.B"
+      ]
+    }
+  },
+  "inputs": [],
+  "expect": {
+    "net:C": {
+      "at": "1ms",
+      "min_v": 4.99
+    }
+  }
+}

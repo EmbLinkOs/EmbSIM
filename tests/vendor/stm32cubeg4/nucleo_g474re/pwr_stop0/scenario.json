@@ -3,7 +3,7 @@
   "kind": "scenario",
   "name": "pwr_stop0",
   "until": "11s",
-  "description": "PWR_STOP0: LD2 toggled from SysTick for 5 s at 170 MHz, then every port but C put in analog mode (LD2 dark) and Stop 0 entered by WFI with SysTick suspended; B1's press (a falling edge on EXTI13) wakes the part on HSI16, SYSCLKConfig_STOP brings the PLL back and LD2 toggles for 5 s more.",
+  "description": "PWR_STOP0: LD2 toggled from SysTick for 5 s at 170 MHz, then every port but C put in analog mode (LD2 dark) and Stop 0 entered by WFI with SysTick suspended; B1's press (a rising edge on EXTI13: the example sets it, and B1 is active high) wakes the part on HSI16, SYSCLKConfig_STOP brings the PLL back and LD2 toggles for 5 s more.",
   "inputs": [
     {
       "at": "7500ms",

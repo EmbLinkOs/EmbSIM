@@ -2,8 +2,8 @@
 /* Copyright 2026 Junior Deogracias */
 /* main.c -- the NUCLEO-G474RE example: 170 MHz from the 24 MHz crystal X3
  * in range 1 boost, LD2 (PA5) blinking at 1 Hz from SysTick, B1 (PC13,
- * active low on the Nucleo-64) counted through EXTI13's falling edges (an
- * edge after 20 ms without one: B1's contacts bounce), and the STLINK-V3E's
+ * active high: MB1367's B1 joins PC13 to VDD) counted through EXTI13's rising
+ * edges (an edge after 20 ms without one: B1's contacts bounce), and the STLINK-V3E's
  * virtual COM port (LPUART1 on PA2/PA3 at 115200 baud) echoing in upper
  * case. The registers are written directly, in the order STM32CubeG4's
  * SystemClock_Config writes them (RM0440 7.2.7: the AHB at /2 for the
@@ -36,7 +36,7 @@
 #define LP_TDR REG(LPUART1 + 0x28u)
 #define SYSCFG_EXTICR4 REG(0x40010014u)
 #define EXTI_IMR1 REG(0x40010400u)
-#define EXTI_FTSR1 REG(0x4001040Cu)
+#define EXTI_RTSR1 REG(0x40010408u)
 #define EXTI_PR1 REG(0x40010414u)
 #define SYST_CSR REG(0xE000E010u)
 #define SYST_RVR REG(0xE000E014u)
@@ -114,9 +114,9 @@ void EXTI15_10_IRQHandler(void)
     if (EXTI_PR1 & (1u << 13)) {
         uint32_t now = ticks;
         EXTI_PR1 = 1u << 13;
-        /* B1's contacts bounce: a press is a falling edge after the line has
+        /* B1's contacts bounce: a press is a rising edge after the line has
          * been still for 20 ms */
-        if (!(IDR(GPIOC) & (1u << 13)) && now - last_edge >= 20u)
+        if ((IDR(GPIOC) & (1u << 13)) && now - last_edge >= 20u)
             presses++;
         last_edge = now;
     }
@@ -141,7 +141,7 @@ int main(void)
     RCC_APB2ENR |= 1u << 0;               /* SYSCFG */
     (void)RCC_APB2ENR;
     /* PA5 an output (LD2); PA2, PA3 AF12 (LPUART1 to the STLINK-V3E); PC13
-     * an input (B1, held high by the board's pull-up) */
+     * an input (B1, held low by the board's R26 while released) */
     MODER(GPIOA) = (MODER(GPIOA) & ~((3u << 10) | (0xFu << 4))) | (1u << 10) | (0xAu << 4);
     AFRL(GPIOA) = (AFRL(GPIOA) & ~(0xFFu << 8)) | (0xCCu << 8);
     MODER(GPIOC) &= ~(3u << 26);
@@ -151,9 +151,9 @@ int main(void)
     LP_CR1 |= 1u;                               /* UE */
     while ((LP_ISR & (3u << 21)) != (3u << 21)) /* TEACK, REACK */
         ;
-    /* B1: EXTI13 on port C, falling edge (the Nucleo-64's button pulls down) */
+    /* B1: EXTI13 on port C, rising edge (B1 joins PC13 to VDD) */
     SYSCFG_EXTICR4 = (SYSCFG_EXTICR4 & ~(0xFu << 4)) | (2u << 4);
-    EXTI_FTSR1 |= 1u << 13;
+    EXTI_RTSR1 |= 1u << 13;
     EXTI_IMR1 |= 1u << 13;
     NVIC_ISER1 = 1u << (40 - 32);
     NVIC_ISER2 = 1u << (91 - 64);

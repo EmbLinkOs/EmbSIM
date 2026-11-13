@@ -1,0 +1,65 @@
+{
+  "schema_version": 1,
+  "kind": "component_test",
+  "name": "pulse",
+  "description": "The datasheet's figure 22: REF tied to the cathode (figure 6's circuit), a 1 mA step from a 5 V pulse through 2.5 kOhm: within 1.5 us of the edge the cathode is at VREF (figure 22 rises in about 0.6 us and settles near 2.4 V).",
+  "policy": "electrical",
+  "until": "40us",
+  "circuit": {
+    "components": [
+      {
+        "id": "VS",
+        "component": "emblink/vsource",
+        "params": {
+          "kind": "pulse",
+          "v1": 0,
+          "v2": 5,
+          "td": "10u",
+          "tr": "10n",
+          "tf": "10n",
+          "pw": "20u",
+          "per": "100u"
+        }
+      },
+      {
+        "id": "G0",
+        "component": "emblink/gnd"
+      },
+      {
+        "id": "DUT",
+        "component": "emblink/tl1431cl5t"
+      },
+      {
+        "id": "RS",
+        "component": "emblink/resistor",
+        "params": {
+          "resistance": 2500
+        }
+      }
+    ],
+    "nets": {
+      "IN": [
+        "VS.+",
+        "RS.1"
+      ],
+      "K": [
+        "RS.2",
+        "DUT.CATHODE",
+        "DUT.REF"
+      ],
+      "GND": [
+        "VS.-",
+        "DUT.ANODE",
+        "G0.GND"
+      ]
+    }
+  },
+  "inputs": [],
+  "expect": {
+    "net:K": {
+      "at": "11.5us",
+      "min_v": 2.3,
+      "max_v": 2.6
+    }
+  }
+}

@@ -1,0 +1,73 @@
+{
+  "schema_version": 1,
+  "kind": "component_test",
+  "name": "sat-500ma",
+  "description": "The datasheet's second saturation point: about 500 mA from 5 V through 9.1 ohm, 50 mA into the base through 82 ohm: VCE(sat) at most 1.0 V and VBE(sat) at most 2.0 V.",
+  "policy": "electrical",
+  "until": "2ms",
+  "circuit": {
+    "components": [
+      {
+        "id": "G0",
+        "component": "emblink/gnd"
+      },
+      {
+        "id": "DUT",
+        "component": "emblink/bsr14"
+      },
+      {
+        "id": "VC",
+        "component": "emblink/vsource",
+        "params": {
+          "kind": "dc",
+          "dc": 5.0
+        }
+      },
+      {
+        "id": "RC",
+        "component": "emblink/resistor",
+        "params": {
+          "resistance": 9.1
+        }
+      },
+      {
+        "id": "RB",
+        "component": "emblink/resistor",
+        "params": {
+          "resistance": 82
+        }
+      }
+    ],
+    "nets": {
+      "VCN": [
+        "VC.+",
+        "RC.1",
+        "RB.1"
+      ],
+      "C": [
+        "RC.2",
+        "DUT.C"
+      ],
+      "B": [
+        "RB.2",
+        "DUT.B"
+      ],
+      "GND": [
+        "VC.-",
+        "DUT.E",
+        "G0.GND"
+      ]
+    }
+  },
+  "inputs": [],
+  "expect": {
+    "net:C": {
+      "at": "1ms",
+      "max_v": 1.0
+    },
+    "net:B": {
+      "at": "1ms",
+      "max_v": 2.0
+    }
+  }
+}

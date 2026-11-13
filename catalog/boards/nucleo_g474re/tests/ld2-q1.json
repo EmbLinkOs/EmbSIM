@@ -1,0 +1,78 @@
+{
+  "schema_version": 1,
+  "kind": "component_test",
+  "name": "ld2-q1",
+  "description": "LD2 is switched by Q1: 3.3 V on D13 (PA5) from 5 ms lights LD2 from 3V3 through R25, the base driven through R29 against R28 (usb-powered checks LD2 dark).",
+  "policy": "electrical",
+  "until": "20ms",
+  "circuit": {
+    "boards": [
+      {
+        "id": "B1",
+        "board": "emblink/nucleo_g474re"
+      }
+    ],
+    "components": [
+      {
+        "id": "HOST",
+        "component": "emblink/vsource",
+        "params": {
+          "kind": "dc",
+          "dc": 5.0
+        }
+      },
+      {
+        "id": "CABLE",
+        "component": "emblink/resistor",
+        "params": {
+          "resistance": 0.25
+        }
+      },
+      {
+        "id": "G",
+        "component": "emblink/gnd"
+      },
+      {
+        "id": "PA5",
+        "component": "emblink/vsource",
+        "params": {
+          "kind": "pulse",
+          "v1": 0,
+          "v2": 3.3,
+          "td": "5m",
+          "tr": "1u",
+          "tf": "1u",
+          "pw": "10m",
+          "per": "40m"
+        }
+      }
+    ],
+    "nets": {
+      "HOSTV": [
+        "HOST.+",
+        "CABLE.1"
+      ],
+      "VBUS": [
+        "CABLE.2",
+        "B1.U5V"
+      ],
+      "GND": [
+        "HOST.-",
+        "G.GND",
+        "B1.GND",
+        "PA5.-"
+      ],
+      "D13": [
+        "PA5.+",
+        "B1.D13"
+      ]
+    }
+  },
+  "inputs": [],
+  "expect": {
+    "output:B1.LD2.luminance": {
+      "at": "10ms",
+      "min": 0.05
+    }
+  }
+}

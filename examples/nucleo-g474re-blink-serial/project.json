@@ -2,7 +2,7 @@
  "schema_version": 1,
  "kind": "project",
  "name": "nucleo-g474re-blink-serial",
- "description": "A NUCLEO-G474RE running firmware/main.c on its STM32G474RE (Cortex-M4F): the 24 MHz crystal X3 through the PLL to 170 MHz in range 1 boost, LD2 on PA5 blinking at 1 Hz from SysTick, the blue USER button B1 on PC13 (active low) counted through EXTI13's falling edge, and the STLINK-V3E's virtual COM port (LPUART1 on PA2/PA3 at 115200 baud) echoing what it receives in upper case. The board runs from its STLINK-V3E USB connector's 5 V.",
+ "description": "A NUCLEO-G474RE running firmware/main.c on its STM32G474RE (Cortex-M4F): the 24 MHz crystal X3 through the PLL to 170 MHz in range 1 boost, LD2 on PA5 blinking at 1 Hz from SysTick, the blue USER button B1 on PC13 (active high: MB1367 joins it to VDD) counted through EXTI13's rising edge, and the STLINK-V3E's virtual COM port (LPUART1 on PA2/PA3 at 115200 baud) echoing what it receives in upper case. The board runs from its STLINK-V3E USB connector's 5 V.",
  "policy": "electrical",
  "boards": [
   {

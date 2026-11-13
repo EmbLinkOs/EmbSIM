@@ -2,7 +2,7 @@
  "schema_version": 1,
  "kind": "project",
  "name": "stm32cubeg4-nucleo-g474re",
- "description": "A NUCLEO-G474RE running one of STM32CubeG4's examples for it, built from ST's unmodified sources (tests/vendor/stm32cubeg4/run.py puts the image beside this file as sketch.elf), on its STLINK-V3E's USB power. The console is the STLINK-V3E's virtual COM port on LPUART1; LD2 is on PA5, B1 on PC13 (active low).",
+ "description": "A NUCLEO-G474RE running one of STM32CubeG4's examples for it, built from ST's unmodified sources (tests/vendor/stm32cubeg4/run.py puts the image beside this file as sketch.elf), on its STLINK-V3E's USB power. The console is the STLINK-V3E's virtual COM port on LPUART1; LD2 is on PA5, B1 on PC13 (active high: B1 joins it to VDD).",
  "policy": "electrical",
  "boards": [
   {

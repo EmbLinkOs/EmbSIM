@@ -11,8 +11,8 @@ does, and waits on each ready bit as the part needs: HSE (the board's
   the switch to the PLL and back to /1 (RM0440 7.2.7).
 - SysTick interrupts every millisecond; every 500 ms it toggles LD2 (green,
   PA5), so LD2 blinks at 1 Hz.
-- The blue USER button B1 pulls PC13 to ground on the Nucleo-64 (a pull-up
-  holds it high otherwise), so EXTI13 takes its falling edge; each press is
+- The blue USER button B1 joins PC13 to VDD (MB1367's R26 holds it low
+  while B1 is released), so EXTI13 takes its rising edge; each press is
   counted and reported on the console.
 - LPUART1 on PA2/PA3 (AF12) at 115200 baud (BRR = 256 x 170 MHz / 115200)
   is the STLINK-V3E's virtual COM port: the session's console, and a serial

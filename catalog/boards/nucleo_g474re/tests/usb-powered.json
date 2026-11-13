@@ -2,9 +2,9 @@
   "schema_version": 1,
   "kind": "component_test",
   "name": "usb-powered",
-  "description": "Plugged into a computer's USB port through a 0.25 ohm cable, JP5 on STLK (the factory position): +5V from the STLINK-V3E's USB, LD3 lights, U12 makes +3.3V and JP6 carries it to VDD, VBAT and VDDA; PC13 (B1 released) is high and PB8 (D15) floats with JP7 not fitted.",
+  "description": "Plugged into a computer's USB port through a 0.25 ohm cable, JP5 on STLK (the factory position): +5V from the STLINK-V3E's USB, LD3 lights, U12 makes +3.3V and JP6 carries it to VDD and VBAT; U14 and Q2 make VREF and JP8 (pins 1-2) carries it to VREF+ (AREF), 2.5 x (1 + 10k / 33k) = 3.26 V once it has settled (R33 and R34 alone discharge C46 after the start-up's overshoot); PC13 (B1 released) is held low by R26, LD2 is dark with PA5 not driven (R28 holds Q1's base low) and PB8 (D15) floats with JP7 not fitted.",
   "policy": "electrical",
-  "until": "20ms",
+  "until": "31ms",
   "circuit": {
     "boards": [
       {
@@ -56,14 +56,14 @@
       "VDD": [
         "B1.CN7_5"
       ],
-      "AVDD": [
-        "B1.AREF"
-      ],
       "VBAT": [
         "B1.CN7_33"
       ],
       "BTN": [
         "B1.CN7_23"
+      ],
+      "VREFP": [
+        "B1.AREF"
       ]
     }
   },
@@ -84,11 +84,6 @@
       "min_v": 3.25,
       "max_v": 3.35
     },
-    "net:AVDD": {
-      "at": "10ms",
-      "min_v": 3.25,
-      "max_v": 3.35
-    },
     "net:VBAT": {
       "at": "10ms",
       "min_v": 3.25,
@@ -100,8 +95,16 @@
     },
     "net:BTN": {
       "at": "10ms",
-      "min_v": 3.25,
-      "max_v": 3.35
+      "max_v": 0.05
+    },
+    "net:VREFP": {
+      "at": "30ms",
+      "min_v": 3.24,
+      "max_v": 3.28
+    },
+    "output:B1.LD2.luminance": {
+      "at": "10ms",
+      "max": 0.001
     }
   }
 }

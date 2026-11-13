@@ -2644,6 +2644,11 @@ typedef struct reg_state {
 
 
 #define REG_RREV 1e6 /* reverse (sinking) leakage resistance of the output, ohms */
+#define REG_ROUT 1e-3 /* the output's own resistance while it regulates, ohms: a
+                       * real regulator's load regulation (about 1 mV per
+                       * ampere here), and what keeps it from being an ideal
+                       * source against its output capacitor, which the
+                       * operating point holds at its initial voltage */
 
 static es_status reg_setup(esk_adev *d)
 {
@@ -2698,7 +2703,7 @@ static void reg_load(esk_adev *d, esk_amatrix *m)
     double p = s->pol;
     double vin = p * esk_am_v(m, nin, ng), ib = esk_am_x(m, b);
     double avail = vin - s->dropout, vo, dvo_dvin;
-    double iout = -p * ib, excess = iout - (s->thermal ? s->ilim : s->imax), rl = 0.0;
+    double iout = -p * ib, excess = iout - (s->thermal ? s->ilim : s->imax), rl = REG_ROUT;
     if (avail < 0.0) {
         vo = 0.0;
         dvo_dvin = 0.0;
@@ -2709,16 +2714,17 @@ static void reg_load(esk_adev *d, esk_amatrix *m)
         vo = s->vout * scale;
         dvo_dvin = 0.0;
     }
+    vo -= iout * REG_ROUT;
     if (excess > 0.0) {
         vo -= excess * s->rlim; /* a soft current limit */
-        rl = s->rlim;
+        rl += s->rlim;
     } else if (iout < 0.0 || (iout <= 0.0 && p * esk_am_v(m, nout, ng) >= vo)) {
         /* the pass element cannot sink: a reverse current only flows through a
          * large leakage resistance, so a pulled-up output rises above vo. The
          * output above vo with no current yet (the first iteration against a
          * supply that holds it) is this case too: regulating there would set
          * two voltage sources against each other */
-        vo -= iout * REG_RREV;
+        vo -= iout * (REG_RREV - REG_ROUT);
         rl = REG_RREV;
     }
     /* output branch: v_out - v_gnd - p vo(vin) + rl * (iout - i_knee) = 0 (the

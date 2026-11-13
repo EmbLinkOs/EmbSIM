@@ -225,7 +225,7 @@ approximate until a dimensioned drawing gives `reference.json`.
 
 | Design | Run | Board |
 |---|---|---|
-| ![The NUCLEO-G474RE example in the Design workspace](nucleo-g474re/design-nucleo-g474re.png) | ![The example running: VDD on the oscilloscope, LD2 on the logic analyzer, JP5's positions and JP6 among the controls](nucleo-g474re/run-nucleo-g474re.png) | ![The board's 2D face on the bench: LD2 and LD3 lit, JP5 on STLK](nucleo-g474re/board-nucleo-g474re.png) |
+| ![The NUCLEO-G474RE example in the Design workspace](nucleo-g474re/design-nucleo-g474re.png) | ![The example running: VDD on the oscilloscope, LD2 on the logic analyzer, JP5's positions and JP6 among the controls](nucleo-g474re/run-nucleo-g474re.png) | ![The board's 2D face on the bench: LD3 lit, LD2 between blinks, JP5 on STLK, JP8 on VREF, LD4 dark](nucleo-g474re/board-nucleo-g474re.png) |
 
 ## The NUCLEO-F446ZE (2026-10-31)
 

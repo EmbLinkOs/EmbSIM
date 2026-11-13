@@ -31,8 +31,8 @@ Evidence:
   protection through OBL_LAUNCH, the IWDG's window, the WWDG's /128, Stop 1
   and Standby with SRAM2 kept and PA0's wake-up, and CONTROL.SPSEL in a
   handler;
-- the board's six fixtures (USB, VIN, E5V, VIN without JP5, the IDD
-  ammeter, B1);
+- the board's seven fixtures (USB, VIN, E5V, VIN without JP5, the IDD
+  ammeter, B1, LD2 through Q1);
 - 20 of STM32CubeG4's NUCLEO-G474RE examples built unmodified
   (`tests/vendor/stm32cubeg4/run.py`, also in CI): GPIO_IOToggle,
   GPIO_EXTI, HAL_TimeBase_TIM, RCC_ClockConfig (the PLL moved between HSI16
@@ -50,17 +50,20 @@ the G474's 512 KiB flash alias: the store sets PGSERR without a fault, so
 on this part the example's IWDG reset does not come (its scenario says so;
 not checked on a board).
 
-The board follows UM2505 Rev 7 (its jumpers, power paths with U4's
-switch, solder bridges, connectors and crystals) and the part DS12288 Rev 6
-(start-up, flash and PVD values) and RM0440 Rev 9 (reset values, EXTI's
-direct lines, the package code).
+The board follows MB1367 D-01's schematic, part by part and value by
+value (U4 and LD4, U11, U12, the decoupling, VREF from the TL1431 U14 and
+Q2 at 3.26 V on VREF+ through JP8's factory position, LD2 switched by Q1,
+B1 active high with R26, R27 and C35), UM2505 Rev 7 (the jumpers, solder
+bridges, connectors and crystals), and the part DS12288 Rev 6 (start-up,
+flash and PVD values) and RM0440 Rev 9 (reset values, EXTI's direct lines,
+the package code). Two parts came with it: `emblink/tl1431cl5t` (ST's
+shunt reference, against its datasheet's figures 19 and 22) and
+`emblink/bsr14` (onsemi's SPICE model). The regulator primitive's output
+has 1 mOhm, so an LDO starting into a discharged capacitor solves.
 
 Not yet: the peripherals above, the timers' G4 additions (OCxM's and SMS's
 fourth bits, channels 5 and 6, dithering, the encoder index, the G4's ITR
-table), the STLINK-V3E itself (its USB, SWD and drive), JP8's factory
-VREF+ from the TL1431 reference and LD2's transistor driver (both await a
-TL1431 part and MB1367's schematic), MB1367's own resistor values (assumed
-until its schematic).
+table), the STLINK-V3E itself (its USB, SWD and drive).
 
 ## DC motors and their driver, the robot's first parts (2026-11-08)
 

@@ -3,7 +3,7 @@
  "kind": "scenario",
  "name": "blink",
  "until": "2.2s",
- "description": "The banner with SYSCLK as the RCC's registers give it and the flash size from the engineering bytes' FLASH_SIZE; LD2's 1 Hz blink from SysTick; a press of B1 through EXTI13's falling edge; text sent to the virtual COM port echoed in upper case.",
+ "description": "The banner with SYSCLK as the RCC's registers give it and the flash size from the engineering bytes' FLASH_SIZE; LD2's 1 Hz blink from SysTick; a press of B1 through EXTI13's rising edge; text sent to the virtual COM port echoed in upper case.",
  "inputs": [
   {
    "at": "1.2s",

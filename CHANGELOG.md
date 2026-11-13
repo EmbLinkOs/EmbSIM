@@ -37,8 +37,8 @@ versions follow semantic versioning. There is no release yet.
   the LSE crystal X2, LD2 on PA5, B1 on PC13, B2, LD3, JP5's four supply
   positions, JP6 (IDD), JP7, U11 and U12, the Arduino and morpho
   connectors, the VCP on LPUART1, its option bytes as ST ships the board
-  (nSWBOOT0 0), original artwork, and six fixtures (USB, VIN, E5V, VIN
-  without JP5, the IDD ammeter, B1).
+  (nSWBOOT0 0), original artwork, and seven fixtures (USB, VIN, E5V, VIN
+  without JP5, the IDD ammeter, B1, LD2 through Q1).
 - A board can give its MCU's memory as it ships (`mcu.memory`: the
   NUCLEO-G474RE's option bytes), and an MCU model can choose the boot
   (`boot_pin`, `boot_system`: the G4's BOOT0 on PB8).
@@ -52,9 +52,29 @@ versions follow semantic versioning. There is no release yet.
 - The NUCLEO-G474RE checked against UM2505 Rev 7 and DS12288 Rev 6: U4
   (STMPS2151STR) and LD4 in the STLINK-V3E's 5 V path, CN10 pins 35 and 37
   on USART1 (the factory solder bridges), VREF+ on its own net through JP8
-  and the ferrite bead L2 (VDDA through L1), the crystals' parts, the
-  datasheet's decoupling; the fast row's programming time is DS12288's
-  1.91 ms and the PVD's thresholds its falling and rising ones.
+  and the ferrite bead L2 (VDDA through L1), the crystals' parts; the fast
+  row's programming time is DS12288's 1.91 ms and the PVD's thresholds its
+  falling and rising ones.
+- The NUCLEO-G474RE built from MB1367 D-01's schematic, every part with its
+  designator and value: U4's input and output capacitors, R8 on T_PWR_EN
+  and R1 with LD4 on its FAULT; U11's and U12's capacitors; VDD's, VDDA's,
+  VBAT's and VREF+'s decoupling; VREF from U14 (TL1431CL5T) and Q2 at
+  3.26 V, on VREF+ through JP8's factory position (it was VDD); LD2
+  switched by Q1 from 3V3 (R25, R29, R28), so its current no longer passes
+  JP6's ammeter; B1 active high, as the schematic draws it (VDD through
+  B1, R26 to ground, R27 and C35 on PC13; it was active low): the
+  example counts B1's rising edges, and CubeG4's GPIO_EXTI, which takes the
+  falling edge, toggles LD2 on the release, as it does on the board.
+- Added `emblink/tl1431cl5t`, ST's TL1431 programmable shunt reference in
+  SOT23-5L (2.500 V, the open-loop gain of the datasheet's figure 19, Ioff,
+  a step response within figure 22's microsecond; five fixtures), and
+  `emblink/bsr14`, the BSR14 NPN with onsemi's SPICE model (VCE(sat) and
+  VBE(sat) at 150 mA and 500 mA, MB1367's LD2 circuit).
+- The `regulator` primitive's output has a 1 mOhm resistance while it
+  regulates. An output capacitor held at its initial voltage at the
+  operating point (an LDO with full input at t = 0) no longer sets two
+  ideal sources against each other: the regulator starts in current limit
+  and charges it, as a real one does.
 - Fixed: exception entry left CONTROL.SPSEL set when the thread ran on the
   process stack, so a handler read CONTROL[1] as 1 (ARMv7-M's ExceptionTaken
   clears it); CubeG4's CORTEXM_ProcessStack found it.

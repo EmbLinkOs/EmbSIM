@@ -1,0 +1,58 @@
+{
+  "schema_version": 1,
+  "kind": "component_test",
+  "name": "off",
+  "description": "REF at the anode, the cathode fed through 100 kOhm from 5 V: the part off, its cathode current under a microamp (Ioff 180 nA typical), the cathode near 5 V.",
+  "policy": "electrical",
+  "until": "2ms",
+  "circuit": {
+    "components": [
+      {
+        "id": "VS",
+        "component": "emblink/vsource",
+        "params": {
+          "kind": "dc",
+          "dc": 5.0
+        }
+      },
+      {
+        "id": "G0",
+        "component": "emblink/gnd"
+      },
+      {
+        "id": "DUT",
+        "component": "emblink/tl1431cl5t"
+      },
+      {
+        "id": "RS",
+        "component": "emblink/resistor",
+        "params": {
+          "resistance": "100k"
+        }
+      }
+    ],
+    "nets": {
+      "IN": [
+        "VS.+",
+        "RS.1"
+      ],
+      "K": [
+        "RS.2",
+        "DUT.CATHODE"
+      ],
+      "GND": [
+        "VS.-",
+        "DUT.ANODE",
+        "DUT.REF",
+        "G0.GND"
+      ]
+    }
+  },
+  "inputs": [],
+  "expect": {
+    "net:K": {
+      "at": "1ms",
+      "min_v": 4.9
+    }
+  }
+}
