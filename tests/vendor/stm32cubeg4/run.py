@@ -19,7 +19,10 @@ project builds it:
   (STM32G474RETX_FLASH.ld);
 - newlib-nano.
 The image then runs nucleo_g474re/project.json (or <example>/project.json)
-under the example's scenario.json, whose assertions must all pass.
+under the example's scenario.json, whose assertions must all pass. An
+example for two boards (SPI_FullDuplex_*) is a pair of projects: the
+_Master one is B1's sketch.elf, the _Slave one B2's slave.elf, in
+nucleo_g474re/two_boards.json.
 
     run.py --cube DIR [--embsim PATH] [--keep DIR] [EXAMPLE...]
 
@@ -38,6 +41,14 @@ sys.path.insert(0, str(HERE.parent))
 from vendor_run import run_scenario, sh  # noqa: E402
 
 NUCLEO = "Projects/NUCLEO-G474RE/"
+SPI = NUCLEO + "Examples/SPI/SPI_FullDuplex_"
+
+
+def two(master: str) -> dict:
+    """a pair of projects for two boards: the master's and the slave's"""
+    return {"dir": master + "_Master", "slave": master + "_Slave", "project": "two_boards.json"}
+
+
 EXAMPLES = {
     "cortexm_modeprivilege": NUCLEO + "Examples/Cortex/CORTEXM_ModePrivilege",
     "cortexm_processstack": NUCLEO + "Examples/Cortex/CORTEXM_ProcessStack",
@@ -57,6 +68,11 @@ EXAMPLES = {
     "iwdg_windowmode": NUCLEO + "Examples/IWDG/IWDG_WindowMode",
     "pwr_stop0": NUCLEO + "Examples/PWR/PWR_STOP0",
     "rcc_clockconfig": NUCLEO + "Examples/RCC/RCC_ClockConfig",
+    "spi_fullduplex_comdma": two(SPI + "ComDMA"),
+    # SPI_FullDuplex_ComIT: the master's fourth received byte loses a bit (the
+    # slave's MISO change, made in its TXE interrupt, reaches the line after
+    # the master's next sample); not in the suite until that is solved
+    "spi_fullduplex_compolling": two(SPI + "ComPolling"),
     "tim_octoggle": NUCLEO + "Examples/TIM/TIM_OCToggle",
     "tim_pwmoutput": NUCLEO + "Examples/TIM/TIM_PWMOutput",
     "uart_hyperterminal_dma": NUCLEO + "Examples/UART/UART_HyperTerminal_DMA",
@@ -112,12 +128,15 @@ def project_sources(ide: Path) -> list:
 
 def record(name: str) -> dict:
     e = EXAMPLES[name]
-    return dict({"defines": [], "patches": {}}, **(e if isinstance(e, dict) else {"dir": e}))
+    return dict({"defines": [], "patches": {}, "slave": None, "project": None}, **(e if isinstance(e, dict) else {"dir": e}))
 
 
-def build(cube: Path, name: str, out: Path) -> Path:
+def build(cube: Path, name: str, out: Path, slave: bool = False) -> Path:
+    """the example's image; `slave`: the slave board's project of a pair"""
     rec = record(name)
-    ex = cube / rec["dir"]
+    ex = cube / (rec["slave"] if slave else rec["dir"])
+    if slave:
+        name += "_slave"
     ide = ex / "STM32CubeIDE"
     config = debug_config((ide / ".cproject").read_text(encoding="utf-8"))
     defs = ["-D" + d for d in option_values(config, "definedsymbols") + rec["defines"]]
@@ -141,7 +160,9 @@ def build(cube: Path, name: str, out: Path) -> Path:
 
 def project_of(name: str) -> Path:
     own = BOARD_DIR / name / "project.json"
-    return own if own.exists() else BOARD_DIR / "project.json"
+    if own.exists():
+        return own
+    return BOARD_DIR / (record(name)["project"] or "project.json")
 
 
 def main() -> int:
@@ -168,7 +189,9 @@ def main() -> int:
         bad = 0
         for name in names:
             elf = build(cube, name, work)
-            bad += not run_scenario(Path(args.embsim), project_of(name), name, elf, BOARD_DIR / name / "scenario.json", work)
+            extra = {"slave.elf": build(cube, name, work, slave=True)} if record(name)["slave"] else {}
+            bad += not run_scenario(Path(args.embsim), project_of(name), name, elf, BOARD_DIR / name / "scenario.json",
+                                    work, extra)
     return 1 if bad else 0
 
 

@@ -196,6 +196,7 @@ int esk_stm32_usart_pin(struct esk_mach *m, const char *unit, int tx, int *port,
 int esk_stm32_spi_signal(struct esk_mach *m, const char *sig);
 void esk_stm32_spi_signal_input(struct esk_mach *m, const char *sig, int level);
 void esk_stm32_spi_dma_end(struct esk_mach *m, const char *sig);
+void esk_stm32_spi_dma_left(struct esk_mach *m, const char *sig, u32 left);
 /* an I2C's alternate-function signal (I2C1_SCL, _SDA, _SMBA): the level it
  * drives (1 let go), or -1; a level its pin gives it; a DMA stream's items
  * left after one for its request (I2C1_RX's EOT-1, I2C1_TX's end) */

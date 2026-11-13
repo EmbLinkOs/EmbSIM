@@ -278,6 +278,7 @@ void esk_stm32_dma_items_left(struct esk_mach *s, const char *sig, u32 left)
         esk_stm32_dac_dma_end(s, sig);
     }
     esk_stm32_i2c_dma_left(s, sig, left);
+    esk_stm32_spi_dma_left(s, sig, left);
 }
 
 /* a request served by stream s: a peripheral burst of items; the last two

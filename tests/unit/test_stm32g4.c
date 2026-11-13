@@ -921,6 +921,93 @@ static void test_dma(void)
     g4_close(&f);
 }
 
+/* SPI1, the FIFO SPI (RM0440 42): SCK PB3, MISO PB4, MOSI PB5 (AF5), NSS
+ * PA4 (AF5) */
+#define SPI1 0x40013000u
+#define SPI_CR1 (SPI1 + 0x00u)
+#define SPI_CR2 (SPI1 + 0x04u)
+#define SPI_SR (SPI1 + 0x08u)
+#define SPI_DR (SPI1 + 0x0Cu)
+#define GPIOB 0x48000400u
+
+static u32 rd8(g4 *f, u32 a)
+{
+    u32 v = 0;
+    CHECK_EQ(esk_bus_read(&f->m.bus, a, 1, &v), 0);
+    return v;
+}
+
+static void test_spi_fifo(void)
+{
+    g4 f;
+    u32 v;
+    int k;
+    if (!g4_open(&f))
+        return;
+    wr(&f, RCC_AHB2ENR, rd(&f, RCC_AHB2ENR) | 1u | 2u);   /* GPIOA, GPIOB */
+    wr(&f, RCC_APB2ENR, rd(&f, RCC_APB2ENR) | 1u << 12); /* SPI1EN */
+    wr(&f, GPIOB + MODER, (rd(&f, GPIOB + MODER) & ~(0x3Fu << 6)) | 0x2Au << 6);
+    wr(&f, GPIOB + AFRL, (rd(&f, GPIOB + AFRL) & ~(0xFFFu << 12)) | 0x555u << 12);
+    wr(&f, GPIOA + MODER, (rd(&f, GPIOA + MODER) & ~(3u << 8)) | 2u << 8);
+    wr(&f, GPIOA + AFRL, (rd(&f, GPIOA + AFRL) & ~(0xFu << 16)) | 5u << 16);
+    f.ext[1][4] = 1; /* MISO held high: every frame received is ones */
+    esk_stm32f4_pins_changed(&f.m);
+    CHECK_EQ(rd(&f, SPI_CR2), 0x700u);     /* DS 8 bits out of reset */
+    wr(&f, SPI_CR2, 2u << 8);              /* a DS not used: forced to 8 bits */
+    CHECK_EQ(rd(&f, SPI_CR2) >> 8 & 15u, 7u);
+    wr(&f, SPI_CR2, 7u << 8 | 1u << 12);   /* 8 bits, FRXTH: RXNE at a byte */
+    wr(&f, SPI_CR1, 1u << 2 | 1u << 8 | 1u << 9); /* MSTR, SSI, SSM, PCLK / 2 */
+    /* the transmit FIFO before SPE: TXE while it is at most half full */
+    wr8(&f, SPI_DR, 0x11u);
+    CHECK_EQ(rd(&f, SPI_SR) & 0x1802u, 1u << 11 | 2u); /* FTLVL 1/4, TXE */
+    wr8(&f, SPI_DR, 0x22u);
+    CHECK_EQ(rd(&f, SPI_SR) & 0x1802u, 2u << 11 | 2u); /* 1/2, TXE */
+    wr8(&f, SPI_DR, 0x33u);
+    CHECK_EQ(rd(&f, SPI_SR) & 0x1802u, 3u << 11);      /* 3/4 reads full, TXE clear */
+    wr(&f, SPI_CR1, rd(&f, SPI_CR1) | 1u << 6);        /* SPE: three frames go */
+    run_us(&f, 20.0);
+    v = rd(&f, SPI_SR);
+    CHECK_EQ(v & 0x1880u, 0u);              /* FTLVL empty, BSY clear */
+    CHECK_EQ(v >> 9 & 3u, 3u);              /* FRLVL: three bytes */
+    CHECK(v & 1u);                          /* RXNE */
+    CHECK_EQ(rd(&f, SPI_DR) & 0xFFFFu, 0xFFFFu); /* a word read: two frames packed */
+    CHECK_EQ(rd(&f, SPI_SR) >> 9 & 3u, 1u);
+    CHECK_EQ(rd8(&f, SPI_DR), 0xFFu);
+    CHECK_EQ(rd(&f, SPI_SR) & 0x601u, 0u);  /* empty, RXNE clear */
+    /* FRXTH 0: RXNE at two bytes only */
+    wr(&f, SPI_CR2, 7u << 8);
+    wr8(&f, SPI_DR, 0x44u);
+    run_us(&f, 10.0);
+    CHECK_EQ(rd(&f, SPI_SR) & 0x601u, 1u << 9); /* a byte in, no RXNE */
+    wr8(&f, SPI_DR, 0x55u);
+    run_us(&f, 10.0);
+    CHECK_EQ(rd(&f, SPI_SR) & 0x601u, 2u << 9 | 1u);
+    /* five more frames unread: the FIFO full at four bytes, then OVR */
+    for (k = 0; k < 3; k++) {
+        wr8(&f, SPI_DR, 0x66u);
+        run_us(&f, 10.0);
+    }
+    v = rd(&f, SPI_SR);
+    CHECK_EQ(v >> 9 & 3u, 3u);
+    CHECK(v & 1u << 6);                     /* OVR */
+    (void)rd(&f, SPI_DR);
+    (void)rd(&f, SPI_DR);
+    v = rd(&f, SPI_SR);                     /* DR then SR: the read shows OVR and clears it */
+    CHECK(v & 1u << 6);
+    v = rd(&f, SPI_SR);
+    CHECK_EQ(v & (1u << 6), 0u);
+    /* NSSP: NSS pulses between frames and stays high after the last */
+    wr(&f, SPI_CR1, rd(&f, SPI_CR1) & ~(1u << 6));
+    wr(&f, SPI_CR1, (rd(&f, SPI_CR1) & ~(1u << 9 | 1u << 8)));      /* NSS by the hardware */
+    wr(&f, SPI_CR2, 7u << 8 | 1u << 12 | 1u << 3 | 1u << 2);        /* NSSP, SSOE */
+    wr(&f, SPI_CR1, rd(&f, SPI_CR1) | 1u << 6);
+    CHECK_EQ(f.pin[0][4].drive, 0);         /* enabled: NSS low */
+    wr(&f, SPI_DR, 0x7788u);                /* two frames back to back */
+    run_us(&f, 20.0);
+    CHECK_EQ(f.pin[0][4].drive, 1);         /* high after the transfer */
+    g4_close(&f);
+}
+
 TEST_MAIN_BEGIN
 RUN(test_reset);
 RUN(test_170mhz);
@@ -937,4 +1024,5 @@ RUN(test_wwdg_prescaler);
 RUN(test_stop);
 RUN(test_spsel_in_handler);
 RUN(test_dma);
+RUN(test_spi_fifo);
 TEST_MAIN_END

@@ -57,6 +57,16 @@ versions follow semantic versioning. There is no release yet.
   TEIF), DMAMUX's sixteen channels on any of the 115 request lines, their
   synchronisation on an EXTI line or a channel's event with NBREQ and SOF,
   event generation, the four request generators with OF, DMAMUX_OVR.
+- The SPI model learned the FIFO SPI of the STM32G4 (RM0440 42, and the
+  F0, F3, F7 and L4's): 4 to 16-bit frames, the 32-bit FIFOs with TXE,
+  FRXTH's RXNE threshold, FTLVL, FRLVL and OVR, packed 16-bit accesses,
+  LDMA_TX and LDMA_RX, CRCL's CRC8 and CRC16, NSSP; the G474RE's SPI1 to
+  SPI4 use it. CubeG4's SPI_FullDuplex_ComPolling and _ComDMA pairs run on
+  two boards (`tests/vendor/stm32cubeg4/run.py` builds an example's
+  _Master and _Slave projects; 26 examples).
+- A pin given another alternate function hears its level at once: SPI1's
+  SCK on PB3, after the reset's AF0, saw no level until the first edge, and
+  a slave counted that edge as its baseline (STM32F4 and G4).
 - A board's console is the UART the firmware muxes onto its bridge's pins
   (`console.tx`, `console.rx`), not only the MCU's default unit: the
   NUCLEO-G474RE's VCP hears USART2 on PA2/PA3 as it hears LPUART1.

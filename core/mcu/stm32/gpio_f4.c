@@ -61,6 +61,7 @@ struct f4gpio {
     int port;             /* 0 for A */
     esk_mach_pin out[16]; /* what each pin was told to be */
     int af_in[16];        /* the level last given to a pin's AF inputs, -1 none */
+    u32 af_num[16];       /* the alternate function that level went to */
     int known;
     int lck_step;         /* the lock sequence's writes so far (3: a read locks) */
     u32 lck_bits;
@@ -158,8 +159,12 @@ static void update_once(struct f4gpio *g)
         else
             lvl = o.pull == 1;
         idr |= (u32)lvl << i;
-        if (mode == 2 && lvl != g->af_in[i]) {
+        if (mode == 2 && (lvl != g->af_in[i] || af_of(g, i) != g->af_num[i])) {
+            /* a level changed, or another function took the pin: it hears
+             * the pin's level at once (SPI1_SCK on PB3, after its reset's
+             * AF0) */
             g->af_in[i] = lvl;
+            g->af_num[i] = af_of(g, i);
             af_input(g, i, af_of(g, i), lvl);
         } else if (mode != 2) {
             g->af_in[i] = -1;

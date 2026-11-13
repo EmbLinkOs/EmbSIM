@@ -1,0 +1,133 @@
+{
+ "schema_version": 1,
+ "kind": "project",
+ "name": "stm32cubeg4-two-boards",
+ "description": "Two NUCLEO-G474RE boards running one of STM32CubeG4's examples for a pair of boards, built from ST's unmodified sources: B1 the master (sketch.elf, the example's _Master project), B2 the slave (slave.elf, its _Slave project). As the readme's figure wires them, SPI1's SCK (PB3, CN10 pin 31), MISO (PB4, CN10 pin 27) and MOSI (PB5, CN10 pin 29) join, with the grounds. Each board is plugged into its own USB port; the master waits for its USER button.",
+ "policy": "electrical",
+ "boards": [
+  {
+   "id": "B1",
+   "board": "emblink/nucleo_g474re",
+   "layout": {
+    "x": 360,
+    "y": 120
+   },
+   "firmware": {
+    "image": "sketch.elf",
+    "format": "elf"
+   }
+  },
+  {
+   "id": "B2",
+   "board": "emblink/nucleo_g474re",
+   "layout": {
+    "x": 900,
+    "y": 120
+   },
+   "firmware": {
+    "image": "slave.elf",
+    "format": "elf"
+   }
+  }
+ ],
+ "components": [
+  {
+   "id": "USB1",
+   "component": "emblink/vsource",
+   "params": {
+    "kind": "dc",
+    "dc": 5
+   },
+   "layout": {
+    "x": 120,
+    "y": 160
+   }
+  },
+  {
+   "id": "USB2",
+   "component": "emblink/vsource",
+   "params": {
+    "kind": "dc",
+    "dc": 5
+   },
+   "layout": {
+    "x": 1300,
+    "y": 160
+   }
+  },
+  {
+   "id": "GND1",
+   "component": "emblink/gnd",
+   "layout": {
+    "x": 120,
+    "y": 320
+   }
+  }
+ ],
+ "nets": {
+  "USB5V": [
+   "USB1.+",
+   "B1.U5V"
+  ],
+  "GND": [
+   "USB1.-",
+   "USB2.-",
+   "GND1.GND",
+   "B1.GND",
+   "B2.GND"
+  ],
+  "SCK": [
+   "B1.CN10_31",
+   "B2.CN10_31"
+  ],
+  "MISO": [
+   "B1.CN10_27",
+   "B2.CN10_27"
+  ],
+  "MOSI": [
+   "B1.CN10_29",
+   "B2.CN10_29"
+  ],
+  "USB5V_2": [
+   "USB2.+",
+   "B2.U5V"
+  ]
+ },
+ "probes": [
+  {
+   "id": "led1",
+   "target": "net:B1.PA5",
+   "kind": "digital"
+  },
+  {
+   "id": "led2",
+   "target": "net:B2.PA5",
+   "kind": "digital"
+  },
+  {
+   "id": "sck",
+   "target": "net:B1.PB3",
+   "kind": "digital"
+  },
+  {
+   "id": "mosi",
+   "target": "net:B1.PB5",
+   "kind": "digital"
+  },
+  {
+   "id": "miso",
+   "target": "net:B1.PB4",
+   "kind": "digital"
+  },
+  {
+   "id": "master_rx",
+   "target": "var:B1:aRxBuffer",
+   "kind": "value"
+  },
+  {
+   "id": "slave_rx",
+   "target": "var:B2:aRxBuffer",
+   "kind": "value"
+  }
+ ]
+}

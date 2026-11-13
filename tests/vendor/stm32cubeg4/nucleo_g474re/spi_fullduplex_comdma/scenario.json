@@ -1,0 +1,58 @@
+{
+  "schema_version": 1,
+  "kind": "scenario",
+  "name": "spi_fullduplex_comdma",
+  "until": "600ms",
+  "description": "SPI_FullDuplex_ComDMA: SPI1 of B1 (the master) and B2 (the slave) exchange their buffers full duplex by DMA (DMA1 through DMAMUX) once B1's USER button is pressed; each board compares what it received with what it expected and lights LD2 when they match (LD2 blinks on the master while it waits for the button).",
+  "inputs": [
+    {
+      "at": "200ms",
+      "target": "B1.B1",
+      "input": "pressed",
+      "value": true
+    },
+    {
+      "at": "300ms",
+      "target": "B1.B1",
+      "input": "pressed",
+      "value": false
+    }
+  ],
+  "assertions": [
+    {
+      "id": "waiting",
+      "between": [
+        "20ms",
+        "190ms"
+      ],
+      "probe": "led1",
+      "expect": {
+        "min": 0.2,
+        "max": 0.8
+      },
+      "measure": "duty_cycle"
+    },
+    {
+      "id": "master-ok",
+      "between": [
+        "400ms",
+        "590ms"
+      ],
+      "probe": "led1",
+      "expect": {
+        "logic": "1"
+      }
+    },
+    {
+      "id": "slave-ok",
+      "between": [
+        "400ms",
+        "590ms"
+      ],
+      "probe": "led2",
+      "expect": {
+        "logic": "1"
+      }
+    }
+  ]
+}

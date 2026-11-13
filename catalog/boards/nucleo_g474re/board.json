@@ -2088,7 +2088,8 @@
     "the VCP's bytes reach the UART on PA2/PA3 directly, not as frames on PA3, whatever line settings the host's terminal has",
     "the 41 solder bridges are fixed in their factory state as UM2505's table 12 and the schematic give them (PA2/PA3 on the VCP, PC4/PC5 on D1/D0 and CN10 pins 35 and 37, PB8 on D15 and CN7 pin 7, B1 on PC13, the crystals on PF0/PF1 and PC14/PC15 and not on the morpho headers)",
     "a single JP5 or JP8 shunt sits on one position only; the switches here can all be closed",
-    "CubeG4's examples that take B1's falling edge (GPIO_EXTI and LL examples such as EXTI_ToggleLedOnIT_Init) act when B1 is released, as they would on the board: B1 is active high, their readmes say a press"
+    "CubeG4's examples that take B1's falling edge (GPIO_EXTI and LL examples such as EXTI_ToggleLedOnIT_Init) act when B1 is released, as they would on the board: B1 is active high, their readmes say a press",
+    "in the functional policy the board's resistors are wires, so R29 and R28 join PA5 to GND and R27 and R26 join PC13 to GND: LD2 and B1 work in the electrical policy only (a resistor that passes a weak level in the functional policy is not modelled yet)"
    ],
    "validation": [
     "tests/*.json"
@@ -2146,7 +2147,7 @@
  ],
   "i18n": {
     "fr": {
-      "source": "991592de95bf",
+      "source": "873018dc7efe",
       "description": "La NUCLEO-G474RE de ST (MB1367) : un STM32G474RET6 avec le quartz HSE X3 de 24 MHz et le quartz LSE X2 de 32,768 kHz, la LED utilisateur verte LD2 sur PA5, le bouton bleu USER, actif au niveau haut, sur PC13, le bouton noir RESET, la LED d'alimentation verte LD3, JP5 choisissant l'USB du STLINK-V3E, VIN, E5V ou un chargeur USB, JP6 (IDD) pour mesurer le courant du MCU, les connecteurs Arduino Uno V3 et les deux connecteurs morpho ST. Le port COM virtuel du STLINK-V3E est la console série de la session sur le LPUART1 (PA2/PA3), et un port série sur l'hôte (embsim serve --serial).",
       "fidelity": {
         "functional": {
@@ -2156,7 +2157,8 @@
             "les octets du VCP arrivent directement à l'UART de PA2/PA3, pas comme des trames sur PA3, quels que soient les réglages de ligne du terminal de l'hôte",
             "les 41 ponts de soudure sont figés dans leur état d'usine tel que le donnent la table 12 de l'UM2505 et le schéma (PA2/PA3 sur le VCP, PC4/PC5 sur D1/D0 et les broches 35 et 37 de CN10, PB8 sur D15 et la broche 7 de CN7, B1 sur PC13, les quartz sur PF0/PF1 et PC14/PC15 et pas sur les connecteurs morpho)",
             "un seul cavalier JP5 ou JP8 ne tient que sur une position ; les interrupteurs ici peuvent tous être fermés",
-            "les exemples de CubeG4 qui prennent le front descendant de B1 (GPIO_EXTI et des exemples LL comme EXTI_ToggleLedOnIT_Init) agissent au relâchement de B1, comme ils le feraient sur la carte : B1 est actif au niveau haut, leur readme parle d'un appui"
+            "les exemples de CubeG4 qui prennent le front descendant de B1 (GPIO_EXTI et des exemples LL comme EXTI_ToggleLedOnIT_Init) agissent au relâchement de B1, comme ils le feraient sur la carte : B1 est actif au niveau haut, leur readme parle d'un appui",
+            "dans la politique fonctionnelle les résistances de la carte sont des fils, si bien que R29 et R28 relient PA5 à GND et R27 et R26 PC13 à GND : LD2 et B1 ne fonctionnent que dans la politique électrique (une résistance qui transmet un niveau faible dans la politique fonctionnelle n'est pas encore modélisée)"
           ]
         },
         "timed": {

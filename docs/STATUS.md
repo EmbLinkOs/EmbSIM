@@ -15,9 +15,9 @@ alternate functions from ST's open pin data. The G4's own IP has new models:
 the RCC (`stm32g4-rcc`), PWR (`stm32g4-pwr`), flash interface
 (`stm32g4-flash`), the U(S)ARTs and LPUART (`stm32-usart-v2`), and DMA1,
 DMA2 and DMAMUX (`stm32g4-dma`, `stm32g4-dmamux`); GPIO, SYSCFG, EXTI, the
-timers, CRC, the watchdogs and DBGMCU are the F4's models taught the G4's
-registers. 37 of the 82 peripheral blocks are modelled
-(`docs/coverage.md`); the ADCs, DACs, comparators, op-amps, I2C, SPI, RTC, the FDCANs, USB, HRTIM, the math accelerators and the rest
+timers, CRC, the watchdogs, DBGMCU and the SPIs (the FIFO SPI) are the F4's
+models taught the G4's registers. 41 of the 82 peripheral blocks are
+modelled (`docs/coverage.md`); the ADCs, DACs, comparators, op-amps, I2C, RTC, the FDCANs, USB, HRTIM, the math accelerators and the rest
 keep their registers until their models land.
 
 Evidence:
@@ -33,7 +33,7 @@ Evidence:
   handler;
 - the board's seven fixtures (USB, VIN, E5V, VIN without JP5, the IDD
   ammeter, B1, LD2 through Q1);
-- 24 of STM32CubeG4's NUCLEO-G474RE examples built unmodified
+- 26 of STM32CubeG4's NUCLEO-G474RE examples built unmodified
   (`tests/vendor/stm32cubeg4/run.py`, also in CI): GPIO_IOToggle,
   GPIO_EXTI, HAL_TimeBase_TIM, RCC_ClockConfig (the PLL moved between HSI16
   and the crystal on B1), UART_Printf, the four CRC examples,
@@ -45,7 +45,14 @@ Evidence:
   on TIM1's four channels), TIM_OCToggle, DMA_FLASHToRAM and LL's
   DMA_CopyFromFlashToMemory_Init (memory to memory), UART_HyperTerminal_DMA
   (USART2 on PA2/PA3, both directions by DMA) and
-  UART_ReceptionToIdle_CircularDMA (LPUART1's receiver by circular DMA);
+  UART_ReceptionToIdle_CircularDMA (LPUART1's receiver by circular DMA),
+  SPI_FullDuplex_ComPolling and SPI_FullDuplex_ComDMA on two boards (each
+  board's _Master or _Slave project, SPI1 on PB3 to PB5); SPI_FullDuplex_ComIT
+  is not among them yet: the master's fourth received byte loses a bit,
+  the slave's MISO change, made in its TXE interrupt, reaching the line
+  after the master's next sample;
+- `test_stm32g4`'s SPI test: DS, the FIFOs' levels and thresholds, packed
+  reads, OVR, NSSP;
 - `test_stm32g4`'s DMA test: memory to memory, table 89's packing, the
   bits locked while EN is set, LPUART1's transmitter through DMAMUX,
   synchronisation on EXTI13 with NBREQ and its overrun, a channel's event
@@ -56,6 +63,12 @@ PA2/PA3 (LPUART1, or USART2 as UART_HyperTerminal_DMA uses it): a board's
 console follows its bridge's pins, as the wiring does. An EXTI line given
 another port by SYSCFG now sees the new pin's level at once, an edge if it
 differs, as the line's edge detector follows the multiplexer.
+
+In the functional policy a resistor is still a wire: on the NUCLEO-G474RE
+R29 and R28 join PA5 to GND, and R27 and R26 PC13, so LD2 and B1 work in
+the electrical policy only (the board's fidelity says so). Two boards on
+SPI under the electrical policy run about 230 times slower than real time
+(their supply islands stepping with the bus's edges).
 
 Found on the way: exception entry did not clear CONTROL.SPSEL (every
 Cortex-M part), and IWDG_Reset's "invalid address" 0x00040001 lies inside
