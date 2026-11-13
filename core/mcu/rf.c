@@ -490,7 +490,9 @@ es_status esk_rf_dma_requests(struct esk_mach *m, const esk_json *map, char *why
             for (k = 0; k < esk_json_len(st); k++) {
                 const esk_json *ch = esk_json_at(st, k);
                 long chn = ch && ch->key ? strtol(ch->key, NULL, 10) : -1;
-                if (sn < 0 || sn > 15 || chn < 0 || chn > 15) {
+                /* a multiplexer's request inputs are numbered past 15 (an
+                 * STM32G4's DMAMUX: 0 to 115) */
+                if (sn < 0 || sn > 15 || chn < 0 || chn > (strcmp(cn, "DMAMUX") ? 15 : 255)) {
                     snprintf(why, cap, "dma_requests: %s has a bad stream or channel", cn);
                     return ES_ESCHEMA;
                 }
@@ -544,15 +546,27 @@ es_status esk_rf_analog(struct esk_mach *m, const esk_json *an, char *why, size_
 int esk_rf_analog_pin(const struct esk_rf *rf, int unit, int ch)
 {
     int i;
+    /* each pin's entry names one group of channels (ADC123_IN0), or several
+     * where its ADCs number it differently (an STM32G4's PB0: "ADC1_IN15,
+     * ADC3_IN12") */
     for (i = 0; rf && i < rf->nan; i++) {
-        const char *s = rf->an_sig[i], *in;
-        int k, has = 0;
-        if (strncmp(s, "ADC", 3) || !(in = strstr(s, "_IN")) || strtol(in + 3, NULL, 10) != ch)
-            continue;
-        for (k = 3; s + k < in; k++)
-            has |= s[k] - '0' == unit;
-        if (has)
-            return rf->an_at[i];
+        const char *s = rf->an_sig[i];
+        while (s && *s) {
+            const char *in;
+            int k, has = 0;
+            while (*s == ' ' || *s == ',')
+                s++;
+            if (!strncmp(s, "ADC", 3) && (in = strstr(s, "_IN")) != 0 && strtol(in + 3, NULL, 10) == ch) {
+                const char *end = strchr(s, ',');
+                if (!end || in < end) {
+                    for (k = 3; s + k < in; k++)
+                        has |= s[k] - '0' == unit;
+                    if (has)
+                        return rf->an_at[i];
+                }
+            }
+            s = strchr(s, ',');
+        }
     }
     return -1;
 }

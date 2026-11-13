@@ -1,0 +1,47 @@
+{
+  "schema_version": 1,
+  "kind": "scenario",
+  "name": "iwdg_reset",
+  "until": "6s",
+  "description": "IWDG_Reset: LSI measured by TIM16's input capture (TISEL: LSI on TI1), the IWDG set to time out after 1 s and refreshed every 990 ms while LD2 toggles. B1's handler (on the press: the BSP takes B1's rising edge, and B1 is active high) turns LD2 off and stores a word at 0x00040001, which its comment calls unmapped; on the G474RE's 512 KiB that address is inside the flash's boot alias, so the store reaches the flash interface with PG clear and sets PGSERR without a fault (RM0440 5.3.9), and the program goes on refreshing the IWDG: no reset. (On a 128 KiB part, the example's first target, the address is unmapped and the hard fault lets the IWDG reset it.)",
+  "inputs": [
+    {
+      "at": "2500ms",
+      "target": "B1.B1",
+      "input": "pressed",
+      "value": true
+    },
+    {
+      "at": "2600ms",
+      "target": "B1.B1",
+      "input": "pressed",
+      "value": false
+    }
+  ],
+  "assertions": [
+    {
+      "id": "running",
+      "between": [
+        "300ms",
+        "2.45s"
+      ],
+      "probe": "led",
+      "expect": {
+        "edges": 2
+      }
+    },
+    {
+      "id": "no-reset",
+      "between": [
+        "3s",
+        "5.9s"
+      ],
+      "probe": "led",
+      "expect": {
+        "min": 0.3,
+        "max": 0.7
+      },
+      "measure": "duty_cycle"
+    }
+  ]
+}

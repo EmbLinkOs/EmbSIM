@@ -1309,21 +1309,29 @@ static es_time_t step_horizon(const esk_island *isl, es_time_t until)
 }
 
 /* the step to x_iter changed no unknown by more than the solver resolves:
- * a node voltage by vntol (1 uV), a branch current by abstol (1 pA), the
- * absolute tolerances Newton's convergence test uses. Below them two
- * solutions are the same to the solver; an exponential tail (an RC on a
- * reset pin approaching its supply) would otherwise keep an island stepping
- * for dozens of time constants after anything could see it move. The
- * relative tolerance is left out on purpose: a slow ramp moving by less
- * than reltol of its value per step can still be heading for a threshold. */
+ * a node voltage by vntol (1 uV), the absolute tolerance Newton's
+ * convergence test uses. Below it two solutions are the same to the
+ * solver; an exponential tail (an RC on a reset pin approaching its supply)
+ * would otherwise keep an island stepping for dozens of time constants
+ * after anything could see it move. The relative tolerance is left out on
+ * purpose for the nodes: a slow ramp moving by less than reltol of its
+ * value per step can still be heading for a threshold. A branch current
+ * (a source's, an inductor's, an LED's) is still within a nanoampere and a
+ * millionth of its value: an LED's milliamps drifting by picoamps as its
+ * junction warms, or the trapezoidal rule's sub-nanoampere ringing of an
+ * LC tank whose period is far shorter than the step (a ferrite bead
+ * between two capacitors), move no node any instrument would see. */
+#define MNA_STILL_ABS_I 1e-9
+#define MNA_STILL_REL_I 1e-6
+
 static int unchanged(const esk_island *isl)
 {
     const mna *p = (const mna *)isl->priv;
     int i;
     for (i = 0; i < p->n; i++) {
         double a = isl->x[i], b = p->x_iter[i];
-        double tol = i + 1 < p->nnodes ? isl->p.vntol : isl->p.abstol;
-        if (fabs(a - b) > tol + 1e-14 * fabs(a))
+        double tol = i + 1 < p->nnodes ? isl->p.vntol + 1e-14 * fabs(a) : MNA_STILL_ABS_I + MNA_STILL_REL_I * fabs(a);
+        if (fabs(a - b) > tol)
             return 0;
     }
     return 1;

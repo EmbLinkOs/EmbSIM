@@ -547,6 +547,12 @@ struct esk_mach {
      * (an RP2040's QSPI_SS, BOOTSEL's): strap_low is called when it is low */
     const char *strap_pin;
     void (*strap_low)(struct esk_mach *m);
+    /* the boot's choice where it is not a BOOT0 pin's alone (an STM32G4's:
+     * BOOT0 is PB8 or an option bit, RM0440 2.6): `boot_pin`'s level once
+     * the circuit has settled (0 when it names none or floats) goes to
+     * boot_system, which says whether the part boots its system memory */
+    const char *boot_pin;
+    int (*boot_system)(struct esk_mach *m, int pin_high);
     /* that reset is the core's alone (an ESP32-C3's CPU reset): the
      * devices keep their state */
     int reset_cpu_only;

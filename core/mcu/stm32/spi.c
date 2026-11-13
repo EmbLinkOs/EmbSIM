@@ -79,6 +79,7 @@
 #define CR1_SSM (1u << 9)
 #define CR1_RXONLY (1u << 10)
 #define CR1_DFF (1u << 11)
+#define CR1_CRCL (1u << 11) /* the FIFO SPI's: the CRC's length */
 #define CR1_CRCNEXT (1u << 12)
 #define CR1_CRCEN (1u << 13)
 #define CR1_BIDIOE (1u << 14)
@@ -86,10 +87,14 @@
 #define CR2_RXDMAEN (1u << 0)
 #define CR2_TXDMAEN (1u << 1)
 #define CR2_SSOE (1u << 2)
+#define CR2_NSSP (1u << 3)
 #define CR2_FRF (1u << 4)
 #define CR2_ERRIE (1u << 5)
 #define CR2_RXNEIE (1u << 6)
 #define CR2_TXEIE (1u << 7)
+#define CR2_FRXTH (1u << 12)
+#define CR2_LDMA_RX (1u << 13)
+#define CR2_LDMA_TX (1u << 14)
 #define SR_RXNE (1u << 0)
 #define SR_TXE (1u << 1)
 #define SR_CRCERR (1u << 4)
@@ -97,6 +102,8 @@
 #define SR_OVR (1u << 6)
 #define SR_BSY (1u << 7)
 #define SR_FRE (1u << 8)
+#define SR_FRLVL (3u << 9)
+#define SR_FTLVL (3u << 11)
 
 enum { P_NSS, P_SCK, P_MISO, P_MOSI };
 static const char *const fn_names[4] = { "NSS", "SCK", "MISO", "MOSI" };
@@ -125,6 +132,15 @@ struct spi {
     int armed;        /* a TI slave saw the pulse: a frame starts */
     int in_sck, in_nss; /* the levels last seen on the pins, -1 none yet */
     int ovr_dr, modf_sr; /* the clearing sequences' first steps */
+    /* the FIFO SPI (RM0440 42, an SR with FRLVL): 32-bit transmit and
+     * receive FIFOs of frames, each one byte (DS <= 8) or two */
+    int fifo;
+    u16 txq[4], rxq[4];
+    int txn, rxn;
+    int gap;            /* NSSP: half bits of NSS high left before the next frame */
+    int crc_part;       /* a 16-bit CRC after 8-bit frames: its second frame is next */
+    u32 crc_word, crc_in; /* the CRC going out, and coming in, in two frames */
+    int ldma_tx, ldma_rx; /* LDMA: the DMA's last access carries one frame */
 };
 
 static u32 reg(const struct esk_rf_reg *r) { return r ? (u32)r->value : 0; }
@@ -136,6 +152,7 @@ static int active(const struct spi *k) { return enabled(k) || k->busy; }
 static int ti(const struct spi *k) { return k->has_ti && (reg(k->cr2) & CR2_FRF); }
 static int cpol(const struct spi *k) { return ti(k) ? 0 : (reg(k->cr1) & CR1_CPOL) != 0; }
 static int cpha(const struct spi *k) { return ti(k) ? 1 : (reg(k->cr1) & CR1_CPHA) != 0; }
+static int nssp(const struct spi *k);
 
 /* the data go out, and come in */
 static int sending(const struct spi *k)
@@ -220,7 +237,7 @@ static int drive(const struct spi *k, int fn)
         if (fn == P_MOSI)
             return sending(k) ? k->mosi : -1;
         if (fn == P_NSS) {
-            if (ti(k))
+            if (ti(k) || nssp(k))
                 return k->nss_out;
             return (c2 & CR2_SSOE) && !(c1 & CR1_SSM) ? 0 : -1;
         }
@@ -254,9 +271,12 @@ static void pins(struct spi *k)
 
 /* the DMA requests and the interrupt as the flags are now: a request the
  * DMA serves at once changes them (it writes DR, it reads it) */
+static void levels(struct spi *k);
+
 static void update(struct spi *k)
 {
     u32 sr, c2 = reg(k->cr2);
+    levels(k);
     esk_stm32_dma_request(k->s, k->sig_tx, enabled(k) && (c2 & CR2_TXDMAEN) && (reg(k->sr) & SR_TXE));
     esk_stm32_dma_request(k->s, k->sig_rx, enabled(k) && (c2 & CR2_RXDMAEN) && (reg(k->sr) & SR_RXNE));
     sr = reg(k->sr);
@@ -272,14 +292,71 @@ static void sr_set(struct spi *k, u32 set, u32 clear)
 
 /* ---- CRC -------------------------------------------------------------------------- */
 
-static int width(const struct spi *k) { return (reg(k->cr1) & CR1_DFF) ? 16 : 8; }
+static int width(const struct spi *k)
+{
+    if (k->fifo) {
+        u32 ds = reg(k->cr2) >> 8 & 15u;
+        return ds < 3 ? 8 : (int)ds + 1; /* DS: 4 to 16 bits */
+    }
+    return (reg(k->cr1) & CR1_DFF) ? 16 : 8;
+}
+
+/* the CRC's length: the FIFO SPI's CRCL, else the frame's */
+static int crc_len(const struct spi *k) { return k->fifo ? ((reg(k->cr1) & CR1_CRCL) ? 16 : 8) : width(k); }
+
+/* ---- the FIFOs (RM0440 42.5.9) ------------------------------------------------------ */
+
+/* a frame takes one byte of a 32-bit FIFO (DS <= 8) or two */
+static int frame_bytes(const struct spi *k) { return width(k) > 8 ? 2 : 1; }
+static u32 frame_mask(const struct spi *k) { return (1u << width(k)) - 1u; }
+
+/* TXE while the transmit FIFO is at most half full; RXNE once the receive
+ * FIFO holds FRXTH's quarter (8 bits) or half (16 bits), a quarter for the
+ * DMA's last access with LDMA_RX; FTLVL and FRLVL their levels (3/4 and
+ * full both read full) */
+static void levels(struct spi *k)
+{
+    int tb, rb, thr;
+    u32 sr;
+    if (!k->fifo)
+        return;
+    tb = k->txn * frame_bytes(k);
+    rb = k->rxn * frame_bytes(k);
+    thr = (reg(k->cr2) & CR2_FRXTH) || k->ldma_rx ? 1 : 2;
+    sr = reg(k->sr) & ~(SR_FRLVL | SR_FTLVL | SR_TXE | SR_RXNE);
+    if (tb <= 2)
+        sr |= SR_TXE;
+    if (rb >= thr)
+        sr |= SR_RXNE;
+    sr |= (u32)(rb > 3 ? 3 : rb) << 9 | (u32)(tb > 3 ? 3 : tb) << 11;
+    esk_rf_hw(k->sr, sr);
+}
+
+static void tx_push(struct spi *k, u32 v)
+{
+    if ((k->txn + 1) * frame_bytes(k) <= 4)
+        k->txq[k->txn++] = (u16)(v & frame_mask(k));
+}
+
+static u32 rx_pop(struct spi *k)
+{
+    u32 v;
+    if (!k->rxn)
+        return 0;
+    v = k->rxq[0];
+    memmove(k->rxq, k->rxq + 1, (size_t)(--k->rxn) * sizeof k->rxq[0]);
+    return v;
+}
+
+/* a frame waits to go out */
+static int tx_ready(const struct spi *k) { return k->fifo ? k->txn > 0 : k->tx_full; }
 
 /* the frame's bit i (0 first on the line) of a `bits`-bit word */
 static int line_pos(const struct spi *k, int i) { return (reg(k->cr1) & CR1_LSBFIRST) ? i : k->bits - 1 - i; }
 
 static u32 crc_step(const struct spi *k, u32 crc, u32 word)
 {
-    int w = width(k), i;
+    int w = crc_len(k), i;
     u32 mask = w == 16 ? 0xffffu : 0xffu, poly = reg(k->crcpr) & mask;
     for (i = 0; i < k->bits; i++) {
         u32 b = word >> line_pos(k, i) & 1u, fb = (crc >> (w - 1) & 1u) ^ b;
@@ -292,7 +369,16 @@ static u32 crc_step(const struct spi *k, u32 crc, u32 word)
 
 static int crc_due(const struct spi *k)
 {
-    return (reg(k->cr1) & CR1_CRCEN) && ((reg(k->cr1) & CR1_CRCNEXT) || k->crc_tx_end || k->crc_rx_end);
+    return k->crc_part ||
+           ((reg(k->cr1) & CR1_CRCEN) && ((reg(k->cr1) & CR1_CRCNEXT) || k->crc_tx_end || k->crc_rx_end));
+}
+
+/* a 16-bit CRC after 8-bit frames goes out as two frames, its first byte
+ * on the line first */
+static u32 crc_piece(const struct spi *k, int second)
+{
+    int lsb = (reg(k->cr1) & CR1_LSBFIRST) != 0;
+    return (second ? !lsb : lsb) ? (k->crc_word & 0xffu) : (k->crc_word >> 8 & 0xffu);
 }
 
 /* ---- frames ------------------------------------------------------------------------ */
@@ -305,13 +391,30 @@ static void load(struct spi *k)
     k->crc_frame = 0;
     k->bits = width(k);
     k->fresh = 1;
-    if (k->tx_full && sending(k)) {
-        k->out = k->tx_buf;
-        k->tx_full = 0;
-        sr_set(k, SR_TXE, 0);
+    if (k->crc_part) {
+        k->out = crc_piece(k, 1);
+        k->crc_part = 0;
+        k->crc_frame = 2;
+    } else if (tx_ready(k) && sending(k)) {
+        if (k->fifo) {
+            k->out = k->txq[0];
+            memmove(k->txq, k->txq + 1, (size_t)(--k->txn) * sizeof k->txq[0]);
+            levels(k);
+        } else {
+            k->out = k->tx_buf;
+            k->tx_full = 0;
+            sr_set(k, SR_TXE, 0);
+        }
     } else if (crc_due(k)) {
-        k->out = reg(k->txcrcr);
-        k->crc_frame = 1;
+        k->crc_word = reg(k->txcrcr);
+        if (crc_len(k) > k->bits) {
+            k->out = crc_piece(k, 0); /* the second follows */
+            k->crc_part = 1;
+            k->crc_frame = 1;
+        } else {
+            k->out = k->crc_word;
+            k->crc_frame = 2;
+        }
         k->crc_tx_end = k->crc_rx_end = 0;
         esk_rf_hw(k->cr1, k->cr1->value & ~(u64)CR1_CRCNEXT);
     } else {
@@ -333,9 +436,14 @@ static void in_bit(struct spi *k, int i, int v)
 /* the received frame to DR, the CRCs */
 static void received(struct spi *k)
 {
-    u32 mask = k->bits == 16 ? 0xffffu : 0xffu;
-    if (k->crc_frame) {
-        if (receiving(k) && (k->in & mask) != (reg(k->rxcrcr) & mask))
+    u32 mask = crc_len(k) == 16 ? 0xffffu : 0xffu;
+    if (k->crc_frame == 1) {
+        k->crc_in = k->in & 0xffu; /* the CRC's first frame */
+    } else if (k->crc_frame) {
+        u32 got = k->in;
+        if (crc_len(k) > k->bits)
+            got = (reg(k->cr1) & CR1_LSBFIRST) ? (k->in & 0xffu) << 8 | k->crc_in : k->crc_in << 8 | (k->in & 0xffu);
+        if (receiving(k) && (got & mask) != (reg(k->rxcrcr) & mask))
             sr_set(k, SR_CRCERR, 0);
     } else if (reg(k->cr1) & CR1_CRCEN) {
         if (sending(k))
@@ -346,6 +454,15 @@ static void received(struct spi *k)
     k->crc_frame = 0;
     if (!receiving(k))
         return;
+    if (k->fifo) {
+        /* a full receive FIFO: OVR, the frame lost */
+        if ((k->rxn + 1) * frame_bytes(k) > 4)
+            sr_set(k, SR_OVR, 0);
+        else
+            k->rxq[k->rxn++] = (u16)(k->in & frame_mask(k));
+        levels(k);
+        return;
+    }
     if (k->sr->value & SR_RXNE) {
         sr_set(k, SR_OVR, 0);
     } else {
@@ -376,11 +493,21 @@ static void wait(struct spi *k)
 /* a frame follows the one under way */
 static int next_waiting(const struct spi *k)
 {
-    return enabled(k) && master(k) && ((k->tx_full && sending(k)) || crc_due(k) || receive_only(k));
+    return enabled(k) && master(k) && ((tx_ready(k) && sending(k)) || crc_due(k) || receive_only(k));
+}
+
+/* NSS pulse mode: a Motorola master with CPHA 0 driving NSS (RM0440 42.5.12) */
+static int nssp(const struct spi *k)
+{
+    u32 c1 = reg(k->cr1), c2 = reg(k->cr2);
+    return k->fifo && master(k) && (c2 & CR2_NSSP) && (c2 & CR2_SSOE) && !(c1 & CR1_SSM) && !ti(k) &&
+           !(c1 & CR1_CPHA);
 }
 
 static void start(struct spi *k)
 {
+    if (nssp(k))
+        k->nss_out = 0;
     load(k);
     k->leading = 1;
     k->busy = 1;
@@ -407,9 +534,19 @@ static void frame_end(struct spi *k)
     received(k);
     update(k); /* a DMA reading the last item says the CRC is next */
     if (next_waiting(k)) {
+        if (nssp(k)) {
+            /* NSS high for one clock between the frames, SCK idle */
+            k->nss_out = 1;
+            k->gap = 2;
+            pins(k);
+            wait(k);
+            return;
+        }
         start(k);
         return;
     }
+    if (nssp(k))
+        k->nss_out = 1; /* and high after the last one */
     stop(k);
     pins(k);
     update(k);
@@ -418,6 +555,14 @@ static void frame_end(struct spi *k)
 static void edge(struct spi *k)
 {
     int ph = cpha(k), pol = cpol(k);
+    if (k->gap) {
+        if (--k->gap) {
+            wait(k);
+            return;
+        }
+        start(k);
+        return;
+    }
     if (k->leading) {
         k->sck = !pol;
         if (k->bit < 0) {
@@ -478,6 +623,8 @@ static void mode_fault(struct spi *k)
     esk_rf_hw(k->cr1, k->cr1->value & ~(u64)(CR1_SPE | CR1_MSTR));
     k->busy = 0;
     k->tx_full = 0;
+    k->txn = 0;
+    k->gap = k->crc_part = 0;
     sr_set(k, SR_TXE, SR_BSY);
     esk_rf_clock(k->p, &k->running, 0);
     pins(k);
@@ -597,6 +744,19 @@ static u32 spi_read(void *ctx, u32 off, int n)
 {
     struct spi *k = (struct spi *)ctx;
     u32 v = esk_rf_read(k->p, off, n);
+    if (k->fifo && off == esk_rf_off(k->dr)) {
+        /* the oldest frame, or two packed in a 16-bit access (DS <= 8) */
+        if (k->s->bus.debug)
+            return k->rxn ? k->rxq[0] : 0;
+        k->ovr_dr = (k->sr->value & SR_OVR) != 0;
+        v = rx_pop(k);
+        if (n >= 2 && frame_bytes(k) == 1 && !k->ldma_rx)
+            v |= rx_pop(k) << 8;
+        k->ldma_rx = 0;
+        esk_rf_hw(k->dr, v);
+        update(k);
+        return v;
+    }
     if (k->s->bus.debug)
         return v;
     if (off == esk_rf_off(k->dr)) {
@@ -618,9 +778,19 @@ static void spi_write(void *ctx, u32 off, int n, u32 v)
 {
     struct spi *k = (struct spi *)ctx;
     if (off == esk_rf_off(k->dr)) {
-        k->tx_buf = v & ((reg(k->cr1) & CR1_DFF) ? 0xffffu : 0xffu);
-        k->tx_full = 1;
-        sr_set(k, 0, SR_TXE);
+        if (k->fifo) {
+            /* one frame, or two packed in a 16-bit access (DS <= 8), but
+             * the DMA's last with LDMA_TX */
+            tx_push(k, v);
+            if (n >= 2 && frame_bytes(k) == 1 && !k->ldma_tx)
+                tx_push(k, v >> 8);
+            k->ldma_tx = 0;
+            levels(k);
+        } else {
+            k->tx_buf = v & ((reg(k->cr1) & CR1_DFF) ? 0xffffu : 0xffu);
+            k->tx_full = 1;
+            sr_set(k, 0, SR_TXE);
+        }
         if (enabled(k) && master(k) && !k->busy)
             start(k);
         else if (enabled(k) && !master(k) && !k->busy && !k->fresh)
@@ -675,6 +845,8 @@ static void spi_write(void *ctx, u32 off, int n, u32 v)
     }
     esk_rf_write(k->p, off, n, v);
     if (off == esk_rf_off(k->cr2)) {
+        if (k->fifo && (reg(k->cr2) >> 8 & 15u) < 3)
+            esk_rf_hw(k->cr2, (k->cr2->value & ~(u64)0xF00u) | 0x700u); /* not used: 8 bits */
         if (enabled(k) && master(k) && !k->busy)
             k->sck = cpol(k);
         mode_fault(k);
@@ -696,7 +868,11 @@ static void spi_reset(void *ctx)
     k->nss_out = k->synced = k->armed = 0;
     k->ovr_dr = k->modf_sr = 0;
     k->left = 0;
+    k->txn = k->rxn = k->gap = k->crc_part = 0;
+    k->ldma_tx = k->ldma_rx = 0;
+    k->crc_word = k->crc_in = 0;
     esk_rf_hw(k->sr, k->sr->value | SR_TXE);
+    levels(k);
 }
 
 const struct esk_dev_ops esk_stm32_spi_ops = {
@@ -759,6 +935,29 @@ void esk_stm32_spi_signal_input(struct esk_mach *s, const char *sig, int level)
                 k->miso = out_bit(k, k->bit); /* selected: the first bit out */
             pins(k);
         }
+    }
+}
+
+/* the DMA's items left for an SPI's request: with one left, LDMA_TX and
+ * LDMA_RX make its last access carry one frame */
+void esk_stm32_spi_dma_left(struct esk_mach *s, const char *sig, u32 left)
+{
+    char name[8];
+    const char *us = strchr(sig, '_');
+    size_t l = us ? (size_t)(us - sig) : 0;
+    struct spi *k;
+    if (left != 1 || !us || l >= sizeof name || strncmp(sig, "SPI", 3))
+        return;
+    memcpy(name, sig, l);
+    name[l] = 0;
+    k = spi_named(s, name);
+    if (!k || !k->fifo || frame_bytes(k) != 1)
+        return;
+    if (!strcmp(us + 1, "TX") && (reg(k->cr2) & CR2_LDMA_TX))
+        k->ldma_tx = 1;
+    else if (!strcmp(us + 1, "RX") && (reg(k->cr2) & CR2_LDMA_RX)) {
+        k->ldma_rx = 1;
+        update(k);
     }
 }
 
@@ -841,6 +1040,7 @@ void *esk_stm32_spi_create(struct esk_mach *s, struct esk_rf_periph *p)
     k.apb = p->gate_name && strstr(p->gate_name, "APB2") ? 2 : 1;
     k.irq = esk_rf_irq(p, "SPI");
     k.has_ti = esk_rf_mask(k.cr2, "FRF") != 0;
+    k.fifo = esk_rf_mask(k.sr, "FRLVL") != 0;
     k.in_sck = k.in_nss = -1;
     esk_rf_set_reset(k.sr, k.sr->reset | SR_TXE);
     snprintf(k.sig_tx, sizeof k.sig_tx, "%s_TX", p->name);

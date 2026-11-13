@@ -76,6 +76,11 @@ void *esk_stm32f4_dbgmcu_create(struct esk_mach *s, struct esk_rf_periph *p)
     d->cr = esk_rf_reg(p, "DBGMCU_CR");
     d->apb1 = esk_rf_reg(p, "DBGMCU_APB1_FZ");
     d->apb2 = esk_rf_reg(p, "DBGMCU_APB2_FZ");
+    if (!d->cr) { /* a G4's names (RM0440 47.6): CR, APB1L_FZ, APB2_FZ */
+        d->cr = esk_rf_reg(p, "CR");
+        d->apb1 = esk_rf_reg(p, "APB1L_FZ");
+        d->apb2 = esk_rf_reg(p, "APB2_FZ");
+    }
     if (!d->cr)
         return 0;
     return d;

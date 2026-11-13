@@ -1,0 +1,93 @@
+{
+  "schema_version": 1,
+  "kind": "component_test",
+  "name": "ld2",
+  "description": "MB1367's LD2 driver: 3.3 V on the base through R29 (47 kOhm) against R28 (100 kOhm), LD2 (green) and R25 (510 ohm) from 3.3 V: the transistor saturates and LD2 lights.",
+  "policy": "electrical",
+  "until": "2ms",
+  "circuit": {
+    "components": [
+      {
+        "id": "G0",
+        "component": "emblink/gnd"
+      },
+      {
+        "id": "DUT",
+        "component": "emblink/bsr14"
+      },
+      {
+        "id": "V3",
+        "component": "emblink/vsource",
+        "params": {
+          "kind": "dc",
+          "dc": 3.3
+        }
+      },
+      {
+        "id": "R29",
+        "component": "emblink/resistor",
+        "params": {
+          "resistance": 47000
+        }
+      },
+      {
+        "id": "R28",
+        "component": "emblink/resistor",
+        "params": {
+          "resistance": 100000
+        }
+      },
+      {
+        "id": "R25",
+        "component": "emblink/resistor",
+        "params": {
+          "resistance": 510
+        }
+      },
+      {
+        "id": "LD2",
+        "component": "emblink/led",
+        "params": {
+          "color": "green"
+        }
+      }
+    ],
+    "nets": {
+      "V3N": [
+        "V3.+",
+        "R29.1",
+        "R25.1"
+      ],
+      "B": [
+        "R29.2",
+        "R28.1",
+        "DUT.B"
+      ],
+      "A": [
+        "R25.2",
+        "LD2.A"
+      ],
+      "C": [
+        "LD2.K",
+        "DUT.C"
+      ],
+      "GND": [
+        "V3.-",
+        "R28.2",
+        "DUT.E",
+        "G0.GND"
+      ]
+    }
+  },
+  "inputs": [],
+  "expect": {
+    "net:C": {
+      "at": "1ms",
+      "max_v": 0.1
+    },
+    "output:LD2.luminance": {
+      "at": "1ms",
+      "min": 0.05
+    }
+  }
+}

@@ -1,0 +1,281 @@
+{
+ "schema_version": 1,
+ "kind": "package",
+ "id": "st/stm32g474re/lqfp64",
+ "name": "LQFP64",
+ "description": "LQFP64 package of the STM32G474R(B-C-E)Tx, its pinout from ST's open pin data; pin 7 is NRST (PG10-NRST) and PB8 doubles as BOOT0.",
+ "pins": [
+  {
+   "number": 1,
+   "signal": "VBAT"
+  },
+  {
+   "number": 2,
+   "signal": "PC13"
+  },
+  {
+   "number": 3,
+   "signal": "PC14",
+   "doc": "PC14-OSC32_IN"
+  },
+  {
+   "number": 4,
+   "signal": "PC15",
+   "doc": "PC15-OSC32_OUT"
+  },
+  {
+   "number": 5,
+   "signal": "PF0",
+   "doc": "PF0-OSC_IN"
+  },
+  {
+   "number": 6,
+   "signal": "PF1",
+   "doc": "PF1-OSC_OUT"
+  },
+  {
+   "number": 7,
+   "signal": "NRST",
+   "doc": "PG10-NRST: the reset pin while the option bytes' NRST_MODE is 11 (bidirectional, the factory setting); PG10 is not modelled as a GPIO"
+  },
+  {
+   "number": 8,
+   "signal": "PC0"
+  },
+  {
+   "number": 9,
+   "signal": "PC1"
+  },
+  {
+   "number": 10,
+   "signal": "PC2"
+  },
+  {
+   "number": 11,
+   "signal": "PC3"
+  },
+  {
+   "number": 12,
+   "signal": "PA0"
+  },
+  {
+   "number": 13,
+   "signal": "PA1"
+  },
+  {
+   "number": 14,
+   "signal": "PA2"
+  },
+  {
+   "number": 15,
+   "signal": "VSS"
+  },
+  {
+   "number": 16,
+   "signal": "VDD"
+  },
+  {
+   "number": 17,
+   "signal": "PA3"
+  },
+  {
+   "number": 18,
+   "signal": "PA4"
+  },
+  {
+   "number": 19,
+   "signal": "PA5"
+  },
+  {
+   "number": 20,
+   "signal": "PA6"
+  },
+  {
+   "number": 21,
+   "signal": "PA7"
+  },
+  {
+   "number": 22,
+   "signal": "PC4"
+  },
+  {
+   "number": 23,
+   "signal": "PC5"
+  },
+  {
+   "number": 24,
+   "signal": "PB0"
+  },
+  {
+   "number": 25,
+   "signal": "PB1"
+  },
+  {
+   "number": 26,
+   "signal": "PB2"
+  },
+  {
+   "number": 27,
+   "signal": "VSSA"
+  },
+  {
+   "number": 28,
+   "signal": "VREFP",
+   "doc": "VREF+"
+  },
+  {
+   "number": 29,
+   "signal": "VDDA"
+  },
+  {
+   "number": 30,
+   "signal": "PB10"
+  },
+  {
+   "number": 31,
+   "signal": "VSS"
+  },
+  {
+   "number": 32,
+   "signal": "VDD"
+  },
+  {
+   "number": 33,
+   "signal": "PB11"
+  },
+  {
+   "number": 34,
+   "signal": "PB12"
+  },
+  {
+   "number": 35,
+   "signal": "PB13"
+  },
+  {
+   "number": 36,
+   "signal": "PB14"
+  },
+  {
+   "number": 37,
+   "signal": "PB15"
+  },
+  {
+   "number": 38,
+   "signal": "PC6"
+  },
+  {
+   "number": 39,
+   "signal": "PC7"
+  },
+  {
+   "number": 40,
+   "signal": "PC8"
+  },
+  {
+   "number": 41,
+   "signal": "PC9"
+  },
+  {
+   "number": 42,
+   "signal": "PA8"
+  },
+  {
+   "number": 43,
+   "signal": "PA9"
+  },
+  {
+   "number": 44,
+   "signal": "PA10"
+  },
+  {
+   "number": 45,
+   "signal": "PA11"
+  },
+  {
+   "number": 46,
+   "signal": "PA12"
+  },
+  {
+   "number": 47,
+   "signal": "VSS"
+  },
+  {
+   "number": 48,
+   "signal": "VDD"
+  },
+  {
+   "number": 49,
+   "signal": "PA13"
+  },
+  {
+   "number": 50,
+   "signal": "PA14"
+  },
+  {
+   "number": 51,
+   "signal": "PA15"
+  },
+  {
+   "number": 52,
+   "signal": "PC10"
+  },
+  {
+   "number": 53,
+   "signal": "PC11"
+  },
+  {
+   "number": 54,
+   "signal": "PC12"
+  },
+  {
+   "number": 55,
+   "signal": "PD2"
+  },
+  {
+   "number": 56,
+   "signal": "PB3"
+  },
+  {
+   "number": 57,
+   "signal": "PB4"
+  },
+  {
+   "number": 58,
+   "signal": "PB5"
+  },
+  {
+   "number": 59,
+   "signal": "PB6"
+  },
+  {
+   "number": 60,
+   "signal": "PB7"
+  },
+  {
+   "number": 61,
+   "signal": "PB8",
+   "doc": "PB8-BOOT0: sampled as BOOT0 at reset while the option bytes' nSWBOOT0 is 1 (the factory setting)"
+  },
+  {
+   "number": 62,
+   "signal": "PB9"
+  },
+  {
+   "number": 63,
+   "signal": "VSS"
+  },
+  {
+   "number": 64,
+   "signal": "VDD"
+  }
+ ],
+ "provenance": {
+  "author": "EmbSIM",
+  "license": "Apache-2.0",
+  "sources": [
+   {
+    "title": "STMicroelectronics STM32_open_pin_data 7d1f151, STM32G474R(B-C-E)Tx.xml (BSD-3-Clause), converted by tools/importers/stm32pins.py; pin 7 named NRST and VREF+ VREFP by hand"
+   }
+  ]
+ }
+}

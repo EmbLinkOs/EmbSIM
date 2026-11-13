@@ -265,7 +265,7 @@ static void acquire(esk_adev *d, es_time_t t, int forced)
             }
             y = hist_v(s, k, ti - (es_time_t)(settle * 1e12));
             for (tt = -settle + si; tt <= 1e-15; tt += si)
-                y += alpha * (hist_v(s, k, ti + (es_time_t)(tt * 1e12)) - y);
+                y += alpha * (hist_v(s, k, ti - (es_time_t)(-tt * 1e12)) - y); /* tt <= 0: not a negative double cast to unsigned */
             s->acq[k][i] = (float)quantize(y, scale, offset, &code);
         }
     }

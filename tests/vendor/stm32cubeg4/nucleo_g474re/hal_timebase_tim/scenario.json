@@ -1,0 +1,21 @@
+{
+  "schema_version": 1,
+  "kind": "scenario",
+  "name": "hal_timebase_tim",
+  "until": "3.5s",
+  "description": "HAL_TimeBase_TIM: the HAL's time base on TIM6's update interrupt instead of SysTick, LD2 toggled every HAL_Delay(1000).",
+  "inputs": [],
+  "assertions": [
+    {
+      "id": "blink",
+      "between": [
+        "500ms",
+        "3.4s"
+      ],
+      "probe": "led",
+      "expect": {
+        "edges": 3
+      }
+    }
+  ]
+}

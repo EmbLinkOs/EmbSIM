@@ -1,0 +1,68 @@
+{
+  "schema_version": 1,
+  "kind": "scenario",
+  "name": "gpio_exti",
+  "until": "1.2s",
+  "description": "GPIO_EXTI: EXTI15_10 on PC13's falling edge toggles LD2 in its callback, once per press; on the NUCLEO-G474RE that edge is B1's release (B1 joins PC13 to VDD: active high, where the readme expects the press), so LD2 changes as B1 is let go.",
+  "inputs": [
+    {
+      "at": "200ms",
+      "target": "B1.B1",
+      "input": "pressed",
+      "value": true
+    },
+    {
+      "at": "300ms",
+      "target": "B1.B1",
+      "input": "pressed",
+      "value": false
+    },
+    {
+      "at": "700ms",
+      "target": "B1.B1",
+      "input": "pressed",
+      "value": true
+    },
+    {
+      "at": "800ms",
+      "target": "B1.B1",
+      "input": "pressed",
+      "value": false
+    }
+  ],
+  "assertions": [
+    {
+      "id": "dark",
+      "between": [
+        "100ms",
+        "290ms"
+      ],
+      "probe": "led",
+      "expect": {
+        "logic": "0"
+      }
+    },
+    {
+      "id": "first",
+      "between": [
+        "350ms",
+        "790ms"
+      ],
+      "probe": "led",
+      "expect": {
+        "logic": "1"
+      }
+    },
+    {
+      "id": "second",
+      "between": [
+        "850ms",
+        "1.15s"
+      ],
+      "probe": "led",
+      "expect": {
+        "logic": "0"
+      }
+    }
+  ]
+}

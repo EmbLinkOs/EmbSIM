@@ -1,0 +1,21 @@
+{
+  "schema_version": 1,
+  "kind": "scenario",
+  "name": "cortexm_modeprivilege",
+  "until": "500ms",
+  "description": "CORTEXM_ModePrivilege: thread mode switched to unprivileged and to the process stack through CONTROL, back to privileged by an SVC; LD2 on when the sequence completes.",
+  "inputs": [],
+  "assertions": [
+    {
+      "id": "pass",
+      "between": [
+        "100ms",
+        "490ms"
+      ],
+      "probe": "led",
+      "expect": {
+        "logic": "1"
+      }
+    }
+  ]
+}

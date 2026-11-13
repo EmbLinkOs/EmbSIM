@@ -3,6 +3,7 @@
 /* mcu.c -- the MCU runtime (mcu.h says what it does). */
 #include <math.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 
 #include "mcu/analysis.h"
@@ -141,6 +142,7 @@ typedef struct mcu_state {
     mcu_uart uart[MCU_UARTS];
     int nuart;
     char console[16];
+    int console_pin[2]; /* the bridge's TX and RX pins (port * 32 + bit), or -1 */
     esk_an *an;      /* the analyses watching the firmware, or NULL */
     unsigned an_what;
     esk_air_node air; /* its radio on the session's air, when it has one */
@@ -505,7 +507,8 @@ static void quantum_cb(void *ctx, void *arg, es_time_t now)
         }
         if (st->m.strap_pin && st->m.strap_low && !level_of(esk_comp_pin(st->c, st->m.strap_pin), 1))
             st->m.strap_low(&st->m);
-        if (level_of(st->boot0, 0)) {
+        if (st->m.boot_system ? st->m.boot_system(&st->m, st->m.boot_pin ? level_of(esk_comp_pin(st->c, st->m.boot_pin), 0) : 0)
+                              : level_of(st->boot0, 0)) {
             st->boot_fail = 1;
             raise(st, ES_SEV_WARNING, "mcu.boot_mode",
                   "BOOT0 is high: the part boots its system memory (the vendor's bootloader), which is "
@@ -819,6 +822,23 @@ static mcu_uart *uart_named(mcu_state *st, const char *unit, int add)
         return NULL;
     st->uart[st->nuart].rx = esk_mach_rx_find(&st->m, unit);
     return &st->uart[st->nuart++];
+}
+
+/* the console's unit: the UART whose TX (tx 1) or RX the firmware has
+ * muxed onto the bridge's pin, as the bridge hears the pin whichever
+ * peripheral drives it (an ST-LINK's VCP on PA2/PA3 is LPUART1's or
+ * USART2's, as the firmware chooses); the configured one otherwise */
+static const char *console_unit(mcu_state *st, int tx)
+{
+    int want = st->console_pin[tx ? 0 : 1], k, port, bit;
+    if (want < 0 || !st->m.uart_pin)
+        return st->console;
+    if (st->m.uart_pin(&st->m, st->console, tx, &port, &bit) == 0 && port * 32 + bit == want)
+        return st->console;
+    for (k = 0; k < st->m.nrx; k++)
+        if (st->m.uart_pin(&st->m, st->m.rx[k].unit, tx, &port, &bit) == 0 && port * 32 + bit == want)
+            return st->m.rx[k].unit;
+    return st->console;
 }
 
 /* the console's bytes, NULs too (a boot loader's binary replies reach
@@ -1685,7 +1705,7 @@ static es_status mcu_on_set(esk_comp *c, const char *input, const esk_json *valu
         return ES_OK;
     }
     if (!strcmp(input, "serial") || !strcmp(input, "tx_text"))
-        return serial_input(st, st->console, value);
+        return serial_input(st, console_unit(st, 0), value);
     if (esk_str_has_prefix(input, "serial:"))
         return serial_input(st, input + 7, value);
     return ES_EINVAL;
@@ -1724,12 +1744,12 @@ static void mcu_observe(esk_comp *c, esk_json *out)
         snprintf(key, sizeof key, "serial.%s", st->uart[i].unit);
         esk_json_set_string(a, out, key, t ? t : "");
         /* the console under the virtual terminal's name, for serial probes */
-        if (!strcmp(st->uart[i].unit, st->console))
+        if (!strcmp(st->uart[i].unit, console_unit(st, 1)))
             esk_json_set_string(a, out, "rx_text", t ? t : "");
         if (t)
             esk_free(a, t, n + 1);
     }
-    if (!uart_named(st, st->console, 0))
+    if (!uart_named(st, console_unit(st, 1), 0))
         esk_json_set_string(a, out, "rx_text", "");
 }
 
@@ -1933,7 +1953,7 @@ esk_an *esk_mcu_analysis(const esk_comp *c)
 const char *esk_mcu_console(esk_comp *c, size_t *len, u64 *total)
 {
     mcu_state *st = esk_mcu_is(c) ? state_of(c) : NULL;
-    mcu_uart *u = st && st->attached ? uart_named(st, st->console, 0) : NULL;
+    mcu_uart *u = st && st->attached ? uart_named(st, console_unit(st, 1), 0) : NULL;
     *len = u ? u->text_len : 0;
     *total = u ? u->text_total : 0;
     return u ? u->text : "";
@@ -1985,14 +2005,14 @@ esk_json *esk_mcu_serial_json(esk_comp *c, esk_alloc *a)
         return o;
     for (i = 0; i < st->nuart; i++)
         esk_json_set_string(a, o, st->uart[i].unit, st->uart[i].text);
-    esk_json_set_string(a, o, "console", st->console);
+    esk_json_set_string(a, o, "console", console_unit(st, 1));
     return o;
 }
 
 uint32_t esk_mcu_console_baud_of(esk_comp *c, uint64_t index, uint64_t *until)
 {
     mcu_state *st = esk_mcu_is(c) ? state_of(c) : NULL;
-    mcu_uart *u = st && st->attached ? uart_named(st, st->console, 0) : NULL;
+    mcu_uart *u = st && st->attached ? uart_named(st, console_unit(st, 1), 0) : NULL;
     int i;
     *until = UINT64_MAX;
     for (i = u ? u->nrate - 1 : -1; i >= 0; i--)
@@ -2009,7 +2029,7 @@ uint32_t esk_mcu_console_baud_of(esk_comp *c, uint64_t index, uint64_t *until)
 uint32_t esk_mcu_console_baud(esk_comp *c)
 {
     mcu_state *st = esk_mcu_is(c) ? state_of(c) : NULL;
-    mcu_uart *u = st && st->attached ? uart_named(st, st->console, 0) : NULL;
+    mcu_uart *u = st && st->attached ? uart_named(st, console_unit(st, 1), 0) : NULL;
     u64 hz;
     u32 bc;
     if (!u || !u->rx || !u->rx->bit_cycles)
@@ -2299,6 +2319,17 @@ es_status esk_mcu_attach(esk_comp *c, const esk_mcu_setup *su, char *why, size_t
     speed_table(esk_json_get(esk_json_get(esk_json_get(su->mcu, "io"), "electrical"), "slew_v_per_us"),
                 st->slew);
     snprintf(st->console, sizeof st->console, "%s", su->console ? su->console : "USART1");
+    {
+        const char *pin[2];
+        int k;
+        pin[0] = su->console_tx;
+        pin[1] = su->console_rx;
+        for (k = 0; k < 2; k++)
+            st->console_pin[k] = pin[k] && pin[k][0] == 'P' && pin[k][1] >= 'A' && pin[k][1] <= 'K' &&
+                                         pin[k][2] >= '0' && pin[k][2] <= '9'
+                                     ? (pin[k][1] - 'A') * 32 + (int)strtol(pin[k] + 2, NULL, 10)
+                                     : -1;
+    }
     for (port = 0; port < MCU_PORTS; port++)
         for (bit = 0; bit < 16; bit++) {
             snprintf(name, sizeof name, "P%c%d", 'A' + port, bit);

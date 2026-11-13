@@ -18,7 +18,8 @@
  *   dma_f4.c   the F4's DMA controllers: streams, channels, FIFO, double buffer
  *   flash_f1.c the F1's flash interface (FPEC): program, erase, option bytes
  *   storage.c  registers that only keep what is written (PWR's CR)
- *   crc.c      the CRC calculation unit: CRC-32 of the words written to DR */
+ *   crc.c      the CRC calculation unit: CRC-32 of the words written to DR
+ *   rcc_g4.c   the G4's reset and clock control: HSI16, HSE, PLL, kernel clocks */
 #ifndef ESK_MCU_STM32_H
 #define ESK_MCU_STM32_H
 
@@ -55,6 +56,56 @@ u32 esk_stm32f1_pclk(struct esk_mach *m, int apb);
 u32 esk_stm32_hclk(struct esk_mach *m);
 u32 esk_stm32_pclk(struct esk_mach *m, int apb);
 u32 esk_stm32_timclk(struct esk_mach *m, int apb);
+/* the G4's RCC (rcc_g4.c): whether the machine's clock model is it; its
+ * HCLK, PCLK1 or PCLK2, the timers' clock on an APB, SYSCLK; whether an
+ * oscillator is ready ('H' HSI16, 'E' HSE, 'I' LSI, 'L' LSE, '4' HSI48);
+ * the PLL's P, Q or R output (0 off or unlocked); a peripheral's kernel
+ * clock as CCIPR selects it ("USART1", "LPUART1", "I2C2", "LPTIM1",
+ * "FDCAN1", "CLK48", "ADC12", "ADC345", "QUADSPI", "SAI1", "I2S23", "RTC");
+ * MCO's frequency; the flash or voltage settings changed (warnings
+ * again); Stop begins (HSE and the PLL off, SYSCLK on HSI16); the coming
+ * reset is the option bytes' reload (OBLRSTF); LSI forced on by the IWDG */
+int esk_stm32g4_rcc(struct esk_mach *m);
+extern const struct esk_dev_ops esk_stm32g4_rcc_ops;
+void *esk_stm32g4_rcc_create(struct esk_mach *m, struct esk_rf_periph *p);
+u32 esk_stm32g4_hclk(struct esk_mach *m);
+u32 esk_stm32g4_pclk(struct esk_mach *m, int apb);
+u32 esk_stm32g4_timclk(struct esk_mach *m, int apb);
+u32 esk_stm32g4_sysclk(struct esk_mach *m);
+int esk_stm32g4_osc_ready(struct esk_mach *m, char which);
+u32 esk_stm32g4_pll_hz(struct esk_mach *m, char which);
+u32 esk_stm32g4_kernel_hz(struct esk_mach *m, const char *periph);
+u32 esk_stm32g4_mco_hz(struct esk_mach *m);
+void esk_stm32g4_rcc_check(struct esk_mach *m);
+void esk_stm32g4_rcc_stop(struct esk_mach *m, int wake_hsi);
+void esk_stm32g4_rcc_obl(struct esk_mach *m);
+void esk_stm32g4_rcc_lsi(struct esk_mach *m);
+/* the G4's PWR (pwr_g4.c): whether the machine's PWR is it; an internal
+ * wake-up event (the RTC's, TAMP's); the wake-up pins enabled on a port;
+ * whether the part is in Standby or Shutdown (its pins let go), and the
+ * pull a pin keeps then (1 up, 2 down, 0 none); a wake-up pin's level;
+ * whether the reset under way leaves Shutdown */
+extern const struct esk_dev_ops esk_stm32g4_pwr_ops;
+void *esk_stm32g4_pwr_create(struct esk_mach *m, struct esk_rf_periph *p);
+int esk_stm32g4_pwr(struct esk_mach *m);
+void esk_stm32g4_pwr_wakeup(struct esk_mach *m);
+u32 esk_stm32g4_pwr_wkup_mask(struct esk_mach *m, int port);
+int esk_stm32g4_pwr_standby(struct esk_mach *m);
+int esk_stm32g4_pwr_standby_pull(struct esk_mach *m, int port, int pin);
+void esk_stm32g4_pwr_pin_edge(struct esk_mach *m, int port, int pin, int level);
+int esk_stm32g4_pwr_was_shutdown(struct esk_mach *m);
+/* the G4's flash interface: programming, erasing, the option bytes (flash_g4.c) */
+extern const struct esk_dev_ops esk_stm32g4_flash_ops;
+void *esk_stm32g4_flash_create(struct esk_mach *m, struct esk_rf_periph *p);
+/* a USART, UART or LPUART of the ISR/ICR/TDR/RDR layout (usart_v2.c): its
+ * alternate-function signals (USART1_TX, LPUART1_RTS, _DE, _CK) as
+ * esk_stm32_usart_signal's, nCTS's level, its TX or RX pin (CR2's SWAP
+ * exchanging them) */
+extern const struct esk_dev_ops esk_stm32_usartv2_ops;
+void *esk_stm32_usartv2_create(struct esk_mach *m, struct esk_rf_periph *p);
+int esk_stm32_usartv2_signal(struct esk_mach *m, const char *sig);
+void esk_stm32_usartv2_signal_input(struct esk_mach *m, const char *sig, int level);
+int esk_stm32_usartv2_pin(struct esk_mach *m, const char *unit, int tx, int *port, int *bit);
 /* the F4's 48 MHz clock (CK48) in Hz: 0 while its PLL is not locked */
 u32 esk_stm32f4_ck48(struct esk_mach *m);
 /* the F4's PWR: VOSRDY, ODRDY and ODSWRDY as the RCC's PLL and PWR's
@@ -75,6 +126,9 @@ u32 esk_stm32f4_pwr_wkup_mask(struct esk_mach *m, int port);
 void esk_stm32f4_pwr_pin_edge(struct esk_mach *m, int port, int pin, int level);
 void esk_stm32f4_pwr_pins_settled(struct esk_mach *m);
 int esk_stm32f4_pwr_standby(struct esk_mach *m);
+/* the pull a pin keeps in Standby (1 up, 2 down, 0 none): an F4's WKUP
+ * pin's pull-down, a G4's PWR settings */
+int esk_stm32f4_pwr_standby_pull(struct esk_mach *m, int port, int pin);
 /* the F4's GPIO ports and SYSCFG (gpio_f4.c, syscfg_f4.c) */
 extern const struct esk_dev_ops esk_stm32f4_gpio_ops, esk_stm32f4_syscfg_ops;
 void *esk_stm32f4_gpio_create(struct esk_mach *m, struct esk_rf_periph *p);
@@ -118,6 +172,17 @@ void *esk_stm32f4_dma_create(struct esk_mach *m, struct esk_rf_periph *p);
  * or falls: a stream that takes it moves the data now, else it waits for
  * one; nothing without a DMA model. `sig` must outlive the request. */
 void esk_stm32_dma_request(struct esk_mach *m, const char *sig, int level);
+/* a DMA channel's last items for request `sig` (the peripheral hears of
+ * them: an SPI's CRC follows the last, an I2C NACKs after EOT-1) */
+void esk_stm32_dma_items_left(struct esk_mach *m, const char *sig, u32 left);
+/* the G4's DMA controllers and request multiplexer (dma_g4.c): a request
+ * through DMAMUX; a trigger or synchronisation input's level (EXTI0 to
+ * EXTI15, LPTIM1_OUT) */
+extern const struct esk_dev_ops esk_stm32g4_dma_ops, esk_stm32g4_dmamux_ops;
+void *esk_stm32g4_dma_create(struct esk_mach *m, struct esk_rf_periph *p);
+void *esk_stm32g4_dmamux_create(struct esk_mach *m, struct esk_rf_periph *p);
+void esk_stm32g4_dma_request(struct esk_mach *m, const char *sig, int level);
+void esk_stm32g4_dmamux_input(struct esk_mach *m, const char *sig, int level);
 /* a USART's alternate-function signal (USART2_TX, _RTS, _CK): the level it
  * drives, or -1; nCTS's level from its pin; the pin (port, bit) of its TX
  * (tx 1) or RX, as the family maps it (the runtime's uart_pin) */
@@ -131,6 +196,7 @@ int esk_stm32_usart_pin(struct esk_mach *m, const char *unit, int tx, int *port,
 int esk_stm32_spi_signal(struct esk_mach *m, const char *sig);
 void esk_stm32_spi_signal_input(struct esk_mach *m, const char *sig, int level);
 void esk_stm32_spi_dma_end(struct esk_mach *m, const char *sig);
+void esk_stm32_spi_dma_left(struct esk_mach *m, const char *sig, u32 left);
 /* an I2C's alternate-function signal (I2C1_SCL, _SDA, _SMBA): the level it
  * drives (1 let go), or -1; a level its pin gives it; a DMA stream's items
  * left after one for its request (I2C1_RX's EOT-1, I2C1_TX's end) */
@@ -189,5 +255,8 @@ int esk_stm32f1_i2c_pin(struct esk_mach *m, int port, int bit);
 void esk_stm32f1_port_changed(struct esk_mach *m, int port);
 /* an input line's level, as GPIO's IDR has it: EXTI's edge detector */
 void esk_stm32_exti_input(struct esk_mach *m, int line, int level);
+/* a direct line's event (an STM32G4's peripheral wake-up lines): an event
+ * to the core when its EMR bit is set */
+void esk_stm32_exti_direct(struct esk_mach *m, int line);
 
 #endif

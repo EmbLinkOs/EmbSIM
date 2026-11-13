@@ -1,0 +1,21 @@
+{
+  "schema_version": 1,
+  "kind": "scenario",
+  "name": "crc_userdefinedpolynomial",
+  "until": "500ms",
+  "description": "CRC USERDEFINEDPOLYNOMIAL: an 8-bit CRC of polynomial 0x9B over the word 0x1234, 0xEF; LD2 on means each value matched, a 1 s blink an error.",
+  "inputs": [],
+  "assertions": [
+    {
+      "id": "pass",
+      "between": [
+        "50ms",
+        "490ms"
+      ],
+      "probe": "led",
+      "expect": {
+        "logic": "1"
+      }
+    }
+  ]
+}

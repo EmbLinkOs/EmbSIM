@@ -1,0 +1,192 @@
+{
+ "schema_version": 1,
+ "kind": "component",
+ "id": "emblink/bsr14",
+ "version": "1.0.0",
+ "name": "BSR14 NPN switching transistor",
+ "category": "transistors",
+ "subcategory": "bipolar_npn",
+ "description": "A BSR14 (marked U8), the 2N2222A's die (Fairchild's process 19) in SOT-23: a 40 V, 800 mA NPN for medium-power switching and amplification. The NUCLEO-G474RE's (MB1367) Q1, LD2's low-side switch, and Q2, the emitter follower of its VREF+ supply.",
+ "keywords": [
+  "bjt",
+  "npn",
+  "transistor",
+  "bsr14",
+  "2n2222a",
+  "process 19",
+  "sot-23",
+  "nucleo"
+ ],
+ "pins": [
+  {
+   "name": "B",
+   "number": 1,
+   "model": {
+    "kind": "analog"
+   },
+   "doc": "Base (SOT-23 pin 1)"
+  },
+  {
+   "name": "E",
+   "number": 2,
+   "model": {
+    "kind": "analog"
+   },
+   "doc": "Emitter (pin 2)"
+  },
+  {
+   "name": "C",
+   "number": 3,
+   "model": {
+    "kind": "analog"
+   },
+   "doc": "Collector (pin 3)"
+  }
+ ],
+ "params": {},
+ "model": {
+  "composite": {
+   "components": [
+    {
+     "id": "Q",
+     "component": "emblink/bjt_npn",
+     "params": {
+      "part": "generic",
+      "is": "14.34f",
+      "bf": 255.9,
+      "br": 6.092,
+      "vaf": 74.03,
+      "rb": 10,
+      "rc": 1,
+      "cje": "22.01p",
+      "vje": 0.75,
+      "mje": 0.377,
+      "cjc": "7.306p",
+      "vjc": 0.75,
+      "mjc": 0.3416,
+      "fc": 0.5,
+      "tf": "411.1p",
+      "tr": "46.91n",
+      "bvcbo": 75,
+      "bvebo": 6
+     }
+    }
+   ],
+   "nets": {},
+   "ports": {
+    "B": "Q.B",
+    "E": "Q.E",
+    "C": "Q.C"
+   }
+  }
+ },
+ "functional": {
+  "composite": {
+   "components": [],
+   "nets": {},
+   "ports": {}
+  }
+ },
+ "symbol": {
+  "svg": "symbol.svg",
+  "width": 60,
+  "height": 80,
+  "pins": {
+   "B": {
+    "x": 0,
+    "y": 40,
+    "side": "left"
+   },
+   "C": {
+    "x": 40,
+    "y": 0,
+    "side": "top"
+   },
+   "E": {
+    "x": 40,
+    "y": 80,
+    "side": "bottom"
+   }
+  }
+ },
+ "fidelity": {
+  "functional": {
+   "claims": "Pins only: the functional policy has no base currents.",
+   "omissions": [
+    "switching"
+   ],
+   "validation": [
+    "tests/*.json"
+   ]
+  },
+  "timed": {
+   "claims": "As electrical.",
+   "omissions": []
+  },
+  "electrical": {
+   "claims": "The datasheet's SPICE model (IS 14.34 fA, BF 255.9, BR 6.092, VAF 74.03 V, RB 10 ohm, RC 1 ohm, CJE 22.01 pF, CJC 7.306 pF with their grading, TF 411.1 ps, TR 46.91 ns) in the catalog's Ebers-Moll transistor with the Early effect and charge storage, the collector-base and emitter-base breakdowns at the ratings (75 V, 6 V); fixtures on the datasheet's VCE(sat) and VBE(sat) at 150 mA and 500 mA, and on MB1367's LD2 circuit.",
+   "omissions": [
+    "the model's ISE, NE and IKF: the gain does not fall at low or high current (the datasheet's minimum hFE is 35 at 0.1 mA and 40 at 500 mA; the model's stays near 256)",
+    "temperature (XTI, EG, XTB): VBE's drift and the gain's rise",
+    "the SOT-23's pin numbers are the package's usual 1 B, 2 E, 3 C: the datasheet's outline draws the pins without numbers",
+    "the thermal limits (350 mW, 357 C/W on FR-4), the safe operating area and damage past the ratings",
+    "device-to-device spread within the datasheet's limits"
+   ],
+   "range": {
+    "voltage_v": [
+     -6,
+     40
+    ],
+    "current_a": [
+     -0.8,
+     0.8
+    ]
+   },
+   "validation": [
+    "tests/*.json"
+   ]
+  }
+ },
+ "provenance": {
+  "author": "EmbSIM",
+  "license": "Apache-2.0",
+  "sources": [
+   {
+    "title": "onsemi (Fairchild) BSR14 NPN General Purpose Amplifier datasheet, Rev. B0, September 2012: ratings, electrical characteristics and the SPICE model",
+    "url": "https://www.onsemi.com/download/data-sheet/pdf/bsr14-d.pdf",
+    "date": "2026-11-13",
+    "hash": "sha256:74685954721282967bb81c75fe87ad8805cb0201055cf0024fa1687029f1db32"
+   }
+  ]
+ },
+ "tests": [
+  "tests/*.json"
+ ],
+  "i18n": {
+    "fr": {
+      "source": "984e1fa77266",
+      "description": "Un BSR14 (marqué U8), la puce du 2N2222A (le procédé 19 de Fairchild) en SOT-23 : un NPN de 40 V et 800 mA pour la commutation et l'amplification de moyenne puissance. Le Q1 de la NUCLEO-G474RE (MB1367), l'interrupteur côté bas de LD2, et son Q2, le collecteur commun de son alimentation VREF+.",
+      "fidelity": {
+        "functional": {
+          "claims": "Les broches seulement : la politique fonctionnelle n'a pas de courants de base.",
+          "omissions": [
+            "la commutation"
+          ]
+        },
+        "timed": {
+          "claims": "Comme le niveau électrique."
+        },
+        "electrical": {
+          "claims": "Le modèle SPICE de la fiche technique (IS 14,34 fA, BF 255,9, BR 6,092, VAF 74,03 V, RB 10 ohms, RC 1 ohm, CJE 22,01 pF, CJC 7,306 pF avec leur gradation, TF 411,1 ps, TR 46,91 ns) dans le transistor d'Ebers-Moll du catalogue avec l'effet Early et le stockage de charge, les claquages collecteur-base et émetteur-base aux valeurs maximales (75 V, 6 V) ; des fixtures sur le VCE(sat) et le VBE(sat) de la fiche technique à 150 mA et 500 mA, et sur le circuit de LD2 de la MB1367.",
+          "omissions": [
+            "l'ISE, le NE et l'IKF du modèle : le gain ne baisse pas à faible ou fort courant (le hFE minimal de la fiche technique est de 35 à 0,1 mA et de 40 à 500 mA ; celui du modèle reste proche de 256)",
+            "la température (XTI, EG, XTB) : la dérive de VBE et la hausse du gain",
+            "les numéros de broche du SOT-23 sont les habituels du boîtier, 1 B, 2 E, 3 C : le dessin de la fiche technique montre les broches sans numéros",
+            "les limites thermiques (350 mW, 357 C/W sur FR-4), l'aire de sécurité et les dégâts au-delà des valeurs maximales",
+            "la dispersion d'un composant à l'autre dans les limites de la fiche technique"
+          ]
+        }
+      }
+    }
+  }
+}

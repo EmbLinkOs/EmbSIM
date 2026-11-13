@@ -88,6 +88,12 @@ carries its own licence beside it:
                                2.0), Copyright (c) 2024 STMicroelectronics;
                                Apache-2.0
                                (catalog/mcus/st/stm32f446re/LICENSES/)
+  catalog/mcus/st/stm32g474re/registers.json
+                               converted from STMicroelectronics'
+                               STM32G474.svd (version 3.0, STM32G4 SVD
+                               pack), Copyright (c) 2024 STMicroelectronics;
+                               Apache-2.0
+                               (catalog/mcus/st/stm32g474re/LICENSES/)
   catalog/mcus/nordic/nrf52840/registers.json
                                converted from Nordic Semiconductor's
                                nrf52840.svd (nrfx 3.4.0), Copyright (c)

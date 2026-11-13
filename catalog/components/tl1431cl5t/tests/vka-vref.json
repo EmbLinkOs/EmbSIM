@@ -1,0 +1,59 @@
+{
+  "schema_version": 1,
+  "kind": "component_test",
+  "name": "vka-vref",
+  "description": "REF tied to the cathode, fed from 5 V through 470 ohm (about 5 mA): the cathode at VREF, 2.500 V (the C grade's 2.490 to 2.510 V).",
+  "policy": "electrical",
+  "until": "2ms",
+  "circuit": {
+    "components": [
+      {
+        "id": "VS",
+        "component": "emblink/vsource",
+        "params": {
+          "kind": "dc",
+          "dc": 5.0
+        }
+      },
+      {
+        "id": "G0",
+        "component": "emblink/gnd"
+      },
+      {
+        "id": "DUT",
+        "component": "emblink/tl1431cl5t"
+      },
+      {
+        "id": "RS",
+        "component": "emblink/resistor",
+        "params": {
+          "resistance": 470
+        }
+      }
+    ],
+    "nets": {
+      "IN": [
+        "VS.+",
+        "RS.1"
+      ],
+      "K": [
+        "RS.2",
+        "DUT.CATHODE",
+        "DUT.REF"
+      ],
+      "GND": [
+        "VS.-",
+        "DUT.ANODE",
+        "G0.GND"
+      ]
+    }
+  },
+  "inputs": [],
+  "expect": {
+    "net:K": {
+      "at": "1ms",
+      "min_v": 2.49,
+      "max_v": 2.51
+    }
+  }
+}

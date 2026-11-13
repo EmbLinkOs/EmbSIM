@@ -2,7 +2,9 @@
 /* Copyright 2026 Junior Deogracias */
 /* syscfg_f4.c -- the STM32F4's system configuration controller (RM0390 8):
  *   - EXTICR1 to EXTICR4 pick the port each EXTI line 0-15 listens to
- *     (0 port A ... 7 port H), for the GPIO model's edges (gpio_f4.c);
+ *     (0 port A ... 7 port H), for the GPIO model's edges (gpio_f4.c); a
+ *     line given another port sees the new pin's level at once, an edge
+ *     when it differs from the old one's;
  *   - MEMRMP's MEM_MODE picks what answers at 0x00000000: the main flash
  *     (000, out of reset with BOOT0 low), the system memory (001), SRAM1's
  *     112 KiB (011); FMC's bank 1 (010) and SDRAM bank 1 (100) and the
@@ -14,7 +16,16 @@
  *     mode Plus drive) keep what is written.
  * The alias at 0 is the description's memory mirror at that address, as
  * large as the memory it shows; SRAM1 is the first 112 KiB of the
- * description's SRAM (RM0390 2.3: SRAM1 112 KiB, then SRAM2 16 KiB). */
+ * description's SRAM (RM0390 2.3: SRAM1 112 KiB, then SRAM2 16 KiB).
+ *
+ * The STM32G4's (RM0440 9, a SYSCFG with SCSR): MEM_MODE as above, SRAM1
+ * its first 80 KiB, 100 the QUADSPI's memory (none on the bus: nothing
+ * there); SCSR's CCMER erases the CCM SRAM (32 KiB at 0x20018000, its
+ * alias at 0x10000000) to 0, CCMBSY reading 0 at once; CFGR1 (the FPU's
+ * interrupt enables, the I2C pins' Fast-mode Plus drive), CFGR2, SWPR,
+ * SKR and MEMRMP's FB_MODE keep what is written. Not modelled: the erase's
+ * time (CCMBSY), SWPR's write protection of the CCM SRAM's pages, the
+ * parity errors CFGR2 reports, FB_MODE's bank swap. */
 #include <string.h>
 
 #include "mcu/stm32/stm32.h"
@@ -24,8 +35,9 @@
 struct syscfg {
     struct esk_mach *s;
     struct esk_rf_periph *p;
-    struct esk_rf_reg *memrmp, *exticr[4], *cmpcr;
+    struct esk_rf_reg *memrmp, *exticr[4], *cmpcr, *scsr;
     u32 mode; /* the MEM_MODE mapped now */
+    int g4;
 };
 
 static struct syscfg *syscfg_of(struct esk_mach *s)
@@ -58,7 +70,7 @@ static void remap(struct syscfg *c)
         (void)esk_bus_remap_mirror(&c->s->bus, BOOT_ALIAS, 0x1FFF0000u, ~0u);
         break;
     case 3:
-        (void)esk_bus_remap_mirror(&c->s->bus, BOOT_ALIAS, 0x20000000u, 112u * 1024u);
+        (void)esk_bus_remap_mirror(&c->s->bus, BOOT_ALIAS, 0x20000000u, (c->g4 ? 80u : 112u) * 1024u);
         break;
     default:
         (void)esk_bus_remap_mirror(&c->s->bus, BOOT_ALIAS, 0, 0);
@@ -83,10 +95,40 @@ static u32 syscfg_read(void *ctx, u32 off, int n)
     return esk_rf_read(((struct syscfg *)ctx)->p, off, n);
 }
 
+/* the level of a pin's input (IDR), port and bit */
+static int pin_level(struct esk_mach *s, int port, int bit)
+{
+    char name[8] = "GPIOx";
+    struct esk_rf_periph *g;
+    struct esk_rf_reg *idr;
+    name[4] = (char)('A' + port);
+    g = esk_rf_periph(s->rf, name);
+    idr = g ? esk_rf_reg(g, "IDR") : 0;
+    return idr ? (int)(idr->value >> bit & 1) : 0;
+}
+
 static void syscfg_write(void *ctx, u32 off, int n, u32 v)
 {
     struct syscfg *c = (struct syscfg *)ctx;
+    int before[16], i;
+    for (i = 0; i < 16; i++)
+        before[i] = esk_stm32f4_exti_port(c->s, i);
     esk_rf_write(c->p, off, n, v);
+    /* a line given another port sees that pin's level at once: its edge
+     * detector follows the multiplexer's output (a switch from a high pin
+     * to a low one is a falling edge) */
+    for (i = 0; i < 16; i++)
+        if (esk_stm32f4_exti_port(c->s, i) != before[i])
+            esk_stm32_exti_input(c->s, i, pin_level(c->s, esk_stm32f4_exti_port(c->s, i), i));
+    if (c->scsr && off == esk_rf_off(c->scsr) && (c->scsr->value & 1u)) {
+        /* CCMER: the CCM SRAM erased */
+        struct esk_region *r = esk_bus_region(&c->s->bus, 0x20018000u, 32u * 1024u);
+        if (r && r->mem) {
+            memset(r->mem + (0x20018000u - r->base), 0, 32u * 1024u);
+            r->gen++;
+        }
+        esk_rf_hw(c->scsr, c->scsr->value & ~(u64)3u);
+    }
     settle(c);
 }
 
@@ -118,6 +160,8 @@ void *esk_stm32f4_syscfg_create(struct esk_mach *s, struct esk_rf_periph *p)
     if (!c.memrmp)
         c.memrmp = esk_rf_reg(p, "MEMRMP");
     c.cmpcr = esk_rf_reg(p, "CMPCR");
+    c.scsr = esk_rf_reg(p, "SCSR");
+    c.g4 = c.scsr != 0;
     c.mode = 0xFF;
     x = (struct syscfg *)esk_mach_alloc(s, sizeof *x);
     if (x)

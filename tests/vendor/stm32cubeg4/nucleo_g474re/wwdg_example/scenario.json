@@ -1,0 +1,47 @@
+{
+  "schema_version": 1,
+  "kind": "scenario",
+  "name": "wwdg_example",
+  "until": "6s",
+  "description": "WWDG_Example: the WWDG at PCLK1 / 4096 / 128, counter 127 and window 80, refreshed in its window while LD2 toggles; B1's press makes the EXTI handler write to an invalid address, the hard fault's loop stops the refreshes and the WWDG resets the part as its counter passes 0x40, which then holds LD2 on for 4 s (RCC_CSR's WWDGRSTF).",
+  "inputs": [
+    {
+      "at": "1500ms",
+      "target": "B1.B1",
+      "input": "pressed",
+      "value": true
+    },
+    {
+      "at": "1600ms",
+      "target": "B1.B1",
+      "input": "pressed",
+      "value": false
+    }
+  ],
+  "assertions": [
+    {
+      "id": "running",
+      "between": [
+        "300ms",
+        "1.45s"
+      ],
+      "probe": "led",
+      "expect": {
+        "min": 0.3,
+        "max": 0.7
+      },
+      "measure": "duty_cycle"
+    },
+    {
+      "id": "reset",
+      "between": [
+        "2.2s",
+        "5.3s"
+      ],
+      "probe": "led",
+      "expect": {
+        "logic": "1"
+      }
+    }
+  ]
+}

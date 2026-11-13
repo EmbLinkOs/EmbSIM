@@ -20,6 +20,7 @@ XML = """<?xml version="1.0" encoding="UTF-8"?>
   </Pin>
   <Pin Name="PC4" Position="3" Type="I/O"><Signal Name="ADC2_IN14"/><Signal Name="ADC1_IN14"/></Pin>
   <Pin Name="PB2" Position="4" Type="I/O"><Signal Name="GPIO"/></Pin>
+  <Pin Name="PB0" Position="6" Type="I/O"><Signal Name="ADC3_IN12"/><Signal Name="ADC1_IN15"/></Pin>
   <Pin Name="NRST" Position="5" Type="Reset"/>
 </Mcu>
 """
@@ -36,7 +37,9 @@ class Stm32Pins(unittest.TestCase):
         self.assertEqual(pkg["pins"][0], {"number": 1, "signal": "VBAT"})
         self.assertEqual(pkg["pins"][1], {"number": 2, "signal": "PA0", "doc": "PA0-WKUP"})
         self.assertEqual(pkg["pins"][4], {"number": 5, "signal": "NRST"})
-        self.assertEqual(stm32pins.analog_of(pins), {"PA0": "ADC123_IN0", "PC4": "ADC12_IN14"})
+        # an STM32G4's PB0: its ADCs number it differently, both listed
+        self.assertEqual(stm32pins.analog_of(pins),
+                         {"PA0": "ADC123_IN0", "PB0": "ADC1_IN15, ADC3_IN12", "PC4": "ADC12_IN14"})
 
     def test_alternate(self):
         modes = """<?xml version="1.0" encoding="UTF-8"?>

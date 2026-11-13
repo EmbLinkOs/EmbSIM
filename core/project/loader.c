@@ -776,7 +776,7 @@ static es_status join_ties(graph *g, esk_comp *c)
 
 /* the board's firmware on its MCU's runtime (SPEC-009): the image, the register
  * description beside the MCU description, the board's oscillator */
-#define LD_MAX_FILES 4
+#define LD_MAX_FILES 8
 
 /* the MCU's memory regions' factory files (a boot ROM's image), checked
  * against their SHA-256: n of them in files[], their bytes to be freed */
@@ -811,6 +811,51 @@ static int read_memory_files(es_session *s, const esk_board_inst *bi, const esk_
         }
         esk_strfree(s->a, path);
         (void)esk_json_to_u64(esk_json_get(r, "base"), &base);
+        files[n].base = (u32)base;
+        files[n].data = (const unsigned char *)data;
+        files[n].len = len;
+        n++;
+    }
+    return n;
+}
+
+static int hex_nibble(char c)
+{
+    return c >= '0' && c <= '9' ? c - '0' : c >= 'a' && c <= 'f' ? c - 'a' + 10 : c >= 'A' && c <= 'F' ? c - 'A' + 10 : -1;
+}
+
+/* the MCU's memory as the board ships it (board.json's mcu.memory: the
+ * option bytes ST programs on a NUCLEO-G474RE), after the MCU's own:
+ * appended to files[], their bytes to be freed */
+static int board_memory(es_session *s, const esk_board_inst *bi, const esk_json *board_desc, esk_mcu_file *files,
+                        int n)
+{
+    const esk_json *mem = esk_json_get(esk_json_get(board_desc, "mcu"), "memory");
+    size_t i;
+    for (i = 0; i < esk_json_len(mem) && n < LD_MAX_FILES; i++) {
+        const esk_json *r = esk_json_at(mem, i);
+        const char *hex = esk_json_get_str(r, "bytes", NULL);
+        size_t len = hex ? strlen(hex) / 2 : 0, k;
+        u64 base = 0;
+        char *data;
+        if (!hex || !len || esk_json_to_u64(esk_json_get(r, "base"), &base))
+            continue;
+        data = (char *)esk_malloc(s->a, len + 1);
+        if (!data)
+            break;
+        for (k = 0; k < len; k++) {
+            int hi = hex_nibble(hex[2 * k]), lo = hex_nibble(hex[2 * k + 1]);
+            if (hi < 0 || lo < 0) {
+                esk_diag_raise(&s->diag, ES_SEV_ERROR, "mcu.memory_file", 0, "board", bi->id, NULL, 0,
+                               "%s: the board's mcu.memory at 0x%08x is not hexadecimal", bi->id, (unsigned)base);
+                break;
+            }
+            data[k] = (char)(hi << 4 | lo);
+        }
+        if (k < len) {
+            esk_free(s->a, data, len + 1);
+            continue;
+        }
         files[n].base = (u32)base;
         files[n].data = (const unsigned char *)data;
         files[n].len = len;
@@ -947,8 +992,12 @@ static es_status attach_firmware(es_session *s, esk_board_inst *bi, const esk_ca
         su.image_len = len;
         su.image_name = rel;
         su.console = esk_json_get_str(esk_json_get(mi->desc, "console"), "default", "USART1");
+        /* the pins the board's serial bridge is wired to */
+        su.console_tx = esk_json_get_str(esk_json_get(board->desc, "console"), "tx", NULL);
+        su.console_rx = esk_json_get_str(esk_json_get(board->desc, "console"), "rx", NULL);
         su.quantum_ps = s->core_quantum_ps;
         nfiles = read_memory_files(s, bi, mi, files);
+        nfiles = board_memory(s, bi, board->desc, files, nfiles);
         su.files = files;
         su.nfiles = nfiles;
         {

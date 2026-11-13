@@ -5,6 +5,112 @@ versions follow semantic versioning. There is no release yet.
 
 ## Unreleased
 
+### The STM32G474RE and the NUCLEO-G474RE: a second STM32 family
+
+- Added `st/stm32g474re`, the STM32G474RE (Cortex-M4F at 170 MHz, 512 KiB
+  of dual-bank flash, 128 KiB of SRAM with the CCM SRAM), its register
+  description converted from ST's Apache-2.0 STM32G474.svd v3.0 by
+  `tools/importers/stm32g474_regs.sh` with the corrections RM0440, the CMSIS
+  header and the HAL give (RCC_CR's and EXTI's reset values, PWR_SR2's PVMO
+  bits, the timers' OCxM[3] bits ST's file leaves out, TIM2's 32-bit CNT,
+  the interrupts it puts on the wrong peripheral), its LQFP64 pinout, analog
+  inputs and alternate functions from ST's open pin data, and the DMAMUX's
+  request numbers.
+- New models for the G4's own IP: `stm32g4-rcc` (HSI16, HSE, LSI, LSE,
+  HSI48 with their start-up times, the PLL's P, Q and R outputs, the kernel
+  clocks, the limits of the voltage ranges and flash wait states),
+  `stm32g4-pwr` (the voltage ranges and boost, the PVD, Stop 0 and 1,
+  Standby with SRAM2 and the pull configuration, Shutdown, the wake-up
+  pins), `stm32g4-flash` (double-word and fast programming, page and bank
+  erases with read-while-write between the banks, the option bytes with
+  their complements, OBL_LAUNCH, BOOT0 on PB8 or nBOOT0) and
+  `stm32-usart-v2` (the U(S)ARTs and LPUART of the ISR/ICR layout: FIFOs,
+  7/8/9-bit frames, MSBFIRST, DATAINV, SWAP, DE, character match, receiver
+  timeout, wake-up from Stop).
+- Shared models taught the G4's registers: GPIO's BRR, SYSCFG's G4 remaps
+  and CCM SRAM erase, EXTI's two banks of lines, the programmable CRC
+  (polynomial, size, input and output reversal), the IWDG's window and the
+  option bytes' hardware start and freeze, the WWDG's 3-bit prescaler,
+  DBGMCU's G4 names, the timers' TISEL clock inputs and freeze bits found
+  by name, a pin's analog entry listing several ADC groups.
+- Added `emblink/nucleo_g474re` (MB1367): the 24 MHz HSE crystal X3 and
+  the LSE crystal X2, LD2 on PA5, B1 on PC13, B2, LD3, JP5's four supply
+  positions, JP6 (IDD), JP7, U11 and U12, the Arduino and morpho
+  connectors, the VCP on LPUART1, its option bytes as ST ships the board
+  (nSWBOOT0 0), original artwork, and seven fixtures (USB, VIN, E5V, VIN
+  without JP5, the IDD ammeter, B1, LD2 through Q1).
+- A board can give its MCU's memory as it ships (`mcu.memory`: the
+  NUCLEO-G474RE's option bytes), and an MCU model can choose the boot
+  (`boot_pin`, `boot_system`: the G4's BOOT0 on PB8).
+- `tests/vendor/stm32cubeg4/run.py` builds STM32CubeG4's examples for the
+  NUCLEO-G474RE unmodified; 24 run under scenarios (GPIO, EXTI, the HAL's
+  time base on TIM6, RCC's PLL moved between HSI16 and HSE, UART_Printf on
+  LPUART1, four CRC examples, the Cortex-M4's privilege modes, process
+  stack and SysTick, FLASH erase/program and fast program with their timing, the IWDG
+  with and without a window, the WWDG, Stop 0, TIM1's PWM and output
+  compare toggle, DMA from the flash to the SRAM with the HAL and with LL,
+  USART2 and LPUART1 through DMA on the virtual COM port), in CI's
+  linux-gcc job too.
+- Added `stm32g4-dma` and `stm32g4-dmamux` (RM0440 12 and 13): DMA1 and
+  DMA2's eight channels (memory to memory, table 89's packing, circular
+  mode, HT, TC, TE and GIF, the bits locked while EN is set, a bus error's
+  TEIF), DMAMUX's sixteen channels on any of the 115 request lines, their
+  synchronisation on an EXTI line or a channel's event with NBREQ and SOF,
+  event generation, the four request generators with OF, DMAMUX_OVR.
+- The SPI model learned the FIFO SPI of the STM32G4 (RM0440 42, and the
+  F0, F3, F7 and L4's): 4 to 16-bit frames, the 32-bit FIFOs with TXE,
+  FRXTH's RXNE threshold, FTLVL, FRLVL and OVR, packed 16-bit accesses,
+  LDMA_TX and LDMA_RX, CRCL's CRC8 and CRC16, NSSP; the G474RE's SPI1 to
+  SPI4 use it. CubeG4's SPI_FullDuplex_ComPolling and _ComDMA pairs run on
+  two boards (`tests/vendor/stm32cubeg4/run.py` builds an example's
+  _Master and _Slave projects; 26 examples).
+- A pin given another alternate function hears its level at once: SPI1's
+  SCK on PB3, after the reset's AF0, saw no level until the first edge, and
+  a slave counted that edge as its baseline (STM32F4 and G4).
+- A board's console is the UART the firmware muxes onto its bridge's pins
+  (`console.tx`, `console.rx`), not only the MCU's default unit: the
+  NUCLEO-G474RE's VCP hears USART2 on PA2/PA3 as it hears LPUART1.
+- An EXTI line that SYSCFG gives another port sees the new pin's level at
+  once, an edge when it differs from the old pin's (STM32F4 and G4).
+- Faster: an analog island counts as still when its branch currents move by
+  less than a nanoampere and a millionth of their value (node voltages keep
+  their microvolt test). An LED's current drifting by picoamps as it warms,
+  or a ferrite bead's sub-nanoampere numerical ringing between two
+  capacitors, kept a board's supply island stepping every quantum: the
+  NUCLEO-G474RE's example now runs in 9 s of CPU instead of 33.
+- The NUCLEO-G474RE checked against UM2505 Rev 7 and DS12288 Rev 6: U4
+  (STMPS2151STR) and LD4 in the STLINK-V3E's 5 V path, CN10 pins 35 and 37
+  on USART1 (the factory solder bridges), VREF+ on its own net through JP8
+  and the ferrite bead L2 (VDDA through L1), the crystals' parts; the fast
+  row's programming time is DS12288's 1.91 ms and the PVD's thresholds its
+  falling and rising ones.
+- The NUCLEO-G474RE built from MB1367 D-01's schematic, every part with its
+  designator and value: U4's input and output capacitors, R8 on T_PWR_EN
+  and R1 with LD4 on its FAULT; U11's and U12's capacitors; VDD's, VDDA's,
+  VBAT's and VREF+'s decoupling; VREF from U14 (TL1431CL5T) and Q2 at
+  3.26 V, on VREF+ through JP8's factory position (it was VDD); LD2
+  switched by Q1 from 3V3 (R25, R29, R28), so its current no longer passes
+  JP6's ammeter; B1 active high, as the schematic draws it (VDD through
+  B1, R26 to ground, R27 and C35 on PC13; it was active low): the
+  example counts B1's rising edges, and CubeG4's GPIO_EXTI, which takes the
+  falling edge, toggles LD2 on the release, as it does on the board.
+- Added `emblink/tl1431cl5t`, ST's TL1431 programmable shunt reference in
+  SOT23-5L (2.500 V, the open-loop gain of the datasheet's figure 19, Ioff,
+  a step response within figure 22's microsecond; five fixtures), and
+  `emblink/bsr14`, the BSR14 NPN with onsemi's SPICE model (VCE(sat) and
+  VBE(sat) at 150 mA and 500 mA, MB1367's LD2 circuit).
+- The `regulator` primitive's output has a 1 mOhm resistance while it
+  regulates. An output capacitor held at its initial voltage at the
+  operating point (an LDO with full input at t = 0) no longer sets two
+  ideal sources against each other: the regulator starts in current limit
+  and charges it, as a real one does.
+- Fixed: exception entry left CONTROL.SPSEL set when the thread ran on the
+  process stack, so a handler read CONTROL[1] as 1 (ARMv7-M's ExceptionTaken
+  clears it); CubeG4's CORTEXM_ProcessStack found it.
+- `svd2regs.py`: `--strip-prefixes` (TIM2_CR1 in TIM2 named CR1),
+  `--rename`, and `--drop` leaving the peripherals derived from the dropped
+  one its registers.
+
 ### DC motors and their driver: the first of the robot's parts (M7)
 
 - Added the analog primitive `dc_motor` (`core/analog/motor.c`, SPEC-004): a

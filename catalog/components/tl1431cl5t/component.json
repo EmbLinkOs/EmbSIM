@@ -1,0 +1,294 @@
+{
+ "schema_version": 1,
+ "kind": "component",
+ "id": "emblink/tl1431cl5t",
+ "version": "1.0.0",
+ "name": "TL1431CL5T programmable shunt voltage reference",
+ "category": "analog_ics",
+ "subcategory": "voltage_references",
+ "description": "STMicroelectronics TL1431CL5T, a programmable shunt voltage reference (2.500 V, C grade) in SOT23-5L: between its cathode and anode it sinks what keeps REF at its reference, so two resistors set any voltage from VREF to 36 V. The NUCLEO-G474RE's (MB1367) U14, the reference of its VREF+ supply.",
+ "keywords": [
+  "voltage reference",
+  "shunt reference",
+  "programmable",
+  "tl1431",
+  "tl431",
+  "tl1431cl5t",
+  "stmicroelectronics",
+  "sot23-5",
+  "nucleo"
+ ],
+ "pins": [
+  {
+   "name": "NC1",
+   "number": 1,
+   "model": {
+    "kind": "nc"
+   },
+   "required": false,
+   "doc": "Not connected (SOT23-5L pin 1)"
+  },
+  {
+   "name": "NC2",
+   "number": 2,
+   "model": {
+    "kind": "nc"
+   },
+   "required": false,
+   "doc": "Not connected (SOT23-5L pin 2)"
+  },
+  {
+   "name": "CATHODE",
+   "number": 3,
+   "model": {
+    "kind": "analog"
+   },
+   "doc": "Cathode (SOT23-5L pin 3): the shunt's input"
+  },
+  {
+   "name": "REF",
+   "number": 4,
+   "model": {
+    "kind": "analog"
+   },
+   "doc": "Reference input (SOT23-5L pin 4): held at VREF above the anode while the part regulates"
+  },
+  {
+   "name": "ANODE",
+   "number": 5,
+   "model": {
+    "kind": "analog"
+   },
+   "doc": "Anode (SOT23-5L pin 5), normally ground"
+  }
+ ],
+ "params": {},
+ "model": {
+  "composite": {
+   "components": [
+    {
+     "id": "VR",
+     "component": "emblink/vsource",
+     "params": {
+      "kind": "dc",
+      "dc": 2.5045
+     }
+    },
+    {
+     "id": "EA",
+     "component": "emblink/opamp",
+     "params": {
+      "gain": "450",
+      "gbw": "2meg",
+      "rin": "1T",
+      "vpos": 5
+     }
+    },
+    {
+     "id": "VB",
+     "component": "emblink/vsource",
+     "params": {
+      "kind": "dc",
+      "dc": 0.8
+     }
+    },
+    {
+     "id": "RB",
+     "component": "emblink/resistor",
+     "params": {
+      "resistance": "100k"
+     }
+    },
+    {
+     "id": "QD",
+     "component": "emblink/bjt_npn"
+    },
+    {
+     "id": "Q",
+     "component": "emblink/bjt_npn"
+    },
+    {
+     "id": "RQ",
+     "component": "emblink/resistor",
+     "params": {
+      "resistance": "200meg"
+     }
+    }
+   ],
+   "nets": {
+    "VREF_INT": [
+     "VR.+",
+     "EA.-"
+    ],
+    "ANODE": [
+     "VR.-",
+     "EA.V-",
+     "Q.E",
+     "RQ.2"
+    ],
+    "CATHODE": [
+     "Q.C",
+     "QD.C",
+     "RQ.1"
+    ],
+    "DRIVE": [
+     "EA.OUT",
+     "VB.-"
+    ],
+    "DBASE": [
+     "RB.2",
+     "QD.B"
+    ],
+    "BASE": [
+     "QD.E",
+     "Q.B"
+    ],
+    "BIAS": [
+     "VB.+",
+     "RB.1"
+    ]
+   },
+   "ports": {
+    "CATHODE": "Q.C",
+    "REF": "EA.+",
+    "ANODE": "Q.E"
+   }
+  }
+ },
+ "functional": {
+  "composite": {
+   "components": [],
+   "nets": {},
+   "ports": {}
+  }
+ },
+ "symbol": {
+  "svg": "symbol.svg",
+  "width": 60,
+  "height": 60,
+  "pins": {
+   "CATHODE": {
+    "x": 30,
+    "y": 0,
+    "side": "top"
+   },
+   "ANODE": {
+    "x": 30,
+    "y": 60,
+    "side": "bottom"
+   },
+   "REF": {
+    "x": 0,
+    "y": 30,
+    "side": "left"
+   },
+   "NC1": {
+    "x": 60,
+    "y": 20,
+    "side": "right"
+   },
+   "NC2": {
+    "x": 60,
+    "y": 40,
+    "side": "right"
+   }
+  }
+ },
+ "fidelity": {
+  "functional": {
+   "claims": "Pins only: the functional policy has no voltages.",
+   "omissions": [
+    "regulation"
+   ],
+   "validation": [
+    "tests/*.json"
+   ]
+  },
+  "timed": {
+   "claims": "As electrical.",
+   "omissions": []
+  },
+  "electrical": {
+   "claims": "The shunt as the datasheet's block diagram (figure 5) draws it: an error amplifier comparing REF with an internal reference and driving a Darlington from the cathode to the anode, so the cathode current is what holds REF at VREF and VKA = VREF x (1 + R1 / R2) with a divider. The amplifier has the open-loop gain of figure 19 (53 dB, falling to unity near 2 MHz); the reference is trimmed, as the part is, so VREF is the C grade's typical 2.500 V (2.490 to 2.510 V) with the amplifier's offset included; from 5 mA to 83 mA it moves under 1 mV (the datasheet's |zKA| is 0.2 ohm typical); REF draws no current (IREF 1.5 uA typical); off (REF below VREF) the cathode passes the datasheet's Ioff through 200 MOhm (180 nA at 36 V); it regulates from about 0.5 mA (Imin 0.5 mA typical) to 100 mA; a 1 mA step brings the cathode to VREF within a microsecond (figure 22). Fixtures: VKA = VREF, a 3.25 V divider, the off state, 83 mA, figure 22's step. Inside: the amplifier, reference, the output stage's 0.8 V bias and two transistors are the catalog's primitives, with the same outside.",
+   "omissions": [
+    "the error amplifier runs from a 5 V internal rail, not from the cathode: the Darlington's first base current (about 10 uA at 100 mA) comes from that rail through 100 kOhm, and with REF above VREF while the cathode is held below VREF the part sources up to about 50 uA out of its cathode, where the real part cannot",
+    "the step response has no internal capacitance: the cathode reaches VREF in under 0.2 us without figure 22's 0.6 us rise and overshoot",
+    "VREF's spread (2.490 to 2.510 V) and drift with temperature (3 to 20 mV over the range), and its change with VKA (-1.1 mV/V): VREF is the typical 2.500 V",
+    "IREF (1.5 uA) and its drift: REF draws no current",
+    "the minimum cathode current's own curve below Imin, the stability boundaries with a capacitive load (figure 20)",
+    "the thermal limits and damage (36 V, 100 mA)"
+   ],
+   "range": {
+    "voltage_v": [
+     -0.3,
+     37
+    ],
+    "current_a": [
+     -0.1,
+     0.15
+    ]
+   },
+   "validation": [
+    "tests/*.json"
+   ]
+  }
+ },
+ "provenance": {
+  "author": "EmbSIM",
+  "license": "Apache-2.0",
+  "sources": [
+   {
+    "title": "STMicroelectronics TL1431 programmable shunt voltage reference datasheet: SOT23-5L pin connections (figure 3), operating conditions, electrical characteristics (VREF, IREF, Imin, Ioff, |zKA|)",
+    "url": "https://www.st.com/resource/en/datasheet/tl1431.pdf",
+    "date": "2026-11-12"
+   },
+   {
+    "title": "Texas Instruments TL1431 datasheet (SLVS062O): the same part's functional block diagram and characteristics",
+    "url": "https://www.ti.com/lit/ds/symlink/tl1431.pdf",
+    "date": "2026-11-12"
+   },
+   {
+    "title": "MB1367 D-01 schematics (NUCLEO-G474RE), Main power sheet: U14 TL1431CL5T with Q2 BSR14, R33 10 kOhm, R34 33 kOhm, R35 180 ohm, C51 100 pF",
+    "url": "https://www.st.com/resource/en/schematic_pack/mb1367-g474re-d01-schematic.pdf",
+    "date": "2026-11-12"
+   }
+  ]
+ },
+ "tests": [
+  "tests/*.json"
+ ],
+ "part": {
+  "mpn": "TL1431CL5T",
+  "manufacturer": "STMicroelectronics",
+  "package": "SOT23-5L",
+  "datasheet": "https://www.st.com/resource/en/datasheet/tl1431.pdf"
+ },
+  "i18n": {
+    "fr": {
+      "source": "1c3a119f0636",
+      "description": "Le TL1431CL5T de STMicroelectronics, une référence de tension shunt programmable (2,500 V, classe C) en SOT23-5L : entre sa cathode et son anode il absorbe ce qui tient REF à sa référence, si bien que deux résistances fixent toute tension de VREF à 36 V. L'U14 de la NUCLEO-G474RE (MB1367), la référence de son alimentation VREF+.",
+      "fidelity": {
+        "functional": {
+          "claims": "Les broches seulement : la politique fonctionnelle n'a pas de tensions.",
+          "omissions": [
+            "la régulation"
+          ]
+        },
+        "timed": {
+          "claims": "Comme le niveau électrique."
+        },
+        "electrical": {
+          "claims": "Le shunt tel que le dessine le schéma fonctionnel de la fiche technique (figure 5) : un amplificateur d'erreur comparant REF à une référence interne et pilotant un Darlington de la cathode à l'anode, si bien que le courant de cathode est ce qui tient REF à VREF et que VKA = VREF x (1 + R1 / R2) avec un diviseur. L'amplificateur a le gain en boucle ouverte de la figure 19 (53 dB, tombant à l'unité vers 2 MHz) ; la référence est ajustée, comme sur le composant, si bien que VREF est la valeur typique de 2,500 V de la classe C (2,490 à 2,510 V), décalage de l'amplificateur compris ; de 5 mA à 83 mA elle varie de moins de 1 mV (le |zKA| de la fiche technique est de 0,2 ohm typique) ; REF ne consomme aucun courant (IREF 1,5 uA typique) ; bloqué (REF sous VREF), la cathode laisse passer l'Ioff de la fiche technique par 200 Mohms (180 nA à 36 V) ; il régule d'environ 0,5 mA (Imin 0,5 mA typique) à 100 mA ; un échelon de 1 mA amène la cathode à VREF en moins d'une microseconde (figure 22). Fixtures : VKA = VREF, un diviseur à 3,25 V, l'état bloqué, 83 mA, l'échelon de la figure 22. À l'intérieur : l'amplificateur, la référence, la polarisation de 0,8 V de l'étage de sortie et les deux transistors sont les primitives du catalogue, avec le même comportement vu de l'extérieur.",
+          "omissions": [
+            "l'amplificateur d'erreur est alimenté par un rail interne de 5 V, pas par la cathode : le premier courant de base du Darlington (environ 10 uA à 100 mA) vient de ce rail à travers 100 kohms, et avec REF au-dessus de VREF pendant que la cathode est tenue sous VREF le composant fournit jusqu'à environ 50 uA par sa cathode, ce que le vrai composant ne peut pas faire",
+            "la réponse à un échelon n'a pas de capacité interne : la cathode atteint VREF en moins de 0,2 us, sans la montée de 0,6 us ni le dépassement de la figure 22",
+            "la dispersion de VREF (2,490 à 2,510 V), sa dérive en température (3 à 20 mV sur la plage) et sa variation avec VKA (-1,1 mV/V) : VREF est la valeur typique de 2,500 V",
+            "IREF (1,5 uA) et sa dérive : REF ne consomme aucun courant",
+            "la courbe propre du courant de cathode minimal sous Imin, les limites de stabilité avec une charge capacitive (figure 20)",
+            "les limites thermiques et les dégâts (36 V, 100 mA)"
+          ]
+        }
+      }
+    }
+  }
+}

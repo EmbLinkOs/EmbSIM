@@ -5,6 +5,92 @@ maintained by hand until evidence tooling exists. It is not a generated
 support matrix. Specifications define target contracts; their acceptance
 does not mean the described behaviour exists.
 
+## The STM32G474RE and the NUCLEO-G474RE (2026-11-12)
+
+A second STM32 family: `st/stm32g474re` (Cortex-M4F at 170 MHz, 512 KiB of
+dual-bank flash, SRAM1, SRAM2 and the CCM SRAM) on `emblink/nucleo_g474re`
+(MB1367). Its registers come from ST's STM32G474.svd v3.0 with the
+corrections `tools/importers/stm32g474_regs.sh` lists, its pins and
+alternate functions from ST's open pin data. The G4's own IP has new models:
+the RCC (`stm32g4-rcc`), PWR (`stm32g4-pwr`), flash interface
+(`stm32g4-flash`), the U(S)ARTs and LPUART (`stm32-usart-v2`), and DMA1,
+DMA2 and DMAMUX (`stm32g4-dma`, `stm32g4-dmamux`); GPIO, SYSCFG, EXTI, the
+timers, CRC, the watchdogs, DBGMCU and the SPIs (the FIFO SPI) are the F4's
+models taught the G4's registers. 41 of the 82 peripheral blocks are
+modelled (`docs/coverage.md`); the ADCs, DACs, comparators, op-amps, I2C, RTC, the FDCANs, USB, HRTIM, the math accelerators and the rest
+keep their registers until their models land.
+
+Evidence:
+- `test_stm32g4` (13 tests): reset values and the factory option bytes,
+  170 MHz from HSI16 and from the 24 MHz crystal in range 1 boost, the
+  spec warnings, the oscillators' start-up times and ready interrupts, the
+  reset flags, GPIO with BRR and EXTI13 on PC13, LPUART1 at 115200 with
+  TEACK, its FIFO and ORE, USART1's 7-bit MSB-first frames from HSI16, the
+  programmable CRC on ST's examples' values, double-word programming,
+  PROGERR and SIZERR, a page erase's 22 ms and the option bytes' write
+  protection through OBL_LAUNCH, the IWDG's window, the WWDG's /128, Stop 1
+  and Standby with SRAM2 kept and PA0's wake-up, and CONTROL.SPSEL in a
+  handler;
+- the board's seven fixtures (USB, VIN, E5V, VIN without JP5, the IDD
+  ammeter, B1, LD2 through Q1);
+- 26 of STM32CubeG4's NUCLEO-G474RE examples built unmodified
+  (`tests/vendor/stm32cubeg4/run.py`, also in CI): GPIO_IOToggle,
+  GPIO_EXTI, HAL_TimeBase_TIM, RCC_ClockConfig (the PLL moved between HSI16
+  and the crystal on B1), UART_Printf, the four CRC examples,
+  CORTEXM_ModePrivilege, CORTEXM_ProcessStack, CORTEXM_SysTick,
+  FLASH_EraseProgram (5.3 s of erasing and programming the bank it runs
+  from, stalled through each operation), FLASH_FastProgram (bank 2 written
+  while bank 1 runs on), IWDG_Reset, IWDG_WindowMode (a refresh before the
+  window resets the part), WWDG_Example, PWR_STOP0, TIM_PWMOutput (85 kHz
+  on TIM1's four channels), TIM_OCToggle, DMA_FLASHToRAM and LL's
+  DMA_CopyFromFlashToMemory_Init (memory to memory), UART_HyperTerminal_DMA
+  (USART2 on PA2/PA3, both directions by DMA) and
+  UART_ReceptionToIdle_CircularDMA (LPUART1's receiver by circular DMA),
+  SPI_FullDuplex_ComPolling and SPI_FullDuplex_ComDMA on two boards (each
+  board's _Master or _Slave project, SPI1 on PB3 to PB5); SPI_FullDuplex_ComIT
+  is not among them yet: the master's fourth received byte loses a bit,
+  the slave's MISO change, made in its TXE interrupt, reaching the line
+  after the master's next sample;
+- `test_stm32g4`'s SPI test: DS, the FIFOs' levels and thresholds, packed
+  reads, OVR, NSSP;
+- `test_stm32g4`'s DMA test: memory to memory, table 89's packing, the
+  bits locked while EN is set, LPUART1's transmitter through DMAMUX,
+  synchronisation on EXTI13 with NBREQ and its overrun, a channel's event
+  triggering a request generator, a bus error's TEIF.
+
+The STLINK-V3E's virtual COM port is the UART the firmware muxes onto
+PA2/PA3 (LPUART1, or USART2 as UART_HyperTerminal_DMA uses it): a board's
+console follows its bridge's pins, as the wiring does. An EXTI line given
+another port by SYSCFG now sees the new pin's level at once, an edge if it
+differs, as the line's edge detector follows the multiplexer.
+
+In the functional policy a resistor is still a wire: on the NUCLEO-G474RE
+R29 and R28 join PA5 to GND, and R27 and R26 PC13, so LD2 and B1 work in
+the electrical policy only (the board's fidelity says so). Two boards on
+SPI under the electrical policy run about 230 times slower than real time
+(their supply islands stepping with the bus's edges).
+
+Found on the way: exception entry did not clear CONTROL.SPSEL (every
+Cortex-M part), and IWDG_Reset's "invalid address" 0x00040001 lies inside
+the G474's 512 KiB flash alias: the store sets PGSERR without a fault, so
+on this part the example's IWDG reset does not come (its scenario says so;
+not checked on a board).
+
+The board follows MB1367 D-01's schematic, part by part and value by
+value (U4 and LD4, U11, U12, the decoupling, VREF from the TL1431 U14 and
+Q2 at 3.26 V on VREF+ through JP8's factory position, LD2 switched by Q1,
+B1 active high with R26, R27 and C35), UM2505 Rev 7 (the jumpers, solder
+bridges, connectors and crystals), and the part DS12288 Rev 6 (start-up,
+flash and PVD values) and RM0440 Rev 9 (reset values, EXTI's direct lines,
+the package code). Two parts came with it: `emblink/tl1431cl5t` (ST's
+shunt reference, against its datasheet's figures 19 and 22) and
+`emblink/bsr14` (onsemi's SPICE model). The regulator primitive's output
+has 1 mOhm, so an LDO starting into a discharged capacitor solves.
+
+Not yet: the peripherals above, the timers' G4 additions (OCxM's and SMS's
+fourth bits, channels 5 and 6, dithering, the encoder index, the G4's ITR
+table), the STLINK-V3E itself (its USB, SWD and drive).
+
 ## DC motors and their driver, the robot's first parts (2026-11-08)
 
 M7's robot on the floor begins with its motors. `dc_motor`

@@ -98,6 +98,7 @@ const explorer24 = 'examples/explorer16-pic24/project.json';
 const picoDual = 'examples/pico-dual-core/project.json';
 const nucleo = 'examples/nucleo-f446re-blink-serial/project.json';
 const nucleo144 = 'examples/nucleo-f446ze-blink-serial/project.json';
+const nucleoG4 = 'examples/nucleo-g474re-blink-serial/project.json';
 const faulting = 'tests/firmware/fault/project.json';
 
 /** the Debug perspective stopped at a breakpoint on `symbol` */
@@ -222,6 +223,18 @@ try {
     await perspective(page, 2);
     await run(page, 2700);
   });
+  // the NUCLEO-G474RE (STM32G474RE, the Nucleo-64 MB1367): a second STM32 family
+  await shot(browser, 'design-nucleo-g474re', nucleoG4, async (page) => run(page, 1500));
+  await shot(browser, 'run-nucleo-g474re', nucleoG4, async (page) => {
+    await perspective(page, 2);
+    await run(page, 2700);
+  });
+  await shot(browser, 'board-nucleo-g474re', nucleoG4, async (page) => {
+    await page.getByRole('radio', { name: 'Bench' }).click();
+    await wait(800);
+    await page.getByRole('radio', { name: '2D', exact: true }).click();
+    await run(page, 2700);
+  }, { scale: 2, element: '.es-board' });
   // M5: verification. A scenario opened, edited in place and run; coverage of
   // the Blue Pill's firmware with its source; a recording replayed
   const verifyRegion = (page, name) => page.getByRole('region', { name });

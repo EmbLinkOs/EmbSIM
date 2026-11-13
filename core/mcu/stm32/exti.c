@@ -21,26 +21,43 @@
  *   - an edge or a SWIER trigger on a line whose EMR bit is set is an event
  *     to the core: it ends a WFE (esk_cortexm_event);
  *   - an edge on line 9 is the DAC's external trigger, on lines 11 and 15
- *     the ADCs' (EXTI_11, EXTI_15). */
+ *     the ADCs' (EXTI_11, EXTI_15).
+ *
+ * The STM32G4's (RM0440 15), its registers in two banks (IMR1 to PR1 for
+ * lines 0 to 31, IMR2 to PR2 for 32 to 43): the configurable lines as
+ * above, their internal sources' interrupts by the G4's names (16 and 38
+ * to 41 PVD_PVM, 17 RTC_ALARM, 19 RTC_TAMP_CSS_LSE, 20 RTC_WKUP, 21, 22
+ * and 29 COMP1_2_3, 30 to 32 COMP4_5_6, 33 COMP7); the direct lines (18,
+ * 23 to 28, 34 to 37, 42, 43: the USB's, the I2Cs', U(S)ARTs', LPUART's
+ * and LPTIM's wake-ups) have no edge detection or pending bit, their
+ * peripherals' interrupts being their own; an edge on lines 0 to 15 is also
+ * the DMA request multiplexer's synchronisation and trigger input. */
 #include <stdio.h>
 #include <string.h>
 
 #include "mcu/stm32/stm32.h"
 
+#define MAX_LINES 64
+
 struct exti {
     struct esk_mach *s;
     struct esk_rf_periph *p;
-    struct esk_rf_reg *imr, *emr, *rtsr, *ftsr, *swier, *pr;
-    int nlines;
-    int irq[32];
+    /* bank 0: lines 0-31, bank 1: lines 32-63 */
+    struct esk_rf_reg *imr[2], *emr[2], *rtsr[2], *ftsr[2], *swier[2], *pr[2];
+    int nbanks, nlines, g4;
+    int irq[MAX_LINES];
 };
+
+static u64 pending(const struct exti *x, int b)
+{
+    return x->pr[b] && x->imr[b] ? x->pr[b]->value & x->imr[b]->value : 0;
+}
 
 static void pend(struct exti *x)
 {
-    u32 act = (u32)(x->pr->value & x->imr->value);
     int k, last = -1;
     for (k = 0; k < x->nlines; k++)
-        if ((act >> k & 1) && x->irq[k] >= 0 && x->irq[k] != last) {
+        if ((pending(x, k / 32) >> (k % 32) & 1) && x->irq[k] >= 0 && x->irq[k] != last) {
             esk_rf_interrupt(x->p, x->irq[k]);
             last = x->irq[k];
         }
@@ -56,15 +73,26 @@ void esk_stm32_exti_input(struct esk_mach *s, int line, int level)
 {
     struct exti *x = exti_of(s);
     u64 bit;
+    int b;
     if (!x || line < 0 || line >= x->nlines)
         return;
-    bit = (u64)1u << line;
-    if ((level && (x->rtsr->value & bit)) || (!level && (x->ftsr->value & bit))) {
-        esk_rf_hw(x->pr, x->pr->value | bit);
-        if (x->emr && (x->emr->value & bit))
+    b = line / 32;
+    bit = (u64)1u << (line % 32);
+    if (!x->rtsr[b] || !x->ftsr[b] || !x->pr[b])
+        return;
+    if (line < 16 && x->g4) {
+        /* the DMA request multiplexer's synchronisation and trigger inputs
+         * see every edge of lines 0-15 (dmamux_g4.c) */
+        char sig[8];
+        snprintf(sig, sizeof sig, "EXTI%d", line);
+        esk_stm32_trigger(s, sig, level);
+    }
+    if ((level && (x->rtsr[b]->value & bit)) || (!level && (x->ftsr[b]->value & bit))) {
+        esk_rf_hw(x->pr[b], x->pr[b]->value | bit);
+        if (x->emr[b] && (x->emr[b]->value & bit))
             esk_cortexm_event(s);
         pend(x);
-        if (line == 9 || line == 11 || line == 15) {
+        if (!x->g4 && (line == 9 || line == 11 || line == 15)) {
             /* the line's edge: the DAC's (9) and the ADCs' (11, 15) trigger */
             char sig[8];
             snprintf(sig, sizeof sig, "EXTI%d", line);
@@ -72,6 +100,19 @@ void esk_stm32_exti_input(struct esk_mach *s, int line, int level)
             esk_stm32_trigger(s, sig, 0);
         }
     }
+}
+
+/* a direct line's event (a G4's wake-up lines): an event to the core when
+ * its EMR bit is set */
+void esk_stm32_exti_direct(struct esk_mach *s, int line)
+{
+    struct exti *x = exti_of(s);
+    int b;
+    if (!x || line < 0 || line >= x->nlines)
+        return;
+    b = line / 32;
+    if (x->emr[b] && (x->emr[b]->value >> (line % 32) & 1))
+        esk_cortexm_event(s);
 }
 
 static u32 exti_read(void *ctx, u32 off, int n)
@@ -83,19 +124,26 @@ static u32 exti_read(void *ctx, u32 off, int n)
 static void exti_write(void *ctx, u32 off, int n, u32 v)
 {
     struct exti *x = (struct exti *)ctx;
-    u64 sw0 = x->swier->value, pr0 = x->pr->value;
-    esk_rf_write(x->p, off, n, v);
-    if (off == esk_rf_off(x->swier)) {
-        u64 up = x->swier->value & ~sw0;
-        if (up)
-            esk_rf_hw(x->pr, x->pr->value | up);
-        if (x->emr && (up & x->emr->value))
-            esk_cortexm_event(x->s);
+    u64 sw0[2], pr0[2];
+    int b;
+    for (b = 0; b < x->nbanks; b++) {
+        sw0[b] = x->swier[b] ? x->swier[b]->value : 0;
+        pr0[b] = x->pr[b] ? x->pr[b]->value : 0;
     }
-    if (off == esk_rf_off(x->pr)) {
-        u64 cleared = pr0 & ~x->pr->value;
-        if (cleared)
-            esk_rf_hw(x->swier, x->swier->value & ~cleared);
+    esk_rf_write(x->p, off, n, v);
+    for (b = 0; b < x->nbanks; b++) {
+        if (x->swier[b] && off == esk_rf_off(x->swier[b])) {
+            u64 up = x->swier[b]->value & ~sw0[b];
+            if (up && x->pr[b])
+                esk_rf_hw(x->pr[b], x->pr[b]->value | up);
+            if (x->emr[b] && (up & x->emr[b]->value))
+                esk_cortexm_event(x->s);
+        }
+        if (x->pr[b] && off == esk_rf_off(x->pr[b])) {
+            u64 cleared = pr0[b] & ~x->pr[b]->value;
+            if (cleared && x->swier[b])
+                esk_rf_hw(x->swier[b], x->swier[b]->value & ~cleared);
+        }
     }
     pend(x);
 }
@@ -106,7 +154,7 @@ const struct esk_dev_ops esk_stm32_exti_ops = {
 
 /* the interrupt of an internal line (16 and up), by the names the parts
  * give them, or -1 */
-static int line_irq(struct esk_rf *rf, int k)
+static int line_irq(struct esk_rf *rf, int k, int g4)
 {
     static const char *const names[][3] = {
         { "PVD", 0, 0 },                      /* 16 */
@@ -118,6 +166,15 @@ static int line_irq(struct esk_rf *rf, int k)
         { "RTC_WKUP", 0, 0 },                 /* 22 */
     };
     int i, n;
+    if (g4) {
+        static const char *const g4names[44] = {
+            0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+            "PVD_PVM", "RTC_ALARM", 0, "RTC_TAMP_CSS_LSE", "RTC_WKUP", "COMP1_2_3", "COMP1_2_3", 0,
+            0, 0, 0, 0, 0, "COMP1_2_3", "COMP4_5_6", "COMP4_5_6",
+            "COMP4_5_6", "COMP7", 0, 0, 0, 0, "PVD_PVM", "PVD_PVM", "PVD_PVM", "PVD_PVM", 0, 0,
+        };
+        return k < 44 && g4names[k] ? esk_rf_irq_named(rf, g4names[k]) : -1;
+    }
     if (k < 16 || k - 16 >= (int)(sizeof names / sizeof names[0]))
         return -1;
     for (i = 0; i < 3 && names[k - 16][i]; i++)
@@ -126,36 +183,70 @@ static int line_irq(struct esk_rf *rf, int k)
     return -1;
 }
 
+static int bank_lines(const struct esk_rf_reg *imr)
+{
+    int k, n = 0;
+    for (k = 0; imr && k < imr->nf; k++)
+        if (imr->f[k].name && imr->f[k].lsb + imr->f[k].width > n)
+            n = imr->f[k].lsb + imr->f[k].width;
+    return n;
+}
+
 void *esk_stm32_exti_create(struct esk_mach *s, struct esk_rf_periph *p)
 {
     struct exti x, *c;
+    static const char *const sfx[2] = { "1", "2" };
     char name[16];
-    int k;
+    int k, b;
     memset(&x, 0, sizeof x);
     x.s = s;
     x.p = p;
-    x.imr = esk_rf_reg(p, "IMR");
-    x.emr = esk_rf_reg(p, "EMR");
-    x.rtsr = esk_rf_reg(p, "RTSR");
-    x.ftsr = esk_rf_reg(p, "FTSR");
-    x.swier = esk_rf_reg(p, "SWIER");
-    x.pr = esk_rf_reg(p, "PR");
-    if (!x.imr || !x.rtsr || !x.ftsr || !x.swier || !x.pr)
+    x.imr[0] = esk_rf_reg(p, "IMR");
+    if (x.imr[0]) {
+        x.nbanks = 1;
+        x.emr[0] = esk_rf_reg(p, "EMR");
+        x.rtsr[0] = esk_rf_reg(p, "RTSR");
+        x.ftsr[0] = esk_rf_reg(p, "FTSR");
+        x.swier[0] = esk_rf_reg(p, "SWIER");
+        x.pr[0] = esk_rf_reg(p, "PR");
+    } else {
+        /* the G4's two banks */
+        for (b = 0; b < 2; b++) {
+            snprintf(name, sizeof name, "IMR%s", sfx[b]);
+            x.imr[b] = esk_rf_reg(p, name);
+            snprintf(name, sizeof name, "EMR%s", sfx[b]);
+            x.emr[b] = esk_rf_reg(p, name);
+            snprintf(name, sizeof name, "RTSR%s", sfx[b]);
+            x.rtsr[b] = esk_rf_reg(p, name);
+            snprintf(name, sizeof name, "FTSR%s", sfx[b]);
+            x.ftsr[b] = esk_rf_reg(p, name);
+            snprintf(name, sizeof name, "SWIER%s", sfx[b]);
+            x.swier[b] = esk_rf_reg(p, name);
+            snprintf(name, sizeof name, "PR%s", sfx[b]);
+            x.pr[b] = esk_rf_reg(p, name);
+            if (x.imr[b])
+                x.nbanks = b + 1;
+        }
+        x.g4 = 1;
+    }
+    if (!x.imr[0] || !x.rtsr[0] || !x.ftsr[0] || !x.swier[0] || !x.pr[0])
         return 0;
     /* the lines IMR has a bit for */
-    for (k = 0; k < x.imr->nf; k++)
-        if (x.imr->f[k].name && x.imr->f[k].lsb + x.imr->f[k].width > x.nlines)
-            x.nlines = x.imr->f[k].lsb + x.imr->f[k].width;
-    if (x.nlines < 16 || x.nlines > 32)
+    x.nlines = bank_lines(x.imr[0]);
+    if (x.nbanks == 2)
+        x.nlines = 32 + bank_lines(x.imr[1]);
+    if (x.nlines < 16 || x.nlines > MAX_LINES)
         x.nlines = 16;
     for (k = 0; k < x.nlines; k++) {
         if (k < 5)
             snprintf(name, sizeof name, "EXTI%d", k);
         else
             snprintf(name, sizeof name, "%s", k < 10 ? "EXTI9_5" : "EXTI15_10");
-        x.irq[k] = k < 16 ? esk_rf_irq(p, name) : line_irq(s->rf, k);
+        x.irq[k] = k < 16 ? esk_rf_irq(p, name) : line_irq(s->rf, k, x.g4);
     }
-    esk_rf_set_mwv(x.pr, ~(u64)0, ESK_MWV_1CLR);
+    for (b = 0; b < x.nbanks; b++)
+        if (x.pr[b])
+            esk_rf_set_mwv(x.pr[b], ~(u64)0, ESK_MWV_1CLR);
     c = (struct exti *)esk_mach_alloc(s, sizeof *c);
     if (c)
         *c = x;

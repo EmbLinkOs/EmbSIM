@@ -24,7 +24,21 @@
         "version": {"$ref": "common.schema.json#/$defs/version_range"},
         "package": {"type": "string", "pattern": "^[a-z][a-z0-9_-]*$"},
         "instance": {"$ref": "common.schema.json#/$defs/instance_id"},
-        "fuses": {"$ref": "common.schema.json#/$defs/fuses"}
+        "fuses": {"$ref": "common.schema.json#/$defs/fuses"},
+        "memory": {
+          "type": "array",
+          "description": "The MCU's memory as the board ships it, written over the MCU description's factory contents (the option bytes ST programs on a NUCLEO-G474RE): an address and its bytes",
+          "items": {
+            "type": "object",
+            "required": ["base", "bytes"],
+            "additionalProperties": false,
+            "properties": {
+              "base": {"$ref": "common.schema.json#/$defs/hex_or_size"},
+              "bytes": {"type": "string", "pattern": "^([0-9A-Fa-f]{2})+$"},
+              "doc": {"type": "string"}
+            }
+          }
+        }
       }
     },
     "oscillators": {

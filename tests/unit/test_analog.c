@@ -1445,6 +1445,10 @@ static void test_opamp_inverting(void)
     esk_engine_free(&e);
 }
 
+/* the regulator's output resistance while it regulates (devices.c REG_ROUT):
+ * vout = vset - iout x ROUT */
+#define REG_ROUT_T 1e-3
+
 static void test_regulator(void)
 {
     esk_engine e;
@@ -1454,9 +1458,9 @@ static void test_regulator(void)
     add_dev3(&e, "regulator", "U1", "{\"vout\": 3.3, \"dropout\": 0.3}", "vin", "vcc", "gnd");
     add_dev2(&e, "resistor", "R1", "{\"r\": 33}", "vcc", "gnd");
     engine_run(&e);
-    CHECK_NEAR(v_of(&e, "vcc"), 3.3, 1e-6);
-    CHECK_NEAR(obs_num(&e, "U1", "iout"), 0.1, 1e-6);
-    CHECK_NEAR(obs_num(&e, "V1", "i"), -0.1, 1e-6); /* the load current comes from the input */
+    CHECK_NEAR(v_of(&e, "vcc"), 3.3 * 33.0 / (33.0 + REG_ROUT_T), 1e-6);
+    CHECK_NEAR(obs_num(&e, "U1", "iout"), 3.3 / (33.0 + REG_ROUT_T), 1e-6);
+    CHECK_NEAR(obs_num(&e, "V1", "i"), -3.3 / (33.0 + REG_ROUT_T), 1e-6); /* the load current comes from the input */
     esk_engine_free(&e);
     /* dropout: 3 V in gives 2.7 V out */
     engine_open(&e);
@@ -1465,7 +1469,7 @@ static void test_regulator(void)
     add_dev3(&e, "regulator", "U1", "{\"vout\": 3.3, \"dropout\": 0.3}", "vin", "vcc", "gnd");
     add_dev2(&e, "resistor", "R1", "{\"r\": 33}", "vcc", "gnd");
     engine_run(&e);
-    CHECK_NEAR(v_of(&e, "vcc"), 2.7, 1e-6);
+    CHECK_NEAR(v_of(&e, "vcc"), 2.7 * 33.0 / (33.0 + REG_ROUT_T), 1e-6);
     CHECK_EQ(diag_errors, 0);
     esk_engine_free(&e);
 }
@@ -1480,9 +1484,9 @@ static void test_regulator_negative(void)
     add_dev3(&e, "regulator", "U1", "{\"vout\": 5, \"dropout\": 1.1, \"polarity\": -1, \"quiescent\": 0.003}", "vin", "vee", "gnd");
     add_dev2(&e, "resistor", "R1", "{\"r\": 50}", "vee", "gnd");
     engine_run(&e);
-    CHECK_NEAR(v_of(&e, "vee"), -5.0, 1e-6);
-    CHECK_NEAR(obs_num(&e, "U1", "iout"), -0.1, 1e-6);
-    CHECK_NEAR(obs_num(&e, "V1", "i"), 0.103, 1e-6); /* the load and quiescent currents return through the input */
+    CHECK_NEAR(v_of(&e, "vee"), -5.0 * 50.0 / (50.0 + REG_ROUT_T), 1e-6);
+    CHECK_NEAR(obs_num(&e, "U1", "iout"), -5.0 / (50.0 + REG_ROUT_T), 1e-6);
+    CHECK_NEAR(obs_num(&e, "V1", "i"), 5.0 / (50.0 + REG_ROUT_T) + 0.003, 1e-6); /* the load and quiescent currents return through the input */
     esk_engine_free(&e);
     /* dropout: -5.5 V in gives -4.4 V out */
     engine_open(&e);
@@ -1491,7 +1495,7 @@ static void test_regulator_negative(void)
     add_dev3(&e, "regulator", "U1", "{\"vout\": 5, \"dropout\": 1.1, \"polarity\": -1}", "vin", "vee", "gnd");
     add_dev2(&e, "resistor", "R1", "{\"r\": 50}", "vee", "gnd");
     engine_run(&e);
-    CHECK_NEAR(v_of(&e, "vee"), -4.4, 1e-6);
+    CHECK_NEAR(v_of(&e, "vee"), -4.4 * 50.0 / (50.0 + REG_ROUT_T), 1e-6);
     /* an output pulled below its setting by another supply: the pass element cannot sink */
     esk_engine_free(&e);
     engine_open(&e);
@@ -1583,7 +1587,10 @@ static void test_quiet_island(void)
     CHECK_NEAR(v_of(&e, "out"), 5.0 * (1.0 - exp(-2.0)), 1e-4);
     CHECK_EQ(isl->quiet_steps, 0);
     CHECK(esk_engine_advance(&e, 40 * ES_PS_PER_MS) == ES_OK);
-    CHECK_NEAR(v_of(&e, "out"), 5.0, 1e-6); /* to vntol, the floor where an island is still */
+    /* to the floor where an island is still: a trial step of 1 ms moving no
+     * node by vntol (1 uV) and no branch current by 1 nA, here the source's
+     * 1.5 nA into the capacitor, 1.5 uV short of 5 V */
+    CHECK_NEAR(v_of(&e, "out"), 5.0, 2e-6);
     CHECK_EQ(diag_errors, 0);
     esk_engine_free(&e);
 }
@@ -1676,7 +1683,7 @@ static void test_regulator_board_rails(void)
     w = add_watcher(&e, "MCU", "btn", ESK_PULL_NONE);
     engine_run(&e);
     CHECK_NEAR(v_of(&e, "5v"), 5.0, 1e-9); /* held by the ideal source whatever the load */
-    CHECK_NEAR(v_of(&e, "3v3"), 3.3, 1e-6);
+    CHECK_NEAR(v_of(&e, "3v3"), 3.3 - obs_num(&e, "U2", "iout") * REG_ROUT_T, 1e-6);
     CHECK(v_of(&e, "leda") > 1.6 && v_of(&e, "leda") < 1.9);
     CHECK(v_of(&e, "btn") > 3.29);
     CHECK_EQ(w->pins[0].sampled, ESK_L1);
@@ -1686,7 +1693,7 @@ static void test_regulator_board_rails(void)
                -(obs_num(&e, "U2", "iout") + 5e-3), 1e-6);
     CHECK(esk_engine_advance(&e, 2 * ES_PS_PER_MS) == ES_OK);
     CHECK_NEAR(v_of(&e, "5v"), 5.0, 1e-9);
-    CHECK_NEAR(v_of(&e, "3v3"), 3.3, 1e-6);
+    CHECK_NEAR(v_of(&e, "3v3"), 3.3 - obs_num(&e, "U2", "iout") * REG_ROUT_T, 1e-6);
     CHECK(esk_engine_net(&e, "3v3")->island->steps < 100);
     CHECK_EQ(diag_errors, 0);
     esk_engine_free(&e);

@@ -1,0 +1,21 @@
+{
+  "schema_version": 1,
+  "kind": "scenario",
+  "name": "crc_bytes_stream_7bit_crc",
+  "until": "500ms",
+  "description": "CRC BYTES STREAM 7BIT CRC: 7-bit CRCs of polynomial 0x65 over byte streams of 5, 17, 1 and 2 bytes; LD2 on means each value matched, a 1 s blink an error.",
+  "inputs": [],
+  "assertions": [
+    {
+      "id": "pass",
+      "between": [
+        "50ms",
+        "490ms"
+      ],
+      "probe": "led",
+      "expect": {
+        "logic": "1"
+      }
+    }
+  ]
+}

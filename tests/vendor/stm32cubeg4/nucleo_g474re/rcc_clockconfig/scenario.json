@@ -1,0 +1,71 @@
+{
+  "schema_version": 1,
+  "kind": "scenario",
+  "name": "rcc_clockconfig",
+  "until": "2s",
+  "description": "RCC_ClockConfig: SYSCLK at 170 MHz from the PLL on HSI16, LD2 toggled every HAL_Delay(100); each press of B1 moves the PLL to the other source (the 24 MHz crystal X3, ready after its 2 ms start-up, then back to HSI16) through SYSCLK on the source it leaves, and LD2 keeps its rate.",
+  "inputs": [
+    {
+      "at": "600ms",
+      "target": "B1.B1",
+      "input": "pressed",
+      "value": true
+    },
+    {
+      "at": "650ms",
+      "target": "B1.B1",
+      "input": "pressed",
+      "value": false
+    },
+    {
+      "at": "1300ms",
+      "target": "B1.B1",
+      "input": "pressed",
+      "value": true
+    },
+    {
+      "at": "1350ms",
+      "target": "B1.B1",
+      "input": "pressed",
+      "value": false
+    }
+  ],
+  "assertions": [
+    {
+      "id": "hsi",
+      "between": [
+        "100ms",
+        "590ms"
+      ],
+      "probe": "led",
+      "expect": {
+        "frequency_hz": 4.95
+      },
+      "tolerance": 0.06
+    },
+    {
+      "id": "hse",
+      "between": [
+        "750ms",
+        "1.24s"
+      ],
+      "probe": "led",
+      "expect": {
+        "frequency_hz": 4.95
+      },
+      "tolerance": 0.06
+    },
+    {
+      "id": "hsi-again",
+      "between": [
+        "1.45s",
+        "1.95s"
+      ],
+      "probe": "led",
+      "expect": {
+        "frequency_hz": 4.95
+      },
+      "tolerance": 0.06
+    }
+  ]
+}

@@ -1,0 +1,21 @@
+{
+  "schema_version": 1,
+  "kind": "scenario",
+  "name": "cortexm_processstack",
+  "until": "500ms",
+  "description": "CORTEXM_ProcessStack: the process stack selected through CONTROL and PSP, checked by an SVC handler; LD2 on in case of success.",
+  "inputs": [],
+  "assertions": [
+    {
+      "id": "pass",
+      "between": [
+        "100ms",
+        "490ms"
+      ],
+      "probe": "led",
+      "expect": {
+        "logic": "1"
+      }
+    }
+  ]
+}

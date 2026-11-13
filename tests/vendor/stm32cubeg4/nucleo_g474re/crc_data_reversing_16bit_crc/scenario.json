@@ -1,0 +1,21 @@
+{
+  "schema_version": 1,
+  "kind": "scenario",
+  "name": "crc_data_reversing_16bit_crc",
+  "until": "500ms",
+  "description": "CRC DATA REVERSING 16BIT CRC: CCITT's 16-bit CRC with the input reversed by words (a last byte reversed as a byte) and the output reversed, against the same without reversal over the bytes reversed by hand; LD2 on means each value matched, a 1 s blink an error.",
+  "inputs": [],
+  "assertions": [
+    {
+      "id": "pass",
+      "between": [
+        "50ms",
+        "490ms"
+      ],
+      "probe": "led",
+      "expect": {
+        "logic": "1"
+      }
+    }
+  ]
+}

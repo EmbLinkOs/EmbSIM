@@ -1,0 +1,77 @@
+{
+  "schema_version": 1,
+  "kind": "component_test",
+  "name": "e5v",
+  "description": "An external 5 V supply on E5V (CN7 pin 6) with JP5 on E5V (pins 5-6): +5V, LD3 and +3.3V without USB.",
+  "policy": "electrical",
+  "until": "20ms",
+  "circuit": {
+    "boards": [
+      {
+        "id": "B1",
+        "board": "emblink/nucleo_g474re"
+      }
+    ],
+    "components": [
+      {
+        "id": "VS",
+        "component": "emblink/vsource",
+        "params": {
+          "kind": "dc",
+          "dc": 5.0
+        }
+      },
+      {
+        "id": "G",
+        "component": "emblink/gnd"
+      }
+    ],
+    "nets": {
+      "E5V": [
+        "VS.+",
+        "B1.E5V"
+      ],
+      "GND": [
+        "VS.-",
+        "G.GND",
+        "B1.GND"
+      ],
+      "R5": [
+        "B1.5V"
+      ],
+      "VDD": [
+        "B1.CN7_5"
+      ]
+    }
+  },
+  "inputs": [
+    {
+      "at": "0ms",
+      "target": "B1.JP5_STLK",
+      "input": "closed",
+      "value": false
+    },
+    {
+      "at": "0ms",
+      "target": "B1.JP5_E5V",
+      "input": "closed",
+      "value": true
+    }
+  ],
+  "expect": {
+    "net:R5": {
+      "at": "10ms",
+      "min_v": 4.95,
+      "max_v": 5.0
+    },
+    "net:VDD": {
+      "at": "10ms",
+      "min_v": 3.25,
+      "max_v": 3.35
+    },
+    "output:B1.LD3.luminance": {
+      "at": "10ms",
+      "min": 0.05
+    }
+  }
+}

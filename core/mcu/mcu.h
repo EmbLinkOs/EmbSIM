@@ -50,6 +50,10 @@ typedef struct esk_mcu_setup {
     const char *image_name;
     es_time_t quantum_ps; /* 0: 10 us */
     const char *console;  /* the default serial unit ("USART1") */
+    /* the board's serial bridge's pins (an ST-LINK's VCP on PA2/PA3), or
+     * NULL: the console is then whichever UART the firmware muxes onto
+     * them, as the bridge is wired to the pins, not to a peripheral */
+    const char *console_tx, *console_rx;
     const esk_mcu_file *files; /* the memory regions' factory files */
     int nfiles;
     const unsigned char *mac; /* this chip's factory MAC (6 bytes), or NULL */

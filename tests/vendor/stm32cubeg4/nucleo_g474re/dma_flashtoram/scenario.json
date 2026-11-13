@@ -1,0 +1,21 @@
+{
+  "schema_version": 1,
+  "kind": "scenario",
+  "name": "dma_flashtoram",
+  "until": "300ms",
+  "description": "DMA_FLASHToRAM: DMA1 channel 1 in memory-to-memory mode copies 32 words from the flash to the SRAM, started by software; the transfer-complete interrupt's callback lights LD2 (a transfer error would blink it).",
+  "inputs": [],
+  "assertions": [
+    {
+      "id": "done",
+      "between": [
+        "50ms",
+        "290ms"
+      ],
+      "probe": "led",
+      "expect": {
+        "logic": "1"
+      }
+    }
+  ]
+}

@@ -143,8 +143,10 @@ static void standby_ends(struct esk_mach *m)
 void esk_stm32f4_pwr_wakeup(struct esk_mach *m)
 {
     struct pwr *w = f4_pwr(m);
-    if (!w)
+    if (!w) {
+        esk_stm32g4_pwr_wakeup(m); /* a G4's internal wake-up line */
         return;
+    }
     csr_set(w, w->csr->value | CSR_WUF);
     if (w->mode == STANDBY)
         standby_ends(m);
@@ -167,7 +169,9 @@ u32 esk_stm32f4_pwr_wkup_mask(struct esk_mach *m, int port)
     struct pwr *w = f4_pwr(m);
     u32 mask = 0;
     int pin;
-    if (!w || (port != 0 && port != 2))
+    if (!w)
+        return esk_stm32g4_pwr_wkup_mask(m, port);
+    if (port != 0 && port != 2)
         return 0;
     for (pin = 0; pin < 16; pin++)
         if (wkup_bit(port, pin) && (w->csr->value & wkup_bit(port, pin)))
@@ -177,6 +181,10 @@ u32 esk_stm32f4_pwr_wkup_mask(struct esk_mach *m, int port)
 
 void esk_stm32f4_pwr_pin_edge(struct esk_mach *m, int port, int pin, int level)
 {
+    if (esk_stm32g4_pwr(m)) {
+        esk_stm32g4_pwr_pin_edge(m, port, pin, level);
+        return;
+    }
     if (level && esk_stm32f4_pwr_wkup_pin(m, port, pin))
         esk_stm32f4_pwr_wakeup(m);
 }
@@ -184,7 +192,16 @@ void esk_stm32f4_pwr_pin_edge(struct esk_mach *m, int port, int pin, int level)
 int esk_stm32f4_pwr_standby(struct esk_mach *m)
 {
     struct pwr *w = f4_pwr(m);
-    return w && w->mode == STANDBY;
+    if (!w)
+        return esk_stm32g4_pwr_standby(m);
+    return w->mode == STANDBY;
+}
+
+int esk_stm32f4_pwr_standby_pull(struct esk_mach *m, int port, int pin)
+{
+    if (esk_stm32g4_pwr(m))
+        return esk_stm32g4_pwr_standby_pull(m, port, pin);
+    return (esk_stm32f4_pwr_wkup_mask(m, port) >> pin & 1u) ? 2 : 0;
 }
 
 /* a WKUP pin's level as its port reads it */

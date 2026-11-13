@@ -1,0 +1,21 @@
+{
+  "schema_version": 1,
+  "kind": "scenario",
+  "name": "cortexm_systick",
+  "until": "1.2s",
+  "description": "CORTEXM_SysTick: LD2 toggled every HAL_Delay(50), SysTick's 1 ms at 170 MHz: 51 ms a toggle.",
+  "inputs": [],
+  "assertions": [
+    {
+      "id": "blink",
+      "between": [
+        "100ms",
+        "1.12s"
+      ],
+      "probe": "led",
+      "expect": {
+        "edges": 20
+      }
+    }
+  ]
+}

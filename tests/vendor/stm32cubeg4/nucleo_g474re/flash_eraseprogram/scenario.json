@@ -1,0 +1,32 @@
+{
+  "schema_version": 1,
+  "kind": "scenario",
+  "name": "flash_eraseprogram",
+  "until": "6.5s",
+  "description": "FLASH_EraseProgram: bank 1's pages 4 to 127 erased (124 x 22.02 ms) then programmed by double words (31744 x 81.7 us) by a program running from the same bank, which stalls through each operation: about 5.3 s before LD2 comes on, as on the board.",
+  "inputs": [],
+  "assertions": [
+    {
+      "id": "working",
+      "between": [
+        "100ms",
+        "5.2s"
+      ],
+      "probe": "led",
+      "expect": {
+        "logic": "0"
+      }
+    },
+    {
+      "id": "pass",
+      "between": [
+        "5.6s",
+        "6.4s"
+      ],
+      "probe": "led",
+      "expect": {
+        "logic": "1"
+      }
+    }
+  ]
+}

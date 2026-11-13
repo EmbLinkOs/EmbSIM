@@ -26,7 +26,8 @@
  *     counting down) and makes an update event;
  *   - SR's flags are rc_w0;
  *   - it does not count while its clock is gated off (RCC's enable bit).
- *   The counter's width is CNT's fields' (TIM2 and TIM5 are 32-bit).
+ *   The counter's width is CNT's fields' (TIM2 and TIM5 are 32-bit), a
+ *   G4's UIFCPY in bit 31 aside.
  *
  * Capture/compare channels (as many as CCRx registers):
  *   - output compare (CCxS 00): a match is the counter becoming CCRx, in
@@ -98,6 +99,12 @@
  * the OTG controllers' SOF (none here). A remapped clock's edges come at
  * its half periods, at the core clock.
  *
+ * A G4's TISEL (RM0440 28.6.25 and the like) puts a clock inside the part on
+ * TI1 the same way: TIM16's and TIM17's TI1SEL 2 MCO, 3 HSE/32, 5 LSE, 6
+ * LSI (as HAL's way of measuring LSI does); TIM5's 1 LSI, 2 LSE; TIM15's
+ * 1 LSE. The comparators' outputs and the RTC's wake-up on TISEL are not
+ * modelled (no edges).
+ *
  * Not modelled: TIM5's TI4 on the RTC's wake-up interrupt (IT4_RMP 11:
  * no edges), the OTG controllers' SOF on TIM2's ITR1, MSM's delay (TRGI acts at once
  * anyway), the forced idle levels' dead time after a break, the fast
@@ -157,6 +164,7 @@ struct tim {
     struct esk_rf_reg *ccmr[2], *ccer, *ccr[4];
     int nch;                        /* capture/compare channels */
     int apb;                        /* 1 or 2 */
+    int fz_word, fz_bit;            /* its DBG_TIMx_STOP in DBGMCU (dbg.fz), or -1 */
     int unit;                       /* TIMn's n */
     int itr[4];                     /* ITR0-ITR3: the masters' units, 0 none */
     u64 cntmask;
@@ -196,13 +204,13 @@ struct tim {
     /* TIMx_OR's internal remaps: the input (0 for TI1, 3 for TI4) a clock
      * inside the part drives instead of its pin, -1 none; its kind; the
      * next edge, counted from t0 at the core clock it was scheduled at */
-    struct esk_rf_reg *orr;
+    struct esk_rf_reg *orr, *tisel;
     int src_x, src_kind;
     u64 src_t0, src_k, src_at;
     u32 src_core_hz, src_hz_last;
 };
 
-enum { SRC_NONE, SRC_LSI, SRC_LSE, SRC_HSE_RTC };
+enum { SRC_NONE, SRC_LSI, SRC_LSE, SRC_HSE_RTC, SRC_HSE_32, SRC_MCO };
 
 static void interconnect(struct tim *t);
 
@@ -965,6 +973,15 @@ static u32 src_hz(const struct tim *t)
 {
     struct esk_rf_reg *r;
     u32 pre;
+    if (esk_stm32g4_rcc(t->s)) { /* a G4's RCC */
+        switch (t->src_kind) {
+        case SRC_LSI: return esk_stm32g4_osc_ready(t->s, 'I') ? 32000u : 0;
+        case SRC_LSE: return esk_stm32g4_osc_ready(t->s, 'L') ? (t->s->lse_hz ? t->s->lse_hz : 32768u) : 0;
+        case SRC_HSE_32: return esk_stm32g4_osc_ready(t->s, 'E') ? t->s->hse_hz / 32u : 0;
+        case SRC_MCO: return esk_stm32g4_mco_hz(t->s);
+        default: return 0;
+        }
+    }
     switch (t->src_kind) {
     case SRC_LSI:
         r = rcc_reg(t->s, "CSR");
@@ -1022,7 +1039,16 @@ static void remap(struct tim *t)
 {
     u32 v = t->orr ? (u32)t->orr->value : 0;
     int kind = SRC_NONE, x = -1;
-    if (t->unit == 5) {
+    if (t->tisel) { /* a G4's TI1SEL */
+        u32 sel = (u32)t->tisel->value & 15u;
+        if (t->unit == 16 || t->unit == 17)
+            kind = sel == 2 ? SRC_MCO : sel == 3 ? SRC_HSE_32 : sel == 5 ? SRC_LSE : sel == 6 ? SRC_LSI : SRC_NONE;
+        else if (t->unit == 5)
+            kind = sel == 1 ? SRC_LSI : sel == 2 ? SRC_LSE : SRC_NONE;
+        else if (t->unit == 15)
+            kind = sel == 1 ? SRC_LSE : SRC_NONE;
+        x = kind ? 0 : -1;
+    } else if (t->unit == 5) {
         u32 r = v >> 6 & 3u; /* IT4_RMP: GPIO, LSI, LSE, the RTC's wake-up interrupt */
         kind = r == 1 ? SRC_LSI : r == 2 ? SRC_LSE : SRC_NONE;
         x = kind ? 3 : -1;
@@ -1077,9 +1103,37 @@ static int frozen(const struct tim *t)
     int u = t->unit;
     if (!t->s->dbg.halted)
         return 0;
+    if (t->fz_word >= 0) /* found by name (a G4's: APB1L_FZ, APB2_FZ) */
+        return (t->s->dbg.fz[t->fz_word] >> t->fz_bit & 1u) != 0;
     if (u > 0 && u < 15 && apb1[u] >= 0 && (t->s->dbg.fz[0] >> apb1[u] & 1u))
         return 1;
     return u > 0 && u < 12 && apb2[u] >= 0 && (t->s->dbg.fz[1] >> apb2[u] & 1u);
+}
+
+/* the timer's DBG_TIMx_STOP (or DBG_TIMERx_STOP) in DBGMCU's APB1 or APB2
+ * freeze register, found by name: the word of dbg.fz and the bit, or -1 */
+static void freeze_bit(struct tim *t)
+{
+    struct esk_rf_periph *d = t->s->rf ? esk_rf_periph(t->s->rf, "DBGMCU") : 0;
+    char a[32], b[32];
+    int k, i;
+    t->fz_word = t->fz_bit = -1;
+    if (!d || t->unit <= 0)
+        return;
+    snprintf(a, sizeof a, "DBG_TIM%d_STOP", t->unit);
+    snprintf(b, sizeof b, "DBG_TIMER%d_STOP", t->unit);
+    for (k = 0; k < d->nreg; k++) {
+        const struct esk_rf_reg *r = d->reg[k];
+        int word = strstr(r->name, "APB1") ? 0 : strstr(r->name, "APB2") ? 1 : -1;
+        if (word < 0 || strstr(r->name, "APB1H"))
+            continue;
+        for (i = 0; i < r->nf; i++)
+            if (r->f[i].name && (!strcmp(r->f[i].name, a) || !strcmp(r->f[i].name, b))) {
+                t->fz_word = word;
+                t->fz_bit = r->f[i].lsb;
+                return;
+            }
+    }
 }
 
 /* frozen: every deadline moves on with the time, the counter holds */
@@ -1363,7 +1417,7 @@ static void tim_write(void *ctx, u32 off, int n, u32 v)
         if (!(t->dier->value & (1u << 13)))
             esk_stm32_dma_request(t->s, t->sig_com, 0);
     }
-    if (t->orr && off == esk_rf_off(t->orr))
+    if ((t->orr && off == esk_rf_off(t->orr)) || (t->tisel && off == esk_rf_off(t->tisel)))
         remap(t);
     run_clock(t);
     irq_check(t);
@@ -1584,6 +1638,8 @@ void *esk_stm32_tim_create(struct esk_mach *s, struct esk_rf_periph *p)
     }
     for (i = 0; i < t.cnt->nf; i++) {
         int top = t.cnt->f[i].lsb + t.cnt->f[i].width;
+        if (t.cnt->f[i].name && !strncmp(t.cnt->f[i].name, "UIFCPY", 6))
+            continue; /* a G4's copy of UIF in bit 31, not the counter's */
         u64 m = top >= 64 ? ~0ULL : (1ULL << top) - 1;
         if (m > t.cntmask)
             t.cntmask = m;
@@ -1607,6 +1663,8 @@ void *esk_stm32_tim_create(struct esk_mach *s, struct esk_rf_periph *p)
     t.dcr = esk_rf_reg(p, "DCR");
     t.dmar = esk_rf_reg(p, "DMAR");
     t.orr = t.unit == 2 || t.unit == 5 || t.unit == 11 ? esk_rf_reg(p, "OR") : 0;
+    t.tisel = esk_rf_reg(p, "TISEL");
+    freeze_bit(&t);
     t.src_x = -1;
     snprintf(t.sig_up, sizeof t.sig_up, "%s_UP", p->name);
     snprintf(t.sig_trig, sizeof t.sig_trig, "%s_TRIG", p->name);

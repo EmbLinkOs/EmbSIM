@@ -1,0 +1,84 @@
+{
+  "schema_version": 1,
+  "kind": "component_test",
+  "name": "divider-3v25",
+  "description": "MB1367's VREF divider without its follower: R1 10 kOhm from the cathode to REF and R2 33 kOhm from REF to the anode, fed through 180 ohm from 5 V: VKA = 2.5 x (1 + 10/33) = 3.258 V.",
+  "policy": "electrical",
+  "until": "2ms",
+  "circuit": {
+    "components": [
+      {
+        "id": "VS",
+        "component": "emblink/vsource",
+        "params": {
+          "kind": "dc",
+          "dc": 5.0
+        }
+      },
+      {
+        "id": "G0",
+        "component": "emblink/gnd"
+      },
+      {
+        "id": "DUT",
+        "component": "emblink/tl1431cl5t"
+      },
+      {
+        "id": "RS",
+        "component": "emblink/resistor",
+        "params": {
+          "resistance": 180
+        }
+      },
+      {
+        "id": "R1",
+        "component": "emblink/resistor",
+        "params": {
+          "resistance": "10k"
+        }
+      },
+      {
+        "id": "R2",
+        "component": "emblink/resistor",
+        "params": {
+          "resistance": "33k"
+        }
+      }
+    ],
+    "nets": {
+      "IN": [
+        "VS.+",
+        "RS.1"
+      ],
+      "K": [
+        "RS.2",
+        "DUT.CATHODE",
+        "R1.1"
+      ],
+      "REF": [
+        "R1.2",
+        "R2.1",
+        "DUT.REF"
+      ],
+      "GND": [
+        "VS.-",
+        "DUT.ANODE",
+        "R2.2",
+        "G0.GND"
+      ]
+    }
+  },
+  "inputs": [],
+  "expect": {
+    "net:K": {
+      "at": "1ms",
+      "min_v": 3.24,
+      "max_v": 3.28
+    },
+    "net:REF": {
+      "at": "1ms",
+      "min_v": 2.49,
+      "max_v": 2.51
+    }
+  }
+}

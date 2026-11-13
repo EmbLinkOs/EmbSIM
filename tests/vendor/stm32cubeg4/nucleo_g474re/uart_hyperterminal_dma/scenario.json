@@ -1,0 +1,52 @@
+{
+  "schema_version": 1,
+  "kind": "scenario",
+  "name": "uart_hyperterminal_dma",
+  "until": "400ms",
+  "description": "UART_HyperTerminal_DMA: USART2 on PA2/PA3, the pins the STLINK-V3E's virtual COM port is wired to, at 9600 baud with 7 data bits and odd parity; the start message goes out by DMA, ten characters typed come in by DMA and go back out by DMA, then the end message, and LD2 lights.",
+  "inputs": [
+    {
+      "at": "150ms",
+      "target": "B1",
+      "input": "serial",
+      "value": "0123456789"
+    }
+  ],
+  "assertions": [
+    {
+      "id": "start",
+      "at": "140ms",
+      "probe": "console",
+      "expect": {
+        "contains": "Enter 10 characters using keyboard :"
+      }
+    },
+    {
+      "id": "echo",
+      "at": "390ms",
+      "probe": "console",
+      "expect": {
+        "contains": "keyboard :\n\r0123456789"
+      }
+    },
+    {
+      "id": "end",
+      "at": "390ms",
+      "probe": "console",
+      "expect": {
+        "contains": "Example Finished"
+      }
+    },
+    {
+      "id": "done",
+      "between": [
+        "350ms",
+        "395ms"
+      ],
+      "probe": "led",
+      "expect": {
+        "logic": "1"
+      }
+    }
+  ]
+}

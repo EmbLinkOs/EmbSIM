@@ -11,7 +11,8 @@
  *     from the description's io.electrical; PUPDR's pull-up (01) or
  *     pull-down (10) is on in every mode but analog (11 is reserved: none);
  *   - BSRR's low half sets ODR's bits and its high half resets them, the set
- *     winning when both are written; it reads 0;
+ *     winning when both are written; it reads 0; BRR (the G4's, RM0440
+ *     8.4.11) resets the bits its low half has set, and reads 0;
  *   - IDR is what each pin reads through its Schmitt trigger, sampled as it
  *     is read: an output's level (an open-drain output's 1 lets go, and the
  *     pin reads what the circuit makes of it, else the pull, else 0,
@@ -56,10 +57,11 @@
 struct f4gpio {
     struct esk_mach *s;
     struct esk_rf_periph *p;
-    struct esk_rf_reg *moder, *otyper, *ospeedr, *pupdr, *idr, *odr, *bsrr, *lckr, *afrl, *afrh;
+    struct esk_rf_reg *moder, *otyper, *ospeedr, *pupdr, *idr, *odr, *bsrr, *lckr, *afrl, *afrh, *brr;
     int port;             /* 0 for A */
     esk_mach_pin out[16]; /* what each pin was told to be */
     int af_in[16];        /* the level last given to a pin's AF inputs, -1 none */
+    u32 af_num[16];       /* the alternate function that level went to */
     int known;
     int lck_step;         /* the lock sequence's writes so far (3: a read locks) */
     u32 lck_bits;
@@ -118,8 +120,9 @@ static void update_once(struct f4gpio *g)
         o.drive = -1;
         if (standby || (wkup >> i & 1u)) {
             /* Standby lets the pins go; an enabled WKUP pin is an input
-             * with a pull-down (pwr_f4.c) */
-            o.pull = (wkup >> i & 1u) ? 2 : 0;
+             * with its pull (an F4's pull-down, pwr_f4.c), a G4's pins the
+             * pulls PWR keeps (pwr_g4.c) */
+            o.pull = esk_stm32f4_pwr_standby_pull(s, g->port, i);
         } else if (mode == 3) {
             o.analog = 1;
         } else {
@@ -156,8 +159,12 @@ static void update_once(struct f4gpio *g)
         else
             lvl = o.pull == 1;
         idr |= (u32)lvl << i;
-        if (mode == 2 && lvl != g->af_in[i]) {
+        if (mode == 2 && (lvl != g->af_in[i] || af_of(g, i) != g->af_num[i])) {
+            /* a level changed, or another function took the pin: it hears
+             * the pin's level at once (SPI1_SCK on PB3, after its reset's
+             * AF0) */
             g->af_in[i] = lvl;
+            g->af_num[i] = af_of(g, i);
             af_input(g, i, af_of(g, i), lvl);
         } else if (mode != 2) {
             g->af_in[i] = -1;
@@ -295,6 +302,13 @@ static void f4gpio_write(void *ctx, u32 off, int n, u32 v)
             esk_rf_hw(g->odr, odr);
         esk_rf_hw(g->bsrr, 0);
     }
+    if (g->brr && off - esk_rf_off(g->brr) < 4) {
+        u32 w = (n < 4 ? v & ((1u << (8 * n)) - 1) : v) << (8 * (off - esk_rf_off(g->brr)));
+        odr = g->odr->value & ~(u64)(w & 0xffffu);
+        if (odr != g->odr->value)
+            esk_rf_hw(g->odr, odr);
+        esk_rf_hw(g->brr, 0);
+    }
     update(g);
 }
 
@@ -373,6 +387,7 @@ void *esk_stm32f4_gpio_create(struct esk_mach *s, struct esk_rf_periph *p)
     g.lckr = esk_rf_reg(p, "LCKR");
     g.afrl = esk_rf_reg(p, "AFRL");
     g.afrh = esk_rf_reg(p, "AFRH");
+    g.brr = esk_rf_reg(p, "BRR");
     if (!g.moder || !g.otyper || !g.ospeedr || !g.pupdr || !g.idr || !g.odr || !g.bsrr || !g.lckr ||
         !g.afrl || !g.afrh || strncmp(p->name, "GPIO", 4) || p->name[4] < 'A' || p->name[4] > 'K' ||
         p->name[5])
