@@ -43,12 +43,31 @@ versions follow semantic versioning. There is no release yet.
   NUCLEO-G474RE's option bytes), and an MCU model can choose the boot
   (`boot_pin`, `boot_system`: the G4's BOOT0 on PB8).
 - `tests/vendor/stm32cubeg4/run.py` builds STM32CubeG4's examples for the
-  NUCLEO-G474RE unmodified; 20 run under scenarios (GPIO, EXTI, the HAL's
+  NUCLEO-G474RE unmodified; 24 run under scenarios (GPIO, EXTI, the HAL's
   time base on TIM6, RCC's PLL moved between HSI16 and HSE, UART_Printf on
   LPUART1, four CRC examples, the Cortex-M4's privilege modes, process
   stack and SysTick, FLASH erase/program and fast program with their timing, the IWDG
   with and without a window, the WWDG, Stop 0, TIM1's PWM and output
-  compare toggle), in CI's linux-gcc job too.
+  compare toggle, DMA from the flash to the SRAM with the HAL and with LL,
+  USART2 and LPUART1 through DMA on the virtual COM port), in CI's
+  linux-gcc job too.
+- Added `stm32g4-dma` and `stm32g4-dmamux` (RM0440 12 and 13): DMA1 and
+  DMA2's eight channels (memory to memory, table 89's packing, circular
+  mode, HT, TC, TE and GIF, the bits locked while EN is set, a bus error's
+  TEIF), DMAMUX's sixteen channels on any of the 115 request lines, their
+  synchronisation on an EXTI line or a channel's event with NBREQ and SOF,
+  event generation, the four request generators with OF, DMAMUX_OVR.
+- A board's console is the UART the firmware muxes onto its bridge's pins
+  (`console.tx`, `console.rx`), not only the MCU's default unit: the
+  NUCLEO-G474RE's VCP hears USART2 on PA2/PA3 as it hears LPUART1.
+- An EXTI line that SYSCFG gives another port sees the new pin's level at
+  once, an edge when it differs from the old pin's (STM32F4 and G4).
+- Faster: an analog island counts as still when its branch currents move by
+  less than a nanoampere and a millionth of their value (node voltages keep
+  their microvolt test). An LED's current drifting by picoamps as it warms,
+  or a ferrite bead's sub-nanoampere numerical ringing between two
+  capacitors, kept a board's supply island stepping every quantum: the
+  NUCLEO-G474RE's example now runs in 9 s of CPU instead of 33.
 - The NUCLEO-G474RE checked against UM2505 Rev 7 and DS12288 Rev 6: U4
   (STMPS2151STR) and LD4 in the STLINK-V3E's 5 V path, CN10 pins 35 and 37
   on USART1 (the factory solder bridges), VREF+ on its own net through JP8

@@ -37,6 +37,8 @@ static const struct esk_rf_model_type model_types[] = {
     { "stm32f4-syscfg", &esk_stm32f4_syscfg_ops, esk_stm32f4_syscfg_create },
     { "stm32f4-dbgmcu", &esk_stm32f4_dbgmcu_ops, esk_stm32f4_dbgmcu_create },
     { "stm32f4-dma", &esk_stm32f4_dma_ops, esk_stm32f4_dma_create },
+    { "stm32g4-dma", &esk_stm32g4_dma_ops, esk_stm32g4_dma_create },
+    { "stm32g4-dmamux", &esk_stm32g4_dmamux_ops, esk_stm32g4_dmamux_create },
     { "stm32f4-adc", &esk_stm32f4_adc_ops, esk_stm32f4_adc_create },
     { "stm32f4-adc-common", &esk_stm32f4_adc_common_ops, esk_stm32f4_adc_common_create },
     { "stm32f4-dac", &esk_stm32f4_dac_ops, esk_stm32f4_dac_create },

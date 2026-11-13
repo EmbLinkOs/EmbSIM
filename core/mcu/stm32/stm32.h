@@ -172,6 +172,17 @@ void *esk_stm32f4_dma_create(struct esk_mach *m, struct esk_rf_periph *p);
  * or falls: a stream that takes it moves the data now, else it waits for
  * one; nothing without a DMA model. `sig` must outlive the request. */
 void esk_stm32_dma_request(struct esk_mach *m, const char *sig, int level);
+/* a DMA channel's last items for request `sig` (the peripheral hears of
+ * them: an SPI's CRC follows the last, an I2C NACKs after EOT-1) */
+void esk_stm32_dma_items_left(struct esk_mach *m, const char *sig, u32 left);
+/* the G4's DMA controllers and request multiplexer (dma_g4.c): a request
+ * through DMAMUX; a trigger or synchronisation input's level (EXTI0 to
+ * EXTI15, LPTIM1_OUT) */
+extern const struct esk_dev_ops esk_stm32g4_dma_ops, esk_stm32g4_dmamux_ops;
+void *esk_stm32g4_dma_create(struct esk_mach *m, struct esk_rf_periph *p);
+void *esk_stm32g4_dmamux_create(struct esk_mach *m, struct esk_rf_periph *p);
+void esk_stm32g4_dma_request(struct esk_mach *m, const char *sig, int level);
+void esk_stm32g4_dmamux_input(struct esk_mach *m, const char *sig, int level);
 /* a USART's alternate-function signal (USART2_TX, _RTS, _CK): the level it
  * drives, or -1; nCTS's level from its pin; the pin (port, bit) of its TX
  * (tx 1) or RX, as the family maps it (the runtime's uart_pin) */

@@ -776,4 +776,5 @@ void esk_stm32_trigger(struct esk_mach *s, const char *sig, int level)
             group_start(a, 1);
     }
     esk_stm32_dac_trigger(s, sig, level);
+    esk_stm32g4_dmamux_input(s, sig, level);
 }

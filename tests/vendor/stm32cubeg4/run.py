@@ -46,6 +46,8 @@ EXAMPLES = {
     "crc_data_reversing_16bit_crc": NUCLEO + "Examples/CRC/CRC_Data_Reversing_16bit_CRC",
     "crc_example": NUCLEO + "Examples/CRC/CRC_Example",
     "crc_userdefinedpolynomial": NUCLEO + "Examples/CRC/CRC_UserDefinedPolynomial",
+    "dma_copyfromflashtomemory_init": NUCLEO + "Examples_LL/DMA/DMA_CopyFromFlashToMemory_Init",
+    "dma_flashtoram": NUCLEO + "Examples/DMA/DMA_FLASHToRAM",
     "flash_eraseprogram": NUCLEO + "Examples/FLASH/FLASH_EraseProgram",
     "flash_fastprogram": NUCLEO + "Examples/FLASH/FLASH_FastProgram",
     "gpio_exti": NUCLEO + "Examples/GPIO/GPIO_EXTI",
@@ -57,7 +59,9 @@ EXAMPLES = {
     "rcc_clockconfig": NUCLEO + "Examples/RCC/RCC_ClockConfig",
     "tim_octoggle": NUCLEO + "Examples/TIM/TIM_OCToggle",
     "tim_pwmoutput": NUCLEO + "Examples/TIM/TIM_PWMOutput",
+    "uart_hyperterminal_dma": NUCLEO + "Examples/UART/UART_HyperTerminal_DMA",
     "uart_printf": NUCLEO + "Examples/UART/UART_Printf",
+    "uart_receptiontoidle_circulardma": NUCLEO + "Examples/UART/UART_ReceptionToIdle_CircularDMA",
     "wwdg_example": NUCLEO + "Examples/WWDG/WWDG_Example",
 }
 BOARD_DIR = HERE / "nucleo_g474re"

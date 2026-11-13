@@ -270,7 +270,7 @@ static int item(struct dma *d, int s)
     return fifo_to_memory(d, s, v32(x->ndtr) <= 1);
 }
 
-static void items_left(struct esk_mach *s, const char *sig, u32 left)
+void esk_stm32_dma_items_left(struct esk_mach *s, const char *sig, u32 left)
 {
     if (!left) {
         esk_stm32_spi_dma_end(s, sig);
@@ -297,7 +297,7 @@ static void serve(struct dma *d, int s, const char *sig)
         counted(d, s);
         /* the peripheral hears of the last items (EOT, I2C's EOT-1) */
         if (before <= 2)
-            items_left(d->s, sig, before - 1);
+            esk_stm32_dma_items_left(d->s, sig, before - 1);
     }
     fifo_status(x);
 }
@@ -390,7 +390,7 @@ void esk_stm32_dma_request(struct esk_mach *s, const char *sig, int level)
         pend_add(d, sig); /* served now if a stream takes it, else it waits */
         if (!esk_rf_gated(d->p))
             drain(d);
-    }
+    }    esk_stm32g4_dma_request(s, sig, level); /* the G4's DMAMUX (dma_g4.c) */
 }
 
 /* ---- memory to memory ------------------------------------------------------ */

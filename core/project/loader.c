@@ -992,6 +992,9 @@ static es_status attach_firmware(es_session *s, esk_board_inst *bi, const esk_ca
         su.image_len = len;
         su.image_name = rel;
         su.console = esk_json_get_str(esk_json_get(mi->desc, "console"), "default", "USART1");
+        /* the pins the board's serial bridge is wired to */
+        su.console_tx = esk_json_get_str(esk_json_get(board->desc, "console"), "tx", NULL);
+        su.console_rx = esk_json_get_str(esk_json_get(board->desc, "console"), "rx", NULL);
         su.quantum_ps = s->core_quantum_ps;
         nfiles = read_memory_files(s, bi, mi, files);
         nfiles = board_memory(s, bi, board->desc, files, nfiles);

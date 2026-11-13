@@ -764,6 +764,163 @@ static void test_spsel_in_handler(void)
     g4_close(&f);
 }
 
+/* DMA1 and DMAMUX (RM0440 12, 13) */
+#define DMA1 0x40020000u
+#define DMA_ISR (DMA1 + 0x00u)
+#define DMA_IFCR (DMA1 + 0x04u)
+#define DMA_CCR(k) (DMA1 + 0x08u + 0x14u * ((k) - 1u))
+#define DMA_CNDTR(k) (DMA1 + 0x0Cu + 0x14u * ((k) - 1u))
+#define DMA_CPAR(k) (DMA1 + 0x10u + 0x14u * ((k) - 1u))
+#define DMA_CMAR(k) (DMA1 + 0x14u + 0x14u * ((k) - 1u))
+#define DMAMUX 0x40020800u
+#define MUX_CCR(c) (DMAMUX + 0x04u * (c))
+#define MUX_CSR (DMAMUX + 0x80u)
+#define MUX_CFR (DMAMUX + 0x84u)
+#define MUX_RGCR(c) (DMAMUX + 0x100u + 0x04u * (c))
+#define NVIC_ISPR0 0xE000E200u
+
+static void pc13(g4 *f, int level)
+{
+    f->ext[2][13] = level;
+    esk_stm32f4_pins_changed(&f->m);
+}
+
+static void test_dma(void)
+{
+    g4 f;
+    u32 v, k;
+    if (!g4_open(&f))
+        return;
+    wr(&f, RCC_AHB1ENR, rd(&f, RCC_AHB1ENR) | 1u | 1u << 2); /* DMA1EN, DMAMUX1EN */
+    /* memory to memory: eight words, both addresses stepping, TCIE */
+    for (k = 0; k < 8; k++)
+        CHECK_EQ(esk_bus_debug_write(&f.m.bus, 0x20000100u + 4u * k, 4, 0x11110000u + k), 0);
+    wr(&f, DMA_CPAR(1), 0x20000100u);
+    wr(&f, DMA_CMAR(1), 0x20000200u);
+    wr(&f, DMA_CNDTR(1), 8u);
+    wr(&f, DMA_CCR(1), 1u << 14 | 2u << 10 | 2u << 8 | 1u << 7 | 1u << 6 | 1u << 1); /* MEM2MEM, 32-bit, MINC, PINC, TCIE */
+    wr(&f, DMA_CCR(1), rd(&f, DMA_CCR(1)) | 1u);
+    /* while EN: the sizes and CNDTR keep their values */
+    wr(&f, DMA_CCR(1), (rd(&f, DMA_CCR(1)) & ~(3u << 8)) | 0u << 8);
+    CHECK_EQ(rd(&f, DMA_CCR(1)) >> 8 & 3u, 2u);
+    run_us(&f, 20.0);
+    for (k = 0; k < 8; k++) {
+        CHECK_EQ(esk_bus_debug_read(&f.m.bus, 0x20000200u + 4u * k, 4, &v), 0);
+        CHECK_EQ(v, 0x11110000u + k);
+    }
+    CHECK_EQ(rd(&f, DMA_CNDTR(1)), 0u);
+    CHECK_EQ(rd(&f, DMA_ISR) & 0xFu, 0x7u);    /* GIF1, TCIF1, HTIF1 */
+    CHECK_EQ(rd(&f, DMA_CCR(1)) & 1u, 1u);     /* not circular: EN stays, nothing more is served */
+    CHECK(rd(&f, NVIC_ISPR0) & 1u << 11);       /* DMA1_CH1 */
+    wr(&f, DMA_CNDTR(1), 5u);
+    CHECK_EQ(rd(&f, DMA_CNDTR(1)), 0u);        /* read-only while EN */
+    wr(&f, DMA_IFCR, 1u << 1);                 /* CTCIF1: HTIF1 is left, so GIF1 too */
+    CHECK_EQ(rd(&f, DMA_ISR) & 0xFu, 0x5u);
+    wr(&f, DMA_IFCR, 1u);                      /* CGIF1 */
+    CHECK_EQ(rd(&f, DMA_ISR) & 0xFu, 0u);
+    wr(&f, DMA_CCR(1), 0u);
+    /* table 89: bytes read, half-words written zero-extended */
+    CHECK_EQ(esk_bus_debug_write(&f.m.bus, 0x20000300u, 4, 0x44332211u), 0);
+    wr(&f, DMA_CPAR(1), 0x20000300u);
+    wr(&f, DMA_CMAR(1), 0x20000400u);
+    wr(&f, DMA_CNDTR(1), 4u);
+    wr(&f, DMA_CCR(1), 1u << 14 | 1u << 10 | 0u << 8 | 1u << 7 | 1u << 6 | 1u);
+    run_us(&f, 10.0);
+    CHECK_EQ(esk_bus_debug_read(&f.m.bus, 0x20000400u, 4, &v), 0);
+    CHECK_EQ(v, 0x00220011u);
+    CHECK_EQ(esk_bus_debug_read(&f.m.bus, 0x20000404u, 4, &v), 0);
+    CHECK_EQ(v, 0x00440033u);
+    wr(&f, DMA_CCR(1), 0u);
+    wr(&f, DMA_IFCR, 0xFFFFFFFFu);
+    /* LPUART1_TX (request 35) through DMAMUX channel 0 to DMA1 channel 1 */
+    lpuart_setup(&f, 16000000u);
+    CHECK(wait_bits(&f, LPUART1 + U_ISR, 1u << 21, 1, 100) >= 0); /* TEACK */
+    CHECK_EQ(esk_bus_debug_write(&f.m.bus, 0x20000500u, 4, 0x00214948u), 0); /* "HI!" */
+    wr(&f, MUX_CCR(0), 35u);
+    wr(&f, DMA_CPAR(1), LPUART1 + U_TDR);
+    wr(&f, DMA_CMAR(1), 0x20000500u);
+    wr(&f, DMA_CNDTR(1), 3u);
+    wr(&f, DMA_CCR(1), 1u << 7 | 1u << 4 | 1u); /* MINC, DIR (from memory), EN */
+    f.nframe = 0;
+    wr(&f, LPUART1 + U_CR3, rd(&f, LPUART1 + U_CR3) | 1u << 7); /* DMAT */
+    run_us(&f, 400.0);
+    CHECK_EQ(f.nframe, 3);
+    CHECK_EQ(f.frame[0].c, 'H');
+    CHECK_EQ(f.frame[2].c, '!');
+    CHECK_EQ(rd(&f, DMA_CNDTR(1)), 0u);
+    wr(&f, DMA_CCR(1), 0u);
+    wr(&f, DMA_IFCR, 0xFFFFFFFFu);
+    /* synchronised on EXTI13 (PC13's rising edge): two requests (NBREQ 1)
+     * a sync event, an event each two; the event (input 16) triggers
+     * generator 0, whose request (1) DMA1 channel 2 serves */
+    wr(&f, RCC_AHB2ENR, rd(&f, RCC_AHB2ENR) | 1u << 2);
+    wr(&f, RCC_APB2ENR, rd(&f, RCC_APB2ENR) | 1u); /* SYSCFG */
+    wr(&f, SYSCFG + 0x14u, 2u << 4);               /* EXTI13 on PC */
+    wr(&f, GPIOC + MODER, rd(&f, GPIOC + MODER) & ~(3u << 26)); /* PC13 an input */
+    pc13(&f, 0);
+    for (k = 0; k < 8; k++)
+        CHECK_EQ(esk_bus_debug_write(&f.m.bus, 0x20000600u + k, 1, 'a' + k), 0);
+    wr(&f, MUX_CCR(0), 35u | 1u << 9 | 1u << 16 | 1u << 17 | 1u << 19 | 13u << 24); /* EGE, SE, SPOL rising, NBREQ 1, SYNC_ID 13 */
+    wr(&f, MUX_RGCR(0), 16u | 1u << 16 | 1u << 17);  /* SIG_ID 16 (channel 0's event), GE, rising */
+    wr(&f, MUX_CCR(1), 1u);                          /* DMAMUX_REQ_GEN0 to DMA1 channel 2 */
+    wr(&f, DMA_CPAR(2), 0x20000700u);
+    wr(&f, DMA_CMAR(2), 0x20000800u);
+    wr(&f, DMA_CNDTR(2), 4u);
+    wr(&f, DMA_CCR(2), 2u << 10 | 2u << 8 | 1u << 7 | 1u); /* 32-bit, MINC: one word a generated request */
+    wr(&f, DMA_CMAR(1), 0x20000600u);
+    wr(&f, DMA_CNDTR(1), 8u);
+    wr(&f, DMA_CCR(1), 1u << 7 | 1u << 4 | 1u);
+    f.nframe = 0;
+    run_us(&f, 400.0);
+    CHECK_EQ(f.nframe, 0);                      /* no sync event yet */
+    CHECK_EQ(rd(&f, DMA_CNDTR(2)), 4u);
+    pc13(&f, 1);
+    run_us(&f, 400.0);
+    CHECK_EQ(f.nframe, 2);                      /* NBREQ + 1 */
+    CHECK_EQ(f.frame[1].c, 'b');
+    CHECK_EQ(rd(&f, DMA_CNDTR(2)), 3u);         /* the event's generated request */
+    pc13(&f, 0);
+    pc13(&f, 1);
+    run_us(&f, 400.0);
+    CHECK_EQ(f.nframe, 4);
+    CHECK_EQ(f.frame[3].c, 'd');
+    CHECK_EQ(rd(&f, DMA_CNDTR(2)), 2u);
+    CHECK_EQ(rd(&f, MUX_CSR), 0u);
+    /* four requests a sync event (NBREQ 3, written with SE and EGE clear):
+     * an idle transmitter takes two at once, the others a frame apart, so
+     * a sync event right after the first is an overrun: SOF0, DMAMUX_OVR
+     * (94) with SOIE */
+    wr(&f, MUX_CCR(0), 35u);
+    wr(&f, MUX_CCR(0), 35u | 3u << 19);
+    wr(&f, MUX_CCR(0), 35u | 3u << 19 | 1u << 8 | 1u << 16 | 1u << 17 | 13u << 24);
+    run_us(&f, 400.0);
+    pc13(&f, 0);
+    pc13(&f, 1);
+    pc13(&f, 0);
+    pc13(&f, 1);
+    CHECK_EQ(rd(&f, MUX_CSR), 1u);
+    CHECK(rd(&f, NVIC_ISPR2) & 1u << 30);
+    wr(&f, MUX_CFR, 1u);
+    CHECK_EQ(rd(&f, MUX_CSR), 0u);
+    wr(&f, MUX_CCR(0), 0u);
+    wr(&f, DMA_CCR(1), 0u);
+    wr(&f, DMA_CCR(2), 0u);
+    /* a bus error: TEIF, EN cleared and refused until TEIF is */
+    wr(&f, DMA_IFCR, 0xFFFFFFFFu);
+    wr(&f, DMA_CPAR(1), 0x60000000u); /* no FMC bank fitted */
+    wr(&f, DMA_CMAR(1), 0x20000900u);
+    wr(&f, DMA_CNDTR(1), 2u);
+    wr(&f, DMA_CCR(1), 1u << 14 | 1u << 3 | 1u);
+    run_us(&f, 5.0);
+    CHECK_EQ(rd(&f, DMA_ISR) & 0x9u, 0x9u); /* TEIF1, GIF1 */
+    CHECK_EQ(rd(&f, DMA_CCR(1)) & 1u, 0u);
+    wr(&f, DMA_CCR(1), rd(&f, DMA_CCR(1)) | 1u);
+    CHECK_EQ(rd(&f, DMA_CCR(1)) & 1u, 0u);
+    wr(&f, DMA_IFCR, 1u << 3);
+    wr(&f, DMA_CCR(1), 0u);
+    g4_close(&f);
+}
+
 TEST_MAIN_BEGIN
 RUN(test_reset);
 RUN(test_170mhz);
@@ -779,4 +936,5 @@ RUN(test_iwdg_window);
 RUN(test_wwdg_prescaler);
 RUN(test_stop);
 RUN(test_spsel_in_handler);
+RUN(test_dma);
 TEST_MAIN_END

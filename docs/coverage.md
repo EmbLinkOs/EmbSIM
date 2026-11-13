@@ -19,7 +19,7 @@ evidence for each model is in [STATUS.md](STATUS.md).
 | STM32F103C8 | 26 | 0 | 1 | 27 |
 | STM32F446RE | 53 | 0 | 15 | 68 |
 | STM32F446ZE | 53 | 0 | 15 | 68 |
-| STM32G474RE | 34 | 0 | 48 | 82 |
+| STM32G474RE | 37 | 0 | 45 | 82 |
 
 ## ESP32 (`espressif/esp32`)
 
@@ -582,7 +582,7 @@ Declared omissions: DBGMCU's freeze bits for the RTC, the I2C SMBus time-outs an
 ## STM32G474RE (`st/stm32g474re`)
 
 Boards: NUCLEO-G474RE.  
-34 of 82 peripherals modelled, 0 registers only, 48 missing.
+37 of 82 peripherals modelled, 0 registers only, 45 missing.
 
 | Peripheral | Model | State |
 |---|---|---|
@@ -638,9 +638,9 @@ Boards: NUCLEO-G474RE.
 | HRTIM_TIME | — | **missing** |
 | HRTIM_TIMF | — | **missing** |
 | HRTIM_Common | — | **missing** |
-| DMA1 | — | **missing** |
-| DMA2 | — | **missing** |
-| DMAMUX | — | **missing** |
+| DMA1 | `stm32g4-dma` | modelled |
+| DMA2 | `stm32g4-dma` | modelled |
+| DMAMUX | `stm32g4-dmamux` | modelled |
 | CORDIC | — | **missing** |
 | RCC | `stm32g4-rcc` | modelled |
 | FMAC | — | **missing** |
@@ -669,4 +669,4 @@ Boards: NUCLEO-G474RE.
 | QUADSPI | — | **missing** |
 | DBGMCU | `stm32f4-dbgmcu` | modelled |
 
-Declared omissions: the peripherals coverage.md lists as missing keep their register values and raise mcu.unsupported_access: the ADCs, DACs, comparators, op-amps and VREFBUF, DMA1, DMA2 and DMAMUX, the I2Cs and SPIs, RTC and TAMP, LPTIM1, RNG, CORDIC, FMAC, CRS, the FDCANs, USB, UCPD, HRTIM, QUADSPI, SAI and FMC; the timers' G4 additions: OCxM's fourth bit (retriggerable one-pulse, combined and asymmetric PWM), SMS's fourth bit (combined reset and trigger, the extended encoder modes), the internal trigger inputs ITR4 to ITR10 and TS's fifth bit, MMS's fourth bit, channels 5 and 6, dithering (DITHEN: ARR and CCRx read as their 16 integer bits), UIFREMAP, the encoder index (ECR), the asymmetric dead times (DTR2), break 2, the comparators on TISEL and AF1/AF2's break sources, the G4's ITR interconnection table (the F4's is used); the start-up times, flash times and PVD thresholds are DS12288 Rev 6's typical values (HSI16 0.8 us, an HSE crystal 2 ms, LSI 80 us, LSE 2 s, HSI48 2.5 us, the PLL's lock 15 us; a double word 81.7 us, a fast row 1.91 ms, a page erase 22.02 ms, a bank erase 22.13 ms; the PVD's thresholds), not their spread between parts or their dependence on temperature; RCC: the clock security systems (CSSON, LSECSSON: the oscillators never fail), LSEDRV, HSITRIM and HSI48CAL's effect on the frequencies, the CRS's trimming, a peripheral held in reset while its *RSTR bit stays set, the brownout reset (BORRSTF only at power-on), the sleep-mode enables (*SMENR), MCO and LSCO on their pins; PWR: the regulator's settling (VOSF never set) and the wake-up times, the supply currents, the PVMs (VDDA is VDD), UCPD's dead-battery bits, VBAT charging; FLASH: the option bytes' programming time, the read protection's levels and their mass erase, PCROP and the securable area, ECC, the bank swap (BFB2, FB_MODE), the boot from SRAM, the power-down modes, the caches' real line length; USART: noise detection (NE never sets, ONEBIT does nothing), auto baud rate detection, TXINV and RXINV, DE's assertion and deassertion times (DEAT, DEDT), the synchronous slave, smartcard and IrDA modes, TCBGT; SYSCFG: SWPR's write protection of the CCM SRAM, its erase time, the parity errors CFGR2 reports; EXTI: the internal lines' sources but PVD's; GPIO: EVENTOUT, the I/O compensation, the 5 V tolerant pins' clamps; the I/O thresholds are DS12288's typical characteristics (0.39 x VDD - 0.06 and 0.49 x VDD + 0.26, 200 mV of hysteresis, 40 kOhm pulls), not the guaranteed 0.3 and 0.7 x VDD; the output resistances and edge rates are the F446's; DBGMCU's REV_ID 0x2001 (revision Z: which revision a board carries varies, UM2505 10.1); a halted core draws its sleep current.
+Declared omissions: the peripherals coverage.md lists as missing keep their register values and raise mcu.unsupported_access: the ADCs, DACs, comparators, op-amps and VREFBUF, the I2Cs and SPIs, RTC and TAMP, LPTIM1, RNG, CORDIC, FMAC, CRS, the FDCANs, USB, UCPD, HRTIM, QUADSPI, SAI and FMC; the timers' G4 additions: OCxM's fourth bit (retriggerable one-pulse, combined and asymmetric PWM), SMS's fourth bit (combined reset and trigger, the extended encoder modes), the internal trigger inputs ITR4 to ITR10 and TS's fifth bit, MMS's fourth bit, channels 5 and 6, dithering (DITHEN: ARR and CCRx read as their 16 integer bits), UIFREMAP, the encoder index (ECR), the asymmetric dead times (DTR2), break 2, the comparators on TISEL and AF1/AF2's break sources, the G4's ITR interconnection table (the F4's is used); the start-up times, flash times and PVD thresholds are DS12288 Rev 6's typical values (HSI16 0.8 us, an HSE crystal 2 ms, LSI 80 us, LSE 2 s, HSI48 2.5 us, the PLL's lock 15 us; a double word 81.7 us, a fast row 1.91 ms, a page erase 22.02 ms, a bank erase 22.13 ms; the PVD's thresholds), not their spread between parts or their dependence on temperature; RCC: the clock security systems (CSSON, LSECSSON: the oscillators never fail), LSEDRV, HSITRIM and HSI48CAL's effect on the frequencies, the CRS's trimming, a peripheral held in reset while its *RSTR bit stays set, the brownout reset (BORRSTF only at power-on), the sleep-mode enables (*SMENR), MCO and LSCO on their pins; PWR: the regulator's settling (VOSF never set) and the wake-up times, the supply currents, the PVMs (VDDA is VDD), UCPD's dead-battery bits, VBAT charging; FLASH: the option bytes' programming time, the read protection's levels and their mass erase, PCROP and the securable area, ECC, the bank swap (BFB2, FB_MODE), the boot from SRAM, the power-down modes, the caches' real line length; USART: noise detection (NE never sets, ONEBIT does nothing), auto baud rate detection, TXINV and RXINV, DE's assertion and deassertion times (DEAT, DEDT), the synchronous slave, smartcard and IrDA modes, TCBGT; SYSCFG: SWPR's write protection of the CCM SRAM, its erase time, the parity errors CFGR2 reports; EXTI: the internal lines' sources but PVD's; GPIO: EVENTOUT, the I/O compensation, the 5 V tolerant pins' clamps; the I/O thresholds are DS12288's typical characteristics (0.39 x VDD - 0.06 and 0.49 x VDD + 0.26, 200 mV of hysteresis, 40 kOhm pulls), not the guaranteed 0.3 and 0.7 x VDD; the output resistances and edge rates are the F446's; DMA: the arbitration's delays and the bus matrix's timing (a request is served at once, a memory-to-memory item every two cycles), the DMAMUX inputs' two-cycle filter and the three cycles a CxCR or RGxCR write masks them for, the byte and half-word lanes duplicated for an APB peripheral that ignores the size, LPTIM1_OUT as a trigger and synchronisation input (LPTIM1 is not modelled); DBGMCU's REV_ID 0x2001 (revision Z: which revision a board carries varies, UM2505 10.1); a halted core draws its sleep current.

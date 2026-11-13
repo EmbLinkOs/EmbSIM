@@ -1,0 +1,21 @@
+{
+  "schema_version": 1,
+  "kind": "scenario",
+  "name": "dma_copyfromflashtomemory_init",
+  "until": "300ms",
+  "description": "DMA_CopyFromFlashToMemory_Init (LL): DMA1 channel 1 copies 32 words from the flash to the SRAM in memory-to-memory mode; once the transfer-complete interrupt has come, the program compares the two buffers and lights LD2 when they match (it blinks LD2 on a mismatch or a transfer error).",
+  "inputs": [],
+  "assertions": [
+    {
+      "id": "done",
+      "between": [
+        "50ms",
+        "290ms"
+      ],
+      "probe": "led",
+      "expect": {
+        "logic": "1"
+      }
+    }
+  ]
+}

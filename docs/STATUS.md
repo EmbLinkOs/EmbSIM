@@ -13,11 +13,11 @@ dual-bank flash, SRAM1, SRAM2 and the CCM SRAM) on `emblink/nucleo_g474re`
 corrections `tools/importers/stm32g474_regs.sh` lists, its pins and
 alternate functions from ST's open pin data. The G4's own IP has new models:
 the RCC (`stm32g4-rcc`), PWR (`stm32g4-pwr`), flash interface
-(`stm32g4-flash`) and the U(S)ARTs and LPUART (`stm32-usart-v2`); GPIO,
-SYSCFG, EXTI, the timers, CRC, the watchdogs and DBGMCU are the F4's models
-taught the G4's registers. 34 of the 82 peripheral blocks are modelled
-(`docs/coverage.md`); the ADCs, DACs, comparators, op-amps, DMA and DMAMUX,
-I2C, SPI, RTC, the FDCANs, USB, HRTIM, the math accelerators and the rest
+(`stm32g4-flash`), the U(S)ARTs and LPUART (`stm32-usart-v2`), and DMA1,
+DMA2 and DMAMUX (`stm32g4-dma`, `stm32g4-dmamux`); GPIO, SYSCFG, EXTI, the
+timers, CRC, the watchdogs and DBGMCU are the F4's models taught the G4's
+registers. 37 of the 82 peripheral blocks are modelled
+(`docs/coverage.md`); the ADCs, DACs, comparators, op-amps, I2C, SPI, RTC, the FDCANs, USB, HRTIM, the math accelerators and the rest
 keep their registers until their models land.
 
 Evidence:
@@ -33,7 +33,7 @@ Evidence:
   handler;
 - the board's seven fixtures (USB, VIN, E5V, VIN without JP5, the IDD
   ammeter, B1, LD2 through Q1);
-- 20 of STM32CubeG4's NUCLEO-G474RE examples built unmodified
+- 24 of STM32CubeG4's NUCLEO-G474RE examples built unmodified
   (`tests/vendor/stm32cubeg4/run.py`, also in CI): GPIO_IOToggle,
   GPIO_EXTI, HAL_TimeBase_TIM, RCC_ClockConfig (the PLL moved between HSI16
   and the crystal on B1), UART_Printf, the four CRC examples,
@@ -42,7 +42,20 @@ Evidence:
   from, stalled through each operation), FLASH_FastProgram (bank 2 written
   while bank 1 runs on), IWDG_Reset, IWDG_WindowMode (a refresh before the
   window resets the part), WWDG_Example, PWR_STOP0, TIM_PWMOutput (85 kHz
-  on TIM1's four channels) and TIM_OCToggle.
+  on TIM1's four channels), TIM_OCToggle, DMA_FLASHToRAM and LL's
+  DMA_CopyFromFlashToMemory_Init (memory to memory), UART_HyperTerminal_DMA
+  (USART2 on PA2/PA3, both directions by DMA) and
+  UART_ReceptionToIdle_CircularDMA (LPUART1's receiver by circular DMA);
+- `test_stm32g4`'s DMA test: memory to memory, table 89's packing, the
+  bits locked while EN is set, LPUART1's transmitter through DMAMUX,
+  synchronisation on EXTI13 with NBREQ and its overrun, a channel's event
+  triggering a request generator, a bus error's TEIF.
+
+The STLINK-V3E's virtual COM port is the UART the firmware muxes onto
+PA2/PA3 (LPUART1, or USART2 as UART_HyperTerminal_DMA uses it): a board's
+console follows its bridge's pins, as the wiring does. An EXTI line given
+another port by SYSCFG now sees the new pin's level at once, an edge if it
+differs, as the line's edge detector follows the multiplexer.
 
 Found on the way: exception entry did not clear CONTROL.SPSEL (every
 Cortex-M part), and IWDG_Reset's "invalid address" 0x00040001 lies inside

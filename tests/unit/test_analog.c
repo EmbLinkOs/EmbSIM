@@ -1587,7 +1587,10 @@ static void test_quiet_island(void)
     CHECK_NEAR(v_of(&e, "out"), 5.0 * (1.0 - exp(-2.0)), 1e-4);
     CHECK_EQ(isl->quiet_steps, 0);
     CHECK(esk_engine_advance(&e, 40 * ES_PS_PER_MS) == ES_OK);
-    CHECK_NEAR(v_of(&e, "out"), 5.0, 1e-6); /* to vntol, the floor where an island is still */
+    /* to the floor where an island is still: a trial step of 1 ms moving no
+     * node by vntol (1 uV) and no branch current by 1 nA, here the source's
+     * 1.5 nA into the capacitor, 1.5 uV short of 5 V */
+    CHECK_NEAR(v_of(&e, "out"), 5.0, 2e-6);
     CHECK_EQ(diag_errors, 0);
     esk_engine_free(&e);
 }
